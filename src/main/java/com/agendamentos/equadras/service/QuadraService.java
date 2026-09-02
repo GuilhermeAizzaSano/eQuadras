@@ -75,6 +75,7 @@ public class QuadraService {
                 .latitude(dto.latitude())
                 .longitude(dto.longitude())
                 .descricao(dto.descricao())
+                .dataLimiteAgendamento(dto.dataLimiteAgendamento())
                 .fotos(fotosIniciais)
                 .disponibilidades(disponibilidades)
                 .ativa(true)
@@ -110,6 +111,7 @@ public class QuadraService {
         quadra.setLatitude(dto.latitude());
         quadra.setLongitude(dto.longitude());
         quadra.setDescricao(dto.descricao());
+        quadra.setDataLimiteAgendamento(dto.dataLimiteAgendamento());
 
         if (dto.disponibilidades() != null) {
             quadra.getDisponibilidades().clear();

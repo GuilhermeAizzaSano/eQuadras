@@ -21,6 +21,7 @@ public record QuadraResponseDTO(
         Double latitude,
         Double longitude,
         String descricao,
+        java.time.LocalDate dataLimiteAgendamento,
         List<String> fotos,
         List<DisponibilidadeDiaDTO> disponibilidades
 ) {
@@ -39,6 +40,7 @@ public record QuadraResponseDTO(
                 quadra.getLatitude(),
                 quadra.getLongitude(),
                 quadra.getDescricao(),
+                quadra.getDataLimiteAgendamento(),
                 quadra.getFotos() != null ? quadra.getFotos() : java.util.Collections.emptyList(),
                 quadra.getDisponibilidades() != null
                         ? quadra.getDisponibilidades().stream()

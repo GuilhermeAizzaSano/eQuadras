@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi, notificacaoApi, getBaseUrl, getAssetUrl } from '../api/apiClient';
-import { Quadra, Agendamento, TipoEsporte, Notificacao, DiaSemana, DisponibilidadeDia } from '../types';
+import { quadraApi, agendamentoApi, notificacaoApi, bloqueioApi, getBaseUrl, getAssetUrl } from '../api/apiClient';
+import { Quadra, Agendamento, TipoEsporte, Notificacao, DiaSemana, DisponibilidadeDia, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, LoadingOverlay, CourtDetailsModal } from '../components/ui';
 import {
   PlusCircle,
@@ -22,7 +22,9 @@ import {
   Bell,
   Phone,
   Info,
-  Upload
+  Upload,
+  Ban,
+  AlertTriangle
 } from 'lucide-react';
 
 const DIAS_SEMANA: { key: DiaSemana; label: string }[] = [
@@ -70,12 +72,23 @@ export const AdminDashboard: React.FC = () => {
   const [tipoEsporte, setTipoEsporte] = useState<TipoEsporte>('FUTEBOL');
   const [valorHora, setValorHora] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [dataLimiteAgendamento, setDataLimiteAgendamento] = useState('');
   const [fotosExistentes, setFotosExistentes] = useState<string[]>([]);
   const [novasFotos, setNovasFotos] = useState<File[]>([]);
   const [novasFotosPreviews, setNovasFotosPreviews] = useState<string[]>([]);
   const [horarios, setHorarios] = useState<HorariosPorDia>(DEFAULT_HORARIOS);
   const previewsRef = useRef<string[]>([]);
   previewsRef.current = novasFotosPreviews;
+
+  // Gerenciamento de Bloqueios
+  const [bloqueioModalQuadra, setBloqueioModalQuadra] = useState<Quadra | null>(null);
+  const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
+  const [loadingBloqueios, setLoadingBloqueios] = useState(false);
+  const [mapaBloqueiosPorQuadra, setMapaBloqueiosPorQuadra] = useState<Record<number, BloqueioHorario[]>>({});
+  const [bloqueioData, setBloqueioData] = useState('');
+  const [bloqueioHoraInicio, setBloqueioHoraInicio] = useState('');
+  const [bloqueioHoraFim, setBloqueioHoraFim] = useState('');
+  const [bloqueioMotivo, setBloqueioMotivo] = useState('');
 
   // Revogar ObjectURLs criadas para previews ao desmontar o componente
   useEffect(() => {
@@ -98,6 +111,15 @@ export const AdminDashboard: React.FC = () => {
   const [dataSelecionada, setDataSelecionada] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
   });
+  const [quadraFiltroCalendarId, setQuadraFiltroCalendarId] = useState<number | 'TODAS'>('TODAS');
+  const [statusFiltroCalendar, setStatusFiltroCalendar] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS'>('TODOS');
+  const [modalAgendaDiaOpen, setModalAgendaDiaOpen] = useState(false);
+  const [quadraSelecionadaAgendaId, setQuadraSelecionadaAgendaId] = useState<number | 'TODAS'>('TODAS');
+  const [statusFiltroModal, setStatusFiltroModal] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS'>('TODOS');
+  const [loadingHorariosModal, setLoadingHorariosModal] = useState(false);
+  const [horariosDisponiveisPorQuadra, setHorariosDisponiveisPorQuadra] = useState<Record<number, import('../types').HorarioDisponivel[]>>({});
+  const [visualizacaoAgendaAba, setVisualizacaoAgendaAba] = useState<'GRADE_HORARIOS' | 'LISTA_RESERVAS'>('GRADE_HORARIOS');
+  const [highlightedAgendamentoId, setHighlightedAgendamentoId] = useState<number | null>(null);
 
   // Intervalo de tick para atualizar contadores de tempo real
   const [agora, setAgora] = useState(() => Date.now());
@@ -215,6 +237,31 @@ export const AdminDashboard: React.FC = () => {
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
+
+      // Carregar bloqueios de todas as quadras em paralelo para exibir indicador visual nos cards
+      if (quadras.length > 0) {
+        try {
+          const bloqueiosResults = await Promise.all(
+            quadras.map(async (q) => {
+              try {
+                const b = await bloqueioApi.listar(q.id_quadra);
+                return { quadraId: q.id_quadra, bloqueios: b };
+              } catch {
+                return { quadraId: q.id_quadra, bloqueios: [] };
+              }
+            })
+          );
+          const novoMapa: Record<number, BloqueioHorario[]> = {};
+          bloqueiosResults.forEach((res) => {
+            novoMapa[res.quadraId] = res.bloqueios;
+          });
+          setMapaBloqueiosPorQuadra(novoMapa);
+        } catch (bErr) {
+          console.error('Erro ao carregar mapa de bloqueios:', bErr);
+        }
+      } else {
+        setMapaBloqueiosPorQuadra({});
+      }
     } catch (err: any) {
       console.error(err);
     }
@@ -259,6 +306,8 @@ export const AdminDashboard: React.FC = () => {
         isCurrentMonth: false,
         isToday: false,
         count: 0,
+        bloqueados: 0,
+        livres: 0,
       });
     }
 
@@ -268,16 +317,103 @@ export const AdminDashboard: React.FC = () => {
     for (let d = 1; d <= totalDaysInMonth; d++) {
       const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       
+      // Filtrar por quadra selecionada (ou todas)
+      const quadrasConsideradas = quadraFiltroCalendarId === 'TODAS'
+        ? minhasQuadras
+        : minhasQuadras.filter((q) => q.id_quadra === quadraFiltroCalendarId);
+
       const count = agendamentosAdmin.filter(
-        (a) => a.dataHoraInicio.startsWith(iso) && a.status !== 'CANCELADO'
+        (a) => a.dataHoraInicio.startsWith(iso) && 
+               a.status !== 'CANCELADO' && 
+               (quadraFiltroCalendarId === 'TODAS' || a.quadraId === quadraFiltroCalendarId)
       ).length;
+
+      // Calcular bloqueios ativos que afetam este dia para as quadras consideradas
+      const bloqueiosDoDia: BloqueioHorario[] = [];
+      quadrasConsideradas.forEach((q) => {
+        const lista = mapaBloqueiosPorQuadra[q.id_quadra] || [];
+        lista.forEach((b) => {
+          if (b.data === iso) {
+            bloqueiosDoDia.push(b);
+          }
+        });
+      });
+
+      // Estimar capacidade total de horários com base nas quadras selecionadas
+      const dayOfWeekNum = new Date(year, month, d).getDay(); // 0 = Dom, 1 = Seg ...
+      const diaMap: DiaSemana[] = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const diaSemanaAtual = diaMap[dayOfWeekNum];
+
+      let slotsPossiveis = 0;
+      quadrasConsideradas.forEach((q) => {
+        if (!q.ativa) return;
+        if (q.dataLimiteAgendamento && iso > q.dataLimiteAgendamento) return;
+        const disp = q.disponibilidades?.find((dd) => dd.diaSemana === diaSemanaAtual);
+        if (disp) {
+          const hIni = parseInt(disp.horaInicio.slice(0, 2), 10);
+          const hFim = parseInt(disp.horaFim.slice(0, 2), 10);
+          if (hFim > hIni) slotsPossiveis += (hFim - hIni);
+        } else {
+          slotsPossiveis += 17; // Padrão 06:00 às 23:00 = 17 slots
+        }
+      });
+
+      const isPassado = iso < hojeIso;
+      const isHoje = iso === hojeIso;
+      const horaAtual = new Date().getHours();
+
+      // Calcular slots que já passaram hoje
+      let slotsPassadosHoje = 0;
+      let slotsBloqueadosReais = 0;
+
+      quadrasConsideradas.forEach((q) => {
+        if (!q.ativa) return;
+        if (q.dataLimiteAgendamento && iso > q.dataLimiteAgendamento) return;
+        const disp = q.disponibilidades?.find((dd) => dd.diaSemana === diaSemanaAtual);
+        const hIni = disp ? parseInt(disp.horaInicio.slice(0, 2), 10) : 6;
+        const hFim = disp ? parseInt(disp.horaFim.slice(0, 2), 10) : 23;
+
+        // Verificar bloqueios desta quadra nesta data
+        const bQuadra = (mapaBloqueiosPorQuadra[q.id_quadra] || []).filter((b) => b.data === iso);
+        const bDiaTodo = bQuadra.some((b) => !b.horaInicio || !b.horaFim);
+
+        for (let h = hIni; h < hFim; h++) {
+          const hPassada = isHoje && h < horaAtual;
+          if (hPassada) {
+            slotsPassadosHoje++;
+            continue; // Já passou, conta como passado
+          }
+
+          // Se não passou, verificar se está bloqueado
+          const hStr = `${String(h).padStart(2, '0')}:00:00`;
+          const isBloq = bDiaTodo || bQuadra.some((b) => {
+            if (!b.horaInicio || !b.horaFim) return true;
+            return hStr >= b.horaInicio && hStr < b.horaFim;
+          });
+
+          if (isBloq) {
+            slotsBloqueadosReais++;
+          }
+        }
+      });
+
+      // Se a data já passou inteira, livres é 0
+      // Se for hoje, desconta os slots passados, os agendamentos e os bloqueados válidos
+      const livresCont = isPassado
+        ? 0
+        : Math.max(0, slotsPossiveis - count - slotsPassadosHoje - slotsBloqueadosReais);
+
+      const bloqueadosCont = isPassado ? 0 : slotsBloqueadosReais > 0 ? slotsBloqueadosReais : bloqueiosDoDia.length;
 
       days.push({
         dayNum: d,
         iso,
         isCurrentMonth: true,
-        isToday: iso === hojeIso,
+        isToday: isHoje,
+        isPassado,
         count,
+        bloqueados: bloqueadosCont,
+        livres: livresCont,
       });
     }
 
@@ -292,11 +428,13 @@ export const AdminDashboard: React.FC = () => {
         isCurrentMonth: false,
         isToday: false,
         count: 0,
+        bloqueados: 0,
+        livres: 0,
       });
     }
 
     return days;
-  }, [currentMonthDate, agendamentosAdmin]);
+  }, [currentMonthDate, agendamentosAdmin, mapaBloqueiosPorQuadra, minhasQuadras, quadraFiltroCalendarId]);
 
   const mesAnoExtenso = useMemo(() => {
     const meses = [
@@ -352,6 +490,7 @@ export const AdminDashboard: React.FC = () => {
     setTipoEsporte(q.tipoEsporte);
     setValorHora(q.valorHora.toString());
     setDescricao(q.descricao || '');
+    setDataLimiteAgendamento(q.dataLimiteAgendamento || '');
     setFotosExistentes(q.fotos || []);
     setNovasFotos([]);
     setNovasFotosPreviews([]);
@@ -397,6 +536,7 @@ export const AdminDashboard: React.FC = () => {
     setNome('');
     setValorHora('');
     setDescricao('');
+    setDataLimiteAgendamento('');
     setFotosExistentes([]);
     setNovasFotos([]);
     setNovasFotosPreviews([]);
@@ -445,6 +585,103 @@ export const AdminDashboard: React.FC = () => {
 
   const aplicarPadraoTodos = () => {
     setHorarios(DEFAULT_HORARIOS);
+  };
+
+  const abrirAgendaDoDia = async (dataIso: string) => {
+    setDataSelecionada(dataIso);
+    setQuadraSelecionadaAgendaId(quadraFiltroCalendarId);
+    setStatusFiltroModal(statusFiltroCalendar);
+    setHighlightedAgendamentoId(null);
+    setModalAgendaDiaOpen(true);
+    setLoadingHorariosModal(true);
+    try {
+      // Buscar slots disponíveis de todas as quadras ativas para o dia
+      const promessas = minhasQuadras
+        .filter((q) => q.ativa)
+        .map(async (q) => {
+          try {
+            const slots = await agendamentoApi.listarHorariosDisponiveis(q.id_quadra, dataIso);
+            return { quadraId: q.id_quadra, slots };
+          } catch {
+            return { quadraId: q.id_quadra, slots: [] };
+          }
+        });
+      const resultados = await Promise.all(promessas);
+      const novoMapa: Record<number, import('../types').HorarioDisponivel[]> = {};
+      resultados.forEach((r) => {
+        novoMapa[r.quadraId] = r.slots;
+      });
+      setHorariosDisponiveisPorQuadra(novoMapa);
+    } catch (err) {
+      console.error('Erro ao carregar horários do dia:', err);
+    } finally {
+      setLoadingHorariosModal(false);
+    }
+  };
+
+  const abrirGerenciamentoBloqueios = async (q: Quadra) => {
+    setBloqueioModalQuadra(q);
+    setBloqueioData(new Date().toISOString().split('T')[0]);
+    setBloqueioHoraInicio('');
+    setBloqueioHoraFim('');
+    setBloqueioMotivo('');
+    await carregarBloqueios(q.id_quadra);
+  };
+
+  const carregarBloqueios = async (quadraId: number) => {
+    setLoadingBloqueios(true);
+    try {
+      const data = await bloqueioApi.listar(quadraId);
+      setBloqueiosQuadra(data);
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Erro ao carregar bloqueios.' });
+    } finally {
+      setLoadingBloqueios(false);
+    }
+  };
+
+  const handleCriarBloqueio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bloqueioModalQuadra) return;
+
+    if (bloqueioHoraInicio && !bloqueioHoraFim) {
+      setFeedback({ type: 'error', message: 'Informe também o horário de término do bloqueio.' });
+      return;
+    }
+    if (!bloqueioHoraInicio && bloqueioHoraFim) {
+      setFeedback({ type: 'error', message: 'Informe também o horário de início do bloqueio.' });
+      return;
+    }
+
+    try {
+      await bloqueioApi.criar(bloqueioModalQuadra.id_quadra, {
+        data: bloqueioData,
+        horaInicio: bloqueioHoraInicio ? `${bloqueioHoraInicio}:00` : undefined,
+        horaFim: bloqueioHoraFim ? `${bloqueioHoraFim}:00` : undefined,
+        motivo: bloqueioMotivo || undefined,
+      });
+
+      setFeedback({ type: 'success', message: 'Bloqueio adicionado com sucesso!' });
+      setBloqueioHoraInicio('');
+      setBloqueioHoraFim('');
+      setBloqueioMotivo('');
+      await carregarBloqueios(bloqueioModalQuadra.id_quadra);
+      await carregarDados();
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Erro ao adicionar bloqueio.' });
+    }
+  };
+
+  const handleRemoverBloqueio = async (bloqueioId: number) => {
+    if (!bloqueioModalQuadra) return;
+    try {
+      await bloqueioApi.remover(bloqueioModalQuadra.id_quadra, bloqueioId);
+      setFeedback({ type: 'success', message: 'Bloqueio removido com sucesso!' });
+      await carregarBloqueios(bloqueioModalQuadra.id_quadra);
+      await carregarDados();
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Erro ao remover bloqueio.' });
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -517,6 +754,7 @@ export const AdminDashboard: React.FC = () => {
             tipoEsporte,
             valorHora: parseFloat(valorHora),
             descricao,
+            dataLimiteAgendamento: dataLimiteAgendamento || undefined,
             fotos: fotosExistentes,
             cep,
             logradouro,
@@ -650,12 +888,16 @@ export const AdminDashboard: React.FC = () => {
 
   const [filtroAgendaAdmin, setFiltroAgendaAdmin] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
 
-  // Todos os agendamentos do dia selecionado
+  // Todos os agendamentos do dia selecionado (filtrados pela quadra selecionada no modal, se houver)
   const agendamentosDoDia = useMemo(() => {
     return agendamentosAdmin
-      .filter((a) => a.dataHoraInicio.startsWith(dataSelecionada))
+      .filter((a) => {
+        const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
+        const matchQuadra = quadraSelecionadaAgendaId === 'TODAS' || a.quadraId === quadraSelecionadaAgendaId;
+        return matchData && matchQuadra;
+      })
       .sort((a, b) => a.dataHoraInicio.localeCompare(b.dataHoraInicio));
-  }, [agendamentosAdmin, dataSelecionada]);
+  }, [agendamentosAdmin, dataSelecionada, quadraSelecionadaAgendaId]);
 
   // Agendamentos filtrados pela aba de status do dia
   const agendamentosDoDiaFiltrados = useMemo(() => {
@@ -856,271 +1098,262 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Grid: Calendário Mensal (Esquerda) + Agenda do Dia (Direita) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Coluna Calendário Mensal */}
-            <div className="lg:col-span-7 bg-zinc-950 border border-zinc-850 rounded-2xl p-6 shadow-xl space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-zinc-300" />
-                    Calendário Mensal
-                  </h2>
-                </div>
+          {/* Calendário Mensal Full-Width Expandido */}
+          <div className="bg-zinc-950 border border-zinc-850 rounded-2xl p-6 sm:p-7 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-850/80 pb-5">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                  <CalendarIcon className="w-5 h-5 text-emerald-400" />
+                  Calendário Mensal de Ocupação
+                </h2>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Visão completa de disponibilidade. Clique em qualquer dia para abrir a agenda detalhada com os horários.
+                </p>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white px-2">{mesAnoExtenso}</span>
-                  <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
-                    <button
-                      onClick={() => mudarMes(-1)}
-                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition"
-                      title="Mês anterior"
+              {/* Controles de Filtros: Por Quadra e Por Status */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Seletor de Quadra */}
+                {minhasQuadras.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-400 font-medium">Quadra:</span>
+                    <select
+                      value={quadraFiltroCalendarId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setQuadraFiltroCalendarId(val === 'TODAS' ? 'TODAS' : Number(val));
+                      }}
+                      className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 transition"
                     >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => mudarMes(1)}
-                      className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition"
-                      title="Próximo mês"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                      <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
+                      {minhasQuadras.map((q) => (
+                        <option key={q.id_quadra} value={q.id_quadra}>
+                          {q.nome} {!q.ativa ? '(Inativa)' : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+                )}
+
+                {/* Filtro de Status no Calendário: Todos, Apenas Livres, Com Agendamentos, Com Bloqueios */}
+                <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFiltroCalendar('TODOS')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition ${
+                      statusFiltroCalendar === 'TODOS'
+                        ? 'bg-zinc-750 text-white shadow-sm font-semibold'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFiltroCalendar('LIVRES')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                      statusFiltroCalendar === 'LIVRES'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+                        : 'text-zinc-400 hover:text-emerald-400'
+                    }`}
+                    title="Destacar dias com horários disponíveis"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>Disponíveis</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFiltroCalendar('AGENDADOS')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                      statusFiltroCalendar === 'AGENDADOS'
+                        ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold'
+                        : 'text-zinc-400 hover:text-blue-400'
+                    }`}
+                    title="Filtrar dias que possuem agendamentos"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    <span>Agendados</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFiltroCalendar('BLOQUEADOS')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                      statusFiltroCalendar === 'BLOQUEADOS'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                        : 'text-zinc-400 hover:text-amber-400'
+                    }`}
+                    title="Filtrar dias que possuem horários ou dias bloqueados"
+                  >
+                    <Ban className="w-3 h-3 text-amber-400" />
+                    <span>Bloqueados</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Cabeçalho dos Dias da Semana */}
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-zinc-400 uppercase tracking-wider pb-2 border-b border-zinc-850">
-                <span>Dom</span>
-                <span>Seg</span>
-                <span>Ter</span>
-                <span>Qua</span>
-                <span>Qui</span>
-                <span>Sex</span>
-                <span>Sáb</span>
-              </div>
-
-              {/* Grade de Dias do Mês */}
-              <div className="grid grid-cols-7 gap-1.5">
-                {calendarDays.map((day, idx) => {
-                  const isSelected = dataSelecionada === day.iso;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => setDataSelecionada(day.iso)}
-                      className={`min-h-[64px] p-2 rounded-xl border flex flex-col justify-between items-start transition-all active:scale-[0.98] ${
-                        !day.isCurrentMonth
-                          ? 'opacity-25 bg-zinc-950 border-zinc-900 text-zinc-600 cursor-default'
-                          : isSelected
-                          ? 'bg-white text-zinc-950 border-white shadow-xl ring-2 ring-white z-10'
-                          : 'bg-zinc-900/50 border-zinc-850 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
-                      }`}
-                    >
-                      <div className="w-full flex items-center justify-between">
-                        <span
-                          className={`text-xs font-bold ${
-                            day.isToday && !isSelected
-                              ? 'w-5 h-5 rounded-full bg-white text-zinc-950 flex items-center justify-center font-extrabold'
-                              : ''
-                          }`}
-                        >
-                          {day.dayNum}
-                        </span>
-
-                        {day.count > 0 && (
-                          <Badge variant={isSelected ? 'active' : 'success'}>
-                            {day.count}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {day.count > 0 && day.isCurrentMonth && (
-                        <div
-                          className={`text-[11px] font-mono truncate w-full mt-1 ${
-                            isSelected ? 'text-zinc-900 font-bold' : 'text-emerald-400'
-                          }`}
-                        >
-                          {day.count === 1 ? '1 reserva' : `${day.count} reservas`}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+              {/* Navegação de Mês */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-sm font-bold text-white px-2 font-mono">{mesAnoExtenso}</span>
+                <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-0.5">
+                  <button
+                    onClick={() => mudarMes(-1)}
+                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition active:scale-95"
+                    title="Mês anterior"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => mudarMes(1)}
+                    className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition active:scale-95"
+                    title="Próximo mês"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Coluna Agenda do Dia Selecionado */}
-            <div className="lg:col-span-5 bg-zinc-950 border border-zinc-850 rounded-2xl p-6 shadow-xl space-y-4 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
-                  <div>
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-zinc-300" />
-                      Agenda do Dia
-                    </h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      Data: <strong className="text-white font-mono">{dataSelecionada.split('-').reverse().join('/')}</strong>
-                    </p>
-                  </div>
-                  <Badge variant="neutral">
-                    {agendamentosDoDia.length} {agendamentosDoDia.length === 1 ? 'total' : 'totais'}
-                  </Badge>
-                </div>
+            {/* Cabeçalho dos Dias da Semana */}
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-zinc-400 uppercase tracking-wider pb-2 border-b border-zinc-850/60">
+              <span className="text-red-400/90">Dom</span>
+              <span>Seg</span>
+              <span>Ter</span>
+              <span>Qua</span>
+              <span>Qui</span>
+              <span>Sex</span>
+              <span className="text-emerald-400/90">Sáb</span>
+            </div>
 
-                {/* Abas de Filtro: Ativos / Realizados / Cancelados */}
-                <div className="flex bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
+            {/* Grade de Dias do Mês Expandida */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-3">
+              {calendarDays.map((day, idx) => {
+                const isSelected = dataSelecionada === day.iso;
+
+                // Verificar se o dia atende ao filtro de status selecionado
+                const atendeFiltroStatus =
+                  statusFiltroCalendar === 'TODOS'
+                    ? true
+                    : statusFiltroCalendar === 'LIVRES'
+                    ? day.livres > 0
+                    : statusFiltroCalendar === 'AGENDADOS'
+                    ? day.count > 0
+                    : statusFiltroCalendar === 'BLOQUEADOS'
+                    ? day.bloqueados > 0
+                    : true;
+
+                const isDimmed = day.isCurrentMonth && !atendeFiltroStatus;
+
+                return (
                   <button
-                    onClick={() => setFiltroAgendaAdmin('ATIVOS')}
-                    className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
-                      filtroAgendaAdmin === 'ATIVOS'
-                        ? 'bg-white text-zinc-950 shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      if (!day.isCurrentMonth) return;
+                      abrirAgendaDoDia(day.iso);
+                    }}
+                    className={`min-h-[100px] sm:min-h-[115px] p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between items-start transition-all group ${
+                      !day.isCurrentMonth
+                        ? 'opacity-20 bg-zinc-950/40 border-zinc-900 text-zinc-600 cursor-default'
+                        : isDimmed
+                        ? 'opacity-30 bg-zinc-950/60 border-zinc-900/60 hover:opacity-75'
+                        : isSelected
+                        ? 'bg-zinc-900 border-white/60 shadow-xl ring-2 ring-white/40 z-10'
+                        : statusFiltroCalendar === 'LIVRES' && day.livres > 0
+                        ? 'bg-emerald-950/15 border-emerald-500/40 hover:border-emerald-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                        : statusFiltroCalendar === 'AGENDADOS' && day.count > 0
+                        ? 'bg-blue-950/20 border-blue-500/50 hover:border-blue-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                        : statusFiltroCalendar === 'BLOQUEADOS' && day.bloqueados > 0
+                        ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                        : 'bg-zinc-900/50 border-zinc-850 hover:border-emerald-500/50 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                     }`}
                   >
-                    <span>Ativos</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                      filtroAgendaAdmin === 'ATIVOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {contadoresAgendaDia.ativos}
-                    </span>
-                  </button>
+                    {/* Linha Superior: Dia e Tag Hoje */}
+                    <div className="w-full flex items-center justify-between">
+                      <span
+                        className={`text-xs sm:text-sm font-bold font-mono transition ${
+                          day.isToday
+                            ? 'w-6 h-6 rounded-full bg-emerald-400 text-zinc-950 flex items-center justify-center font-extrabold shadow-sm'
+                            : isSelected
+                            ? 'text-white'
+                            : 'text-zinc-300 group-hover:text-white'
+                        }`}
+                      >
+                        {day.dayNum}
+                      </span>
 
-                  <button
-                    onClick={() => setFiltroAgendaAdmin('REALIZADOS')}
-                    className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
-                      filtroAgendaAdmin === 'REALIZADOS'
-                        ? 'bg-white text-zinc-950 shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span>Realizados</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                      filtroAgendaAdmin === 'REALIZADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {contadoresAgendaDia.realizados}
-                    </span>
-                  </button>
+                      {day.isCurrentMonth && (
+                        <span className="text-[10px] text-zinc-500 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5">
+                          <span>abrir</span>
+                          <span>→</span>
+                        </span>
+                      )}
+                    </div>
 
-                  <button
-                    onClick={() => setFiltroAgendaAdmin('CANCELADOS')}
-                    className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
-                      filtroAgendaAdmin === 'CANCELADOS'
-                        ? 'bg-white text-zinc-950 shadow-sm'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span>Cancelados</span>
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                      filtroAgendaAdmin === 'CANCELADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {contadoresAgendaDia.cancelados}
-                    </span>
-                  </button>
-                </div>
-
-                {agendamentosDoDiaFiltrados.length === 0 ? (
-                  <EmptyState
-                    icon={CalendarIcon}
-                    title={
-                      filtroAgendaAdmin === 'ATIVOS'
-                        ? 'Nenhum jogo ativo agendado para este dia'
-                        : filtroAgendaAdmin === 'REALIZADOS'
-                        ? 'Nenhum jogo finalizado para este dia'
-                        : 'Nenhum jogo cancelado para este dia'
-                    }
-                    description="Selecione outro dia no calendário ou alterne a aba de status acima."
-                    className="py-14"
-                  />
-                ) : (
-                  <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
-                    {agendamentosDoDiaFiltrados.map((ag) => {
-                      const isCancelado = ag.status === 'CANCELADO';
-                      const isPassado = new Date(ag.dataHoraFim) < new Date();
-                      const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
-                      const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
-                      const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
-
-                      return (
-                        <div
-                          key={ag.id_agendamento}
-                          className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-850 space-y-2.5 transition hover:border-zinc-700"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              {/* Quadra Alugada */}
-                              <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                {ag.nomeQuadra}
-                              </div>
-
-                              <div className="text-xs text-zinc-400">
-                                Atleta: <strong className="text-zinc-200">{ag.nomeUsuario}</strong>
-                              </div>
-
-                              {ag.telefoneUsuario && (
-                                <div className="text-xs text-zinc-400 flex items-center gap-1.5 font-mono">
-                                  <Phone className="w-3 h-3 text-zinc-500" />
-                                  <span>{ag.telefoneUsuario}</span>
-                                </div>
-                              )}
-
-                              {ag.status === 'PENDENTE' && !isPassado && (() => {
-                                const tempo = getTempoRestantePix(ag.criadoEm);
-                                return tempo ? (
-                                  <div className="text-[11px] text-amber-400 font-mono flex items-center gap-1.5 mt-1 font-semibold">
-                                    <Clock className="w-3 h-3 animate-pulse text-amber-400" />
-                                    <span>Aguardando Pix ({tempo})</span>
-                                  </div>
-                                ) : (
-                                  <div className="text-[11px] text-red-400 font-mono flex items-center gap-1.5 mt-1 font-semibold">
-                                    <Clock className="w-3 h-3 text-red-400" />
-                                    <span>Pix expirado</span>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-
-                            {/* Status e Botão Ver Quadra lado a lado fixos à direita */}
-                            <div className="flex items-center gap-2 shrink-0">
-                              {quadraCorrespondente && (
-                                <button
-                                  type="button"
-                                  onClick={() => setQuadraDetalhes(quadraCorrespondente)}
-                                  title="Ver fotos e informações completas desta quadra"
-                                  className="p-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 transition active:scale-95 flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1"
-                                >
-                                  <Info className="w-3.5 h-3.5 text-emerald-400" />
-                                  <span>Ver Quadra</span>
-                                </button>
-                              )}
-
-                              <Badge variant={isCancelado ? 'outline' : isPassado ? 'neutral' : ag.status === 'PENDENTE' ? 'warning' : 'success'}>
-                                {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
-                              </Badge>
-                            </div>
+                    {/* Linha Central / Inferior: Contadores de Horários Livres, Agendados e Bloqueados */}
+                    {day.isCurrentMonth && (
+                      <div className="w-full space-y-1 mt-2">
+                        {/* Horários Agendados */}
+                        {day.count > 0 && (
+                          <div
+                            className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                              statusFiltroCalendar === 'AGENDADOS'
+                                ? 'bg-blue-500/25 border-blue-400 text-blue-200 ring-1 ring-blue-500/30 font-semibold'
+                                : 'bg-blue-500/15 border-blue-500/30 text-blue-300'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                              <span className="truncate">Agendados</span>
+                            </span>
+                            <span className="font-bold">{day.count}</span>
                           </div>
+                        )}
 
-                          <div className="flex items-center gap-2 text-xs text-zinc-300 font-mono">
-                            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                            <span>{horaInicio} às {horaFim}</span>
+                        {/* Horários Bloqueados */}
+                        {day.bloqueados > 0 && (
+                          <div
+                            className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                              statusFiltroCalendar === 'BLOQUEADOS'
+                                ? 'bg-amber-500/25 border-amber-400 text-amber-200 ring-1 ring-amber-500/30 font-semibold'
+                                : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1">
+                              <Ban className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                              <span className="truncate">Bloqueados</span>
+                            </span>
+                            <span className="font-bold">{day.bloqueados}</span>
                           </div>
+                        )}
 
-                          <div className="flex items-center justify-between pt-2 border-t border-zinc-850 text-xs">
-                            <span className="text-zinc-300 font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
-                            {!isCancelado && !isPassado && (
-                              <button
-                                onClick={() => cancelarAgendamento(ag.id_agendamento)}
-                                className="text-xs text-red-400 hover:text-red-300 font-semibold transition underline underline-offset-2 active:scale-95"
-                              >
-                                Cancelar
-                              </button>
-                            )}
+                        {/* Horários Livres (ou Indicador de Data Passada) */}
+                        {day.isPassado ? (
+                          <div className="w-full px-1.5 py-0.5 rounded-md border border-zinc-800/80 bg-zinc-900/60 text-zinc-500 text-[10px] sm:text-[11px] font-mono flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                              <span className="truncate">Encerrado</span>
+                            </span>
+                            <span className="text-[9px] uppercase font-semibold">Passado</span>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                        ) : (
+                          <div
+                            className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                              statusFiltroCalendar === 'LIVRES'
+                                ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-500/30 font-semibold'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                            }`}
+                          >
+                            <span className="flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                              <span className="truncate">Livres</span>
+                            </span>
+                            <span className="font-bold">{day.livres}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1177,6 +1410,39 @@ export const AdminDashboard: React.FC = () => {
                     <div className="text-sm font-semibold text-zinc-300 font-mono">
                       R$ {q.valorHora.toFixed(2)} <span className="text-xs font-normal text-zinc-500">/ hora</span>
                     </div>
+
+                    {q.dataLimiteAgendamento && (
+                      <div className="text-[11px] text-amber-400 font-mono flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-amber-400" />
+                        <span>Limite: {q.dataLimiteAgendamento.split('-').reverse().join('/')}</span>
+                      </div>
+                    )}
+
+                    {/* Alerta / Badge Interativo de Horários Bloqueados */}
+                    {mapaBloqueiosPorQuadra[q.id_quadra]?.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => abrirGerenciamentoBloqueios(q)}
+                        className="w-full text-left p-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 transition group flex items-start gap-2 active:scale-[0.99]"
+                        title="Clique para ver detalhes de datas e horários bloqueados desta quadra"
+                      >
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                        <div className="text-[11px] leading-tight space-y-0.5">
+                          <div className="font-semibold text-amber-300 flex items-center gap-1">
+                            <span>{mapaBloqueiosPorQuadra[q.id_quadra].length} bloqueio(s) ativo(s)</span>
+                            <span className="text-[9px] text-amber-400/70 font-mono group-hover:underline">ver horários →</span>
+                          </div>
+                          <p className="text-[10px] text-zinc-400 line-clamp-1">
+                            {mapaBloqueiosPorQuadra[q.id_quadra].slice(0, 2).map((b) => {
+                              const dia = b.data.split('-').reverse().slice(0, 2).join('/');
+                              const hora = !b.horaInicio || !b.horaFim ? 'Dia todo' : `${b.horaInicio.slice(0, 5)}-${b.horaFim.slice(0, 5)}`;
+                              return `${dia} (${hora})`;
+                            }).join(', ')}
+                            {mapaBloqueiosPorQuadra[q.id_quadra].length > 2 && '...'}
+                          </p>
+                        </div>
+                      </button>
+                    )}
                   </div>
 
                   {/* Ações */}
@@ -1194,7 +1460,25 @@ export const AdminDashboard: React.FC = () => {
                       <span>{q.ativa ? 'ATIVA' : 'INATIVA'}</span>
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => abrirGerenciamentoBloqueios(q)}
+                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition active:scale-[0.98] ${
+                          mapaBloqueiosPorQuadra[q.id_quadra]?.length > 0
+                            ? 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/50 text-amber-300 shadow-sm'
+                            : 'bg-zinc-900 hover:bg-zinc-850 border-zinc-800 text-zinc-300 hover:text-white'
+                        }`}
+                        title="Gerenciar bloqueios de horários e datas desta quadra"
+                      >
+                        <Ban className={`w-3.5 h-3.5 ${mapaBloqueiosPorQuadra[q.id_quadra]?.length > 0 ? 'text-amber-400' : 'text-zinc-400'}`} />
+                        <span>Bloqueios</span>
+                        {mapaBloqueiosPorQuadra[q.id_quadra]?.length > 0 && (
+                          <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-amber-400 text-zinc-950 font-bold">
+                            {mapaBloqueiosPorQuadra[q.id_quadra].length}
+                          </span>
+                        )}
+                      </button>
+
                       <button
                         onClick={() => setQuadraDetalhes(q)}
                         className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-white text-xs transition active:scale-[0.98]"
@@ -1312,6 +1596,21 @@ export const AdminDashboard: React.FC = () => {
                   placeholder="Ex: Quadra de saibro coberta, com iluminação LED de alta potência, vestiários com ducha quente e arquibancada."
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white transition resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  Data Limite de Agendamento <span className="text-zinc-500 font-normal">(Opcional)</span>
+                </label>
+                <input
+                  type="date"
+                  value={dataLimiteAgendamento}
+                  onChange={(e) => setDataLimiteAgendamento(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white transition [color-scheme:dark]"
+                />
+                <p className="text-[11px] text-zinc-500 mt-1">
+                  Clientes não poderão agendar datas posteriores a este dia. Deixe em branco para permitir reservas contínuas.
+                </p>
               </div>
 
               {/* Seção Horários de Funcionamento */}
@@ -1564,6 +1863,698 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE GERENCIAMENTO DE BLOQUEIOS */}
+      {bloqueioModalQuadra && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div
+            onClick={() => setBloqueioModalQuadra(null)}
+            className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+          />
+
+          <div className="relative w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 sm:p-6 border-b border-zinc-850 flex items-center justify-between gap-4 bg-zinc-950">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-950/40 border border-amber-800/40 text-amber-400">
+                  <Ban className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Bloqueios de Horário e Dias
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    Quadra: <strong className="text-zinc-200">{bloqueioModalQuadra.nome}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setBloqueioModalQuadra(null)}
+                className="p-2 rounded-full bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800 transition active:scale-95"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto p-5 sm:p-6 space-y-6 scrollbar-thin">
+              {/* Formulário Novo Bloqueio */}
+              <form onSubmit={handleCriarBloqueio} className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3.5">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-emerald-400" />
+                  Novo Bloqueio
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                      Data *
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={bloqueioData}
+                      onChange={(e) => setBloqueioData(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                      Hora Início <span className="text-zinc-500 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={bloqueioHoraInicio}
+                      onChange={(e) => setBloqueioHoraInicio(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition [color-scheme:dark]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                      Hora Fim <span className="text-zinc-500 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="time"
+                      value={bloqueioHoraFim}
+                      onChange={(e) => setBloqueioHoraFim(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition [color-scheme:dark]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                    Motivo do Bloqueio <span className="text-zinc-500 font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={bloqueioMotivo}
+                    onChange={(e) => setBloqueioMotivo(e.target.value)}
+                    placeholder="Ex: Manutenção na rede, reforma no piso, evento fechado..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-white transition"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Deixe horários em branco para bloquear o dia inteiro.
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-zinc-950 transition active:scale-95 shadow-md flex items-center gap-1.5"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Adicionar Bloqueio</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Lista de Bloqueios Existentes */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+                  <span>Bloqueios Cadastrados ({bloqueiosQuadra.length})</span>
+                </h4>
+
+                {loadingBloqueios ? (
+                  <div className="py-8 text-center text-zinc-500 text-xs font-mono">
+                    Carregando bloqueios...
+                  </div>
+                ) : bloqueiosQuadra.length === 0 ? (
+                  <div className="py-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+                    Nenhum bloqueio cadastrado para esta quadra.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {bloqueiosQuadra.map((b) => {
+                      const isDiaInteiro = !b.horaInicio || !b.horaFim;
+                      return (
+                        <div
+                          key={b.id}
+                          className="p-3.5 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-between gap-3"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white font-mono">
+                                {b.data.split('-').reverse().join('/')}
+                              </span>
+                              <Badge variant={isDiaInteiro ? 'danger' : 'warning'} className="text-[10px]">
+                                {isDiaInteiro ? 'DIA INTEIRO' : `${b.horaInicio?.slice(0, 5)} às ${b.horaFim?.slice(0, 5)}`}
+                              </Badge>
+                            </div>
+
+                            {b.motivo && (
+                              <p className="text-xs text-zinc-400">
+                                Motivo: <span className="text-zinc-200">{b.motivo}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverBloqueio(b.id)}
+                            className="p-2 rounded-lg bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 hover:text-red-300 text-xs transition active:scale-95"
+                            title="Remover este bloqueio"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE AGENDA DO DIA SELECIONADO (Abre ao clicar no dia do calendário) */}
+      {modalAgendaDiaOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header do Modal */}
+            <div className="p-5 sm:p-6 border-b border-zinc-850 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-emerald-400" />
+                  Agenda do Dia
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Visualizando reservas e disponibilidade para <strong className="text-white font-mono">{dataSelecionada.split('-').reverse().join('/')}</strong>
+                </p>
+              </div>
+
+              <button
+                onClick={() => setModalAgendaDiaOpen(false)}
+                className="p-2 rounded-full bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800 transition active:scale-95"
+                title="Fechar janela"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Sub-header com Seletor de Quadra, Filtros e Abas de Visualização */}
+            <div className="px-5 sm:px-6 py-3 border-b border-zinc-850/80 bg-zinc-900/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Linha da Esquerda: Seletor de Quadra + Filtro de Status */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-zinc-400 font-medium">Quadra:</span>
+                  <select
+                    value={quadraSelecionadaAgendaId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuadraSelecionadaAgendaId(val === 'TODAS' ? 'TODAS' : Number(val));
+                    }}
+                    className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 transition"
+                  >
+                    <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
+                    {minhasQuadras.map((q) => (
+                      <option key={q.id_quadra} value={q.id_quadra}>
+                        {q.nome} {!q.ativa ? '(Inativa)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Status dos Horários no Modal */}
+                {visualizacaoAgendaAba === 'GRADE_HORARIOS' && (
+                  <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setStatusFiltroModal('TODOS')}
+                      className={`px-2.5 py-1 rounded-lg font-medium transition ${
+                        statusFiltroModal === 'TODOS'
+                          ? 'bg-zinc-750 text-white shadow-sm font-semibold'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatusFiltroModal('LIVRES')}
+                      className={`px-2 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                        statusFiltroModal === 'LIVRES'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
+                          : 'text-zinc-400 hover:text-emerald-400'
+                      }`}
+                      title="Exibir apenas quadras com horários disponíveis"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span>Disponíveis</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatusFiltroModal('AGENDADOS')}
+                      className={`px-2 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                        statusFiltroModal === 'AGENDADOS'
+                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold'
+                          : 'text-zinc-400 hover:text-blue-400'
+                      }`}
+                      title="Exibir apenas quadras com horários agendados"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-blue-400" />
+                      <span>Agendados</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatusFiltroModal('BLOQUEADOS')}
+                      className={`px-2 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                        statusFiltroModal === 'BLOQUEADOS'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                          : 'text-zinc-400 hover:text-amber-400'
+                      }`}
+                      title="Exibir apenas quadras com horários bloqueados"
+                    >
+                      <Ban className="w-3 h-3 text-amber-400" />
+                      <span>Bloqueados</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Toggle de Abas: Grade de Horários vs Reservas */}
+              <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs shrink-0 self-start md:self-center">
+                <button
+                  type="button"
+                  onClick={() => setVisualizacaoAgendaAba('GRADE_HORARIOS')}
+                  className={`px-3 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-95 ${
+                    visualizacaoAgendaAba === 'GRADE_HORARIOS'
+                      ? 'bg-white text-zinc-950 shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  <span>Grade</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisualizacaoAgendaAba('LISTA_RESERVAS')}
+                  className={`px-3 py-1.5 font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap active:scale-95 ${
+                    visualizacaoAgendaAba === 'LISTA_RESERVAS'
+                      ? 'bg-white text-zinc-950 shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Reservas ({agendamentosDoDiaFiltrados.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo do Modal */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 scrollbar-thin">
+              {visualizacaoAgendaAba === 'GRADE_HORARIOS' ? (
+                /* VISUALIZAÇÃO: GRADE DE HORÁRIOS (LIVRES, BLOQUEADOS E AGENDADOS) */
+                <div className="space-y-6">
+                  {/* Legenda Resumida */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-zinc-900/60 border border-zinc-800 p-3 rounded-xl">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-1.5 font-medium text-emerald-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        <span>Livre (Disponível)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-medium text-blue-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-400" />
+                        <span>Agendado / Ocupado</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-medium text-amber-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                        <span>Bloqueado pelo Admin</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-medium text-zinc-400">
+                        <span className="w-2.5 h-2.5 rounded-full bg-zinc-500" />
+                        <span>Data / Horário Passado</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {loadingHorariosModal ? (
+                    <div className="py-16 text-center text-zinc-500 text-xs font-mono">
+                      Carregando horários das quadras...
+                    </div>
+                  ) : (
+                    /* Lista por Quadra com filtro por status */
+                    (() => {
+                      const quadrasBase =
+                        quadraSelecionadaAgendaId === 'TODAS'
+                          ? minhasQuadras
+                          : minhasQuadras.filter((q) => q.id_quadra === quadraSelecionadaAgendaId);
+
+                      // Filtrar as quadras que possuem o status selecionado
+                      const quadrasFiltradas = quadrasBase.filter((quadra) => {
+                        if (statusFiltroModal === 'TODOS') return true;
+                        const slots = horariosDisponiveisPorQuadra[quadra.id_quadra] || [];
+                        const countLivres = slots.filter((s) => s.status === 'DISPONIVEL' || s.disponivel).length;
+                        const countOcupados = slots.filter((s) => s.status === 'AGENDADO' || (!s.disponivel && s.motivo?.toLowerCase().includes('ocupado'))).length;
+                        const countBloqueados = slots.filter((s) => s.status === 'BLOQUEADO' || (!s.disponivel && (s.motivo?.toLowerCase().includes('bloque') || s.motivo?.toLowerCase().includes('limite')))).length;
+
+                        if (statusFiltroModal === 'LIVRES') return countLivres > 0;
+                        if (statusFiltroModal === 'AGENDADOS') return countOcupados > 0;
+                        if (statusFiltroModal === 'BLOQUEADOS') return countBloqueados > 0;
+                        return true;
+                      });
+
+                      if (quadrasFiltradas.length === 0) {
+                        return (
+                          <div className="py-12 text-center text-zinc-500 text-xs font-mono bg-zinc-900/30 border border-zinc-850 rounded-2xl p-6">
+                            Nenhuma quadra encontrada com horários{' '}
+                            {statusFiltroModal === 'LIVRES' ? 'disponíveis' : statusFiltroModal === 'AGENDADOS' ? 'agendados' : 'bloqueados'}{' '}
+                            para este dia.
+                          </div>
+                        );
+                      }
+
+                      return quadrasFiltradas.map((quadra) => {
+                        const slots = horariosDisponiveisPorQuadra[quadra.id_quadra] || [];
+                        const bloqueiosDestaQuadra = (mapaBloqueiosPorQuadra[quadra.id_quadra] || []).filter(
+                          (b) => b.data === dataSelecionada
+                        );
+
+                        const countLivres = slots.filter((s) => s.status === 'DISPONIVEL' || s.disponivel).length;
+                        const countOcupados = slots.filter((s) => s.status === 'AGENDADO' || (!s.disponivel && s.motivo?.toLowerCase().includes('ocupado'))).length;
+                        const countBloqueados = slots.filter((s) => s.status === 'BLOQUEADO' || (!s.disponivel && (s.motivo?.toLowerCase().includes('bloque') || s.motivo?.toLowerCase().includes('limite')))).length;
+                        const countPassados = slots.filter((s) => s.status === 'INDISPONIVEL' || (!s.disponivel && s.motivo?.toLowerCase().includes('passado'))).length;
+
+                      return (
+                        <div key={quadra.id_quadra} className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-850 space-y-3">
+                          {/* Cabeçalho da Quadra */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-850/60 pb-2.5">
+                            <div>
+                              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                <span>{quadra.nome}</span>
+                                <Badge variant={quadra.ativa ? 'success' : 'outline'} className="text-[9px]">
+                                  {quadra.ativa ? 'ATIVA' : 'INATIVA'}
+                                </Badge>
+                              </h4>
+                              <p className="text-[11px] text-zinc-400 font-mono">
+                                {quadra.tipoEsporte.replace('_', ' ')} • R$ {quadra.valorHora.toFixed(2)}/h
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                              <span className="text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-lg">
+                                {countLivres} livres
+                              </span>
+                              <span className="text-blue-400 bg-blue-950/40 border border-blue-500/30 px-2 py-0.5 rounded-lg">
+                                {countOcupados} agendados
+                              </span>
+                              {countBloqueados > 0 && (
+                                <span className="text-amber-400 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-lg">
+                                  {countBloqueados} bloqueados
+                                </span>
+                              )}
+                              {countPassados > 0 && (
+                                <span className="text-zinc-400 bg-zinc-800/40 border border-zinc-700/40 px-2 py-0.5 rounded-lg">
+                                  {countPassados} passados
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Se houver bloqueio cadastrado para a quadra hoje */}
+                          {bloqueiosDestaQuadra.length > 0 && (
+                            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                              <Ban className="w-4 h-4 text-amber-400 shrink-0" />
+                              <span className="text-[11px]">
+                                <strong>Bloqueio ativo:</strong>{' '}
+                                {bloqueiosDestaQuadra.map((b) => {
+                                  const horario = !b.horaInicio || !b.horaFim ? 'Dia todo' : `${b.horaInicio.slice(0, 5)} às ${b.horaFim.slice(0, 5)}`;
+                                  const mot = b.motivo ? ` (${b.motivo})` : '';
+                                  return `${horario}${mot}`;
+                                }).join(', ')}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Grade de Slots de Horários */}
+                          {slots.length === 0 ? (
+                            <div className="py-4 text-center text-xs text-zinc-500 font-mono">
+                              Sem funcionamento configurado para este dia da semana.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                              {slots.map((slot, sIdx) => {
+                                const isLivre = slot.status === 'DISPONIVEL' || slot.disponivel;
+                                const isOcupado = slot.status === 'AGENDADO' || (!slot.disponivel && slot.motivo?.toLowerCase().includes('ocupado'));
+                                const isPassado = slot.status === 'INDISPONIVEL' || (!slot.disponivel && slot.motivo?.toLowerCase().includes('passado'));
+                                const isBloqueado = !isLivre && !isOcupado && !isPassado;
+
+                                // Encontrar agendamento correspondente a este slot se for agendado
+                                const horaInicioSlot = slot.inicio.slice(0, 5);
+                                const agendamentoCorrespondente = isOcupado
+                                  ? agendamentosAdmin.find((a) => {
+                                      const matchQuadra = a.quadraId === quadra.id_quadra;
+                                      const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
+                                      const aHoraInicio = a.dataHoraInicio.split('T')[1]?.substring(0, 5);
+                                      const aHoraFim = a.dataHoraFim.split('T')[1]?.substring(0, 5);
+                                      return matchQuadra && matchData && a.status !== 'CANCELADO' && horaInicioSlot >= aHoraInicio && horaInicioSlot < aHoraFim;
+                                    })
+                                  : null;
+
+                                const handleClickSlot = () => {
+                                  if (isOcupado && agendamentoCorrespondente) {
+                                    setQuadraSelecionadaAgendaId(quadra.id_quadra);
+                                    setHighlightedAgendamentoId(agendamentoCorrespondente.id_agendamento);
+                                    
+                                    // Ajustar filtro da aba de reservas para exibir este agendamento caso esteja realizado
+                                    const isAgPassado = new Date(agendamentoCorrespondente.dataHoraFim) < new Date();
+                                    setFiltroAgendaAdmin(isAgPassado ? 'REALIZADOS' : 'ATIVOS');
+                                    setVisualizacaoAgendaAba('LISTA_RESERVAS');
+                                  }
+                                };
+
+                                return (
+                                  <div
+                                    key={sIdx}
+                                    onClick={handleClickSlot}
+                                    className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center transition ${
+                                      isLivre
+                                        ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-400 hover:border-emerald-500/60'
+                                        : isOcupado
+                                        ? 'bg-blue-950/40 border-blue-500/40 text-blue-300 hover:border-blue-400 hover:bg-blue-900/40 cursor-pointer shadow-sm active:scale-95 group/slot'
+                                        : isPassado
+                                        ? 'bg-zinc-900/40 border-zinc-800 text-zinc-500 opacity-60'
+                                        : isBloqueado
+                                        ? 'bg-amber-950/30 border-amber-500/30 text-amber-300'
+                                        : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                                    }`}
+                                    title={
+                                      isOcupado
+                                        ? `Agendado por ${agendamentoCorrespondente?.nomeUsuario || 'Atleta'}. Clique para ver a reserva.`
+                                        : slot.motivo || (isLivre ? 'Livre para agendamento' : isPassado ? 'Horário já transcorrido (passado)' : 'Bloqueado pelo administrador')
+                                    }
+                                  >
+                                    <span className="text-xs font-bold font-mono">
+                                      {slot.inicio.slice(0, 5)} - {slot.fim.slice(0, 5)}
+                                    </span>
+                                    <span className={`text-[9px] font-semibold uppercase mt-0.5 flex items-center gap-1 ${
+                                      isOcupado ? 'group-hover/slot:underline' : ''
+                                    }`}>
+                                      <span>{isLivre ? 'Livre' : isOcupado ? 'Agendado' : isPassado ? 'Passado' : isBloqueado ? 'Bloqueado' : 'Indisponível'}</span>
+                                      {isOcupado && <span className="text-[10px]">↗</span>}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  })()
+                )}
+              </div>
+              ) : (
+                /* VISUALIZAÇÃO: LISTA DETALHADA DE RESERVAS */
+                <div className="space-y-5">
+                  {/* Abas de Filtro: Ativos / Realizados / Cancelados */}
+                  <div className="flex bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setFiltroAgendaAdmin('ATIVOS')}
+                      className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                        filtroAgendaAdmin === 'ATIVOS'
+                          ? 'bg-white text-zinc-950 shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Ativos</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                        filtroAgendaAdmin === 'ATIVOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {contadoresAgendaDia.ativos}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFiltroAgendaAdmin('REALIZADOS')}
+                      className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                        filtroAgendaAdmin === 'REALIZADOS'
+                          ? 'bg-white text-zinc-950 shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Realizados</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                        filtroAgendaAdmin === 'REALIZADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {contadoresAgendaDia.realizados}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFiltroAgendaAdmin('CANCELADOS')}
+                      className={`flex-1 py-1.5 px-2 font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                        filtroAgendaAdmin === 'CANCELADOS'
+                          ? 'bg-white text-zinc-950 shadow-sm'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <span>Cancelados</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                        filtroAgendaAdmin === 'CANCELADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
+                      }`}>
+                        {contadoresAgendaDia.cancelados}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Lista dos Agendamentos do Dia */}
+                  {agendamentosDoDiaFiltrados.length === 0 ? (
+                    <EmptyState
+                      icon={CalendarIcon}
+                      title={
+                        filtroAgendaAdmin === 'ATIVOS'
+                          ? 'Nenhum jogo ativo agendado para este dia'
+                          : filtroAgendaAdmin === 'REALIZADOS'
+                          ? 'Nenhum jogo finalizado para este dia'
+                          : 'Nenhum jogo cancelado para este dia'
+                      }
+                      description="Nenhuma reserva localizada com este status para o dia selecionado."
+                      className="py-12"
+                    />
+                  ) : (
+                    <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
+                      {agendamentosDoDiaFiltrados.map((ag) => {
+                        const isCancelado = ag.status === 'CANCELADO';
+                        const isPassado = new Date(ag.dataHoraFim) < new Date();
+                        const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
+                        const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
+                        const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
+                        const isHighlighted = ag.id_agendamento === highlightedAgendamentoId;
+
+                        return (
+                          <div
+                            key={ag.id_agendamento}
+                            className={`p-4 rounded-xl border space-y-2.5 transition-all duration-300 ${
+                              isHighlighted
+                                ? 'bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/50 shadow-lg shadow-blue-950/50'
+                                : 'bg-zinc-900/60 border-zinc-850 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="space-y-1">
+                                {/* Quadra Alugada */}
+                                <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                  {ag.nomeQuadra}
+                                </div>
+
+                                <div className="text-xs text-zinc-400">
+                                  Atleta: <strong className="text-zinc-200">{ag.nomeUsuario}</strong>
+                                </div>
+
+                                {ag.telefoneUsuario && (
+                                  <div className="text-xs text-zinc-400 flex items-center gap-1.5 font-mono">
+                                    <Phone className="w-3 h-3 text-zinc-500" />
+                                    <span>{ag.telefoneUsuario}</span>
+                                  </div>
+                                )}
+
+                                {ag.status === 'PENDENTE' && !isPassado && (() => {
+                                  const tempo = getTempoRestantePix(ag.criadoEm);
+                                  return tempo ? (
+                                    <div className="text-[11px] text-amber-400 font-mono flex items-center gap-1.5 mt-1 font-semibold">
+                                      <Clock className="w-3 h-3 animate-pulse text-amber-400" />
+                                      <span>Aguardando Pix ({tempo})</span>
+                                    </div>
+                                  ) : (
+                                    <div className="text-[11px] text-red-400 font-mono flex items-center gap-1.5 mt-1 font-semibold">
+                                      <Clock className="w-3 h-3 text-red-400" />
+                                      <span>Pix expirado</span>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+
+                              {/* Status e Botão Ver Quadra lado a lado fixos à direita */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                {quadraCorrespondente && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setModalAgendaDiaOpen(false);
+                                      setQuadraDetalhes(quadraCorrespondente);
+                                    }}
+                                    title="Ver fotos e informações completas desta quadra"
+                                    className="p-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 transition active:scale-95 flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1"
+                                  >
+                                    <Info className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Ver Quadra</span>
+                                  </button>
+                                )}
+
+                                <Badge variant={isCancelado ? 'outline' : isPassado ? 'neutral' : ag.status === 'PENDENTE' ? 'warning' : 'success'}>
+                                  {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-zinc-300 font-mono">
+                              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>{horaInicio} às {horaFim}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-zinc-850 text-xs">
+                              <span className="text-zinc-300 font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
+                              {!isCancelado && !isPassado && (
+                                <button
+                                  type="button"
+                                  onClick={() => cancelarAgendamento(ag.id_agendamento)}
+                                  className="text-xs text-red-400 hover:text-red-300 font-semibold transition underline underline-offset-2 active:scale-95"
+                                >
+                                  Cancelar Agendamento
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="p-4 border-t border-zinc-850 bg-zinc-950 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setModalAgendaDiaOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition active:scale-95"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

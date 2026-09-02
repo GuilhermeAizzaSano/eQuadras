@@ -57,6 +57,9 @@ public class Quadra {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
+    @Column(name = "data_limite_agendamento")
+    private java.time.LocalDate dataLimiteAgendamento;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "quadra_fotos", joinColumns = @JoinColumn(name = "quadra_id"))
     @Column(name = "foto_url")
@@ -74,7 +77,7 @@ public class Quadra {
 
     public Quadra() {}
 
-    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, List<DisponibilidadeDia> disponibilidades, Usuario admin) {
+    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, java.time.LocalDate dataLimiteAgendamento, List<String> fotos, List<DisponibilidadeDia> disponibilidades, Usuario admin) {
         this.id_quadra = id_quadra;
         this.nome = nome;
         this.tipoEsporte = tipoEsporte;
@@ -88,13 +91,18 @@ public class Quadra {
         this.latitude = latitude;
         this.longitude = longitude;
         this.descricao = descricao;
+        this.dataLimiteAgendamento = dataLimiteAgendamento;
         this.fotos = fotos != null ? fotos : new ArrayList<>();
         this.disponibilidades = disponibilidades != null ? disponibilidades : new ArrayList<>();
         this.admin = admin;
     }
 
+    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, List<DisponibilidadeDia> disponibilidades, Usuario admin) {
+        this(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, null, fotos, disponibilidades, admin);
+    }
+
     public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, Usuario admin) {
-        this(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, fotos, new ArrayList<>(), admin);
+        this(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, null, fotos, new ArrayList<>(), admin);
     }
 
     @PrePersist
@@ -149,6 +157,9 @@ public class Quadra {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
+    public java.time.LocalDate getDataLimiteAgendamento() { return dataLimiteAgendamento; }
+    public void setDataLimiteAgendamento(java.time.LocalDate dataLimiteAgendamento) { this.dataLimiteAgendamento = dataLimiteAgendamento; }
+
     public List<String> getFotos() { return fotos != null ? fotos : (fotos = new ArrayList<>()); }
     public void setFotos(List<String> fotos) { this.fotos = fotos; }
 
@@ -189,6 +200,7 @@ public class Quadra {
         private Double latitude;
         private Double longitude;
         private String descricao;
+        private java.time.LocalDate dataLimiteAgendamento;
         private List<String> fotos = new ArrayList<>();
         private List<DisponibilidadeDia> disponibilidades = new ArrayList<>();
         private Usuario admin;
@@ -206,12 +218,13 @@ public class Quadra {
         public QuadraBuilder latitude(Double latitude) { this.latitude = latitude; return this; }
         public QuadraBuilder longitude(Double longitude) { this.longitude = longitude; return this; }
         public QuadraBuilder descricao(String descricao) { this.descricao = descricao; return this; }
+        public QuadraBuilder dataLimiteAgendamento(java.time.LocalDate dataLimiteAgendamento) { this.dataLimiteAgendamento = dataLimiteAgendamento; return this; }
         public QuadraBuilder fotos(List<String> fotos) { this.fotos = fotos; return this; }
         public QuadraBuilder disponibilidades(List<DisponibilidadeDia> disponibilidades) { this.disponibilidades = disponibilidades; return this; }
         public QuadraBuilder admin(Usuario admin) { this.admin = admin; return this; }
 
         public Quadra build() {
-            return new Quadra(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, fotos, disponibilidades, admin);
+            return new Quadra(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, dataLimiteAgendamento, fotos, disponibilidades, admin);
         }
     }
 }

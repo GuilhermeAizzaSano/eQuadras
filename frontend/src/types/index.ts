@@ -26,6 +26,16 @@ export interface DisponibilidadeDia {
   horaFim: string;    // "23:00" ou "23:00:00"
 }
 
+export interface BloqueioHorario {
+  id: number;
+  quadraId: number;
+  data: string;         // "YYYY-MM-DD"
+  horaInicio?: string;  // "HH:mm:ss" ou "HH:mm" — undefined = dia inteiro
+  horaFim?: string;     // "HH:mm:ss" ou "HH:mm" — undefined = dia inteiro
+  motivo?: string;
+  criadoEm: string;
+}
+
 export interface Quadra {
   id_quadra: number;
   nome: string;
@@ -40,14 +50,19 @@ export interface Quadra {
   latitude?: number;
   longitude?: number;
   descricao?: string;
+  dataLimiteAgendamento?: string;
   fotos?: string[];
   disponibilidades?: DisponibilidadeDia[];
+  bloqueios?: BloqueioHorario[];
 }
+
+export type StatusHorario = 'DISPONIVEL' | 'BLOQUEADO' | 'AGENDADO' | 'INDISPONIVEL';
 
 export interface HorarioDisponivel {
   inicio: string; // "14:00:00"
   fim: string;    // "15:00:00"
   disponivel: boolean;
+  status?: StatusHorario;
   motivo: string;
 }
 

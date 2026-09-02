@@ -26,7 +26,10 @@ public class QuadraController {
         this.quadraService = quadraService;
     }
 
-    @Operation(summary = "Cadastrar nova quadra (Admin)", description = "Cria uma nova quadra esportiva com horários customizados por dia da semana. Requer ROLE_ADMIN.")
+    @Operation(
+            summary = "Cadastrar nova quadra (Admin)",
+            description = "Cria uma nova quadra esportiva definindo nome, tipo de esporte, valor/hora, localização, data limite de agendamento (opcional), até 5 fotos e grade personalizada de horários por dia da semana (disponibilidades). Requer ROLE_ADMIN."
+    )
     @PostMapping
     public ResponseEntity<QuadraResponseDTO> cadastrar(@RequestBody @Valid QuadraCriacaoDTO dto,
                                                        @UsuarioLogado UsuarioAutenticado usuarioLogado) {

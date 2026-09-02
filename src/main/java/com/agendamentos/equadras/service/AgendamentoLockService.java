@@ -21,13 +21,16 @@ public class AgendamentoLockService {
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final QuadraRepository quadraRepository;
+    private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
 
     public AgendamentoLockService(AgendamentoRepository agendamentoRepository,
                                   UsuarioRepository usuarioRepository,
-                                  QuadraRepository quadraRepository) {
+                                  QuadraRepository quadraRepository,
+                                  com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
+        this.bloqueioHorarioRepository = bloqueioHorarioRepository;
     }
 
     @Transactional
@@ -42,8 +45,28 @@ public class AgendamentoLockService {
             throw new IllegalArgumentException("Esta quadra está inativa para agendamentos.");
         }
 
+        if (quadra.getDataLimiteAgendamento() != null && dto.dataHoraInicio().toLocalDate().isAfter(quadra.getDataLimiteAgendamento())) {
+            throw new IllegalArgumentException("Esta quadra não aceita agendamentos após " + quadra.getDataLimiteAgendamento());
+        }
+
         if (!dto.dataHoraInicio().toLocalDate().isEqual(dto.dataHoraFim().toLocalDate())) {
             throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
+        }
+
+        java.time.LocalDate dataAgendamento = dto.dataHoraInicio().toLocalDate();
+        java.time.LocalTime horaInicio = dto.dataHoraInicio().toLocalTime();
+        java.time.LocalTime horaFim = dto.dataHoraFim().toLocalTime();
+
+        java.util.List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadra.getId_quadra(), dataAgendamento);
+        for (com.agendamentos.equadras.model.entity.BloqueioHorario b : bloqueios) {
+            boolean colide = (b.getHoraInicio() == null || b.getHoraFim() == null)
+                    || (b.getHoraInicio().isBefore(horaFim) && b.getHoraFim().isAfter(horaInicio));
+            if (colide) {
+                String motivoMsg = (b.getMotivo() != null && !b.getMotivo().isBlank())
+                        ? b.getMotivo()
+                        : "Horário bloqueado pelo administrador";
+                throw new IllegalArgumentException("Este horário está bloqueado pelo administrador. Motivo: " + motivoMsg);
+            }
         }
 
         java.time.DayOfWeek diaSemana = dto.dataHoraInicio().getDayOfWeek();
@@ -58,9 +81,6 @@ public class AgendamentoLockService {
         if (disp == null) {
             throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
         }
-
-        java.time.LocalTime horaInicio = dto.dataHoraInicio().toLocalTime();
-        java.time.LocalTime horaFim = dto.dataHoraFim().toLocalTime();
 
         if (horaInicio.isBefore(disp.getHoraInicio()) || horaFim.isAfter(disp.getHoraFim())) {
             throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");

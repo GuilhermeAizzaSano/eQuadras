@@ -92,10 +92,10 @@ export const quadraApi = {
     return apiFetch<Quadra[]>(url);
   },
 
-  cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
+  cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; dataLimiteAgendamento?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
     apiFetch<Quadra>('/quadras', { method: 'POST', body: JSON.stringify(dados) }),
 
-  editar: (id: number, dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
+  editar: (id: number, dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; dataLimiteAgendamento?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
     apiFetch<Quadra>(`/quadras/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
 
   excluir: (id: number) =>
@@ -112,6 +112,27 @@ export const quadraApi = {
 
   removerFoto: (id: number, fotoUrl: string) =>
     apiFetch<Quadra>(`/quadras/${id}/fotos?fotoUrl=${encodeURIComponent(fotoUrl)}`, { method: 'DELETE' }),
+};
+
+// --- Bloqueios de Quadra ---
+export const bloqueioApi = {
+  listar: (quadraId: number) =>
+    apiFetch<import('../types').BloqueioHorario[]>(`/quadras/${quadraId}/bloqueios`),
+
+  criar: (quadraId: number, dados: { data: string; horaInicio?: string; horaFim?: string; motivo?: string }) =>
+    apiFetch<import('../types').BloqueioHorario>(`/quadras/${quadraId}/bloqueios`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+
+  remover: (quadraId: number, bloqueioId: number) =>
+    apiFetch<void>(`/quadras/${quadraId}/bloqueios/${bloqueioId}`, { method: 'DELETE' }),
+
+  desbloquear: (quadraId: number, dados: { bloqueioId?: number; data?: string; horaInicio?: string; horaFim?: string }) =>
+    apiFetch<{ mensagem: string; totalRemovidos: number }>(`/quadras/${quadraId}/desbloquear`, {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }),
 };
 
 // --- Agendamentos ---

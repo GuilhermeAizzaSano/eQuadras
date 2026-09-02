@@ -16,6 +16,7 @@ interface BookingModalProps {
     mes: string;
     isHoje: boolean;
     disponivel?: boolean;
+    motivoIndisponibilidade?: 'Encerrado' | 'Bloqueado' | 'Fechado';
   }>;
   horarios: HorarioDisponivel[];
   slotsSelecionados: HorarioDisponivel[];
@@ -112,6 +113,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               {diasDisponiveis.map((d) => {
                 const isSelected = dataSelecionada === d.iso;
                 const isDisponivel = d.disponivel !== false;
+                const badgeText = d.motivoIndisponibilidade || 'Fechado';
 
                 return (
                   <button
@@ -123,10 +125,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         setDataSelecionada(d.iso);
                       }
                     }}
-                    title={!isDisponivel ? 'Quadra fechada neste dia' : undefined}
+                    title={!isDisponivel ? (badgeText === 'Encerrado' ? 'Data limite de agendamento encerrada' : badgeText === 'Bloqueado' ? 'Dia bloqueado pelo administrador' : 'Quadra fechada neste dia') : undefined}
                     className={`flex-shrink-0 w-16 py-3 px-1 rounded-xl border flex flex-col items-center justify-center transition-all ${
                       !isDisponivel
-                        ? 'opacity-30 cursor-not-allowed bg-zinc-950/40 border-zinc-900 text-zinc-600 select-none'
+                        ? 'opacity-35 cursor-not-allowed bg-zinc-950/40 border-zinc-900 text-zinc-600 select-none'
                         : isSelected
                         ? 'bg-white text-zinc-950 border-white shadow-lg font-bold active:scale-[0.98]'
                         : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-white active:scale-[0.98]'
@@ -138,8 +140,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <span className="text-base font-extrabold">{d.diaMes}</span>
                     <span className="text-[11px] mt-0.5">{d.mes}</span>
                     {!isDisponivel && (
-                      <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold mt-1">
-                        Fechado
+                      <span className={`text-[8px] uppercase tracking-wider font-bold mt-1 px-1 rounded ${
+                        badgeText === 'Encerrado'
+                          ? 'text-amber-400 bg-amber-950/40'
+                          : badgeText === 'Bloqueado'
+                          ? 'text-red-400 bg-red-950/40'
+                          : 'text-zinc-500'
+                      }`}>
+                        {badgeText}
                       </span>
                     )}
                   </button>
