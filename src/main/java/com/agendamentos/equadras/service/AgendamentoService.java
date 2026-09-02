@@ -286,4 +286,21 @@ public class AgendamentoService {
                 .map(AgendamentoResponseDTO::fromEntitySemPix)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, List<HorarioDisponivelDTO>> listarHorariosDoDiaParaAdmin(LocalDate data, Long adminId) {
+        List<Quadra> quadrasDoAdmin = quadraRepository.findByAdminId(adminId);
+        java.util.Map<Long, List<HorarioDisponivelDTO>> mapaResultado = new java.util.LinkedHashMap<>();
+
+        for (Quadra quadra : quadrasDoAdmin) {
+            if (quadra.isAtiva()) {
+                List<HorarioDisponivelDTO> slots = listarHorariosDisponiveis(quadra.getId_quadra(), data);
+                mapaResultado.put(quadra.getId_quadra(), slots);
+            } else {
+                mapaResultado.put(quadra.getId_quadra(), List.of());
+            }
+        }
+
+        return mapaResultado;
+    }
 }

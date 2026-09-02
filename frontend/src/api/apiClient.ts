@@ -119,7 +119,10 @@ export const bloqueioApi = {
   listar: (quadraId: number) =>
     apiFetch<import('../types').BloqueioHorario[]>(`/quadras/${quadraId}/bloqueios`),
 
-  criar: (quadraId: number, dados: { data: string; horaInicio?: string; horaFim?: string; motivo?: string }) =>
+  listarTodosAdmin: () =>
+    apiFetch<import('../types').BloqueioHorario[]>('/quadras/bloqueios'),
+
+  criar: (quadraId: number, dados: { data: string; horaInicio?: string; horaFim?: string; motivo?: string; substituirDiaInteiro?: boolean }) =>
     apiFetch<import('../types').BloqueioHorario>(`/quadras/${quadraId}/bloqueios`, {
       method: 'POST',
       body: JSON.stringify(dados),
@@ -144,6 +147,9 @@ export const agendamentoApi = {
 
   listarHorariosDisponiveis: (quadraId: number, dataIso: string) =>
     apiFetch<HorarioDisponivel[]>(`/agendamentos/quadra/${quadraId}/horarios-disponiveis?data=${dataIso}`),
+
+  listarHorariosDoDiaAdmin: (dataIso: string) =>
+    apiFetch<Record<number, HorarioDisponivel[]>>(`/agendamentos/dia?data=${dataIso}`),
 
   cancelar: (agendamentoId: number) =>
     apiFetch<Agendamento>(`/agendamentos/${agendamentoId}/cancelar`, { method: 'PATCH' }),

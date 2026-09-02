@@ -69,4 +69,16 @@ public class AgendamentoController {
     ) {
         return ResponseEntity.ok(agendamentoService.listarHorariosDisponiveis(quadraId, data));
     }
+
+    @Operation(
+            summary = "Consultar horários consolidados do dia para todas as quadras do Admin (Admin)",
+            description = "Retorna em uma única requisição a grade completa de horários de todas as quadras ativas do administrador autenticado para a data indicada."
+    )
+    @GetMapping("/dia")
+    public ResponseEntity<java.util.Map<Long, List<HorarioDisponivelDTO>>> listarHorariosDoDiaParaAdmin(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
+    }
 }
