@@ -11,7 +11,8 @@ import java.util.Objects;
 @Entity
 @Table(name = "quadras", indexes = {
     @Index(name = "idx_quadra_admin", columnList = "admin_id"),
-    @Index(name = "idx_quadra_ativa", columnList = "ativa")
+    @Index(name = "idx_quadra_ativa", columnList = "ativa"),
+    @Index(name = "idx_quadras_lat_lng", columnList = "latitude, longitude")
 })
 public class Quadra {
 
