@@ -50,6 +50,9 @@ class AgendamentoServiceTest {
     @Mock
     private PagamentoService pagamentoService;
 
+    @Mock
+    private AgendamentoLockService agendamentoLockService;
+
     @InjectMocks
     private AgendamentoService agendamentoService;
 
@@ -82,31 +85,43 @@ class AgendamentoServiceTest {
 
         AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
-                .thenReturn(false);
-        when(pagamentoService.gerarPix(any(Agendamento.class)))
-                .thenReturn(new PagamentoService.PixDados("tx-1", "pix-copia-cola", "qr-code-base64"));
-
-        Agendamento agendamentoSalvo = Agendamento.builder()
+        Agendamento agendamentoPendente = Agendamento.builder()
                 .id_agendamento(10L)
                 .usuario(usuario)
                 .quadra(quadra)
                 .dataHoraInicio(inicio)
                 .dataHoraFim(fim)
                 .valorTotal(BigDecimal.valueOf(100.00))
-                .status(StatusAgendamento.CONFIRMADO)
+                .status(StatusAgendamento.PENDENTE)
                 .build();
 
-        when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamentoSalvo);
+        Agendamento agendamentoComPix = Agendamento.builder()
+                .id_agendamento(10L)
+                .usuario(usuario)
+                .quadra(quadra)
+                .dataHoraInicio(inicio)
+                .dataHoraFim(fim)
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .transacaoPagamentoId("tx-1")
+                .pixCopiaECola("pix-copia-cola")
+                .qrCodeBase64("qr-code-base64")
+                .build();
+
+        PagamentoService.PixDados pixDados = new PagamentoService.PixDados("tx-1", "pix-copia-cola", "qr-code-base64");
+
+        when(agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L)).thenReturn(agendamentoPendente);
+        when(pagamentoService.gerarPix(agendamentoPendente)).thenReturn(pixDados);
+        when(agendamentoLockService.atualizarDadosPix(10L, pixDados)).thenReturn(agendamentoComPix);
 
         AgendamentoResponseDTO resposta = agendamentoService.agendar(dto, 1L);
 
         assertNotNull(resposta);
         assertEquals(10L, resposta.id_agendamento());
         assertEquals("Quadra de Tênis", resposta.nomeQuadra());
-        verify(agendamentoRepository, times(1)).save(any(Agendamento.class));
+        verify(agendamentoLockService, times(1)).criarAgendamentoPendenteComLock(dto, 1L);
+        verify(pagamentoService, times(1)).gerarPix(agendamentoPendente);
+        verify(agendamentoLockService, times(1)).atualizarDadosPix(10L, pixDados);
     }
 
     @Test
@@ -117,14 +132,12 @@ class AgendamentoServiceTest {
 
         AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
-                .thenReturn(true);
+        when(agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L))
+                .thenThrow(new IllegalArgumentException("Este horário não está disponível para agendamento."));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> agendamentoService.agendar(dto, 1L));
         assertTrue(ex.getMessage().contains("não está disponível"));
-        verify(agendamentoRepository, never()).save(any(Agendamento.class));
+        verify(pagamentoService, never()).gerarPix(any());
     }
 
     @Test

@@ -33,20 +33,22 @@ public class AgendamentoService {
     private final QuadraRepository quadraRepository;
     private final NotificacaoService notificacaoService;
     private final PagamentoService pagamentoService;
+    private final AgendamentoLockService agendamentoLockService;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
                               QuadraRepository quadraRepository,
                               NotificacaoService notificacaoService,
-                              PagamentoService pagamentoService) {
+                              PagamentoService pagamentoService,
+                              AgendamentoLockService agendamentoLockService) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
         this.notificacaoService = notificacaoService;
         this.pagamentoService = pagamentoService;
+        this.agendamentoLockService = agendamentoLockService;
     }
 
-    @Transactional
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
         if (!dto.dataHoraFim().isAfter(dto.dataHoraInicio())) {
             throw new IllegalArgumentException("A data/hora de término deve ser posterior à data/hora de início.");
@@ -56,49 +58,16 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Não é possível realizar agendamentos em horários passados.");
         }
 
-        Usuario usuario = usuarioRepository.findById(usuarioIdAutenticado)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado. ID: " + usuarioIdAutenticado));
+        // 1. Cria o agendamento em transação com lock pessimista na quadra e commita imediatamente
+        Agendamento agendamentoSalvo = agendamentoLockService.criarAgendamentoPendenteComLock(dto, usuarioIdAutenticado);
 
-        Quadra quadra = quadraRepository.buscarComLockParaAgendamento(dto.quadraId())
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada. ID: " + dto.quadraId()));
+        // 2. Chama API externa FORA da transação e do lock do banco
+        PagamentoService.PixDados pixDados = pagamentoService.gerarPix(agendamentoSalvo);
 
-        if (!quadra.isAtiva()) {
-            throw new IllegalArgumentException("Esta quadra está inativa para agendamentos.");
-        }
+        // 3. Atualiza os dados Pix em nova transação leve
+        Agendamento agendamentoAtualizado = agendamentoLockService.atualizarDadosPix(agendamentoSalvo.getId_agendamento(), pixDados);
 
-        boolean conflito = agendamentoRepository.existeConflitoHorario(
-                quadra.getId_quadra(),
-                dto.dataHoraInicio(),
-                dto.dataHoraFim(),
-                StatusAgendamento.CANCELADO
-        );
-
-        if (conflito) {
-            throw new IllegalArgumentException("Este horário não está disponível para agendamento. Por favor, escolha outro horário.");
-        }
-
-        long minutos = Duration.between(dto.dataHoraInicio(), dto.dataHoraFim()).toMinutes();
-        BigDecimal horas = BigDecimal.valueOf(minutos).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        BigDecimal valorTotal = quadra.getValorHora().multiply(horas);
-
-        Agendamento agendamento = Agendamento.builder()
-                .usuario(usuario)
-                .quadra(quadra)
-                .dataHoraInicio(dto.dataHoraInicio())
-                .dataHoraFim(dto.dataHoraFim())
-                .valorTotal(valorTotal)
-                .status(StatusAgendamento.PENDENTE)
-                .build();
-
-        // Gerar Pix de Pagamento
-        PagamentoService.PixDados pixDados = pagamentoService.gerarPix(agendamento);
-        agendamento.setTransacaoPagamentoId(pixDados.transacaoId());
-        agendamento.setPixCopiaECola(pixDados.pixCopiaECola());
-        agendamento.setQrCodeBase64(pixDados.qrCodeBase64());
-
-        Agendamento agendamentoSalvo = agendamentoRepository.save(agendamento);
-
-        return AgendamentoResponseDTO.fromEntity(agendamentoSalvo);
+        return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
     }
 
     @Transactional
