@@ -166,7 +166,7 @@ public class QuadraService {
         }
 
         if (agendamentoRepository.existsByQuadraId(id)) {
-            throw new IllegalStateException("Esta quadra possui histórico de agendamentos e não pode ser excluída. Utilize a opção de inativar.");
+            throw new IllegalStateException("Esta quadra não pode ser excluída porque possui agendamentos vinculados (histórico de reservas). Recomendamos inativar a quadra.");
         }
 
         // Limpa fotos físicas
