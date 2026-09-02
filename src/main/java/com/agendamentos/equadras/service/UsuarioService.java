@@ -34,14 +34,12 @@ public class UsuarioService {
             throw new IllegalArgumentException("E-mail já cadastrado no sistema.");
         }
 
-        Role role = (dto.role() != null) ? dto.role() : Role.CLIENT;
-
         Usuario usuario = Usuario.builder()
                 .nome_usuario(dto.nome_usuario())
                 .email_usuario(dto.email_usuario())
                 .senha_usuario(passwordEncoder.encode(dto.senha_usuario()))
                 .phone_usuario(dto.phone_usuario())
-                .role(role)
+                .role(Role.CLIENT)
                 .build();
 
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
