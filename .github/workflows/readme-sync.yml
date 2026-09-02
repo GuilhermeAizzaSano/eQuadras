@@ -20,4 +20,4 @@ jobs:
       - name: Sincronizar OpenAPI Spec via ReadMe CLI
         uses: readmeio/rdme@v8
         with:
-          rdme: openapi docs/api/openapi.yaml --key=${{ secrets.README_API_KEY }} --version=v1.0
+          rdme: openapi docs/api/openapi.yaml --key=${{ secrets.README_API_KEY }} --id=${{ secrets.README_API_DEFINITION_ID }} --create
