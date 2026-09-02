@@ -22,7 +22,5 @@ public record UsuarioCriacaoDTO(
         String senha_usuario,
 
         @NotBlank(message = "O telefone é obrigatório")
-        String phone_usuario,
-
-        Role role
+        String phone_usuario
 ) {}

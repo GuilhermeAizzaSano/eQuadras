@@ -57,8 +57,7 @@ class UsuarioServiceTest {
                 "Mariana",
                 "mariana@email.com",
                 "senha123",
-                "11988887777",
-                null
+                "11988887777"
         );
 
         when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(false);
@@ -85,8 +84,7 @@ class UsuarioServiceTest {
                 "Mariana",
                 "mariana@email.com",
                 "senha123",
-                "11988887777",
-                Role.ADMIN
+                "11988887777"
         );
 
         when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(true);
