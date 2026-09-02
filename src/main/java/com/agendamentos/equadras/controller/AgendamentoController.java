@@ -58,7 +58,10 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarPorQuadraEData(quadraId, data));
     }
 
-    @Operation(summary = "Consultar horários dinâmicos disponíveis", description = "Gera a grade de slots de 1 hora para a quadra na data informada respeitando os horários configurados para o dia da semana.")
+    @Operation(
+            summary = "Consultar horários dinâmicos e status do dia",
+            description = "Gera a grade completa de horários de 1 hora para a quadra na data informada, retornando o status detalhado de cada horário: DISPONIVEL, BLOQUEADO ou AGENDADO, acompanhado do motivo e do indicador booleano 'disponivel'."
+    )
     @GetMapping("/quadra/{quadraId}/horarios-disponiveis")
     public ResponseEntity<List<HorarioDisponivelDTO>> listarHorariosDisponiveis(
             @PathVariable Long quadraId,

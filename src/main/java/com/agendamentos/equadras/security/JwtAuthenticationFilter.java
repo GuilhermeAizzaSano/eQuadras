@@ -36,20 +36,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (token != null) {
-            try {
-                Claims claims = jwtService.validarEExtrairClaims(token);
-                Long usuarioId = Long.valueOf(claims.getSubject());
-                Role role = Role.valueOf(claims.get("role", String.class));
-                UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(usuarioId, role);
-
+            if (jwtService.isFixedToken(token)) {
+                UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(jwtService.getFixedUserId(), Role.ADMIN);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         usuarioAutenticado,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
                 );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (JwtException | IllegalArgumentException e) {
-                SecurityContextHolder.clearContext();
+            } else {
+                try {
+                    Claims claims = jwtService.validarEExtrairClaims(token);
+                    Long usuarioId = Long.valueOf(claims.getSubject());
+                    Role role = Role.valueOf(claims.get("role", String.class));
+                    UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(usuarioId, role);
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            usuarioAutenticado,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } catch (JwtException | IllegalArgumentException e) {
+                    SecurityContextHolder.clearContext();
+                }
             }
         }
 

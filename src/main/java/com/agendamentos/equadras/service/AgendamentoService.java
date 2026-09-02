@@ -34,19 +34,22 @@ public class AgendamentoService {
     private final NotificacaoService notificacaoService;
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
+    private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
                               QuadraRepository quadraRepository,
                               NotificacaoService notificacaoService,
                               PagamentoService pagamentoService,
-                              AgendamentoLockService agendamentoLockService) {
+                              AgendamentoLockService agendamentoLockService,
+                              com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
         this.notificacaoService = notificacaoService;
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
+        this.bloqueioHorarioRepository = bloqueioHorarioRepository;
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
@@ -193,6 +196,13 @@ public class AgendamentoService {
         LocalDateTime agora = LocalDateTime.now();
         List<HorarioDisponivelDTO> slots = new ArrayList<>();
 
+        boolean dataLimiteExcedida = quadra.getDataLimiteAgendamento() != null && data.isAfter(quadra.getDataLimiteAgendamento());
+        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
+        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueioDiaInteiro = bloqueios.stream()
+                .filter(b -> b.getHoraInicio() == null || b.getHoraFim() == null)
+                .findFirst()
+                .orElse(null);
+
         LocalTime slotInicio = disp.getHoraInicio();
         while (slotInicio.isBefore(disp.getHoraFim())) {
             LocalTime slotFim = slotInicio.plusHours(1);
@@ -201,24 +211,54 @@ public class AgendamentoService {
 
             boolean disponivel = true;
             String motivo = "Disponível";
+            com.agendamentos.equadras.model.enums.StatusHorario status = com.agendamentos.equadras.model.enums.StatusHorario.DISPONIVEL;
 
             if (!quadra.isAtiva()) {
                 disponivel = false;
+                status = com.agendamentos.equadras.model.enums.StatusHorario.INDISPONIVEL;
                 motivo = "Quadra inativa";
+            } else if (dataLimiteExcedida) {
+                disponivel = false;
+                status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
+                motivo = "Data limite de agendamento encerrada";
+            } else if (bloqueioDiaInteiro != null) {
+                disponivel = false;
+                status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
+                motivo = (bloqueioDiaInteiro.getMotivo() != null && !bloqueioDiaInteiro.getMotivo().isBlank())
+                        ? "Bloqueado: " + bloqueioDiaInteiro.getMotivo()
+                        : "Horário bloqueado pelo administrador";
             } else if (slotDataHoraInicio.isBefore(agora)) {
                 disponivel = false;
+                status = com.agendamentos.equadras.model.enums.StatusHorario.INDISPONIVEL;
                 motivo = "Horário indisponível (passado)";
             } else {
-                boolean ocupado = agendamentosDoDia.stream().anyMatch(a ->
-                        a.getDataHoraInicio().isBefore(slotDataHoraFim) && a.getDataHoraFim().isAfter(slotDataHoraInicio)
-                );
-                if (ocupado) {
+                final LocalTime sIni = slotInicio;
+                final LocalTime sFim = slotFim;
+                com.agendamentos.equadras.model.entity.BloqueioHorario bloqueioParcial = bloqueios.stream()
+                        .filter(b -> b.getHoraInicio() != null && b.getHoraFim() != null)
+                        .filter(b -> b.getHoraInicio().isBefore(sFim) && b.getHoraFim().isAfter(sIni))
+                        .findFirst()
+                        .orElse(null);
+
+                if (bloqueioParcial != null) {
                     disponivel = false;
-                    motivo = "Horário ocupado";
+                    status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
+                    motivo = (bloqueioParcial.getMotivo() != null && !bloqueioParcial.getMotivo().isBlank())
+                            ? "Bloqueado: " + bloqueioParcial.getMotivo()
+                            : "Horário bloqueado pelo administrador";
+                } else {
+                    boolean ocupado = agendamentosDoDia.stream().anyMatch(a ->
+                            a.getDataHoraInicio().isBefore(slotDataHoraFim) && a.getDataHoraFim().isAfter(slotDataHoraInicio)
+                    );
+                    if (ocupado) {
+                        disponivel = false;
+                        status = com.agendamentos.equadras.model.enums.StatusHorario.AGENDADO;
+                        motivo = "Horário ocupado / agendado";
+                    }
                 }
             }
 
-            slots.add(new HorarioDisponivelDTO(slotInicio, slotFim, disponivel, motivo));
+            slots.add(new HorarioDisponivelDTO(slotInicio, slotFim, disponivel, status, motivo));
             slotInicio = slotFim;
         }
 

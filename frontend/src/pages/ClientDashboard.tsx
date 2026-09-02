@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi, getAssetUrl } from '../api/apiClient';
-import { Quadra, HorarioDisponivel, Agendamento, DiaSemana } from '../types';
+import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiClient';
+import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
 import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown } from 'lucide-react';
 
@@ -39,10 +39,21 @@ export const ClientDashboard: React.FC = () => {
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
   const [slotsSelecionados, setSlotsSelecionados] = useState<HorarioDisponivel[]>([]);
   const [meusAgendamentos, setMeusAgendamentos] = useState<Agendamento[]>([]);
+  const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
   // Aba de filtro de status das reservas
   const [filtroStatusReservas, setFiltroStatusReservas] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
 
   const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
+
+  useEffect(() => {
+    if (selectedQuadra) {
+      bloqueioApi.listar(selectedQuadra)
+        .then(setBloqueiosQuadra)
+        .catch(() => setBloqueiosQuadra([]));
+    } else {
+      setBloqueiosQuadra([]);
+    }
+  }, [selectedQuadra]);
 
   // Filtragem dinâmica de agendamentos do cliente
   const agendamentosFiltrados = useMemo(() => {
@@ -88,7 +99,7 @@ export const ClientDashboard: React.FC = () => {
   }, [meusAgendamentos]);
 
   const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Processando...');
+  const [loadingMessage, setLoadingMessage] = useState('Processando dados...');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Modal Pix
@@ -146,8 +157,34 @@ export const ClientDashboard: React.FC = () => {
       const diaSemanaEnum = DIA_SEMANA_MAP[d.getDay()];
 
       let disponivel = true;
+      let motivoIndisponibilidade: 'Encerrado' | 'Bloqueado' | 'Fechado' | undefined = undefined;
+
+      // 1. Verifica funcionamento do dia da semana
       if (quadraAtual?.disponibilidades && quadraAtual.disponibilidades.length > 0) {
-        disponivel = quadraAtual.disponibilidades.some((disp) => disp.diaSemana === diaSemanaEnum);
+        const diaAberto = quadraAtual.disponibilidades.some((disp) => disp.diaSemana === diaSemanaEnum);
+        if (!diaAberto) {
+          disponivel = false;
+          motivoIndisponibilidade = 'Fechado';
+        }
+      }
+
+      // 2. Verifica dataLimiteAgendamento
+      if (disponivel && quadraAtual?.dataLimiteAgendamento) {
+        if (iso > quadraAtual.dataLimiteAgendamento) {
+          disponivel = false;
+          motivoIndisponibilidade = 'Encerrado';
+        }
+      }
+
+      // 3. Verifica bloqueio de dia inteiro
+      if (disponivel && bloqueiosQuadra && bloqueiosQuadra.length > 0) {
+        const temBloqueioDiaInteiro = bloqueiosQuadra.some(
+          (b) => b.data === iso && (!b.horaInicio || !b.horaFim)
+        );
+        if (temBloqueioDiaInteiro) {
+          disponivel = false;
+          motivoIndisponibilidade = 'Bloqueado';
+        }
       }
 
       dias.push({
@@ -157,10 +194,11 @@ export const ClientDashboard: React.FC = () => {
         mes: nomesMeses[d.getMonth()],
         isHoje: i === 0,
         disponivel,
+        motivoIndisponibilidade,
       });
     }
     return dias;
-  }, [quadraAtual]);
+  }, [quadraAtual, bloqueiosQuadra]);
 
   // Se o modal de agendamento estiver aberto e a data selecionada não for disponível, seleciona a primeira data válida
   useEffect(() => {

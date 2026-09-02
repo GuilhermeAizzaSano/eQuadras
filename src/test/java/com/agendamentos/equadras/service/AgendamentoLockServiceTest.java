@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +40,9 @@ class AgendamentoLockServiceTest {
 
     @Mock
     private QuadraRepository quadraRepository;
+
+    @Mock
+    private com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
 
     @InjectMocks
     private AgendamentoLockService agendamentoLockService;
@@ -250,6 +254,53 @@ class AgendamentoLockServiceTest {
                 () -> agendamentoLockService.atualizarDadosPix(999L, pixDados));
 
         assertTrue(ex.getMessage().contains("Agendamento não encontrado"));
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao criar agendamento após dataLimiteAgendamento")
+    void deveFalharAoCriarAgendamentoAposDataLimite() {
+        LocalDate limite = LocalDate.now().plusDays(2);
+        quadra.setDataLimiteAgendamento(limite);
+
+        LocalDateTime inicio = limite.plusDays(1).atTime(10, 0);
+        LocalDateTime fim = inicio.plusHours(1);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L));
+
+        assertTrue(ex.getMessage().contains("Esta quadra não aceita agendamentos após"));
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao criar agendamento em horário bloqueado pelo admin")
+    void deveFalharAoCriarAgendamentoEmHorarioBloqueado() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(14).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime fim = inicio.plusHours(1);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
+
+        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueio = new com.agendamentos.equadras.model.entity.BloqueioHorario(
+                quadra,
+                inicio.toLocalDate(),
+                inicio.toLocalTime(),
+                fim.toLocalTime(),
+                "Manutenção da rede"
+        );
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, inicio.toLocalDate()))
+                .thenReturn(List.of(bloqueio));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L));
+
+        assertTrue(ex.getMessage().contains("Este horário está bloqueado pelo administrador. Motivo: Manutenção da rede"));
         verify(agendamentoRepository, never()).save(any());
     }
 }
