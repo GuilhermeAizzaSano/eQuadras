@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi } from '../api/apiClient';
+import { quadraApi, agendamentoApi, getAssetUrl } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
 import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info } from 'lucide-react';
@@ -430,7 +430,7 @@ export const ClientDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {quadrasFiltradas.map((q) => {
                 const primeiraFoto = q.fotos && q.fotos.length > 0
-                  ? (q.fotos[0].startsWith('http') ? q.fotos[0] : `http://localhost:8080${q.fotos[0]}`)
+                  ? getAssetUrl(q.fotos[0])
                   : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
 
                 return (

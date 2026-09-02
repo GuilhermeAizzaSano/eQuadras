@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 
+import { getAssetUrl } from '../../api/apiClient';
+
 interface CourtCarouselProps {
   fotos?: string[];
   nomeQuadra: string;
@@ -38,11 +40,7 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
   };
 
   const resolveImageUrl = (url: string) => {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    // URLs relativas salvas pelo Spring Boot (ex: /uploads/quadras/...)
-    return `http://localhost:8080${url}`;
+    return getAssetUrl(url);
   };
 
   return (

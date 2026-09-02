@@ -1,6 +1,25 @@
 import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse } from '../types';
 
-const BASE_URL = 'http://localhost:8080';
+export const getBaseUrl = (): string => {
+  const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
+  if (metaEnv?.VITE_API_URL) {
+    return metaEnv.VITE_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location && window.location.hostname) {
+    return `http://${window.location.hostname}:8080`;
+  }
+  return 'http://localhost:8080';
+};
+
+export const getAssetUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  return `${getBaseUrl()}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+export const BASE_URL = getBaseUrl();
 
 export async function apiFetch<T>(
   endpoint: string,
