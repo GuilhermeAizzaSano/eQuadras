@@ -44,6 +44,12 @@ class AgendamentoServiceTest {
     @Mock
     private QuadraRepository quadraRepository;
 
+    @Mock
+    private NotificacaoService notificacaoService;
+
+    @Mock
+    private PagamentoService pagamentoService;
+
     @InjectMocks
     private AgendamentoService agendamentoService;
 
@@ -77,9 +83,11 @@ class AgendamentoServiceTest {
         AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(quadraRepository.findByIdWithAdmin(1L)).thenReturn(Optional.of(quadra));
         when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
                 .thenReturn(false);
+        when(pagamentoService.gerarPix(any(Agendamento.class)))
+                .thenReturn(new PagamentoService.PixDados("tx-1", "pix-copia-cola", "qr-code-base64"));
 
         Agendamento agendamentoSalvo = Agendamento.builder()
                 .id_agendamento(10L)
@@ -93,7 +101,7 @@ class AgendamentoServiceTest {
 
         when(agendamentoRepository.save(any(Agendamento.class))).thenReturn(agendamentoSalvo);
 
-        AgendamentoResponseDTO resposta = agendamentoService.agendar(dto);
+        AgendamentoResponseDTO resposta = agendamentoService.agendar(dto, 1L);
 
         assertNotNull(resposta);
         assertEquals(10L, resposta.id_agendamento());
@@ -110,11 +118,11 @@ class AgendamentoServiceTest {
         AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(quadraRepository.findByIdWithAdmin(1L)).thenReturn(Optional.of(quadra));
         when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
                 .thenReturn(true);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> agendamentoService.agendar(dto));
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> agendamentoService.agendar(dto, 1L));
         assertTrue(ex.getMessage().contains("não está disponível"));
         verify(agendamentoRepository, never()).save(any(Agendamento.class));
     }

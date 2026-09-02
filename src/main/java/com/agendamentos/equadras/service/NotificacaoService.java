@@ -77,4 +77,14 @@ public class NotificacaoService {
         notif.setLida(true);
         notificacaoRepository.save(notif);
     }
+
+    public void marcarComoLidaSeDoUsuario(Long idNotificacao, Long usuarioId) {
+        Notificacao notif = notificacaoRepository.findById(idNotificacao)
+            .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada"));
+        if (notif.getAdmin() == null || !notif.getAdmin().getId_usuario().equals(usuarioId)) {
+            throw new IllegalArgumentException("Você não tem permissão para alterar esta notificação.");
+        }
+        notif.setLida(true);
+        notificacaoRepository.save(notif);
+    }
 }
