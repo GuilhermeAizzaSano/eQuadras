@@ -68,12 +68,18 @@ class AgendamentoServiceTest {
                 .role(Role.CLIENT)
                 .build();
 
+        List<com.agendamentos.equadras.model.entity.DisponibilidadeDia> disponibilidades = new java.util.ArrayList<>();
+        for (java.time.DayOfWeek dia : java.time.DayOfWeek.values()) {
+            disponibilidades.add(new com.agendamentos.equadras.model.entity.DisponibilidadeDia(dia, LocalTime.of(6, 0), LocalTime.of(23, 0)));
+        }
+
         quadra = Quadra.builder()
                 .id_quadra(1L)
                 .nome("Quadra de Tênis")
                 .tipoEsporte(TipoEsporte.TENIS)
                 .valorHora(BigDecimal.valueOf(100.00))
                 .ativa(true)
+                .disponibilidades(disponibilidades)
                 .build();
     }
 
@@ -260,5 +266,25 @@ class AgendamentoServiceTest {
         assertEquals("tx-456", dto.transacaoPagamentoId());
         assertNull(dto.pixCopiaECola());
         assertNull(dto.qrCodeBase64());
+    }
+
+    @Test
+    @DisplayName("Deve retornar lista vazia quando a quadra não funcionar no dia da semana selecionado")
+    void deveRetornarListaVaziaQuandoQuadraFechadaNoDia() {
+        quadra.setDisponibilidades(List.of(
+                new com.agendamentos.equadras.model.entity.DisponibilidadeDia(java.time.DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))
+        ));
+
+        // Encontrar uma data que não seja MONDAY
+        LocalDate dataFechada = LocalDate.now();
+        while (dataFechada.getDayOfWeek() == java.time.DayOfWeek.MONDAY) {
+            dataFechada = dataFechada.plusDays(1);
+        }
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+
+        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataFechada);
+
+        assertTrue(slots.isEmpty());
     }
 }

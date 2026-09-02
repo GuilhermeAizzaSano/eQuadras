@@ -42,6 +42,30 @@ public class AgendamentoLockService {
             throw new IllegalArgumentException("Esta quadra está inativa para agendamentos.");
         }
 
+        if (!dto.dataHoraInicio().toLocalDate().isEqual(dto.dataHoraFim().toLocalDate())) {
+            throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
+        }
+
+        java.time.DayOfWeek diaSemana = dto.dataHoraInicio().getDayOfWeek();
+        com.agendamentos.equadras.model.entity.DisponibilidadeDia disp = null;
+        if (quadra.getDisponibilidades() != null) {
+            disp = quadra.getDisponibilidades().stream()
+                    .filter(d -> d.getDiaSemana() == diaSemana)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (disp == null) {
+            throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
+        }
+
+        java.time.LocalTime horaInicio = dto.dataHoraInicio().toLocalTime();
+        java.time.LocalTime horaFim = dto.dataHoraFim().toLocalTime();
+
+        if (horaInicio.isBefore(disp.getHoraInicio()) || horaFim.isAfter(disp.getHoraFim())) {
+            throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
+        }
+
         boolean conflito = agendamentoRepository.existeConflitoHorario(
                 quadra.getId_quadra(),
                 dto.dataHoraInicio(),

@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,12 +55,18 @@ class AgendamentoLockServiceTest {
                 .role(Role.CLIENT)
                 .build();
 
+        List<com.agendamentos.equadras.model.entity.DisponibilidadeDia> disponibilidades = new java.util.ArrayList<>();
+        for (java.time.DayOfWeek dia : java.time.DayOfWeek.values()) {
+            disponibilidades.add(new com.agendamentos.equadras.model.entity.DisponibilidadeDia(dia, java.time.LocalTime.of(6, 0), java.time.LocalTime.of(23, 0)));
+        }
+
         quadra = Quadra.builder()
                 .id_quadra(1L)
                 .nome("Quadra de Tênis")
                 .tipoEsporte(TipoEsporte.TENIS)
                 .valorHora(BigDecimal.valueOf(100.00))
                 .ativa(true)
+                .disponibilidades(disponibilidades)
                 .build();
     }
 
@@ -162,6 +169,49 @@ class AgendamentoLockServiceTest {
                 () -> agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L));
 
         assertTrue(ex.getMessage().contains("não está disponível"));
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao criar agendamento fora do horário de funcionamento")
+    void deveFalharSeForaDoHorarioDeFuncionamento() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(4).withMinute(0);
+        LocalDateTime fim = inicio.plusHours(1);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L));
+
+        assertTrue(ex.getMessage().contains("fora do horário de funcionamento"));
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao criar agendamento em dia fechado")
+    void deveFalharSeDiaFechado() {
+        quadra.setDisponibilidades(java.util.List.of(
+                new com.agendamentos.equadras.model.entity.DisponibilidadeDia(java.time.DayOfWeek.MONDAY, java.time.LocalTime.of(8, 0), java.time.LocalTime.of(18, 0))
+        ));
+
+        // Seleciona um dia que não seja MONDAY
+        LocalDateTime dataFechada = LocalDateTime.now().plusDays(1);
+        while (dataFechada.getDayOfWeek() == java.time.DayOfWeek.MONDAY) {
+            dataFechada = dataFechada.plusDays(1);
+        }
+        LocalDateTime inicio = dataFechada.withHour(10).withMinute(0);
+        LocalDateTime fim = inicio.plusHours(1);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> agendamentoLockService.criarAgendamentoPendenteComLock(dto, 1L));
+
+        assertTrue(ex.getMessage().contains("fora do horário de funcionamento"));
         verify(agendamentoRepository, never()).save(any());
     }
 

@@ -49,6 +49,20 @@ public class QuadraService {
             throw new IllegalArgumentException("Uma quadra pode ter no máximo 5 fotos.");
         }
 
+        List<com.agendamentos.equadras.model.entity.DisponibilidadeDia> disponibilidades;
+        if (dto.disponibilidades() == null || dto.disponibilidades().isEmpty()) {
+            disponibilidades = new java.util.ArrayList<>();
+            for (java.time.DayOfWeek dia : java.time.DayOfWeek.values()) {
+                disponibilidades.add(new com.agendamentos.equadras.model.entity.DisponibilidadeDia(dia, java.time.LocalTime.of(6, 0), java.time.LocalTime.of(23, 0)));
+            }
+        } else {
+            disponibilidades = new java.util.ArrayList<>(
+                    dto.disponibilidades().stream()
+                            .map(d -> new com.agendamentos.equadras.model.entity.DisponibilidadeDia(d.diaSemana(), d.horaInicio(), d.horaFim()))
+                            .toList()
+            );
+        }
+
         Quadra quadra = Quadra.builder()
                 .nome(dto.nome())
                 .tipoEsporte(dto.tipoEsporte())
@@ -62,6 +76,7 @@ public class QuadraService {
                 .longitude(dto.longitude())
                 .descricao(dto.descricao())
                 .fotos(fotosIniciais)
+                .disponibilidades(disponibilidades)
                 .ativa(true)
                 .admin(admin)
                 .build();
@@ -95,6 +110,13 @@ public class QuadraService {
         quadra.setLatitude(dto.latitude());
         quadra.setLongitude(dto.longitude());
         quadra.setDescricao(dto.descricao());
+
+        if (dto.disponibilidades() != null) {
+            quadra.getDisponibilidades().clear();
+            for (com.agendamentos.equadras.dto.request.DisponibilidadeDiaDTO d : dto.disponibilidades()) {
+                quadra.getDisponibilidades().add(new com.agendamentos.equadras.model.entity.DisponibilidadeDia(d.diaSemana(), d.horaInicio(), d.horaFim()));
+            }
+        }
 
         if (dto.fotos() != null) {
             if (dto.fotos().size() > 5) {
@@ -204,10 +226,13 @@ public class QuadraService {
             }
         }
 
-        // Garante inicialização das fotos dentro da transação para evitar LazyInitializationException
+        // Garante inicialização das fotos e disponibilidades dentro da transação para evitar LazyInitializationException
         quadras.forEach(q -> {
             if (q.getFotos() != null) {
                 q.getFotos().size();
+            }
+            if (q.getDisponibilidades() != null) {
+                q.getDisponibilidades().size();
             }
         });
 
