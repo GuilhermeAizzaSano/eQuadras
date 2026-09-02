@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eQuadras - Gestão e Agendamentos</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #141414;
+            --surface-hover: #1f1f1f;
+            --border-color: #2e2e2e;
+            --border-focus: #ffffff;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a3a3a3;
+            --text-muted: #666666;
+            --accent-white: #ffffff;
+            --accent-black: #000000;
+            --badge-available-bg: #1c1c1c;
+            --badge-available-border: #444444;
+            --badge-blocked-bg: #121212;
+            --badge-blocked-border: #262626;
+            --badge-blocked-text: #555555;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        header {
+            border-bottom: 2px solid var(--accent-white);
+            padding-bottom: 16px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 4px solid var(--accent-white);
+            padding-left: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+        }
+
+        .user-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .badge-status {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid var(--text-primary);
+            border-radius: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 22px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid transparent;
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent-white);
+            color: var(--accent-black);
+            border-color: var(--accent-white);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.92rem;
+            margin-bottom: 14px;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            background-color: #121212;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            background-color: var(--accent-white);
+            color: var(--accent-black);
+            border: 1px solid var(--accent-white);
+        }
+
+        button:hover:not(:disabled) {
+            background-color: transparent;
+            color: var(--accent-white);
+        }
+
+        button.btn-outline {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        button.btn-outline:hover:not(:disabled) {
+            border-color: var(--accent-white);
+            background-color: var(--surface-hover);
+        }
+
+        button.btn-small {
+            padding: 4px 10px;
+            font-size: 0.72rem;
+        }
+
+        button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-muted);
+        }
+
+        .list-items {
+            list-style: none;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-color);
+        }
+
+        .list-items li {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.88rem;
+        }
+
+        .list-items li:last-child {
+            border-bottom: none;
+        }
+
+        .list-items li:hover {
+            background-color: var(--surface-color);
+        }
+
+        /* Grade de Horários */
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .slot-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .slot-btn .slot-time {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .slot-btn .slot-badge {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            padding: 2px 6px;
+            border-radius: 2px;
+        }
+
+        .slot-btn.available {
+            border-color: var(--badge-available-border);
+            background-color: var(--badge-available-bg);
+        }
+
+        .slot-btn.available:hover {
+            border-color: var(--accent-white);
+            background-color: var(--accent-white);
+            color: var(--accent-black);
+        }
+
+        .slot-btn.available.selected {
+            background-color: var(--accent-white);
+            color: var(--accent-black);
+            border-color: var(--accent-white);
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .slot-btn.blocked {
+            background-color: var(--badge-blocked-bg);
+            border-color: var(--badge-blocked-border);
+            color: var(--badge-blocked-text);
+            cursor: not-allowed;
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .slot-btn.blocked .slot-badge {
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .selected-summary {
+            background-color: var(--bg-color);
+            border: 1px solid var(--accent-white);
+            padding: 12px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .selected-summary strong {
+            color: var(--accent-white);
+        }
+
+        /* Notificações */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 20px;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            z-index: 1000;
+            border: 1px solid var(--accent-white);
+            background-color: var(--accent-black);
+            color: var(--text-primary);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
+            display: none;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group > div {
+            flex: 1;
+            min-width: 170px;
+        }
+
+        .filter-group label {
+            margin-bottom: 4px;
+        }
+
+        .filter-group input, .filter-group select {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>eQuadras</h1>
+            <p class="subtitle">Agendamento & Gestão Esportiva</p>
+        </div>
+        <div id="usuarioSessao" class="user-status-bar">
+            <span>Visitante</span>
+            <span class="badge-status">NÃO AUTENTICADO</span>
+        </div>
+    </header>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="container">
+        <!-- 1. AUTENTICAÇÃO E USUÁRIOS -->
+        <div class="card">
+            <h2>1. Autenticação & Usuários</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="trocarAbaUsuario('login')">Entrar (Login)</button>
+                <button class="tab-btn" onclick="trocarAbaUsuario('cadastro')">Novo Cadastro</button>
+                <button class="tab-btn" onclick="trocarAbaUsuario('lista')">Usuários</button>
+            </div>
+
+            <!-- ABA LOGIN -->
+            <div id="abaLogin" class="tab-content active">
+                <form id="formLogin">
+                    <label>E-mail</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" required>
+
+                    <label>Senha</label>
+                    <input type="password" id="loginSenha" placeholder="••••••••" required>
+
+                    <button type="submit" style="width: 100%;">Acessar Conta</button>
+                </form>
+            </div>
+
+            <!-- ABA CADASTRO -->
+            <div id="abaCadastro" class="tab-content">
+                <form id="formCadastroUsuario">
+                    <label>Nome Completo</label>
+                    <input type="text" id="userNome" placeholder="Ex: Lucas Mendes" required>
+
+                    <label>E-mail</label>
+                    <input type="email" id="userEmail" placeholder="Ex: lucas@email.com" required>
+
+                    <label>Senha (mínimo 6 caracteres)</label>
+                    <input type="password" id="userSenha" placeholder="••••••••" minlength="6" required>
+
+                    <label>Telefone</label>
+                    <input type="text" id="userTelefone" placeholder="(11) 98888-7777" required>
+
+                    <label>Tipo de Perfil</label>
+                    <select id="userRole" required>
+                        <option value="CLIENT">CLIENTE</option>
+                        <option value="ADMIN">ADMINISTRADOR</option>
+                    </select>
+
+                    <button type="submit" style="width: 100%;">Cadastrar Usuário</button>
+                </form>
+            </div>
+
+            <!-- ABA LISTA DE USUÁRIOS -->
+            <div id="abaLista" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="subtitle">Usuários cadastrados</span>
+                    <button class="btn-outline btn-small" onclick="carregarUsuarios()">Atualizar</button>
+                </div>
+                <ul id="listaUsuarios" class="list-items"></ul>
+            </div>
+        </div>
+
+        <!-- 2. QUADRAS -->
+        <div class="card" id="adminQuadrasCard" style="display: none;">
+            <h2>2. Quadras</h2>
+            <form id="formQuadra">
+                <label>Nome da Quadra</label>
+                <input type="text" id="quadraNome" placeholder="Ex: Quadra Society 01" required>
+
+                <label>Tipo de Esporte</label>
+                <select id="quadraEsporte" required>
+                    <option value="FUTEBOL">FUTEBOL</option>
+                    <option value="FUTSAL">FUTSAL</option>
+                    <option value="VOLEI">VOLEI</option>
+                    <option value="BEACH_TENNIS">BEACH_TENNIS</option>
+                    <option value="BASQUETE">BASQUETE</option>
+                    <option value="TENIS">TENIS</option>
+                </select>
+
+                <label>Valor da Hora (R$)</label>
+                <input type="number" step="0.01" id="quadraValor" placeholder="Ex: 120.00" required>
+
+                <button type="submit">Cadastrar Quadra</button>
+            </form>
+
+            <div style="margin-top: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="subtitle">Quadras cadastradas</span>
+                    <button class="btn-outline btn-small" onclick="carregarQuadras()">Atualizar</button>
+                </div>
+                <ul id="listaQuadras" class="list-items"></ul>
+            </div>
+        </div>
+
+        <!-- 3. REALIZAR AGENDAMENTO (HORÁRIOS DISPONÍVEIS E BLOQUEIOS) -->
+        <div class="card full-width">
+            <h2>3. Realizar Agendamento</h2>
+            <p class="subtitle" style="margin-bottom: 16px;">
+                Selecione a quadra e a data desejada para visualizar os <strong>horários disponíveis</strong>. Horários ocupados ou passados são automaticamente <strong>bloqueados</strong>.
+            </p>
+
+            <form id="formAgendamento">
+                <div class="filter-group">
+                    <div>
+                        <label>Usuário Responsável</label>
+                        <select id="agendUsuarioSelect" required>
+                            <option value="">Selecione um usuário...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Quadra</label>
+                        <select id="agendQuadraSelect" required onchange="aoMudarQuadraOuData()">
+                            <option value="">Selecione uma quadra...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>Data do Agendamento</label>
+                        <input type="date" id="agendData" required onchange="aoMudarQuadraOuData()">
+                    </div>
+                </div>
+
+                <!-- Grade de Horários -->
+                <div>
+                    <label>Selecione um Horário Disponível</label>
+                    <div id="slotsContainer" class="slots-grid">
+                        <div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.88rem; padding: 12px 0;">
+                            Selecione a quadra e a data para visualizar os horários.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo do Slot Selecionado -->
+                <div id="resumoSlot" class="selected-summary" style="display: none;">
+                    <div><strong>Horário Selecionado:</strong> <span id="resumoHorario"></span></div>
+                    <div><strong>Data:</strong> <span id="resumoData"></span> | <strong>Valor Estimado:</strong> <span id="resumoValor"></span></div>
+                </div>
+
+                <input type="hidden" id="agendInicio">
+                <input type="hidden" id="agendFim">
+
+                <button type="submit" id="btnConfirmarAgendamento" disabled>Confirmar Agendamento</button>
+            </form>
+        </div>
+
+        <!-- 4. CONSULTA E HISTÓRICO DE AGENDAMENTOS -->
+        <div class="card full-width">
+            <h2>4. Agendamentos Registrados</h2>
+
+            <div class="filter-group">
+                <div>
+                    <label>Filtrar por Quadra</label>
+                    <select id="filtroQuadraSelect">
+                        <option value="">Todas as Quadras</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Filtrar por Data</label>
+                    <input type="date" id="filtroData">
+                </div>
+                <div style="flex: 0;">
+                    <button type="button" class="btn-outline" onclick="filtrarAgendamentos()">Filtrar</button>
+                </div>
+                <div style="flex: 0;">
+                    <button type="button" class="btn-outline" onclick="carregarAgendamentos()">Ver Todos</button>
+                </div>
+            </div>
+
+            <ul id="listaAgendamentos" class="list-items" style="max-height: 350px;"></ul>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8080';
+
+        async function authFetch(url, options = {}) {
+            if (!options.headers) {
+                options.headers = {};
+            }
+            if (usuarioLogado && usuarioLogado.id_usuario) {
+                options.headers['X-Usuario-Id'] = usuarioLogado.id_usuario;
+            }
+            return fetch(url, options);
+        }
+
+        let usuarioLogado = null;
+        let usuariosCache = [];
+        let quadrasCache = [];
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        // Inicialização
+        window.addEventListener('DOMContentLoaded', () => {
+            const hoje = new Date().toISOString().split('T')[0];
+            const dataInput = document.getElementById('agendData');
+            dataInput.min = hoje;
+            dataInput.value = hoje;
+
+            const filtroDataInput = document.getElementById('filtroData');
+            filtroDataInput.value = hoje;
+
+            // Recuperar sessão salva
+            const sessionData = localStorage.getItem('equadras_usuario');
+            if (sessionData) {
+                try {
+                    usuarioLogado = JSON.parse(sessionData);
+                    atualizarBarraUsuario();
+                } catch (e) {
+                    localStorage.removeItem('equadras_usuario');
+                }
+            }
+
+            carregarUsuarios();
+            carregarQuadras();
+            carregarAgendamentos();
+        });
+
+        function trocarAbaUsuario(aba) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            if (aba === 'login') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('abaLogin').classList.add('active');
+            } else if (aba === 'cadastro') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('abaCadastro').classList.add('active');
+            } else if (aba === 'lista') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('abaLista').classList.add('active');
+                carregarUsuarios();
+            }
+        }
+
+        function atualizarBarraUsuario() {
+            const el = document.getElementById('usuarioSessao');
+            if (usuarioLogado) {
+                el.innerHTML = `
+                    <span><strong>${usuarioLogado.nome_usuario}</strong></span>
+                    <span class="badge-status">${usuarioLogado.role}</span>
+                    <button class="btn-outline btn-small" onclick="fazerLogout()">Sair</button>
+                `;
+                // Seleciona automaticamente o usuário logado no formulário de agendamento
+                const select = document.getElementById('agendUsuarioSelect');
+                if (select) {
+                    select.value = usuarioLogado.id_usuario;
+                }
+                
+                const adminCard = document.getElementById('adminQuadrasCard');
+                if (adminCard) {
+                    adminCard.style.display = usuarioLogado.role === 'ADMIN' ? 'block' : 'none';
+                }
+            } else {
+                const adminCard = document.getElementById('adminQuadrasCard');
+                if (adminCard) adminCard.style.display = 'none';
+                el.innerHTML = `
+                    <span>Visitante</span>
+                    <span class="badge-status">NÃO AUTENTICADO</span>
+                `;
+            }
+        }
+
+        function fazerLogout() {
+            usuarioLogado = null;
+            localStorage.removeItem('equadras_usuario');
+            atualizarBarraUsuario();
+            showToast('Você saiu da sua conta.');
+        }
+
+        // --- LOGIN ---
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                email_usuario: document.getElementById('loginEmail').value,
+                senha_usuario: document.getElementById('loginSenha').value
+            };
+
+            try {
+                const res = await authFetch(`${API}/usuarios/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    usuarioLogado = data;
+                    localStorage.setItem('equadras_usuario', JSON.stringify(data));
+                    atualizarBarraUsuario();
+                    showToast(`Bem-vindo(a), ${data.nome_usuario}!`);
+                    document.getElementById('formLogin').reset();
+                    // Atualiza seleção de usuário
+                    const select = document.getElementById('agendUsuarioSelect');
+                    if (select) select.value = data.id_usuario;
+                } else {
+                    showToast(data.mensagem || 'E-mail ou senha incorretos.');
+                }
+            } catch (err) {
+                showToast('Erro ao tentar autenticar.');
+            }
+        });
+
+        // --- CADASTRO DE USUÁRIO ---
+        document.getElementById('formCadastroUsuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                nome_usuario: document.getElementById('userNome').value,
+                email_usuario: document.getElementById('userEmail').value,
+                senha_usuario: document.getElementById('userSenha').value,
+                phone_usuario: document.getElementById('userTelefone').value,
+                role: document.getElementById('userRole').value
+            };
+
+            try {
+                const res = await authFetch(`${API}/usuarios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(`Usuário "${data.nome_usuario}" cadastrado com sucesso!`);
+                    document.getElementById('formCadastroUsuario').reset();
+                    carregarUsuarios();
+                    trocarAbaUsuario('login');
+                    document.getElementById('loginEmail').value = data.email_usuario;
+                } else {
+                    showToast(data.mensagem || (data.campos ? data.campos.map(c => c.mensagem).join(', ') : 'Erro no cadastro'));
+                }
+            } catch (err) {
+                showToast('Erro ao comunicar com a API.');
+            }
+        });
+
+        async function carregarUsuarios() {
+            try {
+                const res = await authFetch(`${API}/usuarios`);
+                const data = await res.json();
+                usuariosCache = data;
+
+                let html = '';
+                let selectOptions = '<option value="">Selecione um usuário...</option>';
+
+                data.forEach(u => {
+                    html += `<li>
+                        <span>[#${u.id_usuario}] <strong>${u.nome_usuario}</strong> — ${u.email_usuario} (${u.phone_usuario})</span>
+                        <span class="badge-status">${u.role}</span>
+                    </li>`;
+                    selectOptions += `<option value="${u.id_usuario}">${u.nome_usuario} (ID: ${u.id_usuario})</option>`;
+                });
+
+                document.getElementById('listaUsuarios').innerHTML = html || '<li style="color: var(--text-muted);">Nenhum usuário cadastrado.</li>';
+                document.getElementById('agendUsuarioSelect').innerHTML = selectOptions;
+
+                if (usuarioLogado) {
+                    document.getElementById('agendUsuarioSelect').value = usuarioLogado.id_usuario;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // --- QUADRAS ---
+        document.getElementById('formQuadra').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                nome: document.getElementById('quadraNome').value,
+                tipoEsporte: document.getElementById('quadraEsporte').value,
+                valorHora: parseFloat(document.getElementById('quadraValor').value)
+            };
+
+            try {
+                const res = await authFetch(`${API}/quadras`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(`Quadra "${data.nome}" cadastrada com sucesso!`);
+                    document.getElementById('formQuadra').reset();
+                    carregarQuadras();
+                } else {
+                    showToast(data.mensagem || 'Erro ao cadastrar quadra.');
+                }
+            } catch (err) {
+                showToast('Erro ao cadastrar quadra.');
+            }
+        });
+
+        async function carregarQuadras() {
+            try {
+                const res = await authFetch(`${API}/quadras`);
+                const data = await res.json();
+                quadrasCache = data;
+
+                let html = '';
+                let agendOptions = '<option value="">Selecione uma quadra...</option>';
+                let filtroOptions = '<option value="">Todas as Quadras</option>';
+
+                data.forEach(q => {
+                    const statusText = q.ativa ? 'ATIVA' : 'INATIVA';
+                    html += `<li>
+                        <div>
+                            [#${q.id_quadra}] <strong>${q.nome}</strong> — ${q.tipoEsporte} | R$ ${q.valorHora.toFixed(2)}/h
+                            <span class="badge-status" style="margin-left: 8px;">${statusText}</span>
+                        </div>
+                        <button class="btn-outline btn-small" onclick="alternarStatusQuadra(${q.id_quadra}, ${!q.ativa})">
+                            ${q.ativa ? 'Desativar' : 'Ativar'}
+                        </button>
+                    </li>`;
+
+                    if (q.ativa) {
+                        agendOptions += `<option value="${q.id_quadra}">${q.nome} (${q.tipoEsporte}) - R$ ${q.valorHora.toFixed(2)}/h</option>`;
+                    }
+                    filtroOptions += `<option value="${q.id_quadra}">${q.nome}</option>`;
+                });
+
+                document.getElementById('listaQuadras').innerHTML = html || '<li style="color: var(--text-muted);">Nenhuma quadra cadastrada.</li>';
+                document.getElementById('agendQuadraSelect').innerHTML = agendOptions;
+                document.getElementById('filtroQuadraSelect').innerHTML = filtroOptions;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function alternarStatusQuadra(id, status) {
+            try {
+                const res = await authFetch(`${API}/quadras/${id}/status?ativa=${status}`, { method: 'PATCH' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Status da quadra atualizado para ${data.ativa ? 'ATIVA' : 'INATIVA'}.`);
+                    carregarQuadras();
+                    aoMudarQuadraOuData();
+                } else {
+                    showToast(data.mensagem || 'Erro ao alterar status.');
+                }
+            } catch (err) {
+                showToast('Erro ao atualizar quadra.');
+            }
+        }
+
+        // --- HORÁRIOS DISPONÍVEIS E BLOQUEIOS ---
+        async function aoMudarQuadraOuData() {
+            const quadraId = document.getElementById('agendQuadraSelect').value;
+            const data = document.getElementById('agendData').value;
+            const container = document.getElementById('slotsContainer');
+            const btnConfirmar = document.getElementById('btnConfirmarAgendamento');
+            const resumo = document.getElementById('resumoSlot');
+
+            btnConfirmar.disabled = true;
+            resumo.style.display = 'none';
+            document.getElementById('agendInicio').value = '';
+            document.getElementById('agendFim').value = '';
+
+            if (!quadraId || !data) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.88rem; padding: 12px 0;">Selecione a quadra e a data para carregar os horários.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-secondary); font-size: 0.88rem; padding: 12px 0;">Carregando horários...</div>';
+
+            try {
+                const res = await authFetch(`${API}/agendamentos/quadra/${quadraId}/horarios-disponiveis?data=${data}`);
+                const slots = await res.json();
+
+                if (!Array.isArray(slots) || slots.length === 0) {
+                    container.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.88rem;">Nenhum horário disponível para esta data.</div>';
+                    return;
+                }
+
+                let html = '';
+                slots.forEach(s => {
+                    const horaInicio = s.inicio.substring(0, 5);
+                    const horaFim = s.fim.substring(0, 5);
+                    const labelHorario = `${horaInicio} - ${horaFim}`;
+
+                    if (s.disponivel) {
+                        html += `
+                            <button type="button" class="slot-btn available" onclick="selecionarSlot(this, '${data}', '${horaInicio}', '${horaFim}', ${quadraId})">
+                                <span class="slot-time">${labelHorario}</span>
+                                <span class="slot-badge">Disponível</span>
+                            </button>
+                        `;
+                    } else {
+                        html += `
+                            <button type="button" class="slot-btn blocked" disabled title="${s.motivo}">
+                                <span class="slot-time">${labelHorario}</span>
+                                <span class="slot-badge">${s.motivo || 'Bloqueado'}</span>
+                            </button>
+                        `;
+                    }
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-muted);">Erro ao carregar horários.</div>';
+            }
+        }
+
+        function selecionarSlot(botao, data, horaInicio, horaFim, quadraId) {
+            document.querySelectorAll('.slot-btn.selected').forEach(b => b.classList.remove('selected'));
+            botao.classList.add('selected');
+
+            const dataHoraInicio = `${data}T${horaInicio}:00`;
+            const dataHoraFim = `${data}T${horaFim}:00`;
+
+            document.getElementById('agendInicio').value = dataHoraInicio;
+            document.getElementById('agendFim').value = dataHoraFim;
+
+            const quadra = quadrasCache.find(q => q.id_quadra == quadraId);
+            const valor = quadra ? `R$ ${quadra.valorHora.toFixed(2)}` : 'R$ 0,00';
+
+            document.getElementById('resumoHorario').textContent = `${horaInicio} às ${horaFim}`;
+            document.getElementById('resumoData').textContent = data.split('-').reverse().join('/');
+            document.getElementById('resumoValor').textContent = valor;
+            document.getElementById('resumoSlot').style.display = 'block';
+
+            document.getElementById('btnConfirmarAgendamento').disabled = false;
+        }
+
+        // --- SUBMISSÃO DE AGENDAMENTO ---
+        document.getElementById('formAgendamento').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usuarioId = document.getElementById('agendUsuarioSelect').value;
+            const quadraId = document.getElementById('agendQuadraSelect').value;
+            const dataHoraInicio = document.getElementById('agendInicio').value;
+            const dataHoraFim = document.getElementById('agendFim').value;
+
+            if (!usuarioId || !quadraId || !dataHoraInicio || !dataHoraFim) {
+                showToast('Selecione usuário, quadra e um horário disponível.');
+                return;
+            }
+
+            const body = {
+                usuarioId: parseInt(usuarioId),
+                quadraId: parseInt(quadraId),
+                dataHoraInicio: dataHoraInicio,
+                dataHoraFim: dataHoraFim
+            };
+
+            try {
+                const res = await authFetch(`${API}/agendamentos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast(`Agendamento #${data.id_agendamento} confirmado com sucesso!`);
+                    aoMudarQuadraOuData();
+                    carregarAgendamentos();
+                } else {
+                    showToast(`Bloqueio: ${data.mensagem || 'Horário indisponível.'}`);
+                }
+            } catch (err) {
+                showToast('Erro ao processar agendamento.');
+            }
+        });
+
+        // --- LISTAGEM E CANCELAMENTO DE AGENDAMENTOS ---
+        async function carregarAgendamentos() {
+            try {
+                const res = await authFetch(`${API}/agendamentos`);
+                const data = await res.json();
+                renderAgendamentos(data);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function filtrarAgendamentos() {
+            const quadraId = document.getElementById('filtroQuadraSelect').value;
+            const data = document.getElementById('filtroData').value;
+
+            if (!quadraId) {
+                carregarAgendamentos();
+                return;
+            }
+
+            if (!data) {
+                showToast('Selecione uma data para filtrar.');
+                return;
+            }
+
+            try {
+                const res = await authFetch(`${API}/agendamentos/quadra/${quadraId}/data?data=${data}`);
+                const list = await res.json();
+                renderAgendamentos(list);
+            } catch (err) {
+                showToast('Erro ao filtrar agendamentos.');
+            }
+        }
+
+        function formatarDataHora(dtStr) {
+            if (!dtStr) return '';
+            const [d, t] = dtStr.split('T');
+            const [ano, mes, dia] = d.split('-');
+            const hora = t ? t.substring(0, 5) : '';
+            return `${dia}/${mes}/${ano} às ${hora}`;
+        }
+
+        function renderAgendamentos(lista) {
+            const el = document.getElementById('listaAgendamentos');
+            if (!lista || lista.length === 0) {
+                el.innerHTML = '<li style="color: var(--text-muted);">Nenhum agendamento encontrado.</li>';
+                return;
+            }
+
+            let html = '';
+            lista.forEach(a => {
+                const isCancelado = a.status === 'CANCELADO';
+                html += `<li>
+                    <div>
+                        [#${a.id_agendamento}] <strong>${a.nomeQuadra}</strong> | Cliente: <strong>${a.nomeUsuario}</strong><br>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">
+                            De: ${formatarDataHora(a.dataHoraInicio)} Até: ${formatarDataHora(a.dataHoraFim)} | Total: R$ ${parseFloat(a.valorTotal).toFixed(2)}
+                        </span>
+                        <span class="badge-status" style="margin-left: 8px;">${a.status}</span>
+                    </div>
+                    <div>
+                        ${!isCancelado ? `<button class="btn-outline btn-small" onclick="cancelarAgendamento(${a.id_agendamento})">Cancelar</button>` : ''}
+                    </div>
+                </li>`;
+            });
+            el.innerHTML = html;
+        }
+
+        async function cancelarAgendamento(id) {
+            if (!confirm('Deseja realmente cancelar este agendamento?')) return;
+
+            try {
+                const res = await authFetch(`${API}/agendamentos/${id}/cancelar`, { method: 'PATCH' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Agendamento #${id} cancelado.`);
+                    carregarAgendamentos();
+                    aoMudarQuadraOuData();
+                } else {
+                    showToast(data.mensagem || 'Não foi possível cancelar.');
+                }
+            } catch (err) {
+                showToast('Erro ao cancelar agendamento.');
+            }
+        }
+    </script>
+</body>
+</html>
