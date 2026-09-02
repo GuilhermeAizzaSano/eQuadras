@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi, notificacaoApi } from '../api/apiClient';
+import { quadraApi, agendamentoApi, notificacaoApi, getBaseUrl, getAssetUrl } from '../api/apiClient';
 import { Quadra, Agendamento, TipoEsporte, Notificacao } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, LoadingOverlay, CourtDetailsModal } from '../components/ui';
 import {
@@ -119,8 +119,8 @@ export const AdminDashboard: React.FC = () => {
     if (user) {
       // Setup SSE for real-time notifications
       const streamUrl = token
-        ? `http://localhost:8080/notificacoes/stream?token=${token}`
-        : `http://localhost:8080/notificacoes/stream`;
+        ? `${getBaseUrl()}/notificacoes/stream?token=${token}`
+        : `${getBaseUrl()}/notificacoes/stream`;
       eventSourceRef.current = new EventSource(streamUrl);
       
       eventSourceRef.current.addEventListener('notificacao', (event) => {
@@ -1232,7 +1232,7 @@ export const AdminDashboard: React.FC = () => {
                   {fotosExistentes.map((url, idx) => (
                     <div key={`existente-${idx}`} className="relative aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 group">
                       <img
-                        src={url.startsWith('http') ? url : `http://localhost:8080${url}`}
+                        src={getAssetUrl(url)}
                         alt="Foto da quadra"
                         className="w-full h-full object-cover"
                       />
