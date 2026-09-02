@@ -213,17 +213,34 @@ Para assegurar tempos de resposta sub-milissegundo sob alta carga concorrente e 
 
 ---
 
-## 🗓 Novas Funcionalidades: Horários e Disponibilidade por Quadra
+## 🗓 Funcionalidades: Horários, Disponibilidade e Bloqueios por Quadra
 
-A plataforma agora conta com suporte nativo a horários e dias de funcionamento granulares por quadra:
+A plataforma conta com gestão granular de horários, sazonalidade e bloqueios pontuais:
 
-- **Configuração no Admin:** O administrador seleciona exatamente quais dias da semana (Segunda a Domingo) a quadra opera e define a hora de início e de término (ex: Segunda a Sexta das 08h às 22h, Sábado das 08h às 18h e Domingo Fechado).
-- **Atalhos Rápidos:** Botões *"Copiar Seg p/ Todos"* e *"Padrão (06:00 - 23:00)"* para agilizar o cadastro de novas quadras.
-- **Experiência do Atleta no Agendamento:**
-  - O carrossel de datas nos próximos 14 dias calcula a disponibilidade em tempo real.
-  - Dias em que a quadra está fechada ficam **desativados (`disabled`)**, semitransparentes e com a etiqueta **"Fechado"**, impedindo cliques ou escolhas inválidas.
-  - O sistema seleciona automaticamente o primeiro dia aberto disponível ao abrir a quadra.
-- **Validação no Backend:** Se um cliente tentar forçar uma reserva em dia/horário fora da disponibilidade configurada, a API rejeita a requisição com erro 400 (`"Horário selecionado está fora do horário de funcionamento da quadra."`).
+- **Horários de Funcionamento Semanais:** O administrador define individualmente os dias em que a quadra opera (Segunda a Domingo) e a faixa horária de funcionamento (ex: Segunda a Sexta das 08h às 22h, Sábado das 08h às 18h e Domingo Fechado).
+- **Data Limite de Agendamento:** Permite estipular um prazo final (ex: término de contrato ou temporada), bloqueando automaticamente reservas em datas posteriores.
+- **Bloqueios Pontuais e Manutenções:**
+  - O administrador pode bloquear um dia inteiro (ex: reformas, feriados) ou horários específicos de uma data (ex: 14h às 16h).
+  - Suporte inteligente com aviso de confirmação caso tente bloquear horários específicos em um dia com bloqueio total pré-existente (substituindo o dia todo apenas pelo intervalo desejado).
+- **Experiência do Atleta:**
+  - Carrossel dinâmico dos próximos 14 dias calcula a disponibilidade em tempo real.
+  - Dias fechados, com bloqueio total ou após a data limite ficam desabilitados com badges claras (**"Fechado"**, **"Bloqueado"**, **"Encerrado"**).
+- **Segurança Transacional:** Validações atômicas sob Lock Pessimista no backend rejeitam qualquer tentativa de agendamento em horários bloqueados ou fora de funcionamento.
+
+---
+
+## 🎨 Arquitetura do Frontend e Modularização
+
+O frontend foi totalmente refatorado sob o paradigma de **Componentes Atômicos e Container/Presentational**:
+- `AdminDashboard.tsx`: Reduzido em mais de 60% em linhas de código, atuando exclusivamente como container de estado, autenticação e SSE.
+- Subcomponentes especializados em `frontend/src/components/admin/`:
+  - `AdminMetricsGrid.tsx`: Exibição de KPIs e métricas de faturamento.
+  - `CalendarOccupancy.tsx`: Calendário mensal completo com filtros de status (`TODOS`, `LIVRES`, `AGENDADOS`, `BLOQUEADOS`).
+  - `CourtManagementList.tsx`: Grid de quadras cadastradas com ações rápidas de ativação, edição e bloqueio.
+  - `DayAgendaModal.tsx`: Modal da agenda do dia com toggle entre grade horária e lista de reservas detalhada.
+  - `CourtBlockModal.tsx`: Criação e remoção de bloqueios pontuais com confirmação.
+  - `CourtFormModal.tsx`: Cadastro e edição completa de quadras (fotos, CEP e grade semanal).
+- Otimização de chamadas HTTP consolidando listagens em lote (`GET /quadras/bloqueios` e `GET /agendamentos/dia`).
 
 ---
 
@@ -290,13 +307,18 @@ O frontend estará acessível em: **`http://localhost:3000`** (ou `http://localh
 | `POST` | `/usuarios` | Registro de novos atletas | Pública |
 | `POST` | `/usuarios/login` | Login e emissão do JWT | Pública |
 | `GET` | `/quadras` | Listagem de quadras (filtros de esporte, CEP, lat/lng e raio) | Opcional |
-| `POST` | `/quadras` | Cadastro de quadra com horários de funcionamento | `ROLE_ADMIN` |
-| `PUT` | `/quadras/{id}` | Edição dos dados e horários de funcionamento da quadra | `ROLE_ADMIN` |
+| `POST` | `/quadras` | Cadastro de quadra com horários de funcionamento e data limite | `ROLE_ADMIN` |
+| `PUT` | `/quadras/{id}` | Edição dos dados, horários e data limite da quadra | `ROLE_ADMIN` |
 | `PATCH` | `/quadras/{id}/status` | Alternar status ativo/inativo | `ROLE_ADMIN` |
 | `DELETE` | `/quadras/{id}` | Exclusão de quadra | `ROLE_ADMIN` |
 | `POST` | `/quadras/{id}/fotos` | Upload de fotos (máx. 5 fotos) | `ROLE_ADMIN` |
 | `DELETE` | `/quadras/{id}/fotos` | Remoção de foto | `ROLE_ADMIN` |
-| `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Consulta de slots dinâmicos por data | Autenticado |
+| `GET` | `/quadras/bloqueios` | Listagem consolidada de todos os bloqueios do admin | `ROLE_ADMIN` |
+| `POST` | `/quadras/{id}/bloqueios` | Criar bloqueio de horário ou dia inteiro | `ROLE_ADMIN` |
+| `DELETE` | `/quadras/{quadraId}/bloqueios/{id}` | Remover bloqueio por ID | `ROLE_ADMIN` |
+| `POST` | `/quadras/{quadraId}/desbloquear` | Desbloquear horários/dias via payload | `ROLE_ADMIN` |
+| `GET` | `/agendamentos/dia` | Consulta consolidada de slots de todas as quadras do admin | `ROLE_ADMIN` |
+| `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Consulta de slots dinâmicos da quadra por data | Autenticado |
 | `GET` | `/agendamentos` | Listagem de agendamentos do usuário logado | Autenticado |
 | `POST` | `/agendamentos` | Agendamento atômico e geração do Pix | Autenticado |
 | `PATCH` | `/agendamentos/{id}/cancelar` | Cancelamento de agendamento | Autenticado |
@@ -306,14 +328,14 @@ O frontend estará acessível em: **`http://localhost:3000`** (ou `http://localh
 
 ---
 
-## 📚 Documentação da API (ReadMe.io & OpenAPI / Swagger)
+## 📚 Documentação da API
 
-As APIs do **eQuadras** são documentadas sob a especificação **OpenAPI 3.1** via **SpringDoc OpenAPI**. Sistemas externos, parceiros e desenvolvedores podem consultar a documentação interativa oficial:
-
-- 🌐 **Portal Oficial da Documentação:** [https://equadras.readme.io/reference](https://equadras.readme.io/reference)
+A documentação técnica detalhada de todas as rotas, payloads, regras e exemplos está consolidada no documento:
+- 📖 **Guia Completo da API:** [`docs/api/API_DOCUMENTATION.md`](docs/api/API_DOCUMENTATION.md)
 - 🖥️ **Swagger UI Local:** [`http://localhost:8080/swagger-ui/index.html`](http://localhost:8080/swagger-ui/index.html)
-- 📄 **OpenAPI Schema (JSON):** [`http://localhost:8080/v3/api-docs`](http://localhost:8080/v3/api-docs) ou no arquivo local [`openapi.json`](openapi.json)
-- 🔐 **Autenticação:** Para testar endpoints protegidos na documentação, informe o token JWT gerado no endpoint `/usuarios/login` no formato `Bearer <seu_token>`.
+- 📄 **OpenAPI Schema (JSON ao vivo):** [`http://localhost:8080/v3/api-docs`](http://localhost:8080/v3/api-docs)
+- 🌐 **Portal Online:** [https://equadras.readme.io/reference](https://equadras.readme.io/reference)
+- 🔐 **Token Fixo de Testes Administrativos:** `equadras_master_admin_token_2026_secret_key_fixed` (Admin ID 52).
 
 ---
 

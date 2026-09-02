@@ -75,6 +75,8 @@ desktop.ini
 .gemini/
 .superpowers/
 docs/
+!docs/api/
+!docs/api/**
 *.log
 
 # Maven Wrapper binaries
