@@ -81,4 +81,25 @@ public class SecurityConfigIntegrationTest {
                         .header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("Gerar tokens para testes de performance")
+    void exportPerfTokens() throws Exception {
+        Usuario admin = Usuario.builder()
+                .id_usuario(1L)
+                .email_usuario("admin@equadras.com")
+                .role(Role.ADMIN)
+                .build();
+        String tokenAdmin = jwtService.gerarToken(admin);
+
+        Usuario cliente = Usuario.builder()
+                .id_usuario(2L)
+                .email_usuario("cliente2@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String tokenClient = jwtService.gerarToken(cliente);
+
+        String json = "{\"admin\":\"" + tokenAdmin + "\",\"client\":\"" + tokenClient + "\"}";
+        java.nio.file.Files.writeString(java.nio.file.Path.of("docs/performance/test-tokens.json"), json);
+    }
 }
