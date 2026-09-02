@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 public record AgendamentoCriacaoDTO(
-        @NotNull(message = "O ID do usuário é obrigatório")
         Long usuarioId,
 
         @NotNull(message = "O ID da quadra é obrigatório")
