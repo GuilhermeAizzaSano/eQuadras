@@ -167,6 +167,19 @@ public class AgendamentoService {
         Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
+        java.time.DayOfWeek diaSemana = data.getDayOfWeek();
+        com.agendamentos.equadras.model.entity.DisponibilidadeDia disp = null;
+        if (quadra.getDisponibilidades() != null) {
+            disp = quadra.getDisponibilidades().stream()
+                    .filter(d -> d.getDiaSemana() == diaSemana)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (disp == null) {
+            return List.of();
+        }
+
         LocalDateTime inicioDoDia = data.atStartOfDay();
         LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
 
@@ -180,8 +193,8 @@ public class AgendamentoService {
         LocalDateTime agora = LocalDateTime.now();
         List<HorarioDisponivelDTO> slots = new ArrayList<>();
 
-        LocalTime slotInicio = HORARIO_ABERTURA;
-        while (slotInicio.isBefore(HORARIO_FECHAMENTO)) {
+        LocalTime slotInicio = disp.getHoraInicio();
+        while (slotInicio.isBefore(disp.getHoraFim())) {
             LocalTime slotFim = slotInicio.plusHours(1);
             LocalDateTime slotDataHoraInicio = data.atTime(slotInicio);
             LocalDateTime slotDataHoraFim = data.atTime(slotFim);

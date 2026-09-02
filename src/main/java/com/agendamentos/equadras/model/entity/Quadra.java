@@ -100,6 +100,14 @@ public class Quadra {
     @PrePersist
     protected void onCreate() {
         this.ativa = true;
+        if (this.disponibilidades == null) {
+            this.disponibilidades = new ArrayList<>();
+        }
+        if (this.disponibilidades.isEmpty()) {
+            for (java.time.DayOfWeek dia : java.time.DayOfWeek.values()) {
+                this.disponibilidades.add(new DisponibilidadeDia(dia, java.time.LocalTime.of(6, 0), java.time.LocalTime.of(23, 0)));
+            }
+        }
     }
 
     public Long getId_quadra() { return id_quadra; }
