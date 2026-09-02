@@ -24,7 +24,7 @@
 1. [Visão Geral](#-visão-geral)
 2. [Arquitetura do Sistema](#-arquitetura-do-sistema)
 3. [Stack Tecnológica](#-stack-tecnológica)
-4. [🌐 Integrações com APIs Externas](#-integrações-com-apis-externas)
+4. [Integrações com APIs Externas](#-integrações-com-apis-externas)
 5. [Estrutura do Banco de Dados](#-estrutura-do-banco-de-dados)
 6. [Destaques de Segurança & Resiliência](#-destaques-de-segurança--resiliência)
 7. [Design System & Interface](#-design-system--interface)
