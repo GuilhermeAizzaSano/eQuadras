@@ -1,11 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, getAssetUrl } from '../api/apiClient';
-import { Quadra, HorarioDisponivel, Agendamento } from '../types';
+import { Quadra, HorarioDisponivel, Agendamento, DiaSemana } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
 import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown } from 'lucide-react';
 
 const ESPORTES = ['TODOS', 'FUTEBOL', 'BEACH_TENNIS', 'TENIS', 'FUTSAL', 'VOLEI', 'BASQUETE'] as const;
+
+const DIA_SEMANA_MAP: DiaSemana[] = [
+  'SUNDAY',
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+];
 
 export const ClientDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -31,6 +41,8 @@ export const ClientDashboard: React.FC = () => {
   const [meusAgendamentos, setMeusAgendamentos] = useState<Agendamento[]>([]);
   // Aba de filtro de status das reservas
   const [filtroStatusReservas, setFiltroStatusReservas] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
+
+  const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
 
   // Filtragem dinâmica de agendamentos do cliente
   const agendamentosFiltrados = useMemo(() => {
@@ -76,7 +88,7 @@ export const ClientDashboard: React.FC = () => {
   }, [meusAgendamentos]);
 
   const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Processando dados...');
+  const [loadingMessage, setLoadingMessage] = useState('Processando...');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Modal Pix
@@ -118,7 +130,7 @@ export const ClientDashboard: React.FC = () => {
 
   const [cepBusca, setCepBusca] = useState('');
 
-  // Gera os próximos 14 dias para o seletor visual
+  // Gera os próximos 14 dias para o seletor visual considerando as disponibilidades da quadra selecionada
   const diasDisponiveis = useMemo(() => {
     const dias = [];
     const nomesDias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -131,6 +143,12 @@ export const ClientDashboard: React.FC = () => {
       const mes = String(d.getMonth() + 1).padStart(2, '0');
       const dia = String(d.getDate()).padStart(2, '0');
       const iso = `${ano}-${mes}-${dia}`;
+      const diaSemanaEnum = DIA_SEMANA_MAP[d.getDay()];
+
+      let disponivel = true;
+      if (quadraAtual?.disponibilidades && quadraAtual.disponibilidades.length > 0) {
+        disponivel = quadraAtual.disponibilidades.some((disp) => disp.diaSemana === diaSemanaEnum);
+      }
 
       dias.push({
         iso,
@@ -138,10 +156,24 @@ export const ClientDashboard: React.FC = () => {
         diaMes: d.getDate(),
         mes: nomesMeses[d.getMonth()],
         isHoje: i === 0,
+        disponivel,
       });
     }
     return dias;
-  }, []);
+  }, [quadraAtual]);
+
+  // Se o modal de agendamento estiver aberto e a data selecionada não for disponível, seleciona a primeira data válida
+  useEffect(() => {
+    if (isBookingModalOpen && diasDisponiveis.length > 0) {
+      const diaAtualValido = diasDisponiveis.find((d) => d.iso === dataSelecionada)?.disponivel;
+      if (diaAtualValido === false) {
+        const primeiroValido = diasDisponiveis.find((d) => d.disponivel);
+        if (primeiroValido) {
+          setDataSelecionada(primeiroValido.iso);
+        }
+      }
+    }
+  }, [isBookingModalOpen, diasDisponiveis, dataSelecionada]);
 
   const buscarQuadrasPorLocalizacao = async () => {
     const cepNumerico = cepBusca.replace(/\D/g, '');
@@ -361,8 +393,6 @@ export const ClientDashboard: React.FC = () => {
   const quadrasFiltradas = quadras.filter(
     (q) => filtroEsporte === 'TODOS' || q.tipoEsporte === filtroEsporte
   );
-
-  const quadraAtual = quadras.find((q) => q.id_quadra === selectedQuadra);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
