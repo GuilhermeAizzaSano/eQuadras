@@ -26,7 +26,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
       <Navbar />
       <main className="flex-1">
         <Suspense fallback={<FallbackSpinner />}>

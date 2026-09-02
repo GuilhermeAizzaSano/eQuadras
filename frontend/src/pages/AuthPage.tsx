@@ -74,7 +74,7 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col justify-center items-center px-4 sm:px-6 py-12">
+    <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center px-4 sm:px-6 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Logo & Headline */}
         <div className="text-center space-y-2 flex flex-col items-center">
