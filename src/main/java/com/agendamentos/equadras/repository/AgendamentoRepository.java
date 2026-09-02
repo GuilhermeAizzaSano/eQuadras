@@ -15,10 +15,11 @@ import org.springframework.data.jpa.repository.EntityGraph;
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
 
     @Query("""
-        SELECT COUNT(a) > 0 FROM Agendamento a
+        SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Agendamento a
         WHERE a.quadra.id_quadra = :quadraId
-        AND a.status <> :statusCancelado
-        AND (a.dataHoraInicio < :fim AND a.dataHoraFim > :inicio)
+        AND a.status != :statusCancelado
+        AND a.dataHoraInicio < :fim
+        AND a.dataHoraFim > :inicio
     """)
     boolean existeConflitoHorario(
             @Param("quadraId") Long quadraId,
