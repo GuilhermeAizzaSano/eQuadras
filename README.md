@@ -5,7 +5,7 @@
 <h1 align="center">eQuadras - Plataforma de Gestão e Agendamento Esportivo</h1>
 
 <p align="center">
-  <strong>Sistema moderno, resiliente e escalável para locação de quadras esportivas com agendamento em tempo real, pagamento instantâneo via Pix e notificações SSE.</strong>
+  <strong>Sistema moderno, resiliente e escalável para locação de quadras esportivas com horários dinâmicos de funcionamento, agendamento concorrente com lock pessimista, pagamento instantâneo via Pix e notificações em tempo real.</strong>
 </p>
 
 <p align="center">
@@ -26,12 +26,14 @@
 3. [Stack Tecnológica](#-stack-tecnológica)
 4. [Integrações com APIs Externas](#-integrações-com-apis-externas)
 5. [Estrutura do Banco de Dados](#-estrutura-do-banco-de-dados)
-6. [Destaques de Segurança & Resiliência](#-destaques-de-segurança--resiliência)
-7. [Design System & Interface](#-design-system--interface)
-8. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
-9. [Endpoints Principais da API](#-endpoints-principais-da-api)
-10. [Variáveis de Ambiente](#-variáveis-de-ambiente)
-11. [Licença & Autoria](#-licença--autoria)
+6. [Estratégia de Índices e Performance do Banco](#-estratégia-de-índices-e-performance-do-banco)
+7. [Destaques de Segurança & Resiliência](#-destaques-de-segurança--resiliência)
+8. [Novas Funcionalidades: Horários e Disponibilidade por Quadra](#-novas-funcionalidades-horários-e-disponibilidade-por-quadra)
+9. [Design System & Interface](#-design-system--interface)
+10. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
+11. [Endpoints Principais da API](#-endpoints-principais-da-api)
+12. [Variáveis de Ambiente](#-variáveis-de-ambiente)
+13. [Licença & Autoria](#-licença--autoria)
 
 ---
 
@@ -40,30 +42,31 @@
 O **eQuadras** foi desenvolvido para solucionar a burocracia no agendamento e administração de quadras esportivas (Futebol, Beach Tennis, Tênis, Futsal, Vôlei e Basquete). 
 
 A plataforma divide-se em dois portais integrados:
-- **Portal do Atleta:** Busca de quadras com geolocalização e raio em KM (via CEP e Nominatim OpenStreetMap), galeria com carrossel de fotos, detalhes da estrutura, modal dedicado para seleção de horários nos próximos 14 dias com prevenção de colisões, geração de Pix copia e cola com QR Code e histórico completo de reservas (Ativas, Realizadas e Canceladas).
-- **Painel Administrativo:** Gestão de quadras (CRUD, upload seguro de até 5 fotos por quadra, alternância de status ativo/inativo), métricas financeiras (faturamento total, reservas do dia, histórico geral), calendário mensal interativo, controle da agenda diária e central de notificações em tempo real via **Server-Sent Events (SSE)**.
+- **Portal do Atleta (Cliente):** Busca de quadras com geolocalização e raio em KM (via CEP e coordenadas geográficas), galeria com carrossel de fotos, detalhes da estrutura, modal inteligente com seletor de dias ativos (com bloqueio automático de dias fechados), geração de Pix copia e cola com QR Code em tempo real e histórico completo de reservas (Ativas, Realizadas e Canceladas).
+- **Painel Administrativo (Proprietário):** Gestão de quadras (CRUD completo, upload seguro de até 5 fotos por quadra, alternância de status ativo/inativo), configuração personalizada de dias da semana e horários de abertura/fechamento por quadra, métricas financeiras (faturamento total, reservas do dia), calendário interativo, controle de cancelamentos e central de notificações em tempo real via **Server-Sent Events (SSE)**.
 
 ---
 
 ## 🏗 Arquitetura do Sistema
 
-O projeto segue a arquitetura em camadas orientada a domínio (DDD Simplificado / Clean Architecture), desacoplando lógica de negócios, camada de persistência e apresentação:
+O projeto segue a arquitetura em camadas orientada a domínio (Clean Architecture / Domain-Driven Design simplificado), com separação estrita de responsabilidades:
 
 ```text
 equadras/
 ├── src/main/java/com/agendamentos/equadras/
-│   ├── config/              # Configurações globais (CORS, Security, Static Resources)
+│   ├── config/              # Configurações globais (CORS, Security, Static Resources, Gzip)
 │   ├── controller/          # Endpoints REST e SSE Controllers
 │   ├── dto/                 # Data Transfer Objects (Requests e Responses)
 │   ├── exception/           # Global Exception Handler (RFC 7807 Problem Details)
 │   ├── model/
-│   │   ├── entity/          # Entidades JPA (Usuario, Quadra, Agendamento)
+│   │   ├── entity/          # Entidades JPA (Usuario, Quadra, DisponibilidadeDia, Agendamento, Notificacao)
 │   │   └── enums/           # Enums de domínio (Role, StatusAgendamento, TipoEsporte)
-│   ├── repository/         # Interfaces Spring Data JPA
-│   └── service/            # Regras de negócio, armazenamento e pagamentos
+│   ├── repository/          # Interfaces Spring Data JPA com queries otimizadas
+│   ├── security/            # Autenticação stateless JWT (Filter, Service, @UsuarioLogado resolver)
+│   └── service/             # Regras de negócio, transações, locks e pagamentos
 └── frontend/
     ├── src/
-    │   ├── api/             # Camada de comunicação HTTP (Axios / Fetch)
+    │   ├── api/             # Camada de comunicação HTTP com interceptor JWT
     │   ├── components/      # Componentes visuais atômicos e reutilizáveis
     │   ├── contexts/        # Gerenciamento de estado global (AuthContext)
     │   ├── pages/           # Telas (ClientDashboard, AdminDashboard, AuthPage)
@@ -76,14 +79,15 @@ equadras/
 
 ### Backend
 - **Java 21 LTS** com suporte a **Virtual Threads (Project Loom)** ativado para altíssima concorrência com baixo consumo de memória.
-- **Spring Boot 3.4.x** (Spring Data JPA, Spring Web MVC, Spring Validation, Spring Security).
+- **Spring Boot 3.4.x** (Spring Data JPA, Spring Web MVC, Spring Validation, Spring Security 6).
 - **PostgreSQL 16+** como banco relacional principal.
-- **Server-Sent Events (SSE):** Streaming unidirecional para notificações em tempo real.
+- **JJWT (io.jsonwebtoken 0.12.x):** Autenticação stateless HMAC-SHA com claims tipadas.
+- **Server-Sent Events (SSE):** Notificações push unidirecionais em tempo real para o admin.
 - **RFC 7807 (Problem Details):** Tratamento padronizado de exceções HTTP.
 
 ### Frontend
 - **React 18** com **TypeScript 5**.
-- **Vite 5:** Ferramenta de build ultrarrápida.
+- **Vite 5:** Code splitting dinâmico com `React.lazy()` e carregamento assíncrono de rotas.
 - **Tailwind CSS 3:** Estilização utilitária com Design System escuro (`#09090b` Zinc-950) e foco em acessibilidade WCAG AA.
 - **Lucide React:** Conjunto de ícones vetoriais modernos.
 
@@ -91,14 +95,12 @@ equadras/
 
 ## 🌐 Integrações com APIs Externas
 
-O eQuadras conecta-se a serviços e APIs públicas e privadas para automatizar geolocalização, pagamentos instantâneos e enriquecimento de dados:
-
 | API / Serviço | Tipo / Protocolo | Finalidade no Sistema | Implementação |
 |---|---|---|---|
-| **Mercado Pago Payments API** | REST / HTTPS (`v1/payments`) | Criação de cobranças Pix oficiais com QR Code base64 e código Copia e Cola, idempotência via UUID e suporte a fallback dinâmico para ambiente de testes. | [`PagamentoService.java`](src/main/java/com/agendamentos/equadras/service/PagamentoService.java) |
-| **ViaCEP API** | REST / JSON (`viacep.com.br/ws/{cep}/json/`) | Autocomplete de endereço completo (Logradouro, Bairro, Cidade, UF) a partir do CEP no cadastro de quadras e no filtro de busca do atleta. | [`QuadraService.java`](src/main/java/com/agendamentos/equadras/service/QuadraService.java) |
-| **OpenStreetMap / Nominatim API** | REST / JSON (`nominatim.openstreetmap.org/search`) | Geocodificação reversa para conversão de endereços em coordenadas geográficas (Latitude e Longitude), viabilizando o cálculo de raio e distância (Fórmula de Haversine). | [`QuadraService.java`](src/main/java/com/agendamentos/equadras/service/QuadraService.java) |
-| **Google Maps Navigation** | Deep Linking / Web (`google.com/maps/search/?api=1&query=...`) | Redirecionamento e abertura direta da rota e localização da quadra a partir das coordenadas registradas no modal de detalhes da quadra. | [`CourtDetailsModal.tsx`](frontend/src/components/ui/CourtDetailsModal.tsx) |
+| **Mercado Pago Payments API** | REST / HTTPS (`v1/payments`) | Criação de cobranças Pix com QR Code base64 e código Copia e Cola, chave de idempotência e fallback dinâmico para ambiente de testes. | [`PagamentoService.java`](src/main/java/com/agendamentos/equadras/service/PagamentoService.java) |
+| **ViaCEP API** | REST / JSON (`viacep.com.br/ws/{cep}/json/`) | Autocomplete de endereço completo (Logradouro, Bairro, Cidade, UF) a partir do CEP. | [`ClientDashboard.tsx`](frontend/src/pages/ClientDashboard.tsx) / [`AdminDashboard.tsx`](frontend/src/pages/AdminDashboard.tsx) |
+| **OpenStreetMap / Nominatim API** | REST / JSON (`nominatim.openstreetmap.org/search`) | Geocodificação de endereços em Latitude e Longitude, viabilizando busca por proximidade via Fórmula de Haversine. | [`ClientDashboard.tsx`](frontend/src/pages/ClientDashboard.tsx) |
+| **Google Maps Navigation** | Deep Linking / Web | Abertura direta da rota e localização da quadra a partir das coordenadas geográficas. | [`CourtDetailsModal.tsx`](frontend/src/components/ui/CourtDetailsModal.tsx) |
 
 ---
 
@@ -110,6 +112,7 @@ erDiagram
     USUARIOS ||--o{ AGENDAMENTOS : "realiza (1:N)"
     QUADRAS ||--o{ AGENDAMENTOS : "pertence (1:N)"
     QUADRAS ||--o{ QUADRA_FOTOS : "possui (1:N)"
+    QUADRAS ||--o{ QUADRA_DISPONIBILIDADES : "configura (1:N)"
     USUARIOS ||--o{ NOTIFICACOES : "recebe (1:N)"
 
     USUARIOS {
@@ -140,7 +143,14 @@ erDiagram
 
     QUADRA_FOTOS {
         bigint quadra_id FK
-        varchar fotos
+        varchar foto_url
+    }
+
+    QUADRA_DISPONIBILIDADES {
+        bigint quadra_id FK
+        varchar dia_semana
+        time hora_inicio
+        time hora_fim
     }
 
     AGENDAMENTOS {
@@ -168,25 +178,60 @@ erDiagram
 
 ---
 
+## ⚡ Estratégia de Índices e Performance do Banco
+
+Para assegurar tempos de resposta sub-milissegundo sob alta carga concorrente e evitar varreduras de tabela inteira (*Full Table Scans*), os seguintes índices foram implementados estrategicamente:
+
+| Índice | Tabela / Colunas | Objetivo & Impacto de Performance |
+|---|---|---|
+| `idx_quadra_admin` | `quadras(admin_id)` | Acelera a listagem de quadras pertencentes a um administrador específico no painel de controle. |
+| `idx_quadra_ativa` | `quadras(ativa)` | Filtra rapidamente quadras disponíveis para agendamento dos atletas, ignorando quadras inativadas. |
+| `idx_quadras_lat_lng` | `quadras(latitude, longitude)` | Otimiza consultas de geolocalização e cálculo do raio de busca (Fórmula de Haversine / Bounding Box). |
+| `idx_quadra_fotos_quadra_id` | `quadra_fotos(quadra_id)` | Otimiza o carregamento em lote (`@BatchSize(size = 50)`) da galeria de fotos de cada quadra. |
+| `idx_quadra_disp_quadra_id` | `quadra_disponibilidades(quadra_id)` | Permite resolução instantânea da grade de dias e horários de funcionamento ao abrir o agendamento. |
+| `idx_notificacoes_admin_data` | `notificacoes(admin_id, data_criacao DESC)` | Acelera o histórico de notificações em ordem cronológica reversa da central do admin. |
+| `idx_agendamento_quadra_status_datas` | `agendamentos(quadra_id, status, data_hora_inicio, data_hora_fim)` | Permite que a checagem de conflitos (`existeConflitoHorario` com `EXISTS`) seja resolvida exclusivamente no índice sem tocar nas páginas de dados do disco. |
+
+### Otimizações Adicionais de Camada de Dados:
+- **`spring.jpa.open-in-view=false`**: Conexões com o banco são devolvidas imediatamente ao pool HikariCP após a finalização do serviço, evitando travamentos por conexões presas na renderização.
+- **Desacoplamento de HTTP sob Lock Transacional**: Chamadas externas síncronas ao gateway de pagamento Mercado Pago são executadas **fora** do bloco de transação com Lock Pessimista (`FOR UPDATE`), liberando o banco enquanto a rede aguarda resposta.
+- **Gzip Compression**: Ativado no Spring Boot para payloads JSON acima de 1KB, reduzindo o tráfego de rede em até 70%.
+
+---
+
 ## 🔒 Destaques de Segurança & Resiliência
 
-1. **Prevenção de Colisão e Double Booking:**
-   - Validação transacional estrita impedindo marcações concorrentes no mesmo intervalo de tempo.
-2. **Armazenamento de Arquivos Seguro ([`FileStorageService.java`](src/main/java/com/agendamentos/equadras/service/FileStorageService.java)):**
-   - Validação estrita de tipo MIME (`image/jpeg`, `image/png`, `image/webp`), limite de 5MB por arquivo e nomes UUID aleatórios impedindo Path Traversal.
-   - Limite máximo de 5 fotos por quadra.
-3. **Fluxo de Confirmação em Duas Etapas:**
-   - Ações destrutivas (exclusão, inativação, cancelamento de agendamento) exigem confirmação explícita via modal estilizado.
-4. **Resiliência a Quedas e Recombinações Pix:**
-   - Expiração visual e lógica de transações pendentes de Pix com temporizador de 15 minutos.
+1. **Autenticação Stateless JWT com Claims de Perfil:**
+   - Tokens assinados (HS256) emitidos no login/cadastro.
+   - O `@UsuarioLogado` extrai a identidade e a Role (`ROLE_ADMIN` / `ROLE_CLIENT`) direto do token autenticado, impedindo falsificação de identidade por headers manuais.
+2. **Prevenção de Colisão e Double Booking:**
+   - Validação atômica sob Lock Pessimista (`buscarComLockParaAgendamento`) impedindo reservas duplicadas no mesmo segundo.
+3. **Armazenamento Seguro de Imagens:**
+   - Sanitização de arquivos no [`FileStorageService.java`](src/main/java/com/agendamentos/equadras/service/FileStorageService.java), validação de MIME types (`image/jpeg`, `image/png`, `image/webp`), limite de 5MB e geração de nomes UUID randômicos para proteção contra Path Traversal.
+4. **Tratamento Amigável de Exclusões e Integridade Referencial:**
+   - O `GlobalExceptionHandler` intercepta violações de chave estrangeira (`DataIntegrityViolationException` e `IllegalStateException`), instruindo o usuário a inativar quadras que já contenham histórico de reservas.
+
+---
+
+## 🗓 Novas Funcionalidades: Horários e Disponibilidade por Quadra
+
+A plataforma agora conta com suporte nativo a horários e dias de funcionamento granulares por quadra:
+
+- **Configuração no Admin:** O administrador seleciona exatamente quais dias da semana (Segunda a Domingo) a quadra opera e define a hora de início e de término (ex: Segunda a Sexta das 08h às 22h, Sábado das 08h às 18h e Domingo Fechado).
+- **Atalhos Rápidos:** Botões *"Copiar Seg p/ Todos"* e *"Padrão (06:00 - 23:00)"* para agilizar o cadastro de novas quadras.
+- **Experiência do Atleta no Agendamento:**
+  - O carrossel de datas nos próximos 14 dias calcula a disponibilidade em tempo real.
+  - Dias em que a quadra está fechada ficam **desativados (`disabled`)**, semitransparentes e com a etiqueta **"Fechado"**, impedindo cliques ou escolhas inválidas.
+  - O sistema seleciona automaticamente o primeiro dia aberto disponível ao abrir a quadra.
+- **Validação no Backend:** Se um cliente tentar forçar uma reserva em dia/horário fora da disponibilidade configurada, a API rejeita a requisição com erro 400 (`"Horário selecionado está fora do horário de funcionamento da quadra."`).
 
 ---
 
 ## 🎨 Design System & Interface
 
 - **Tema:** Dark mode com paleta base Zinc (`#09090b` Zinc-950, `#18181b` Zinc-900, `#27272a` Zinc-800) e destaque em esmeralda vibrante (`#34d399` Emerald-400).
-- **Responsividade:** 100% otimizado para dispositivos móveis, tablets e telas ultrawide.
-- **Microinterações:** Efeitos de hover nos cards, carrossel de fotos intuitivo com controles de toque e teclado, modais com transições suaves e indicador de loading global esmaecido.
+- **Navegação em Abas:** Na visão do cliente, as seções **"Explorar Quadras"** e **"Minhas Reservas"** são divididas no topo em abas dedicadas com badge em tempo real de reservas ativas.
+- **Responsividade Mobile:** Seletor de modalidades adaptado em dropdown no celular e botões touch-friendly com microinterações de clique e transições suaves.
 
 ---
 
@@ -195,7 +240,7 @@ erDiagram
 ### Pré-requisitos
 - **Java 21 JDK** instalado
 - **Node.js 18+** e **npm** instalados
-- **PostgreSQL 14+** rodando localmente (ou via Docker)
+- **PostgreSQL 14+** rodando localmente
 
 ---
 
@@ -217,8 +262,8 @@ CREATE DATABASE equadras_db;
 
 ### 3. Executar o Backend (Spring Boot)
 ```bash
-# Windows
-./mvnw.cmd spring-boot:run
+# Windows (PowerShell)
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-25.0.2"; .\mvnw.cmd spring-boot:run
 
 # Linux / macOS
 ./mvnw spring-boot:run
@@ -240,32 +285,46 @@ O frontend estará acessível em: **`http://localhost:3000`** (ou `http://localh
 
 ## 📡 Endpoints Principais da API
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/auth/login` | Autenticação de usuário e retorno de credenciais |
-| `POST` | `/auth/register` | Registro de novos atletas ou administradores |
-| `GET` | `/quadras` | Listagem de quadras (filtros por esporte, coordenadas e raio em km) |
-| `POST` | `/quadras` | Cadastro de nova quadra esportiva (Admin) |
-| `PUT` | `/quadras/{id}` | Atualização de dados da quadra |
-| `POST` | `/quadras/{id}/fotos` | Upload multipart/form-data de fotos (máx. 5 fotos) |
-| `DELETE` | `/quadras/{id}/fotos` | Exclusão de foto da quadra |
-| `GET` | `/agendamentos/horarios` | Consulta de horários e disponibilidade por quadra e data |
-| `POST` | `/agendamentos` | Criação de agendamento e geração do Pix |
-| `PUT` | `/agendamentos/{id}/pagar` | Confirmação de pagamento Pix (webhook/simulação) |
-| `PUT` | `/agendamentos/{id}/cancelar`| Cancelamento de reserva |
-| `GET` | `/notificacoes/stream/{adminId}` | Stream SSE para notificações em tempo real |
+| Método | Rota | Descrição | Autenticação |
+|---|---|---|:---:|
+| `POST` | `/usuarios` | Registro de novos atletas | Pública |
+| `POST` | `/usuarios/login` | Login e emissão do JWT | Pública |
+| `GET` | `/quadras` | Listagem de quadras (filtros de esporte, CEP, lat/lng e raio) | Opcional |
+| `POST` | `/quadras` | Cadastro de quadra com horários de funcionamento | `ROLE_ADMIN` |
+| `PUT` | `/quadras/{id}` | Edição dos dados e horários de funcionamento da quadra | `ROLE_ADMIN` |
+| `PATCH` | `/quadras/{id}/status` | Alternar status ativo/inativo | `ROLE_ADMIN` |
+| `DELETE` | `/quadras/{id}` | Exclusão de quadra | `ROLE_ADMIN` |
+| `POST` | `/quadras/{id}/fotos` | Upload de fotos (máx. 5 fotos) | `ROLE_ADMIN` |
+| `DELETE` | `/quadras/{id}/fotos` | Remoção de foto | `ROLE_ADMIN` |
+| `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Consulta de slots dinâmicos por data | Autenticado |
+| `GET` | `/agendamentos` | Listagem de agendamentos do usuário logado | Autenticado |
+| `POST` | `/agendamentos` | Agendamento atômico e geração do Pix | Autenticado |
+| `PATCH` | `/agendamentos/{id}/cancelar` | Cancelamento de agendamento | Autenticado |
+| `POST` | `/pagamentos/{id}/simular-aprovacao` | Simulação de aprovação Pix (dev/testes) | Autenticado |
+| `GET` | `/notificacoes/admin` | Listagem de notificações do admin | `ROLE_ADMIN` |
+| `GET` | `/notificacoes/stream` | Stream SSE de notificações em tempo real | `ROLE_ADMIN` |
 
 ---
 
 ## ⚙️ Variáveis de Ambiente
 
-Copie o arquivo `.env.example` para configurar suas credenciais locais:
+Configure as variáveis de ambiente necessárias copiando o modelo `.env.example`:
 
 ```env
+# Banco de Dados
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/equadras_db
 SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
-MERCADOPAGO_ACCESS_TOKEN=
+SPRING_DATASOURCE_PASSWORD=sua_senha
+
+# Autenticação JWT (mínimo 32 caracteres)
+JWT_SECRET=sua_chave_secreta_super_segura_com_no_minimo_32_bytes
+JWT_EXPIRACAO_MS=28800000
+
+# Gateway de Pagamento
+MERCADOPAGO_ACCESS_TOKEN=TEST-...
+
+# CORS
+EQUADRAS_CORS_ORIGENS=http://localhost:3000,http://localhost:5173
 ```
 
 ---
