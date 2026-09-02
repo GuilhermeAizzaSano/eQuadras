@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, notificacaoApi, getBaseUrl, getAssetUrl } from '../api/apiClient';
-import { Quadra, Agendamento, TipoEsporte, Notificacao } from '../types';
+import { Quadra, Agendamento, TipoEsporte, Notificacao, DiaSemana, DisponibilidadeDia } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, LoadingOverlay, CourtDetailsModal } from '../components/ui';
 import {
   PlusCircle,
@@ -24,6 +24,30 @@ import {
   Info,
   Upload
 } from 'lucide-react';
+
+const DIAS_SEMANA: { key: DiaSemana; label: string }[] = [
+  { key: 'MONDAY', label: 'Segunda-feira' },
+  { key: 'TUESDAY', label: 'Terça-feira' },
+  { key: 'WEDNESDAY', label: 'Quarta-feira' },
+  { key: 'THURSDAY', label: 'Quinta-feira' },
+  { key: 'FRIDAY', label: 'Sexta-feira' },
+  { key: 'SATURDAY', label: 'Sábado' },
+  { key: 'SUNDAY', label: 'Domingo' },
+];
+
+type HorariosPorDia = {
+  [key in DiaSemana]: { ativo: boolean; horaInicio: string; horaFim: string };
+};
+
+const DEFAULT_HORARIOS: HorariosPorDia = {
+  MONDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  TUESDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  WEDNESDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  THURSDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  FRIDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  SATURDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+  SUNDAY: { ativo: true, horaInicio: '06:00', horaFim: '23:00' },
+};
 
 export const AdminDashboard: React.FC = () => {
   const { user, token } = useAuth();
@@ -49,6 +73,7 @@ export const AdminDashboard: React.FC = () => {
   const [fotosExistentes, setFotosExistentes] = useState<string[]>([]);
   const [novasFotos, setNovasFotos] = useState<File[]>([]);
   const [novasFotosPreviews, setNovasFotosPreviews] = useState<string[]>([]);
+  const [horarios, setHorarios] = useState<HorariosPorDia>(DEFAULT_HORARIOS);
   const previewsRef = useRef<string[]>([]);
   previewsRef.current = novasFotosPreviews;
 
@@ -316,6 +341,7 @@ export const AdminDashboard: React.FC = () => {
 
   const abrirModalCadastro = () => {
     fecharModal();
+    setHorarios(DEFAULT_HORARIOS);
     setModalOpen(true);
   };
 
@@ -336,6 +362,31 @@ export const AdminDashboard: React.FC = () => {
     setEstado(q.estado || '');
     setLatitude(q.latitude);
     setLongitude(q.longitude);
+
+    if (q.disponibilidades && q.disponibilidades.length > 0) {
+      const novosHorarios: HorariosPorDia = {
+        MONDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        TUESDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        WEDNESDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        THURSDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        FRIDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        SATURDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+        SUNDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
+      };
+      q.disponibilidades.forEach((d) => {
+        if (novosHorarios[d.diaSemana]) {
+          novosHorarios[d.diaSemana] = {
+            ativo: true,
+            horaInicio: d.horaInicio ? d.horaInicio.slice(0, 5) : '06:00',
+            horaFim: d.horaFim ? d.horaFim.slice(0, 5) : '23:00',
+          };
+        }
+      });
+      setHorarios(novosHorarios);
+    } else {
+      setHorarios(DEFAULT_HORARIOS);
+    }
+
     setModalOpen(true);
   };
 
@@ -356,6 +407,44 @@ export const AdminDashboard: React.FC = () => {
     setEstado('');
     setLatitude(undefined);
     setLongitude(undefined);
+    setHorarios(DEFAULT_HORARIOS);
+  };
+
+  const handleDiaToggle = (dia: DiaSemana) => {
+    setHorarios((prev) => ({
+      ...prev,
+      [dia]: {
+        ...prev[dia],
+        ativo: !prev[dia].ativo,
+      },
+    }));
+  };
+
+  const handleHorarioChange = (dia: DiaSemana, field: 'horaInicio' | 'horaFim', value: string) => {
+    setHorarios((prev) => ({
+      ...prev,
+      [dia]: {
+        ...prev[dia],
+        [field]: value,
+      },
+    }));
+  };
+
+  const copiarSegParaTodos = () => {
+    const seg = horarios.MONDAY;
+    setHorarios({
+      MONDAY: { ...seg },
+      TUESDAY: { ...seg },
+      WEDNESDAY: { ...seg },
+      THURSDAY: { ...seg },
+      FRIDAY: { ...seg },
+      SATURDAY: { ...seg },
+      SUNDAY: { ...seg },
+    });
+  };
+
+  const aplicarPadraoTodos = () => {
+    setHorarios(DEFAULT_HORARIOS);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -415,6 +504,14 @@ export const AdminDashboard: React.FC = () => {
         setFeedback(null);
 
         try {
+          const disponibilidades: DisponibilidadeDia[] = DIAS_SEMANA
+            .filter((dia) => horarios[dia.key].ativo)
+            .map((dia) => ({
+              diaSemana: dia.key,
+              horaInicio: `${horarios[dia.key].horaInicio}:00`,
+              horaFim: `${horarios[dia.key].horaFim}:00`,
+            }));
+
           const payload = {
             nome,
             tipoEsporte,
@@ -427,7 +524,8 @@ export const AdminDashboard: React.FC = () => {
             cidade,
             estado,
             latitude,
-            longitude
+            longitude,
+            disponibilidades,
           };
 
           let quadraSalva: Quadra;
@@ -1133,7 +1231,7 @@ export const AdminDashboard: React.FC = () => {
       {/* MODAL DE CADASTRO / EDIÇÃO DE QUADRA */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-6">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 {editandoId ? (
@@ -1214,6 +1312,98 @@ export const AdminDashboard: React.FC = () => {
                   placeholder="Ex: Quadra de saibro coberta, com iluminação LED de alta potência, vestiários com ducha quente e arquibancada."
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-white transition resize-none"
                 />
+              </div>
+
+              {/* Seção Horários de Funcionamento */}
+              <div className="space-y-3 pt-2 border-t border-zinc-850">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-emerald-400" />
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                      Horários de Funcionamento
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={copiarSegParaTodos}
+                      className="text-[11px] font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/70 border border-emerald-800/40 px-2.5 py-1 rounded-lg transition active:scale-95"
+                      title="Copiar horário da Segunda-feira para todos os dias"
+                    >
+                      Copiar Seg p/ Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={aplicarPadraoTodos}
+                      className="text-[11px] font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 px-2.5 py-1 rounded-lg transition active:scale-95"
+                      title="Restaurar padrão (06:00 - 23:00 em todos os dias)"
+                    >
+                      Padrão
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/80">
+                  {DIAS_SEMANA.map((dia) => {
+                    const diaConfig = horarios[dia.key];
+                    return (
+                      <div
+                        key={dia.key}
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg border transition ${
+                          diaConfig.ativo
+                            ? 'bg-zinc-900 border-zinc-750'
+                            : 'bg-zinc-950/40 border-zinc-850/50 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-[130px]">
+                          <input
+                            type="checkbox"
+                            id={`dia-${dia.key}`}
+                            checked={diaConfig.ativo}
+                            onChange={() => handleDiaToggle(dia.key)}
+                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-emerald-500 focus:ring-emerald-500/20 focus:ring-offset-0 cursor-pointer accent-emerald-500"
+                          />
+                          <label
+                            htmlFor={`dia-${dia.key}`}
+                            className="text-xs font-semibold text-zinc-200 cursor-pointer select-none"
+                          >
+                            {dia.label}
+                          </label>
+                        </div>
+
+                        {diaConfig.ativo ? (
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-zinc-500 font-medium">De:</span>
+                              <input
+                                type="time"
+                                required={diaConfig.ativo}
+                                value={diaConfig.horaInicio}
+                                onChange={(e) => handleHorarioChange(dia.key, 'horaInicio', e.target.value)}
+                                className="bg-zinc-950 border border-zinc-750 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                              />
+                            </div>
+                            <span className="text-zinc-600">às</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-zinc-500 font-medium">Até:</span>
+                              <input
+                                type="time"
+                                required={diaConfig.ativo}
+                                value={diaConfig.horaFim}
+                                onChange={(e) => handleHorarioChange(dia.key, 'horaFim', e.target.value)}
+                                className="bg-zinc-950 border border-zinc-750 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-medium text-zinc-500 italic py-1">
+                            Fechado neste dia
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Seção de Fotos da Quadra */}

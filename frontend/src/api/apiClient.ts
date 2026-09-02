@@ -1,4 +1,4 @@
-import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse } from '../types';
+import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse, DisponibilidadeDia } from '../types';
 
 export const getBaseUrl = (): string => {
   const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
@@ -92,10 +92,10 @@ export const quadraApi = {
     return apiFetch<Quadra[]>(url);
   },
 
-  cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] }) =>
+  cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
     apiFetch<Quadra>('/quadras', { method: 'POST', body: JSON.stringify(dados) }),
 
-  editar: (id: number, dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] }) =>
+  editar: (id: number, dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>
     apiFetch<Quadra>(`/quadras/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
 
   excluir: (id: number) =>

@@ -18,6 +18,14 @@ export interface LoginResponse {
   usuario: Usuario;
 }
 
+export type DiaSemana = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+
+export interface DisponibilidadeDia {
+  diaSemana: DiaSemana;
+  horaInicio: string; // "06:00" ou "06:00:00"
+  horaFim: string;    // "23:00" ou "23:00:00"
+}
+
 export interface Quadra {
   id_quadra: number;
   nome: string;
@@ -33,6 +41,7 @@ export interface Quadra {
   longitude?: number;
   descricao?: string;
   fotos?: string[];
+  disponibilidades?: DisponibilidadeDia[];
 }
 
 export interface HorarioDisponivel {
