@@ -35,7 +35,11 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
+    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(@com.agendamentos.equadras.security.UsuarioLogado
+                                                                  com.agendamentos.equadras.security.UsuarioAutenticado usuarioLogado) {
+        if (usuarioLogado.role() != com.agendamentos.equadras.model.enums.Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Apenas administradores podem listar usuários.");
+        }
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 

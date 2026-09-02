@@ -47,7 +47,7 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto) {
+    public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
         if (!dto.dataHoraFim().isAfter(dto.dataHoraInicio())) {
             throw new IllegalArgumentException("A data/hora de término deve ser posterior à data/hora de início.");
         }
@@ -56,8 +56,8 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Não é possível realizar agendamentos em horários passados.");
         }
 
-        Usuario usuario = usuarioRepository.findById(dto.usuarioId())
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado. ID: " + dto.usuarioId()));
+        Usuario usuario = usuarioRepository.findById(usuarioIdAutenticado)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado. ID: " + usuarioIdAutenticado));
 
         Quadra quadra = quadraRepository.findByIdWithAdmin(dto.quadraId())
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada. ID: " + dto.quadraId()));
@@ -102,9 +102,16 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public AgendamentoResponseDTO confirmarPagamento(Long idAgendamento) {
+    public AgendamentoResponseDTO confirmarPagamento(Long idAgendamento, Long usuarioIdAutenticado) {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+
+        boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
+        boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
+                && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
+        if (!ehDono && !ehAdminDaQuadra) {
+            throw new IllegalArgumentException("Você não tem permissão para confirmar o pagamento deste agendamento.");
+        }
 
         if (agendamento.getStatus() == StatusAgendamento.CONFIRMADO) {
             return AgendamentoResponseDTO.fromEntity(agendamento);

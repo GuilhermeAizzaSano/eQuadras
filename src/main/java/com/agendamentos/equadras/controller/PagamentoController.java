@@ -1,6 +1,8 @@
 package com.agendamentos.equadras.controller;
 
 import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
+import com.agendamentos.equadras.security.UsuarioAutenticado;
+import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +11,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/pagamentos")
-@CrossOrigin(origins = "*")
 public class PagamentoController {
 
     private final AgendamentoService agendamentoService;
@@ -22,8 +23,9 @@ public class PagamentoController {
      * Endpoint para simulação de pagamento aprovado em ambiente Dev/Sandbox.
      */
     @PostMapping("/{agendamentoId}/simular-aprovacao")
-    public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId) {
-        AgendamentoResponseDTO response = agendamentoService.confirmarPagamento(agendamentoId);
+    public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId,
+                                                                   @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        AgendamentoResponseDTO response = agendamentoService.confirmarPagamento(agendamentoId, usuarioLogado.id());
         return ResponseEntity.ok(response);
     }
 

@@ -3,6 +3,8 @@ package com.agendamentos.equadras.controller;
 import com.agendamentos.equadras.dto.request.AgendamentoCriacaoDTO;
 import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
 import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
+import com.agendamentos.equadras.security.UsuarioAutenticado;
+import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,22 +26,21 @@ public class AgendamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<AgendamentoResponseDTO> agendar(@RequestBody @Valid AgendamentoCriacaoDTO dto) {
-        AgendamentoResponseDTO resposta = agendamentoService.agendar(dto);
+    public ResponseEntity<AgendamentoResponseDTO> agendar(@RequestBody @Valid AgendamentoCriacaoDTO dto,
+                                                            @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        AgendamentoResponseDTO resposta = agendamentoService.agendar(dto, usuarioLogado.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
     @GetMapping
-    public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
-            @RequestHeader(value = "X-Usuario-Id", required = false) Long usuarioId) {
-        return ResponseEntity.ok(agendamentoService.listarTodos(usuarioId));
+    public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        return ResponseEntity.ok(agendamentoService.listarTodos(usuarioLogado.id()));
     }
 
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<AgendamentoResponseDTO> cancelar(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Usuario-Id", required = true) Long usuarioId) {
-        return ResponseEntity.ok(agendamentoService.cancelar(id, usuarioId));
+    public ResponseEntity<AgendamentoResponseDTO> cancelar(@PathVariable Long id,
+                                                             @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        return ResponseEntity.ok(agendamentoService.cancelar(id, usuarioLogado.id()));
     }
 
     @GetMapping("/quadra/{quadraId}/data")
