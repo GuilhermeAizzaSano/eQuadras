@@ -3,7 +3,8 @@ import { Usuario } from '../types';
 
 interface AuthContextType {
   user: Usuario | null;
-  login: (user: Usuario) => void;
+  token: string | null;
+  login: (user: Usuario, token: string) => void;
   logout: () => void;
   isAdmin: boolean;
 }
@@ -15,21 +16,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('equadras_auth_user');
     return saved ? JSON.parse(saved) : null;
   });
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem('equadras_auth_token')
+  );
 
-  const login = (newUser: Usuario) => {
+  const login = (newUser: Usuario, newToken: string) => {
     setUser(newUser);
+    setToken(newToken);
     localStorage.setItem('equadras_auth_user', JSON.stringify(newUser));
+    localStorage.setItem('equadras_auth_token', newToken);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('equadras_auth_user');
+    localStorage.removeItem('equadras_auth_token');
   };
 
   const isAdmin = user?.role === 'ADMIN';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

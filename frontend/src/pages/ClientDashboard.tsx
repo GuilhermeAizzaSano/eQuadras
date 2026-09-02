@@ -161,7 +161,7 @@ export const ClientDashboard: React.FC = () => {
           const lat = parseFloat(nominatimData[0].lat);
           const lon = parseFloat(nominatimData[0].lon);
           
-          const q = await quadraApi.listar(user?.id_usuario, lat, lon, 2.0);
+          const q = await quadraApi.listar(lat, lon, 2.0);
           const filtradas = q.filter(quadra => quadra.ativa);
           setQuadras(filtradas);
           
@@ -200,7 +200,7 @@ export const ClientDashboard: React.FC = () => {
 
   const carregarQuadras = async () => {
     try {
-      const data = await quadraApi.listar(user?.id_usuario);
+      const data = await quadraApi.listar();
       setQuadras(data);
       if (data.length > 0 && !selectedQuadra) {
         setSelectedQuadra(data[0].id_quadra);
@@ -213,7 +213,7 @@ export const ClientDashboard: React.FC = () => {
   const carregarMeusAgendamentos = async () => {
     if (!user) return;
     try {
-      const data = await agendamentoApi.listar(user.id_usuario);
+      const data = await agendamentoApi.listar();
       setMeusAgendamentos(data);
     } catch (err: any) {
       console.error(err);
@@ -300,7 +300,6 @@ export const ClientDashboard: React.FC = () => {
         setLoading(true);
         try {
           const novoAgendamento = await agendamentoApi.agendar({
-            usuarioId: user.id_usuario,
             quadraId: selectedQuadra,
             dataHoraInicio,
             dataHoraFim,
@@ -337,7 +336,7 @@ export const ClientDashboard: React.FC = () => {
         setLoadingMessage('Cancelando reserva...');
         setLoading(true);
         try {
-          await agendamentoApi.cancelar(id, user.id_usuario);
+          await agendamentoApi.cancelar(id);
           setFeedback({ type: 'success', message: 'Agendamento cancelado com sucesso.' });
           await carregarMeusAgendamentos();
           if (selectedQuadra && dataSelecionada) {
