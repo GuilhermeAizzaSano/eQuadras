@@ -20,6 +20,7 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
     Optional<Quadra> findByIdWithAdmin(@Param("id") Long id);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"admin"})
     @Query("SELECT q FROM Quadra q WHERE q.id_quadra = :id")
     Optional<Quadra> buscarComLockParaAgendamento(@Param("id") Long id);
 

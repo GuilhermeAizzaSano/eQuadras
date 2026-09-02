@@ -59,6 +59,7 @@ public class Quadra {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "quadra_fotos", joinColumns = @JoinColumn(name = "quadra_id"))
     @Column(name = "foto_url")
+    @org.hibernate.annotations.BatchSize(size = 50)
     private List<String> fotos = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
