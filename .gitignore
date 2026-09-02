@@ -69,10 +69,12 @@ uploads/
 Thumbs.db
 desktop.ini
 
-# Agent / Brain logs & local temporary metadata
+# Agent / Brain logs, docs & local temporary metadata
 .agent/
 .agents/
 .gemini/
+.superpowers/
+docs/
 *.log
 
 # Maven Wrapper binaries
