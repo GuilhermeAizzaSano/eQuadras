@@ -100,8 +100,13 @@ public class QuadraService {
             if (dto.fotos().size() > 5) {
                 throw new IllegalArgumentException("Uma quadra pode ter no máximo 5 fotos.");
             }
-            quadra.getFotos().clear();
-            quadra.getFotos().addAll(dto.fotos());
+            List<String> novasFotos = dto.fotos();
+            quadra.getFotos().removeIf(foto -> !novasFotos.contains(foto));
+            for (String foto : novasFotos) {
+                if (!quadra.getFotos().contains(foto)) {
+                    quadra.getFotos().add(foto);
+                }
+            }
         }
 
         Quadra quadraSalva = quadraRepository.save(quadra);

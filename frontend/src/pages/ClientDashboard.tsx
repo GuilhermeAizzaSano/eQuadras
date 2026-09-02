@@ -84,9 +84,11 @@ export const ClientDashboard: React.FC = () => {
   // Intervalo de tick para atualizar contadores de tempo real
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
+    const hasPendente = meusAgendamentos.some((a) => a.status === 'PENDENTE');
+    if (!hasPendente) return;
     const timer = setInterval(() => setAgora(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [meusAgendamentos]);
 
   const getTempoRestantePix = (criadoEm: string) => {
     const criadoMs = new Date(criadoEm).getTime();
