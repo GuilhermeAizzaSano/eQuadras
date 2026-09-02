@@ -4,11 +4,14 @@ import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Tag(name = "Pagamentos e Webhooks", description = "Endpoints de integração de pagamentos Pix Mercado Pago e simulação de confirmação em ambiente de desenvolvimento.")
 @RestController
 @RequestMapping("/pagamentos")
 public class PagamentoController {
@@ -19,9 +22,7 @@ public class PagamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    /**
-     * Endpoint para simulação de pagamento aprovado em ambiente Dev/Sandbox.
-     */
+    @Operation(summary = "Simular aprovação de pagamento Pix (Dev)", description = "Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.")
     @com.agendamentos.equadras.config.DevOnly
     @PostMapping("/{agendamentoId}/simular-aprovacao")
     public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId,
@@ -30,16 +31,12 @@ public class PagamentoController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Webhook padrão para notificações do gateway Mercado Pago.
-     */
+    @Operation(summary = "Webhook do Mercado Pago", description = "Recepção de notificações assíncronas de pagamento instantâneo do gateway.")
     @PostMapping("/webhook")
     public ResponseEntity<Map<String, String>> webhook(@RequestBody(required = false) Map<String, Object> payload,
                                                         @RequestParam(value = "id", required = false) String id,
                                                         @RequestParam(value = "topic", required = false) String topic) {
-        // Log para auditoria do webhook
         System.out.println("Webhook Mercado Pago recebido. Topic: " + topic + " ID: " + id);
-
         return ResponseEntity.ok(Map.of("status", "received"));
     }
 }

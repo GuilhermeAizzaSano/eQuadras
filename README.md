@@ -306,6 +306,16 @@ O frontend estará acessível em: **`http://localhost:3000`** (ou `http://localh
 
 ---
 
+## 📚 Documentação Interativa da API (OpenAPI & Swagger UI)
+
+As APIs do **eQuadras** são 100% documentadas sob a especificação **OpenAPI 3.0** via **SpringDoc OpenAPI**. Sistemas externos, parceiros e aplicativos clientes podem consultar a documentação interativa ou importar a especificação JSON:
+
+- **Swagger UI Interativo:** [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html) ou [`http://localhost:8080/swagger-ui/index.html`](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI Schema (JSON):** [`http://localhost:8080/v3/api-docs`](http://localhost:8080/v3/api-docs)
+- **Autenticação no Swagger:** Utilize o botão **"Authorize"** no topo da interface Swagger informando o token JWT gerado no endpoint `/usuarios/login` (no formato `Bearer <seu_token>`) para testar endpoints protegidos diretamente pelo navegador.
+
+---
+
 ## ⚙️ Variáveis de Ambiente
 
 Configure as variáveis de ambiente necessárias copiando o modelo `.env.example`:
