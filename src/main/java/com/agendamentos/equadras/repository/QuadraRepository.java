@@ -19,6 +19,10 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
     @Query("SELECT q FROM Quadra q WHERE q.id_quadra = :id")
     Optional<Quadra> findByIdWithAdmin(@Param("id") Long id);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT q FROM Quadra q WHERE q.id_quadra = :id")
+    Optional<Quadra> buscarComLockParaAgendamento(@Param("id") Long id);
+
     List<Quadra> findByAtivaTrue();
 
     @Query(value = "SELECT q.* FROM quadras q WHERE q.ativa = true AND q.latitude IS NOT NULL AND q.longitude IS NOT NULL " +
