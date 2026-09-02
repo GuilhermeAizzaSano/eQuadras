@@ -49,11 +49,13 @@ Para clientes e administradores em produção:
 | **Quadras** | `DELETE` | `/quadras/{id}` | `ROLE_ADMIN` | Excluir quadra sem histórico de reservas |
 | **Quadras** | `POST` | `/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de fotos (multipart/form-data) |
 | **Quadras** | `PATCH` | `/quadras/{id}/status` | `ROLE_ADMIN` | Alternar status ativo/inativo |
-| **Bloqueios** | `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou horário pontual |
+| **Bloqueios** | `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou horário pontual (com opção `substituirDiaInteiro`) |
+| **Bloqueios** | `GET` | `/quadras/bloqueios` | `ROLE_ADMIN` | Listar todos os bloqueios de todas as quadras do admin em lote |
 | **Bloqueios** | `GET` | `/quadras/{id}/bloqueios` | Público | Listar bloqueios ativos da quadra |
 | **Bloqueios** | `DELETE`| `/quadras/{quadraId}/bloqueios/{bloqueioId}` | `ROLE_ADMIN` | Remover bloqueio por ID |
 | **Bloqueios** | `POST` | `/quadras/{quadraId}/desbloquear` | `ROLE_ADMIN` | Desbloquear horários/dias via corpo da requisição |
-| **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots |
+| **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
+| **Agendamentos** | `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
 | **Agendamentos** | `POST` | `/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
 | **Agendamentos** | `GET` | `/agendamentos` | Autenticado | Listar histórico de reservas do atleta ou admin |
 | **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
@@ -198,13 +200,21 @@ Permite criar suspensões pontuais de funcionamento (manutenções, feriados, re
 
 ---
 
-### 4.2 Listar Bloqueios da Quadra
+### 4.2 Listar Todos os Bloqueios das Quadras do Admin (Lote)
+Retorna em uma única chamada HTTP todos os bloqueios ativos e futuros de todas as quadras pertencentes ao administrador autenticado, otimizando o carregamento no dashboard.
+- **Método:** `GET`
+- **URL:** `/quadras/bloqueios`
+- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+
+---
+
+### 4.3 Listar Bloqueios de uma Quadra Específica
 - **Método:** `GET`
 - **URL:** `/quadras/{id}/bloqueios`
 
 ---
 
-### 4.3 Desbloquear Horários
+### 4.4 Desbloquear Horários
 
 #### Opção A: Remover por ID do Bloqueio
 - **Método:** `DELETE`
@@ -290,7 +300,18 @@ Gera a relação completa de horários de 1 em 1 hora para a data indicada, info
 
 ---
 
-### 5.2 Criar Agendamento (Com Lock Pessimista e Pix)
+### 5.2 Consultar Horários Consolidados do Dia para Todas as Quadras do Admin (Lote)
+Retorna em uma única requisição a grade completa com o status de cada horário de todas as quadras ativas pertencentes ao administrador autenticado para a data indicada:
+- **Método:** `GET`
+- **URL:** `/agendamentos/dia`
+- **Query Params:**
+  - `data` (obrigatório, `YYYY-MM-DD`): Ex: `2026-09-02`.
+- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Resposta (200 OK):** Objeto com mapa `{ [quadraId]: HorarioDisponivelDTO[] }`.
+
+---
+
+### 5.3 Criar Agendamento (Com Lock Pessimista e Pix)
 Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra, registra o agendamento `PENDENTE` e gera o payload Pix para pagamento.
 
 - **Método:** `POST`
