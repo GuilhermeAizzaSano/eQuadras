@@ -13,6 +13,11 @@ export interface Usuario {
   criadoEm?: string;
 }
 
+export interface LoginResponse {
+  token: string;
+  usuario: Usuario;
+}
+
 export interface Quadra {
   id_quadra: number;
   nome: string;

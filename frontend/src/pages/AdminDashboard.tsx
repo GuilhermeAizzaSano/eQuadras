@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
@@ -107,7 +107,10 @@ export const AdminDashboard: React.FC = () => {
 
     if (user) {
       // Setup SSE for real-time notifications
-      eventSourceRef.current = new EventSource(`http://localhost:8080/notificacoes/stream/${user.id_usuario}`);
+      const streamUrl = token
+        ? `http://localhost:8080/notificacoes/stream?token=${token}`
+        : `http://localhost:8080/notificacoes/stream`;
+      eventSourceRef.current = new EventSource(streamUrl);
       
       eventSourceRef.current.addEventListener('notificacao', (event) => {
         const novaNotificacao: Notificacao = JSON.parse(event.data);
@@ -116,7 +119,7 @@ export const AdminDashboard: React.FC = () => {
         setFeedback({ type: 'success', message: novaNotificacao.mensagem });
         
         // Recarregar os agendamentos para refletir no calendário instantaneamente
-        carregarAgendamentos(user.id_usuario);
+        carregarAgendamentos();
       });
 
       return () => {
@@ -125,7 +128,7 @@ export const AdminDashboard: React.FC = () => {
         }
       };
     }
-  }, [user]);
+  }, [user, token]);
 
   const formatarDataHora = (dataIso?: string) => {
     if (!dataIso) return '';
@@ -139,9 +142,9 @@ export const AdminDashboard: React.FC = () => {
     return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
   };
 
-  const carregarAgendamentos = async (userId: number) => {
+  const carregarAgendamentos = async () => {
     try {
-      const agendamentos = await agendamentoApi.listar(userId);
+      const agendamentos = await agendamentoApi.listar();
       setAgendamentosAdmin(agendamentos);
     } catch (err) {
       console.error(err);
@@ -151,7 +154,7 @@ export const AdminDashboard: React.FC = () => {
   const carregarNotificacoes = async () => {
     if (!user) return;
     try {
-      const data = await notificacaoApi.listarPorAdmin(user.id_usuario);
+      const data = await notificacaoApi.listarPorAdmin();
       setNotificacoes(data);
     } catch (err) {
       console.error(err);
@@ -171,8 +174,8 @@ export const AdminDashboard: React.FC = () => {
     if (!user) return;
     try {
       const [quadras, agendamentos] = await Promise.all([
-        quadraApi.listar(user.id_usuario),
-        agendamentoApi.listar(user.id_usuario),
+        quadraApi.listar(),
+        agendamentoApi.listar(),
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
@@ -367,7 +370,7 @@ export const AdminDashboard: React.FC = () => {
       return;
     }
     try {
-      await quadraApi.removerFoto(editandoId, fotoUrl, user.id_usuario);
+      await quadraApi.removerFoto(editandoId, fotoUrl);
       setFotosExistentes((prev) => prev.filter((f) => f !== fotoUrl));
       setFeedback({ type: 'success', message: 'Foto removida com sucesso!' });
       await carregarDados();
@@ -412,14 +415,14 @@ export const AdminDashboard: React.FC = () => {
 
           let quadraSalva: Quadra;
           if (editandoId) {
-            quadraSalva = await quadraApi.editar(editandoId, payload, user.id_usuario);
+            quadraSalva = await quadraApi.editar(editandoId, payload);
           } else {
-            quadraSalva = await quadraApi.cadastrar(payload, user.id_usuario);
+            quadraSalva = await quadraApi.cadastrar(payload);
           }
 
           // Se tiver fotos novas para enviar
           if (novasFotos.length > 0 && quadraSalva.id_quadra) {
-            await quadraApi.uploadFotos(quadraSalva.id_quadra, novasFotos, user.id_usuario);
+            await quadraApi.uploadFotos(quadraSalva.id_quadra, novasFotos);
           }
 
           setFeedback({
@@ -450,7 +453,7 @@ export const AdminDashboard: React.FC = () => {
         setLoadingMessage(`Excluindo quadra "${q.nome}"...`);
         setLoading(true);
         try {
-          await quadraApi.excluir(q.id_quadra, user.id_usuario);
+          await quadraApi.excluir(q.id_quadra);
           setFeedback({ type: 'success', message: `Quadra "${q.nome}" excluída com sucesso.` });
           await carregarDados();
         } catch (err: any) {
@@ -481,7 +484,7 @@ export const AdminDashboard: React.FC = () => {
         setLoadingMessage(`Alterando disponibilidade da quadra...`);
         setLoading(true);
         try {
-          await quadraApi.alternarStatus(quadra.id_quadra, !quadra.ativa, user.id_usuario);
+          await quadraApi.alternarStatus(quadra.id_quadra, !quadra.ativa);
           setFeedback({
             type: 'success',
             message: `Status da quadra "${quadra.nome}" alterado para ${novoStatusMsg} com sucesso.`,
@@ -508,7 +511,7 @@ export const AdminDashboard: React.FC = () => {
         setLoadingMessage('Cancelando agendamento...');
         setLoading(true);
         try {
-          await agendamentoApi.cancelar(id, user.id_usuario);
+          await agendamentoApi.cancelar(id);
           setFeedback({ type: 'success', message: 'Agendamento cancelado com sucesso.' });
           await carregarDados();
         } catch (err: any) {

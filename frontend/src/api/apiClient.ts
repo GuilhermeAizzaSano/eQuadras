@@ -1,20 +1,20 @@
-import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, Role } from '../types';
+import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse } from '../types';
 
 const BASE_URL = 'http://localhost:8080';
 
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {},
-  currentUserId?: number
+  options: RequestInit = {}
 ): Promise<T> {
   const headers = new Headers(options.headers || {});
-  
+
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
-  if (currentUserId) {
-    headers.set('X-Usuario-Id', currentUserId.toString());
+  const token = localStorage.getItem('equadras_auth_token');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -35,7 +35,7 @@ export async function apiFetch<T>(
 // --- Usuários ---
 export const usuarioApi = {
   login: (email_usuario: string, senha_usuario: string) =>
-    apiFetch<Usuario>('/usuarios/login', {
+    apiFetch<LoginResponse>('/usuarios/login', {
       method: 'POST',
       body: JSON.stringify({ email_usuario, senha_usuario }),
     }),
@@ -45,9 +45,8 @@ export const usuarioApi = {
     email_usuario: string;
     senha_usuario: string;
     phone_usuario: string;
-    role: Role;
   }) =>
-    apiFetch<Usuario>('/usuarios', {
+    apiFetch<LoginResponse>('/usuarios', {
       method: 'POST',
       body: JSON.stringify(dados),
     }),
@@ -57,7 +56,7 @@ export const usuarioApi = {
 
 // --- Quadras ---
 export const quadraApi = {
-  listar: (userId?: number, lat?: number, lon?: number, raioKm?: number) => {
+  listar: (lat?: number, lon?: number, raioKm?: number) => {
     let url = '/quadras';
     const params = new URLSearchParams();
     if (lat !== undefined && lon !== undefined) {
@@ -71,120 +70,53 @@ export const quadraApi = {
     if (queryString) {
       url += `?${queryString}`;
     }
-    return apiFetch<Quadra[]>(url, {}, userId);
+    return apiFetch<Quadra[]>(url);
   },
 
-  cadastrar: (
-    dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] },
-    adminId: number
-  ) =>
-    apiFetch<Quadra>(
-      '/quadras',
-      {
-        method: 'POST',
-        body: JSON.stringify(dados),
-      },
-      adminId
-    ),
+  cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] }) =>
+    apiFetch<Quadra>('/quadras', { method: 'POST', body: JSON.stringify(dados) }),
 
-  editar: (
-    id: number,
-    dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] },
-    adminId: number
-  ) =>
-    apiFetch<Quadra>(
-      `/quadras/${id}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(dados),
-      },
-      adminId
-    ),
+  editar: (id: number, dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; fotos?: string[] }) =>
+    apiFetch<Quadra>(`/quadras/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
 
-  excluir: (id: number, adminId: number) =>
-    apiFetch<void>(
-      `/quadras/${id}`,
-      {
-        method: 'DELETE',
-      },
-      adminId
-    ),
+  excluir: (id: number) =>
+    apiFetch<void>(`/quadras/${id}`, { method: 'DELETE' }),
 
-  alternarStatus: (id: number, ativa: boolean, adminId: number) =>
-    apiFetch<Quadra>(
-      `/quadras/${id}/status?ativa=${ativa}`,
-      { method: 'PATCH' },
-      adminId
-    ),
+  alternarStatus: (id: number, ativa: boolean) =>
+    apiFetch<Quadra>(`/quadras/${id}/status?ativa=${ativa}`, { method: 'PATCH' }),
 
-  uploadFotos: (id: number, files: File[], adminId: number) => {
+  uploadFotos: (id: number, files: File[]) => {
     const formData = new FormData();
     files.forEach((file) => formData.append('fotos', file));
-    return apiFetch<Quadra>(
-      `/quadras/${id}/fotos`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-      adminId
-    );
+    return apiFetch<Quadra>(`/quadras/${id}/fotos`, { method: 'POST', body: formData });
   },
 
-  removerFoto: (id: number, fotoUrl: string, adminId: number) =>
-    apiFetch<Quadra>(
-      `/quadras/${id}/fotos?fotoUrl=${encodeURIComponent(fotoUrl)}`,
-      {
-        method: 'DELETE',
-      },
-      adminId
-    ),
+  removerFoto: (id: number, fotoUrl: string) =>
+    apiFetch<Quadra>(`/quadras/${id}/fotos?fotoUrl=${encodeURIComponent(fotoUrl)}`, { method: 'DELETE' }),
 };
-
 
 // --- Agendamentos ---
 export const agendamentoApi = {
-  listar: (userId?: number) =>
-    apiFetch<Agendamento[]>('/agendamentos', {}, userId),
+  listar: () => apiFetch<Agendamento[]>('/agendamentos'),
 
-  agendar: (dados: {
-    usuarioId: number;
-    quadraId: number;
-    dataHoraInicio: string;
-    dataHoraFim: string;
-  }) =>
-    apiFetch<Agendamento>('/agendamentos', {
-      method: 'POST',
-      body: JSON.stringify(dados),
-    }),
+  agendar: (dados: { quadraId: number; dataHoraInicio: string; dataHoraFim: string }) =>
+    apiFetch<Agendamento>('/agendamentos', { method: 'POST', body: JSON.stringify(dados) }),
 
   listarHorariosDisponiveis: (quadraId: number, dataIso: string) =>
-    apiFetch<HorarioDisponivel[]>(
-      `/agendamentos/quadra/${quadraId}/horarios-disponiveis?data=${dataIso}`
-    ),
+    apiFetch<HorarioDisponivel[]>(`/agendamentos/quadra/${quadraId}/horarios-disponiveis?data=${dataIso}`),
 
-  cancelar: (agendamentoId: number, userId: number) =>
-    apiFetch<Agendamento>(
-      `/agendamentos/${agendamentoId}/cancelar`,
-      { method: 'PATCH' },
-      userId
-    ),
+  cancelar: (agendamentoId: number) =>
+    apiFetch<Agendamento>(`/agendamentos/${agendamentoId}/cancelar`, { method: 'PATCH' }),
 };
 
 // --- Notificações ---
 export const notificacaoApi = {
-  listarPorAdmin: (adminId: number) =>
-    apiFetch<import('../types').Notificacao[]>(`/notificacoes/admin/${adminId}`),
-
-  marcarComoLida: (id: number) =>
-    apiFetch<void>(`/notificacoes/${id}/ler`, {
-      method: 'PUT',
-    }),
+  listarPorAdmin: () => apiFetch<import('../types').Notificacao[]>('/notificacoes/admin'),
+  marcarComoLida: (id: number) => apiFetch<void>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
 };
 
 // --- Pagamentos ---
 export const pagamentoApi = {
   simularAprovacao: (agendamentoId: number) =>
-    apiFetch<Agendamento>(`/pagamentos/${agendamentoId}/simular-aprovacao`, {
-      method: 'POST',
-    }),
+    apiFetch<Agendamento>(`/pagamentos/${agendamentoId}/simular-aprovacao`, { method: 'POST' }),
 };

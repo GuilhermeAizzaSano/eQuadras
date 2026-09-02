@@ -27,8 +27,8 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const user = await usuarioApi.login(loginEmail, loginSenha);
-      login(user);
+      const resposta = await usuarioApi.login(loginEmail, loginSenha);
+      login(resposta.usuario, resposta.token);
     } catch (err: any) {
       setError(err.message || 'Falha ao autenticar');
     } finally {
@@ -42,14 +42,13 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const user = await usuarioApi.cadastrar({
+      const resposta = await usuarioApi.cadastrar({
         nome_usuario: nome,
         email_usuario: email,
         senha_usuario: senha,
         phone_usuario: phone,
-        role,
       });
-      login(user);
+      login(resposta.usuario, resposta.token);
     } catch (err: any) {
       setError(err.message || 'Falha ao cadastrar');
     } finally {
