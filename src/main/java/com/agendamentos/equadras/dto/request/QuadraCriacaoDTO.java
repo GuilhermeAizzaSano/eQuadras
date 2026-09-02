@@ -41,5 +41,6 @@ public record QuadraCriacaoDTO(
         Double longitude,
         @Size(max = 2000, message = "A descrição deve ter no máximo 2000 caracteres")
         String descricao,
-        java.util.List<String> fotos
+        java.util.List<String> fotos,
+        java.util.List<DisponibilidadeDiaDTO> disponibilidades
 ) {}
