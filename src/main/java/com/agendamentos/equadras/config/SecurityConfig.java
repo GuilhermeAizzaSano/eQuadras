@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Públicos
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/usuarios").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/", "/usuarios/login").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook").permitAll()
@@ -38,16 +38,16 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
 
                         // Apenas ADMIN
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers("/notificacoes/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
 
                         // Qualquer autenticado (CLIENT ou ADMIN)
-                        .requestMatchers("/agendamentos/**").authenticated()
-                        .requestMatchers("/pagamentos/**").authenticated()
-                        .requestMatchers("/usuarios/**").authenticated()
+                        .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
+                        .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
+                        .requestMatchers("/usuarios", "/usuarios/**").authenticated()
 
                         // Qualquer outra requer autenticação
                         .anyRequest().authenticated()
