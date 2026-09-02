@@ -9,5 +9,10 @@ public record BloqueioHorarioCriacaoDTO(
         LocalDate data,
         LocalTime horaInicio,
         LocalTime horaFim,
-        String motivo
-) {}
+        String motivo,
+        Boolean substituirDiaInteiro
+) {
+    public BloqueioHorarioCriacaoDTO(LocalDate data, LocalTime horaInicio, LocalTime horaFim, String motivo) {
+        this(data, horaInicio, horaFim, motivo, false);
+    }
+}

@@ -40,6 +40,21 @@ public class BloqueioHorarioService {
             if (!dto.horaInicio().isBefore(dto.horaFim())) {
                 throw new IllegalArgumentException("A hora de início deve ser anterior à hora de término.");
             }
+
+            // Verificar se já existe um bloqueio de dia inteiro para a quadra nesta data
+            List<BloqueioHorario> existentes = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, dto.data());
+            List<BloqueioHorario> bloqueiosDiaInteiro = existentes.stream()
+                    .filter(b -> b.getHoraInicio() == null || b.getHoraFim() == null)
+                    .toList();
+
+            if (!bloqueiosDiaInteiro.isEmpty()) {
+                boolean substituir = Boolean.TRUE.equals(dto.substituirDiaInteiro());
+                if (!substituir) {
+                    throw new IllegalArgumentException("DIA_INTEIRO_BLOQUEADO: A quadra já está bloqueada o dia todo nesta data. Deseja desbloquear o restante do dia e manter bloqueado apenas este horário?");
+                }
+                // Se confirmou a substituição, remove o bloqueio de dia inteiro
+                bloqueioHorarioRepository.deleteAll(bloqueiosDiaInteiro);
+            }
         } else if (dto.horaInicio() != null || dto.horaFim() != null) {
             throw new IllegalArgumentException("Para bloqueios com horário, ambos os horários (início e fim) devem ser fornecidos.");
         }
@@ -52,6 +67,14 @@ public class BloqueioHorarioService {
     @Transactional(readOnly = true)
     public List<BloqueioHorarioResponseDTO> listarBloqueios(Long quadraId) {
         return bloqueioHorarioRepository.findByQuadraId(quadraId)
+                .stream()
+                .map(BloqueioHorarioResponseDTO::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BloqueioHorarioResponseDTO> listarTodosDoAdmin(Long adminId) {
+        return bloqueioHorarioRepository.findAllByAdminId(adminId)
                 .stream()
                 .map(BloqueioHorarioResponseDTO::fromEntity)
                 .toList();
@@ -101,12 +124,13 @@ public class BloqueioHorarioService {
 
         List<BloqueioHorario> paraRemover;
         if (dto.horaInicio() != null && dto.horaFim() != null) {
+            // Remove apenas bloqueios que casem exatamente com o intervalo solicitado
             paraRemover = bloqueios.stream()
-                    .filter(b -> (b.getHoraInicio() != null && b.getHoraFim() != null &&
+                    .filter(b -> b.getHoraInicio() != null && b.getHoraFim() != null &&
                             b.getHoraInicio().equals(dto.horaInicio()) && b.getHoraFim().equals(dto.horaFim()))
-                            || (b.getHoraInicio() == null && b.getHoraFim() == null))
                     .toList();
         } else {
+            // Se não especificou horários, remove todos os bloqueios da data (dia inteiro e pontuais)
             paraRemover = bloqueios;
         }
 

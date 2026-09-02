@@ -35,6 +35,12 @@ public class BloqueioHorarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(bloqueio);
     }
 
+    @Operation(summary = "Listar todos os bloqueios das quadras do Admin (Admin)", description = "Retorna todos os bloqueios cadastrados em todas as quadras pertencentes ao administrador autenticado em uma única requisição.")
+    @GetMapping("/bloqueios")
+    public ResponseEntity<List<BloqueioHorarioResponseDTO>> listarTodosBloqueiosDoAdmin(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        return ResponseEntity.ok(bloqueioHorarioService.listarTodosDoAdmin(usuarioLogado.id()));
+    }
+
     @Operation(summary = "Listar bloqueios da quadra", description = "Lista todos os bloqueios ativos e futuros da quadra.")
     @GetMapping("/{id}/bloqueios")
     public ResponseEntity<List<BloqueioHorarioResponseDTO>> listarBloqueios(@PathVariable Long id) {

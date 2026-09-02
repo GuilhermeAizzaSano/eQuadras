@@ -17,4 +17,7 @@ public interface BloqueioHorarioRepository extends JpaRepository<BloqueioHorario
 
     @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.id_quadra = :quadraId ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
     List<BloqueioHorario> findByQuadraId(@Param("quadraId") Long quadraId);
+
+    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.admin.id_usuario = :adminId ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
+    List<BloqueioHorario> findAllByAdminId(@Param("adminId") Long adminId);
 }

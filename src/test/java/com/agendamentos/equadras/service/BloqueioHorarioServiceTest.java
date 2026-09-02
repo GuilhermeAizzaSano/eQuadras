@@ -196,4 +196,60 @@ class BloqueioHorarioServiceTest {
         assertEquals(1, removidos);
         verify(bloqueioHorarioRepository, times(1)).deleteAll(anyList());
     }
+
+    @Test
+    @DisplayName("Deve lançar erro ao tentar criar bloqueio de horário quando dia todo já estiver bloqueado sem confirmação")
+    void deveLancarErroAoBloquearHorarioComDiaTodoBloqueado() {
+        LocalDate dataBloqueio = LocalDate.now().plusDays(2);
+        BloqueioHorario diaTodo = new BloqueioHorario(50L, quadra, dataBloqueio, null, null, "Dia Todo", null);
+
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, dataBloqueio)).thenReturn(List.of(diaTodo));
+
+        BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(
+                dataBloqueio, LocalTime.of(14, 0), LocalTime.of(16, 0), "Parcial", false
+        );
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                bloqueioHorarioService.criarBloqueio(10L, dto, 1L)
+        );
+
+        assertTrue(ex.getMessage().contains("DIA_INTEIRO_BLOQUEADO"));
+        verify(bloqueioHorarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve substituir bloqueio de dia todo por horário parcial quando confirmado")
+    void deveSubstituirDiaTodoPorHorarioParcialQuandoConfirmado() {
+        LocalDate dataBloqueio = LocalDate.now().plusDays(2);
+        BloqueioHorario diaTodo = new BloqueioHorario(50L, quadra, dataBloqueio, null, null, "Dia Todo", null);
+        BloqueioHorario novoParcial = new BloqueioHorario(51L, quadra, dataBloqueio, LocalTime.of(14, 0), LocalTime.of(16, 0), "Parcial", null);
+
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, dataBloqueio)).thenReturn(List.of(diaTodo));
+        when(bloqueioHorarioRepository.save(any(BloqueioHorario.class))).thenReturn(novoParcial);
+
+        BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(
+                dataBloqueio, LocalTime.of(14, 0), LocalTime.of(16, 0), "Parcial", true
+        );
+
+        BloqueioHorarioResponseDTO res = bloqueioHorarioService.criarBloqueio(10L, dto, 1L);
+
+        assertNotNull(res);
+        verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(diaTodo));
+        verify(bloqueioHorarioRepository, times(1)).save(any(BloqueioHorario.class));
+    }
+
+    @Test
+    @DisplayName("Deve listar todos os bloqueios do admin em lote")
+    void deveListarTodosDoAdmin() {
+        BloqueioHorario b1 = new BloqueioHorario(50L, quadra, LocalDate.now().plusDays(1), null, null, "B1", null);
+        when(bloqueioHorarioRepository.findAllByAdminId(1L)).thenReturn(List.of(b1));
+
+        List<BloqueioHorarioResponseDTO> lista = bloqueioHorarioService.listarTodosDoAdmin(1L);
+
+        assertEquals(1, lista.size());
+        assertEquals("B1", lista.get(0).motivo());
+        verify(bloqueioHorarioRepository, times(1)).findAllByAdminId(1L);
+    }
 }
