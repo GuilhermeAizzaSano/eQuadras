@@ -78,6 +78,7 @@ public class PagamentoService {
                 .header("Authorization", "Bearer " + mercadoPagoAccessToken)
                 .header("Content-Type", "application/json")
                 .header("X-Idempotency-Key", idempotencyKey)
+                .timeout(Duration.ofSeconds(5))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                 .build();
 
