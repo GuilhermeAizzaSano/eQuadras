@@ -26,14 +26,22 @@ public class NotificacaoService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    public SseEmitter assinar(Long adminId) {
+    public SseEmitter assinar(Long usuarioId) {
+        SseEmitter antigoEmitter = emitters.get(usuarioId);
+        if (antigoEmitter != null) {
+            try {
+                antigoEmitter.complete();
+            } catch (Exception ignored) {
+            }
+        }
+
         // Timeout de 1 hora
         SseEmitter emitter = new SseEmitter(3600000L);
-        emitters.put(adminId, emitter);
+        emitters.put(usuarioId, emitter);
 
-        emitter.onCompletion(() -> emitters.remove(adminId));
-        emitter.onTimeout(() -> emitters.remove(adminId));
-        emitter.onError((e) -> emitters.remove(adminId));
+        emitter.onCompletion(() -> emitters.remove(usuarioId, emitter));
+        emitter.onTimeout(() -> emitters.remove(usuarioId, emitter));
+        emitter.onError((e) -> emitters.remove(usuarioId, emitter));
 
         return emitter;
     }

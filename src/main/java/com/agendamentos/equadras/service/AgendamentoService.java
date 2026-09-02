@@ -158,7 +158,7 @@ public class AgendamentoService {
                         fimDoDia
                 )
                 .stream()
-                .map(AgendamentoResponseDTO::fromEntity)
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
                 .toList();
     }
 
@@ -230,7 +230,7 @@ public class AgendamentoService {
         }
 
         return agendamentos.stream()
-                .map(AgendamentoResponseDTO::fromEntity)
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
                 .toList();
     }
 }

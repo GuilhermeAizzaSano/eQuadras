@@ -196,4 +196,69 @@ class AgendamentoServiceTest {
         assertTrue(slots.stream().noneMatch(HorarioDisponivelDTO::disponivel));
         assertTrue(slots.stream().allMatch(s -> "Quadra inativa".equals(s.motivo())));
     }
+
+    @Test
+    @DisplayName("Deve listar todos os agendamentos omitindo dados Pix (qrCodeBase64 e pixCopiaECola)")
+    void deveListarTodosOmitindoPix() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0);
+        LocalDateTime fim = inicio.plusHours(1);
+
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(20L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(inicio)
+                .dataHoraFim(fim)
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .transacaoPagamentoId("tx-123")
+                .pixCopiaECola("copia-e-cola-pesado")
+                .qrCodeBase64("base64-pesado")
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(agendamentoRepository.findByUsuarioId(1L)).thenReturn(List.of(agendamento));
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L);
+
+        assertEquals(1, resultado.size());
+        AgendamentoResponseDTO dto = resultado.get(0);
+        assertEquals(20L, dto.id_agendamento());
+        assertEquals("tx-123", dto.transacaoPagamentoId());
+        assertNull(dto.pixCopiaECola());
+        assertNull(dto.qrCodeBase64());
+    }
+
+    @Test
+    @DisplayName("Deve listar agendamentos por quadra e data omitindo dados Pix")
+    void deveListarPorQuadraEDataOmitindoPix() {
+        LocalDate dataAmanha = LocalDate.now().plusDays(1);
+        LocalDateTime inicio = dataAmanha.atTime(14, 0);
+        LocalDateTime fim = dataAmanha.atTime(15, 0);
+
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(30L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(inicio)
+                .dataHoraFim(fim)
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .transacaoPagamentoId("tx-456")
+                .pixCopiaECola("copia-e-cola-pesado")
+                .qrCodeBase64("base64-pesado")
+                .build();
+
+        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of(agendamento));
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarPorQuadraEData(1L, dataAmanha);
+
+        assertEquals(1, resultado.size());
+        AgendamentoResponseDTO dto = resultado.get(0);
+        assertEquals(30L, dto.id_agendamento());
+        assertEquals("tx-456", dto.transacaoPagamentoId());
+        assertNull(dto.pixCopiaECola());
+        assertNull(dto.qrCodeBase64());
+    }
 }
