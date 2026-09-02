@@ -22,6 +22,7 @@ public class PagamentoController {
     /**
      * Endpoint para simulação de pagamento aprovado em ambiente Dev/Sandbox.
      */
+    @com.agendamentos.equadras.config.DevOnly
     @PostMapping("/{agendamentoId}/simular-aprovacao")
     public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId,
                                                                    @UsuarioLogado UsuarioAutenticado usuarioLogado) {

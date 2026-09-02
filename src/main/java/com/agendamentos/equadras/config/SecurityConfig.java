@@ -29,8 +29,30 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        // Públicos
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/usuarios").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+
+                        // Apenas ADMIN
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers("/notificacoes/**").hasRole("ADMIN")
+
+                        // Qualquer autenticado (CLIENT ou ADMIN)
+                        .requestMatchers("/agendamentos/**").authenticated()
+                        .requestMatchers("/pagamentos/**").authenticated()
+                        .requestMatchers("/usuarios/**").authenticated()
+
+                        // Qualquer outra requer autenticação
+                        .anyRequest().authenticated()
                 )
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
