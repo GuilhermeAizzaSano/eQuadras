@@ -2,6 +2,7 @@ package com.agendamentos.equadras.controller;
 
 import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
 import com.agendamentos.equadras.dto.request.UsuarioLoginDTO;
+import com.agendamentos.equadras.dto.response.LoginResponseDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -22,15 +23,15 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto) {
-        UsuarioResponseDTO usuarioCadastrado = usuarioService.cadastrar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioCadastrado);
+    public ResponseEntity<LoginResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto) {
+        var resposta = usuarioService.cadastrar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDTO> login(@RequestBody @Valid UsuarioLoginDTO dto) {
-        UsuarioResponseDTO usuarioLogado = usuarioService.login(dto);
-        return ResponseEntity.ok(usuarioLogado);
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid UsuarioLoginDTO dto) {
+        var resposta = usuarioService.login(dto);
+        return ResponseEntity.ok(resposta);
     }
 
     @GetMapping
