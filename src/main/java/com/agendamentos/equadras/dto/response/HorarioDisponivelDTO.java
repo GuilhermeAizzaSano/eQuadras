@@ -6,10 +6,10 @@ import java.time.LocalTime;
 
 @Schema(description = "Representação detalhada de cada slot de horário de uma quadra no dia")
 public record HorarioDisponivelDTO(
-        @Schema(description = "Horário de início do slot", example = "14:00:00")
+        @Schema(description = "Horário de início do slot", type = "string", format = "time", example = "14:00:00")
         LocalTime inicio,
 
-        @Schema(description = "Horário de término do slot", example = "15:00:00")
+        @Schema(description = "Horário de término do slot", type = "string", format = "time", example = "15:00:00")
         LocalTime fim,
 
         @Schema(description = "Indica se o horário pode ser agendado no momento", example = "true")
