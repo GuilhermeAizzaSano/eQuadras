@@ -1,9 +1,11 @@
 package com.agendamentos.equadras.dto.response;
 
+import com.agendamentos.equadras.dto.request.DisponibilidadeDiaDTO;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record QuadraResponseDTO(
         Long id_quadra,
@@ -19,7 +21,8 @@ public record QuadraResponseDTO(
         Double latitude,
         Double longitude,
         String descricao,
-        java.util.List<String> fotos
+        List<String> fotos,
+        List<DisponibilidadeDiaDTO> disponibilidades
 ) {
     public static QuadraResponseDTO fromEntity(Quadra quadra) {
         return new QuadraResponseDTO(
@@ -36,7 +39,12 @@ public record QuadraResponseDTO(
                 quadra.getLatitude(),
                 quadra.getLongitude(),
                 quadra.getDescricao(),
-                quadra.getFotos() != null ? quadra.getFotos() : java.util.Collections.emptyList()
+                quadra.getFotos() != null ? quadra.getFotos() : java.util.Collections.emptyList(),
+                quadra.getDisponibilidades() != null
+                        ? quadra.getDisponibilidades().stream()
+                                .map(d -> new DisponibilidadeDiaDTO(d.getDiaSemana(), d.getHoraInicio(), d.getHoraFim()))
+                                .toList()
+                        : java.util.Collections.emptyList()
         );
     }
-}
+}

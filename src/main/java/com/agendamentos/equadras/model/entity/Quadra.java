@@ -63,13 +63,18 @@ public class Quadra {
     @org.hibernate.annotations.BatchSize(size = 50)
     private List<String> fotos = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "quadra_disponibilidades", joinColumns = @JoinColumn(name = "quadra_id"))
+    @org.hibernate.annotations.BatchSize(size = 50)
+    private List<DisponibilidadeDia> disponibilidades = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id")
     private Usuario admin;
 
     public Quadra() {}
 
-    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, Usuario admin) {
+    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, List<DisponibilidadeDia> disponibilidades, Usuario admin) {
         this.id_quadra = id_quadra;
         this.nome = nome;
         this.tipoEsporte = tipoEsporte;
@@ -84,7 +89,12 @@ public class Quadra {
         this.longitude = longitude;
         this.descricao = descricao;
         this.fotos = fotos != null ? fotos : new ArrayList<>();
+        this.disponibilidades = disponibilidades != null ? disponibilidades : new ArrayList<>();
         this.admin = admin;
+    }
+
+    public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, List<String> fotos, Usuario admin) {
+        this(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, fotos, new ArrayList<>(), admin);
     }
 
     @PrePersist
@@ -134,6 +144,9 @@ public class Quadra {
     public List<String> getFotos() { return fotos != null ? fotos : (fotos = new ArrayList<>()); }
     public void setFotos(List<String> fotos) { this.fotos = fotos; }
 
+    public List<DisponibilidadeDia> getDisponibilidades() { return disponibilidades != null ? disponibilidades : (disponibilidades = new ArrayList<>()); }
+    public void setDisponibilidades(List<DisponibilidadeDia> disponibilidades) { this.disponibilidades = disponibilidades; }
+
     public Usuario getAdmin() { return admin; }
     public void setAdmin(Usuario admin) { this.admin = admin; }
 
@@ -169,6 +182,7 @@ public class Quadra {
         private Double longitude;
         private String descricao;
         private List<String> fotos = new ArrayList<>();
+        private List<DisponibilidadeDia> disponibilidades = new ArrayList<>();
         private Usuario admin;
 
         public QuadraBuilder id_quadra(Long id_quadra) { this.id_quadra = id_quadra; return this; }
@@ -185,10 +199,11 @@ public class Quadra {
         public QuadraBuilder longitude(Double longitude) { this.longitude = longitude; return this; }
         public QuadraBuilder descricao(String descricao) { this.descricao = descricao; return this; }
         public QuadraBuilder fotos(List<String> fotos) { this.fotos = fotos; return this; }
+        public QuadraBuilder disponibilidades(List<DisponibilidadeDia> disponibilidades) { this.disponibilidades = disponibilidades; return this; }
         public QuadraBuilder admin(Usuario admin) { this.admin = admin; return this; }
 
         public Quadra build() {
-            return new Quadra(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, fotos, admin);
+            return new Quadra(id_quadra, nome, tipoEsporte, valorHora, ativa, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao, fotos, disponibilidades, admin);
         }
     }
 }
