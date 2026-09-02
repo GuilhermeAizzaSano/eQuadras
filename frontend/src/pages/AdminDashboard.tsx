@@ -49,6 +49,15 @@ export const AdminDashboard: React.FC = () => {
   const [fotosExistentes, setFotosExistentes] = useState<string[]>([]);
   const [novasFotos, setNovasFotos] = useState<File[]>([]);
   const [novasFotosPreviews, setNovasFotosPreviews] = useState<string[]>([]);
+  const previewsRef = useRef<string[]>([]);
+  previewsRef.current = novasFotosPreviews;
+
+  // Revogar ObjectURLs criadas para previews ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
   
   // Endereço
   const [cep, setCep] = useState('');
@@ -68,9 +77,11 @@ export const AdminDashboard: React.FC = () => {
   // Intervalo de tick para atualizar contadores de tempo real
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
+    const hasPendente = agendamentosAdmin.some((a) => a.status === 'PENDENTE');
+    if (!hasPendente) return;
     const timer = setInterval(() => setAgora(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [agendamentosAdmin]);
 
   const getTempoRestantePix = (criadoEm: string) => {
     const criadoMs = new Date(criadoEm).getTime();
@@ -309,6 +320,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const iniciarEdicao = (q: Quadra) => {
+    novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
     setEditandoId(q.id_quadra);
     setNome(q.nome);
     setTipoEsporte(q.tipoEsporte);
@@ -328,6 +340,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const fecharModal = () => {
+    novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
     setModalOpen(false);
     setEditandoId(null);
     setNome('');
@@ -360,6 +373,10 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const removerNovaFoto = (index: number) => {
+    const urlToRemove = novasFotosPreviews[index];
+    if (urlToRemove) {
+      URL.revokeObjectURL(urlToRemove);
+    }
     setNovasFotos((prev) => prev.filter((_, i) => i !== index));
     setNovasFotosPreviews((prev) => prev.filter((_, i) => i !== index));
   };
