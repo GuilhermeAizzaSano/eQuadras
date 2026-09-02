@@ -149,13 +149,14 @@ export const ClientDashboard: React.FC = () => {
       return;
     }
 
+    setLoadingMessage('Buscando quadras próximas ao CEP informado...');
     setLoading(true);
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cepNumerico}/json/`);
       const data = await response.json();
       
       if (!data.erro) {
-        const query = encodeURIComponent(`${data.logradouro}, ${data.localidade}, ${data.uf}`);
+        const query = encodeURIComponent(`${data.logradouro || ''}, ${data.localidade || 'Jales'}, ${data.uf || 'SP'}`);
         const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
         const nominatimData = await nominatimRes.json();
         
@@ -163,14 +164,14 @@ export const ClientDashboard: React.FC = () => {
           const lat = parseFloat(nominatimData[0].lat);
           const lon = parseFloat(nominatimData[0].lon);
           
-          const q = await quadraApi.listar(lat, lon, 2.0);
+          const q = await quadraApi.listar(lat, lon, 10.0);
           const filtradas = q.filter(quadra => quadra.ativa);
           setQuadras(filtradas);
           
           if (filtradas.length === 0) {
-            setFeedback({ type: 'error', message: `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.` });
+            setFeedback({ type: 'error', message: `Nenhuma quadra ativa encontrada em um raio de até 10 km do CEP ${cepBusca}.` });
           } else {
-            setFeedback({ type: 'success', message: `${filtradas.length} quadra(s) encontrada(s) em um raio de até 2 km do seu CEP!` });
+            setFeedback({ type: 'success', message: `${filtradas.length} quadra(s) encontrada(s) no raio do seu CEP!` });
           }
           return;
         }
@@ -183,6 +184,7 @@ export const ClientDashboard: React.FC = () => {
       carregarQuadras();
     } finally {
       setLoading(false);
+      setLoadingMessage('Processando dados...');
     }
   };
 
@@ -321,6 +323,7 @@ export const ClientDashboard: React.FC = () => {
           setFeedback({ type: 'error', message: err.message || 'Falha ao agendar.' });
         } finally {
           setLoading(false);
+          setLoadingMessage('Processando dados...');
         }
       },
     });
@@ -348,6 +351,7 @@ export const ClientDashboard: React.FC = () => {
           setFeedback({ type: 'error', message: err.message || 'Falha ao cancelar.' });
         } finally {
           setLoading(false);
+          setLoadingMessage('Processando dados...');
         }
       },
     });
