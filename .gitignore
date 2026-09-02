@@ -1,0 +1,79 @@
+# ==========================================
+# eQuadras - Comprehensive .gitignore
+# ==========================================
+
+# Compiled & Build Artifacts (Java / Maven / Gradle)
+target/
+build/
+bin/
+out/
+dist/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Node / Frontend Dependencies & Builds
+**/node_modules/
+**/dist/
+**/build/
+.npm
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Static Uploads / User-Generated Media
+uploads/
+**/uploads/
+!uploads/.gitkeep
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# IDEs, Editors & Tools
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.code-workspace
+.settings/
+.project
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Agent / Brain logs & local temporary metadata
+.agent/
+.agents/
+.gemini/
+*.log
+
+# Maven Wrapper binaries
+.mvn/wrapper/maven-wrapper.jar
