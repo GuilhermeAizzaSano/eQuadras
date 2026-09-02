@@ -15,6 +15,7 @@ interface BookingModalProps {
     diaMes: number;
     mes: string;
     isHoje: boolean;
+    disponivel?: boolean;
   }>;
   horarios: HorarioDisponivel[];
   slotsSelecionados: HorarioDisponivel[];
@@ -110,14 +111,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
               {diasDisponiveis.map((d) => {
                 const isSelected = dataSelecionada === d.iso;
+                const isDisponivel = d.disponivel !== false;
+
                 return (
                   <button
                     key={d.iso}
-                    onClick={() => setDataSelecionada(d.iso)}
-                    className={`flex-shrink-0 w-16 py-3 px-1 rounded-xl border flex flex-col items-center justify-center transition-all active:scale-[0.98] ${
-                      isSelected
-                        ? 'bg-white text-zinc-950 border-white shadow-lg font-bold'
-                        : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                    type="button"
+                    disabled={!isDisponivel}
+                    onClick={() => {
+                      if (isDisponivel) {
+                        setDataSelecionada(d.iso);
+                      }
+                    }}
+                    title={!isDisponivel ? 'Quadra fechada neste dia' : undefined}
+                    className={`flex-shrink-0 w-16 py-3 px-1 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                      !isDisponivel
+                        ? 'opacity-30 cursor-not-allowed bg-zinc-950/40 border-zinc-900 text-zinc-600 select-none'
+                        : isSelected
+                        ? 'bg-white text-zinc-950 border-white shadow-lg font-bold active:scale-[0.98]'
+                        : 'bg-zinc-900/60 border-zinc-850 text-zinc-400 hover:border-zinc-700 hover:text-white active:scale-[0.98]'
                     }`}
                   >
                     <span className="text-[10px] uppercase tracking-wider mb-1 font-semibold">
@@ -125,6 +137,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </span>
                     <span className="text-base font-extrabold">{d.diaMes}</span>
                     <span className="text-[11px] mt-0.5">{d.mes}</span>
+                    {!isDisponivel && (
+                      <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold mt-1">
+                        Fechado
+                      </span>
+                    )}
                   </button>
                 );
               })}
