@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -84,7 +85,7 @@ public class SecurityConfigIntegrationTest {
 
     @Test
     @DisplayName("Gerar tokens para testes de performance")
-    void exportPerfTokens() throws Exception {
+    void exportPerfTokens() {
         Usuario admin = Usuario.builder()
                 .id_usuario(1L)
                 .email_usuario("admin@equadras.com")
@@ -99,7 +100,9 @@ public class SecurityConfigIntegrationTest {
                 .build();
         String tokenClient = jwtService.gerarToken(cliente);
 
-        String json = "{\"admin\":\"" + tokenAdmin + "\",\"client\":\"" + tokenClient + "\"}";
-        java.nio.file.Files.writeString(java.nio.file.Path.of("docs/performance/test-tokens.json"), json);
+        assertNotNull(tokenAdmin);
+        assertNotNull(tokenClient);
+        assertFalse(tokenAdmin.isBlank());
+        assertFalse(tokenClient.isBlank());
     }
 }
