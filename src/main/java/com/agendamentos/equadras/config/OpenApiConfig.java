@@ -17,6 +17,10 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
+        io.swagger.v3.oas.models.media.Schema<String> timeSchema = new io.swagger.v3.oas.models.media.StringSchema()
+                .example("14:00:00")
+                .description("Horário no formato HH:mm:ss");
+
         return new OpenAPI()
                 .info(new Info()
                         .title("eQuadras API - Gestão e Agendamento Esportivo")
@@ -31,6 +35,7 @@ public class OpenApiConfig {
                                 .url("https://opensource.org/licenses/MIT")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
+                        .addSchemas("LocalTime", timeSchema)
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.HTTP)

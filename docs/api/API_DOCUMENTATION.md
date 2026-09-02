@@ -559,7 +559,17 @@ Authorization: Bearer <TOKEN>
   "tipoEsporte": "TENIS",
   "valorHora": 120.00,
   "ativa": true,
-  "fotos": []
+  "cep": "15703-050",
+  "logradouro": "Rua Dezoito, 1920",
+  "bairro": "Jardim América",
+  "cidade": "Jales",
+  "estado": "SP",
+  "latitude": -20.273,
+  "longitude": -50.5398,
+  "descricao": "Quadra de saibro premium.",
+  "dataLimiteAgendamento": "2026-12-31",
+  "fotos": [],
+  "disponibilidades": []
 }
 ```
 
