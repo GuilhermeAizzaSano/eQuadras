@@ -24,13 +24,14 @@
 1. [Visão Geral](#-visão-geral)
 2. [Arquitetura do Sistema](#-arquitetura-do-sistema)
 3. [Stack Tecnológica](#-stack-tecnológica)
-4. [Estrutura do Banco de Dados](#-estrutura-do-banco-de-dados)
-5. [Destaques de Segurança & Resiliência](#-destaques-de-segurança--resiliência)
-6. [Design System & Interface](#-design-system--interface)
-7. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
-8. [Endpoints Principais da API](#-endpoints-principais-da-api)
-9. [Variáveis de Ambiente](#-variáveis-de-ambiente)
-10. [Licença & Autoria](#-licença--autoria)
+4. [🌐 Integrações com APIs Externas](#-integrações-com-apis-externas)
+5. [Estrutura do Banco de Dados](#-estrutura-do-banco-de-dados)
+6. [Destaques de Segurança & Resiliência](#-destaques-de-segurança--resiliência)
+7. [Design System & Interface](#-design-system--interface)
+8. [Guia de Instalação e Execução](#-guia-de-instalação-e-execução)
+9. [Endpoints Principais da API](#-endpoints-principais-da-api)
+10. [Variáveis de Ambiente](#-variáveis-de-ambiente)
+11. [Licença & Autoria](#-licença--autoria)
 
 ---
 
@@ -85,6 +86,19 @@ equadras/
 - **Vite 5:** Ferramenta de build ultrarrápida.
 - **Tailwind CSS 3:** Estilização utilitária com Design System escuro (`#09090b` Zinc-950) e foco em acessibilidade WCAG AA.
 - **Lucide React:** Conjunto de ícones vetoriais modernos.
+
+---
+
+## 🌐 Integrações com APIs Externas
+
+O eQuadras conecta-se a serviços e APIs públicas e privadas para automatizar geolocalização, pagamentos instantâneos e enriquecimento de dados:
+
+| API / Serviço | Tipo / Protocolo | Finalidade no Sistema | Implementação |
+|---|---|---|---|
+| **Mercado Pago Payments API** | REST / HTTPS (`v1/payments`) | Criação de cobranças Pix oficiais com QR Code base64 e código Copia e Cola, idempotência via UUID e suporte a fallback dinâmico para ambiente de testes. | [`PagamentoService.java`](src/main/java/com/agendamentos/equadras/service/PagamentoService.java) |
+| **ViaCEP API** | REST / JSON (`viacep.com.br/ws/{cep}/json/`) | Autocomplete de endereço completo (Logradouro, Bairro, Cidade, UF) a partir do CEP no cadastro de quadras e no filtro de busca do atleta. | [`QuadraService.java`](src/main/java/com/agendamentos/equadras/service/QuadraService.java) |
+| **OpenStreetMap / Nominatim API** | REST / JSON (`nominatim.openstreetmap.org/search`) | Geocodificação reversa para conversão de endereços em coordenadas geográficas (Latitude e Longitude), viabilizando o cálculo de raio e distância (Fórmula de Haversine). | [`QuadraService.java`](src/main/java/com/agendamentos/equadras/service/QuadraService.java) |
+| **Google Maps Navigation** | Deep Linking / Web (`google.com/maps/search/?api=1&query=...`) | Redirecionamento e abertura direta da rota e localização da quadra a partir das coordenadas registradas no modal de detalhes da quadra. | [`CourtDetailsModal.tsx`](frontend/src/components/ui/CourtDetailsModal.tsx) |
 
 ---
 
