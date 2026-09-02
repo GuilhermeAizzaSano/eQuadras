@@ -84,7 +84,6 @@ class AgendamentoServiceTest {
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
-        when(quadraRepository.findByIdWithAdmin(1L)).thenReturn(Optional.of(quadra));
         when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
                 .thenReturn(false);
         when(pagamentoService.gerarPix(any(Agendamento.class)))
@@ -120,7 +119,6 @@ class AgendamentoServiceTest {
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
-        when(quadraRepository.findByIdWithAdmin(1L)).thenReturn(Optional.of(quadra));
         when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
                 .thenReturn(true);
 

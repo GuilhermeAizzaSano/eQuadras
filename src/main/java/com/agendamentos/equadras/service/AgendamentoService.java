@@ -59,10 +59,7 @@ public class AgendamentoService {
         Usuario usuario = usuarioRepository.findById(usuarioIdAutenticado)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado. ID: " + usuarioIdAutenticado));
 
-        quadraRepository.buscarComLockParaAgendamento(dto.quadraId())
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada. ID: " + dto.quadraId()));
-
-        Quadra quadra = quadraRepository.findByIdWithAdmin(dto.quadraId())
+        Quadra quadra = quadraRepository.buscarComLockParaAgendamento(dto.quadraId())
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada. ID: " + dto.quadraId()));
 
         if (!quadra.isAtiva()) {
