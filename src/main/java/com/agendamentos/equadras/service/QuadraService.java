@@ -204,6 +204,13 @@ public class QuadraService {
             }
         }
 
+        // Garante inicialização das fotos dentro da transação para evitar LazyInitializationException
+        quadras.forEach(q -> {
+            if (q.getFotos() != null) {
+                q.getFotos().size();
+            }
+        });
+
         return quadras.stream()
                 .map(QuadraResponseDTO::fromEntity)
                 .toList();
