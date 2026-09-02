@@ -30,6 +30,9 @@ class UsuarioServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.agendamentos.equadras.security.JwtService jwtService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
@@ -61,13 +64,15 @@ class UsuarioServiceTest {
         when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(false);
         when(passwordEncoder.encode("senha123")).thenReturn("$2a$10$encodedPasswordHash");
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(jwtService.gerarToken(any(Usuario.class))).thenReturn("token-fake");
 
-        UsuarioResponseDTO resposta = usuarioService.cadastrar(dto);
+        var resposta = usuarioService.cadastrar(dto);
 
         assertNotNull(resposta);
-        assertEquals("Mariana", resposta.nome_usuario());
-        assertEquals("mariana@email.com", resposta.email_usuario());
-        assertEquals(Role.CLIENT, resposta.role());
+        assertEquals("token-fake", resposta.token());
+        assertEquals("Mariana", resposta.usuario().nome_usuario());
+        assertEquals("mariana@email.com", resposta.usuario().email_usuario());
+        assertEquals(Role.CLIENT, resposta.usuario().role());
 
         verify(passwordEncoder, times(1)).encode("senha123");
         verify(usuarioRepository, times(1)).save(any(Usuario.class));
@@ -99,12 +104,14 @@ class UsuarioServiceTest {
 
         when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senha123", usuario.getSenha_usuario())).thenReturn(true);
+        when(jwtService.gerarToken(usuario)).thenReturn("token-fake");
 
-        UsuarioResponseDTO resposta = usuarioService.login(dto);
+        var resposta = usuarioService.login(dto);
 
         assertNotNull(resposta);
-        assertEquals(1L, resposta.id_usuario());
-        assertEquals("mariana@email.com", resposta.email_usuario());
+        assertEquals("token-fake", resposta.token());
+        assertEquals(1L, resposta.usuario().id_usuario());
+        assertEquals("mariana@email.com", resposta.usuario().email_usuario());
     }
 
     @Test
