@@ -142,6 +142,8 @@ export const bloqueioApi = {
 export const agendamentoApi = {
   listar: () => apiFetch<Agendamento[]>('/agendamentos'),
 
+  buscarPorId: (id: number) => apiFetch<Agendamento>(`/agendamentos/${id}`),
+
   agendar: (dados: { quadraId: number; dataHoraInicio: string; dataHoraFim: string }) =>
     apiFetch<Agendamento>('/agendamentos', { method: 'POST', body: JSON.stringify(dados) }),
 
@@ -163,6 +165,9 @@ export const notificacaoApi = {
 
 // --- Pagamentos ---
 export const pagamentoApi = {
+  consultarStatus: (agendamentoId: number) =>
+    apiFetch<Agendamento>(`/pagamentos/${agendamentoId}/status`),
+
   simularAprovacao: (agendamentoId: number) =>
     apiFetch<Agendamento>(`/pagamentos/${agendamentoId}/simular-aprovacao`, { method: 'POST' }),
 };

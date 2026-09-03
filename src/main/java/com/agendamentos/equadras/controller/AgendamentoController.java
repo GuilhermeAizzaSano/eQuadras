@@ -42,6 +42,13 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarTodos(usuarioLogado.id()));
     }
 
+    @Operation(summary = "Buscar agendamento por ID", description = "Retorna os detalhes completos do agendamento pertencente ao usuário autenticado ou admin da quadra.")
+    @GetMapping("/{id}")
+    public ResponseEntity<AgendamentoResponseDTO> buscarPorId(@PathVariable Long id,
+                                                               @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        return ResponseEntity.ok(agendamentoService.buscarPorId(id, usuarioLogado.id()));
+    }
+
     @Operation(summary = "Cancelar agendamento", description = "Cancela uma reserva ativa pertencente ao usuário autenticado ou ao administrador da quadra.")
     @PatchMapping("/{id}/cancelar")
     public ResponseEntity<AgendamentoResponseDTO> cancelar(@PathVariable Long id,

@@ -372,4 +372,53 @@ class AgendamentoServiceTest {
         assertTrue(slot10.disponivel());
         assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.DISPONIVEL, slot10.status());
     }
+
+    @Test
+    @DisplayName("Deve confirmar pagamento via webhook localizando por transacaoPagamentoId")
+    void deveConfirmarPagamentoPorWebhookComSucesso() {
+        Agendamento agendamentoPendente = Agendamento.builder()
+                .id_agendamento(99L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1).withHour(18).withMinute(0))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).withHour(19).withMinute(0))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .transacaoPagamentoId("mp-payment-999")
+                .build();
+
+        when(agendamentoRepository.findByTransacaoPagamentoId("mp-payment-999"))
+                .thenReturn(Optional.of(agendamentoPendente));
+        when(agendamentoRepository.save(any(Agendamento.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AgendamentoResponseDTO response = agendamentoService.confirmarPagamentoPorWebhook(null, "mp-payment-999");
+
+        assertNotNull(response);
+        assertEquals(StatusAgendamento.CONFIRMADO, response.status());
+        assertEquals(99L, response.id_agendamento());
+        verify(agendamentoRepository, times(1)).save(agendamentoPendente);
+    }
+
+    @Test
+    @DisplayName("Deve buscar agendamento por ID para usuário dono")
+    void deveBuscarAgendamentoPorId() {
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(50L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1).withHour(15).withMinute(0))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).withHour(16).withMinute(0))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .build();
+
+        when(agendamentoRepository.findById(50L)).thenReturn(Optional.of(agendamento));
+
+        AgendamentoResponseDTO dto = agendamentoService.buscarPorId(50L, 1L);
+
+        assertNotNull(dto);
+        assertEquals(50L, dto.id_agendamento());
+        assertEquals(1L, dto.usuarioId());
+    }
 }

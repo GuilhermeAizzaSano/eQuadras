@@ -96,7 +96,47 @@ public class AgendamentoService {
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
-        // Notificar o admin em tempo real após a confirmação do pagamento
+        notificarAdminPagamento(salvo);
+
+        return AgendamentoResponseDTO.fromEntity(salvo);
+    }
+
+    @Transactional
+    public AgendamentoResponseDTO confirmarPagamentoPorWebhook(Long idAgendamento, String transacaoId) {
+        Agendamento agendamento = null;
+        if (idAgendamento != null) {
+            agendamento = agendamentoRepository.findById(idAgendamento).orElse(null);
+        }
+        if (agendamento == null && transacaoId != null && !transacaoId.isBlank()) {
+            agendamento = agendamentoRepository.findByTransacaoPagamentoId(transacaoId).orElse(null);
+        }
+
+        if (agendamento == null) {
+            throw new IllegalArgumentException("Agendamento não encontrado para conciliação do pagamento (ID: "
+                    + idAgendamento + ", transacaoId: " + transacaoId + ")");
+        }
+
+        if (agendamento.getStatus() == StatusAgendamento.CONFIRMADO) {
+            return AgendamentoResponseDTO.fromEntity(agendamento);
+        }
+
+        if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
+            throw new IllegalStateException("Não é possível confirmar pagamento de um agendamento cancelado.");
+        }
+
+        if (transacaoId != null && !transacaoId.isBlank() && agendamento.getTransacaoPagamentoId() == null) {
+            agendamento.setTransacaoPagamentoId(transacaoId);
+        }
+
+        agendamento.setStatus(StatusAgendamento.CONFIRMADO);
+        Agendamento salvo = agendamentoRepository.save(agendamento);
+
+        notificarAdminPagamento(salvo);
+
+        return AgendamentoResponseDTO.fromEntity(salvo);
+    }
+
+    private void notificarAdminPagamento(Agendamento salvo) {
         try {
             if (salvo.getQuadra().getAdmin() != null) {
                 java.time.format.DateTimeFormatter formatadorData = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -113,8 +153,21 @@ public class AgendamentoService {
         } catch (Exception e) {
             System.err.println("Falha ao enviar notificação: " + e.getMessage());
         }
+    }
 
-        return AgendamentoResponseDTO.fromEntity(salvo);
+    @Transactional(readOnly = true)
+    public AgendamentoResponseDTO buscarPorId(Long idAgendamento, Long usuarioIdAutenticado) {
+        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
+                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+
+        boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
+        boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
+                && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
+        if (!ehDono && !ehAdminDaQuadra) {
+            throw new IllegalArgumentException("Você não tem permissão para visualizar este agendamento.");
+        }
+
+        return AgendamentoResponseDTO.fromEntity(agendamento);
     }
 
     @Transactional
