@@ -8,3 +8,5 @@ export * from './LoadingOverlay';
 export * from './CourtCarousel';
 export * from './CourtDetailsModal';
 export * from './BookingModal';
+
+export * from './ChangePasswordModal';

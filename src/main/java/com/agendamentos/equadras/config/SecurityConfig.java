@@ -65,7 +65,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Públicos
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/", "/usuarios/login").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook").permitAll()

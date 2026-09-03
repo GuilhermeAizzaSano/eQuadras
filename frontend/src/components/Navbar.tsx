@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, UserCircle2, Shield } from 'lucide-react';
-import { Logo } from './ui';
+import { LogOut, UserCircle2, Shield, KeyRound } from 'lucide-react';
+import { Logo, ChangePasswordModal } from './ui';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
+  const [modalSenhaOpen, setModalSenhaOpen] = useState(false);
 
   return (
     <header className="border-b border-zinc-850 bg-zinc-950/80 backdrop-blur-xl sticky top-0 z-50">
@@ -14,7 +15,7 @@ export const Navbar: React.FC = () => {
         </div>
 
         {user && (
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2.5 text-sm text-zinc-300">
               {isAdmin ? (
                 <Shield className="w-4 h-4 text-emerald-400" />
@@ -24,6 +25,17 @@ export const Navbar: React.FC = () => {
               <span className="font-medium text-white">{user.nome_usuario}</span>
             </div>
 
+            {/* Botão de Alterar Senha */}
+            <button
+              onClick={() => setModalSenhaOpen(true)}
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all flex items-center gap-1.5 text-xs"
+              title="Alterar Senha"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span className="hidden sm:inline">Alterar Senha</span>
+            </button>
+
+            {/* Botão Sair */}
             <button
               onClick={logout}
               className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all flex items-center gap-2 text-xs"
@@ -35,6 +47,12 @@ export const Navbar: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal de Alteração de Senha */}
+      <ChangePasswordModal
+        isOpen={modalSenhaOpen}
+        onClose={() => setModalSenhaOpen(false)}
+      />
     </header>
   );
 };
