@@ -9,6 +9,7 @@ import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
+import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class BloqueioHorarioServiceTest {
     @Mock
     private QuadraRepository quadraRepository;
 
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
     @InjectMocks
     private BloqueioHorarioService bloqueioHorarioService;
 
@@ -59,6 +63,8 @@ class BloqueioHorarioServiceTest {
                 .ativa(true)
                 .admin(admin)
                 .build();
+
+        lenient().when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
     }
 
     @Test
@@ -251,5 +257,47 @@ class BloqueioHorarioServiceTest {
         assertEquals(1, lista.size());
         assertEquals("B1", lista.get(0).motivo());
         verify(bloqueioHorarioRepository, times(1)).findAllByAdminId(1L);
+    }
+
+    @Test
+    @DisplayName("Deve listar todos os bloqueios de todas as quadras quando for Master Admin")
+    void deveListarTodosQuandoMasterAdmin() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Admin Master")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+
+        BloqueioHorario bGlobal = new BloqueioHorario(51L, quadra, LocalDate.now().plusDays(1), null, null, "Global", null);
+        when(bloqueioHorarioRepository.findAllOrdered()).thenReturn(List.of(bGlobal));
+
+        List<BloqueioHorarioResponseDTO> lista = bloqueioHorarioService.listarTodosDoAdmin(99L);
+
+        assertEquals(1, lista.size());
+        assertEquals("Global", lista.get(0).motivo());
+        verify(bloqueioHorarioRepository, times(1)).findAllOrdered();
+        verify(bloqueioHorarioRepository, never()).findAllByAdminId(99L);
+    }
+
+    @Test
+    @DisplayName("Deve permitir ao Master Admin remover bloqueio de quadra de outro admin")
+    void devePermitirMasterAdminRemoverBloqueio() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Admin Master")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+        BloqueioHorario bloqueio = new BloqueioHorario(200L, quadra, LocalDate.now().plusDays(2), null, null, "Motivo", null);
+        when(bloqueioHorarioRepository.findById(200L)).thenReturn(Optional.of(bloqueio));
+
+        bloqueioHorarioService.removerBloqueio(10L, 200L, 99L);
+
+        verify(bloqueioHorarioRepository, times(1)).delete(bloqueio);
     }
 }

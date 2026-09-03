@@ -78,10 +78,12 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
 
+        Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
+        boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
         boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
         boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
                 && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
-        if (!ehDono && !ehAdminDaQuadra) {
+        if (!ehDono && !ehAdminDaQuadra && !ehMasterAdmin) {
             throw new IllegalArgumentException("Você não tem permissão para confirmar o pagamento deste agendamento.");
         }
 
@@ -160,10 +162,12 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
 
+        Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
+        boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
         boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
         boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
                 && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
-        if (!ehDono && !ehAdminDaQuadra) {
+        if (!ehDono && !ehAdminDaQuadra && !ehMasterAdmin) {
             throw new IllegalArgumentException("Você não tem permissão para visualizar este agendamento.");
         }
 
@@ -178,7 +182,9 @@ public class AgendamentoService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
+        if (usuario.isMasterAdmin()) {
+            // Master Admin tem permissão para cancelar qualquer agendamento
+        } else if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
             if (!agendamento.getUsuario().getId_usuario().equals(usuarioId)) {
                 throw new IllegalArgumentException("Você não tem permissão para cancelar este agendamento.");
             }
@@ -325,7 +331,13 @@ public class AgendamentoService {
         if (usuarioId != null) {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
-                agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                if (usuario.isMasterAdmin()) {
+                    // Master Admin vê todos os agendamentos cadastrados no sistema
+                    agendamentos = agendamentoRepository.findAll();
+                } else {
+                    // Admin comum vê os agendamentos das suas quadras
+                    agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                }
             } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
                 agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
             } else {
@@ -342,7 +354,15 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public java.util.Map<Long, List<HorarioDisponivelDTO>> listarHorariosDoDiaParaAdmin(LocalDate data, Long adminId) {
-        List<Quadra> quadrasDoAdmin = quadraRepository.findByAdminId(adminId);
+        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
+        List<Quadra> quadrasDoAdmin;
+        if (admin != null && admin.isMasterAdmin()) {
+            // Master Admin tem a visão do dia de todas as quadras ativas do sistema
+            quadrasDoAdmin = quadraRepository.findAllWithAdminEFotos();
+        } else {
+            quadrasDoAdmin = quadraRepository.findByAdminId(adminId);
+        }
+
         java.util.Map<Long, List<HorarioDisponivelDTO>> mapaResultado = new java.util.LinkedHashMap<>();
 
         for (Quadra quadra : quadrasDoAdmin) {
