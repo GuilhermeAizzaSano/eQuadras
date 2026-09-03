@@ -57,6 +57,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     List<Agendamento> findAll();
 
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    java.util.Optional<Agendamento> findByTransacaoPagamentoId(String transacaoPagamentoId);
+
     @Override
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     java.util.Optional<Agendamento> findById(Long id);

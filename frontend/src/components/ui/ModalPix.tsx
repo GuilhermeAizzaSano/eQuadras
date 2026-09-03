@@ -64,6 +64,32 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     }
   };
 
+  // Polling automático para detecção instantânea do pagamento Pix no gateway / webhook
+  useEffect(() => {
+    if (!isOpen || !agendamento || agendamento.status !== 'PENDENTE') return;
+
+    let ativo = true;
+
+    const checarStatus = async () => {
+      try {
+        const agendamentoAtual = await pagamentoApi.consultarStatus(agendamento.id_agendamento);
+        if (ativo && agendamentoAtual && agendamentoAtual.status === 'CONFIRMADO') {
+          onSuccess(agendamentoAtual);
+        }
+      } catch (e) {
+        // Erros transitórios de rede em polling não devem quebrar o modal
+      }
+    };
+
+    // Consulta a cada 3.5 segundos
+    const pollInterval = setInterval(checarStatus, 3500);
+
+    return () => {
+      ativo = false;
+      clearInterval(pollInterval);
+    };
+  }, [isOpen, agendamento, onSuccess]);
+
   const handleSimularPagamento = async () => {
     setSimulando(true);
     setErro(null);
