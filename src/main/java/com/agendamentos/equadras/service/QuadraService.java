@@ -86,6 +86,14 @@ public class QuadraService {
         return QuadraResponseDTO.fromEntity(quadraSalva);
     }
 
+    private boolean podeGerenciarQuadra(Quadra quadra, Long adminId) {
+        if (adminId == null) return false;
+        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
+        if (admin == null) return false;
+        if (admin.isMasterAdmin()) return true;
+        return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
+    }
+
     @Transactional
     public QuadraResponseDTO editar(Long id, QuadraCriacaoDTO dto, Long adminId) {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
@@ -96,8 +104,8 @@ public class QuadraService {
             Usuario admin = usuarioRepository.findById(adminId)
                     .orElseThrow(() -> new IllegalArgumentException("Administrador não encontrado."));
             quadra.setAdmin(admin);
-        } else if (!quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode editá-la.");
+        } else if (!podeGerenciarQuadra(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 
         quadra.setNome(dto.nome());
@@ -142,8 +150,8 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode fazer upload de fotos.");
+        if (!podeGerenciarQuadra(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.");
         }
 
         if (arquivos == null || arquivos.isEmpty()) {
@@ -168,8 +176,8 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode remover fotos.");
+        if (!podeGerenciarQuadra(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.");
         }
 
         if (quadra.getFotos().remove(fotoUrl)) {
@@ -185,8 +193,8 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode excluí-la.");
+        if (!podeGerenciarQuadra(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.");
         }
 
         if (agendamentoRepository.existsByQuadraId(id)) {
@@ -209,8 +217,13 @@ public class QuadraService {
         if (usuarioId != null) {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == Role.ADMIN) {
-                // Admin vê apenas as suas
-                quadras = quadraRepository.findByAdminId(usuarioId);
+                if (usuario.isMasterAdmin()) {
+                    // Master Admin vê todas as quadras cadastradas no sistema
+                    quadras = quadraRepository.findAllWithAdminEFotos();
+                } else {
+                    // Admin comum vê apenas as suas
+                    quadras = quadraRepository.findByAdminId(usuarioId);
+                }
             } else {
                 // Cliente vê todas as ativas (filtradas por raio se lat/lon informados)
                 if (latitude != null && longitude != null) {
@@ -255,8 +268,8 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (adminId == null || quadra.getAdmin() == null || !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode alterar seu status.");
+        if (!podeGerenciarQuadra(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode alterar seu status.");
         }
 
         quadra.setAtiva(status);

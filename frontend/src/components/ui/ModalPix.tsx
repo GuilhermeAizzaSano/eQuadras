@@ -49,21 +49,6 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     return () => clearInterval(interval);
   }, [isOpen, agendamento, onExpired]);
 
-  if (!isOpen || !agendamento) return null;
-
-  const minutos = Math.floor(segundosRestantes / 60);
-  const segundos = segundosRestantes % 60;
-  const tempoFormatado = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
-  const expirado = segundosRestantes <= 0;
-
-  const copiarPix = () => {
-    if (agendamento.pixCopiaECola) {
-      navigator.clipboard.writeText(agendamento.pixCopiaECola);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 3000);
-    }
-  };
-
   // Polling automático para detecção instantânea do pagamento Pix no gateway / webhook
   useEffect(() => {
     if (!isOpen || !agendamento || agendamento.status !== 'PENDENTE') return;
@@ -89,6 +74,21 @@ export const ModalPix: React.FC<ModalPixProps> = ({
       clearInterval(pollInterval);
     };
   }, [isOpen, agendamento, onSuccess]);
+
+  if (!isOpen || !agendamento) return null;
+
+  const minutos = Math.floor(segundosRestantes / 60);
+  const segundos = segundosRestantes % 60;
+  const tempoFormatado = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+  const expirado = segundosRestantes <= 0;
+
+  const copiarPix = () => {
+    if (agendamento.pixCopiaECola) {
+      navigator.clipboard.writeText(agendamento.pixCopiaECola);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 3000);
+    }
+  };
 
   const handleSimularPagamento = async () => {
     setSimulando(true);

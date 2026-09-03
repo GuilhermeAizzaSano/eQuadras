@@ -35,7 +35,7 @@ public class UsuarioService {
     public boolean isMasterAdmin(Long usuarioId) {
         if (usuarioId == null) return false;
         return usuarioRepository.findById(usuarioId)
-                .map(u -> MASTER_ADMIN_EMAIL.equalsIgnoreCase(u.getEmail_usuario()))
+                .map(Usuario::isMasterAdmin)
                 .orElse(false);
     }
 

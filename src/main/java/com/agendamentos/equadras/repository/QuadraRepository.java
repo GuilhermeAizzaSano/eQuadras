@@ -14,6 +14,10 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
     @EntityGraph(attributePaths = {"admin", "fotos"})
     @Query("SELECT q FROM Quadra q WHERE q.admin.id_usuario = :adminId")
     List<Quadra> findByAdminId(@Param("adminId") Long adminId);
+
+    @EntityGraph(attributePaths = {"admin", "fotos"})
+    @Query("SELECT q FROM Quadra q")
+    List<Quadra> findAllWithAdminEFotos();
     
     @EntityGraph(attributePaths = {"admin", "fotos"})
     @Query("SELECT q FROM Quadra q WHERE q.id_quadra = :id")

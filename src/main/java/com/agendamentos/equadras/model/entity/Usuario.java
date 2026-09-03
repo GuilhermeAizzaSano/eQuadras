@@ -76,6 +76,10 @@ public class Usuario {
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
 
+    public boolean isMasterAdmin() {
+        return this.role == Role.ADMIN && "gui@gmail.com".equalsIgnoreCase(this.email_usuario);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

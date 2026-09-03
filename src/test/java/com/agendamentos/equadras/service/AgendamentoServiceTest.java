@@ -421,4 +421,65 @@ class AgendamentoServiceTest {
         assertEquals(50L, dto.id_agendamento());
         assertEquals(1L, dto.usuarioId());
     }
+
+    @Test
+    @DisplayName("Deve listar todos os agendamentos de todas as quadras quando for Master Admin")
+    void deveListarTodosAgendamentosQuandoMasterAdmin() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Master")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+
+        Agendamento a1 = Agendamento.builder()
+                .id_agendamento(1L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).plusHours(1))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+
+        when(agendamentoRepository.findAll()).thenReturn(List.of(a1));
+
+        List<AgendamentoResponseDTO> lista = agendamentoService.listarTodos(99L);
+
+        assertEquals(1, lista.size());
+        verify(agendamentoRepository, times(1)).findAll();
+        verify(agendamentoRepository, never()).findByAdminId(99L);
+    }
+
+    @Test
+    @DisplayName("Deve permitir ao Master Admin cancelar qualquer agendamento")
+    void devePermitirMasterAdminCancelarQualquerAgendamento() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Master")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(50L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1).withHour(15).withMinute(0))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).withHour(16).withMinute(0))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+
+        when(agendamentoRepository.findById(50L)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> i.getArgument(0));
+
+        AgendamentoResponseDTO response = agendamentoService.cancelar(50L, 99L);
+
+        assertNotNull(response);
+        assertEquals(StatusAgendamento.CANCELADO, response.status());
+        verify(agendamentoRepository, times(1)).save(agendamento);
+    }
 }

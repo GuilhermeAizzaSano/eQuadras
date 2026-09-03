@@ -4,8 +4,10 @@ import com.agendamentos.equadras.dto.request.BloqueioHorarioCriacaoDTO;
 import com.agendamentos.equadras.dto.response.BloqueioHorarioResponseDTO;
 import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
+import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
+import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +19,22 @@ public class BloqueioHorarioService {
 
     private final BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraRepository quadraRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository, QuadraRepository quadraRepository) {
+    public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
+                                  QuadraRepository quadraRepository,
+                                  UsuarioRepository usuarioRepository) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
+        this.usuarioRepository = usuarioRepository;
+    }
+
+    private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
+        if (adminId == null) return false;
+        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
+        if (admin == null) return false;
+        if (admin.isMasterAdmin()) return true;
+        return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
     }
 
     @Transactional
@@ -28,8 +42,8 @@ public class BloqueioHorarioService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode criar bloqueios.");
+        if (!podeGerenciarBloqueio(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.");
         }
 
         if (dto.data().isBefore(LocalDate.now())) {
@@ -74,6 +88,14 @@ public class BloqueioHorarioService {
 
     @Transactional(readOnly = true)
     public List<BloqueioHorarioResponseDTO> listarTodosDoAdmin(Long adminId) {
+        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
+        if (admin != null && admin.isMasterAdmin()) {
+            return bloqueioHorarioRepository.findAllOrdered()
+                    .stream()
+                    .map(BloqueioHorarioResponseDTO::fromEntity)
+                    .toList();
+        }
+
         return bloqueioHorarioRepository.findAllByAdminId(adminId)
                 .stream()
                 .map(BloqueioHorarioResponseDTO::fromEntity)
@@ -85,8 +107,8 @@ public class BloqueioHorarioService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode remover bloqueios.");
+        if (!podeGerenciarBloqueio(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
         BloqueioHorario bloqueio = bloqueioHorarioRepository.findById(bloqueioId)
@@ -104,8 +126,8 @@ public class BloqueioHorarioService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (quadra.getAdmin() != null && !quadra.getAdmin().getId_usuario().equals(adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra pode remover bloqueios.");
+        if (!podeGerenciarBloqueio(quadra, adminId)) {
+            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
         if (dto.bloqueioId() != null) {
