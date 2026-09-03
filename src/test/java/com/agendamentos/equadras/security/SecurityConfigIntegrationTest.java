@@ -52,6 +52,15 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
+    @DisplayName("POST /usuarios deve retornar 401 ou 403 sem token (cadastro fechado)")
+    void postUsuariosSemTokenDeveSerNegado() throws Exception {
+        mockMvc.perform(post("/usuarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome_usuario\":\"Teste\",\"email_usuario\":\"t@t.com\",\"senha_usuario\":\"123456\",\"phone_usuario\":\"11999999999\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("POST /quadras com token CLIENT deve retornar 403 Forbidden")
     void postQuadrasComClienteDeveRetornar403() throws Exception {
         Usuario cliente = Usuario.builder()

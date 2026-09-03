@@ -4,3 +4,6 @@ export * from './DayAgendaModal';
 export * from './CourtFormModal';
 export * from './CourtManagementList';
 export * from './CalendarOccupancy';
+
+export * from './UserManagementList';
+export * from './UserFormModal';

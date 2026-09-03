@@ -1,4 +1,4 @@
-import { Usuario, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse, DisponibilidadeDia } from '../types';
+import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse, DisponibilidadeDia } from '../types';
 
 export const getBaseUrl = (): string => {
   const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
@@ -64,9 +64,36 @@ export const usuarioApi = {
     email_usuario: string;
     senha_usuario: string;
     phone_usuario: string;
+    role?: Role;
   }) =>
-    apiFetch<LoginResponse>('/usuarios', {
+    apiFetch<Usuario>('/usuarios', {
       method: 'POST',
+      body: JSON.stringify(dados),
+    }),
+
+  editar: (
+    id: number,
+    dados: {
+      nome_usuario: string;
+      email_usuario: string;
+      phone_usuario: string;
+      role?: Role;
+      nova_senha?: string;
+    }
+  ) =>
+    apiFetch<Usuario>(`/usuarios/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(dados),
+    }),
+
+  excluir: (id: number) =>
+    apiFetch<void>(`/usuarios/${id}`, {
+      method: 'DELETE',
+    }),
+
+  alterarMinhaSenha: (dados: { senhaAtual: string; novaSenha: string }) =>
+    apiFetch<void>('/usuarios/minha-senha', {
+      method: 'PATCH',
       body: JSON.stringify(dados),
     }),
 

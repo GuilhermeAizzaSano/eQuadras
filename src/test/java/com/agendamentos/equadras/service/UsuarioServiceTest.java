@@ -123,4 +123,109 @@ class UsuarioServiceTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> usuarioService.login(dto));
         assertEquals("E-mail ou senha incorretos.", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("Deve cadastrar usuário quando chamado pelo Master Admin")
+    void deveCadastrarPorAdminQuandoMasterAdmin() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Admin Geral")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO(
+                "Novo Atleta",
+                "atleta@email.com",
+                "senha123",
+                "11988887777",
+                Role.CLIENT
+        );
+
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(false);
+        when(passwordEncoder.encode("senha123")).thenReturn("$2a$10$encodedPasswordHash");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            u.setId_usuario(10L);
+            return u;
+        });
+
+        var response = usuarioService.cadastrarPorAdmin(dto, 99L);
+
+        assertNotNull(response);
+        assertEquals("Novo Atleta", response.nome_usuario());
+        assertEquals(Role.CLIENT, response.role());
+    }
+
+    @Test
+    @DisplayName("Deve barrar cadastro por admin quando não for o Master Admin")
+    void deveBarrarCadastroPorAdminQuandoNaoMasterAdmin() {
+        Usuario adminComum = Usuario.builder()
+                .id_usuario(2L)
+                .nome_usuario("Outro Admin")
+                .email_usuario("outro@email.com")
+                .role(Role.ADMIN)
+                .build();
+
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO(
+                "Novo Atleta",
+                "atleta@email.com",
+                "senha123",
+                "11988887777"
+        );
+
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(adminComum));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> usuarioService.cadastrarPorAdmin(dto, 2L));
+    }
+
+    @Test
+    @DisplayName("Deve impedir exclusão da conta do Master Admin")
+    void deveImpedirExclusaoDoMasterAdmin() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Admin Geral")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.excluirUsuario(99L, 99L));
+        assertTrue(ex.getMessage().contains("não pode ser excluída"));
+    }
+
+    @Test
+    @DisplayName("Deve alterar a senha do próprio usuário com sucesso")
+    void deveAlterarMinhaSenhaComSucesso() {
+        com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto =
+                new com.agendamentos.equadras.dto.request.AlterarSenhaDTO("senhaAtual123", "NovaSenha@2026");
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("senhaAtual123", usuario.getSenha_usuario())).thenReturn(true);
+        when(passwordEncoder.encode("NovaSenha@2026")).thenReturn("$2a$10$newHashedPassword");
+
+        usuarioService.alterarMinhaSenha(1L, dto);
+
+        verify(usuarioRepository, times(1)).save(usuario);
+        assertEquals("$2a$10$newHashedPassword", usuario.getSenha_usuario());
+    }
+
+    @Test
+    @DisplayName("Deve falhar alteração de senha quando a senha atual informada estiver incorreta")
+    void deveFalharQuandoSenhaAtualIncorreta() {
+        com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto =
+                new com.agendamentos.equadras.dto.request.AlterarSenhaDTO("senhaErrada", "NovaSenha@2026");
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.alterarMinhaSenha(1L, dto));
+        assertTrue(ex.getMessage().contains("A senha atual informada está incorreta"));
+        verify(usuarioRepository, never()).save(any());
+    }
 }

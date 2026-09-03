@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (user: Usuario, token: string) => void;
   logout: () => void;
   isAdmin: boolean;
+  isMasterAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,9 +36,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = user?.role === 'ADMIN';
+  const isMasterAdmin = user?.email_usuario?.toLowerCase() === 'gui@gmail.com';
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAdmin, isMasterAdmin }}>
       {children}
     </AuthContext.Provider>
   );

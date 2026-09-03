@@ -28,11 +28,29 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @Operation(summary = "Cadastrar novo usuário", description = "Cria uma nova conta de usuário (Role: CLIENT) e retorna o perfil com o token JWT de autenticação.")
+    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.")
     @PostMapping
-    public ResponseEntity<LoginResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto) {
-        var resposta = usuarioService.cadastrar(dto);
+    public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto,
+                                                        @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+    }
+
+    @Operation(summary = "Editar usuário existente (Apenas Admin Geral)", description = "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil e opcionalmente senha). Apenas o Administrador Geral possui permissão.")
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDTO> editar(@PathVariable Long id,
+                                                      @RequestBody @Valid com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO dto,
+                                                      @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        var resposta = usuarioService.editarUsuario(id, dto, usuarioLogado.id());
+        return ResponseEntity.ok(resposta);
+    }
+
+    @Operation(summary = "Excluir usuário (Apenas Admin Geral)", description = "Remove um usuário do sistema. Apenas o Administrador Geral possui permissão.")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id,
+                                         @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        usuarioService.excluirUsuario(id, usuarioLogado.id());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Realizar login", description = "Autentica via e-mail e senha e retorna o token JWT assinado para autenticação nas demais rotas.")
@@ -42,16 +60,22 @@ public class UsuarioController {
         return ResponseEntity.ok(resposta);
     }
 
-    @Operation(summary = "Listar todos os usuários (Admin)", description = "Retorna todos os usuários cadastrados no sistema. Requer permissão ROLE_ADMIN.")
+    @Operation(summary = "Listar todos os usuários (Apenas Admin Geral)", description = "Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.")
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        if (usuarioLogado.role() != com.agendamentos.equadras.model.enums.Role.ADMIN) {
-            throw new AccessDeniedException("Apenas administradores podem listar usuários.");
-        }
+        usuarioService.validarAcessoMasterAdmin(usuarioLogado.id());
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
-    @Operation(summary = "Buscar usuário por ID", description = "Consulta os dados públicos de um usuário pelo seu identificador único.")
+    @Operation(summary = "Alterar minha senha", description = "Permite que o próprio usuário autenticado altere sua senha informando a atual e a nova (mínimo 6 chars, 1 maiúscula, 1 minúscula, 1 número e 1 símbolo).")
+    @PatchMapping("/minha-senha")
+    public ResponseEntity<Void> alterarMinhaSenha(@RequestBody @Valid com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto,
+                                                  @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        usuarioService.alterarMinhaSenha(usuarioLogado.id(), dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Buscar usuário por ID", description = "Consulta os dados de um usuário pelo seu identificador único.")
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.buscarPorId(id));

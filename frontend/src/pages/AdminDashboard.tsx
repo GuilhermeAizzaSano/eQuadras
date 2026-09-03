@@ -10,6 +10,8 @@ import {
   CourtBlockModal,
   CourtFormModal,
   CourtManagementList,
+  UserManagementList,
+  UserFormModal,
   HorariosPorDia,
   DEFAULT_HORARIOS,
   DIAS_SEMANA
@@ -18,11 +20,14 @@ import {
   LayoutDashboard,
   Settings2,
   Bell,
-  X
+  X,
+  Users
 } from 'lucide-react';
+import { usuarioApi } from '../api/apiClient';
+import { Usuario, Role } from '../types';
 
 export const AdminDashboard: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user, token, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
@@ -33,7 +38,13 @@ export const AdminDashboard: React.FC = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   
   // Controle de Abas
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quadras'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'quadras' | 'usuarios'>('dashboard');
+
+  // Gestão de Usuários (Exclusivo Master Admin)
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null);
 
   // Modal de Criar / Editar Quadra
   const [modalOpen, setModalOpen] = useState(false);
@@ -229,8 +240,79 @@ export const AdminDashboard: React.FC = () => {
         console.error('Erro ao carregar mapa de bloqueios consolidado:', bErr);
         setMapaBloqueiosPorQuadra({});
       }
+
+      // Se for Master Admin, carregar usuários
+      if (isMasterAdmin) {
+        carregarUsuarios();
+      }
     } catch (err: any) {
       console.error(err);
+    }
+  };
+
+  const carregarUsuarios = async () => {
+    if (!isMasterAdmin) return;
+    setLoadingUsuarios(true);
+    try {
+      const lista = await usuarioApi.listar();
+      setUsuarios(lista);
+    } catch (err: any) {
+      console.error('Erro ao listar usuários:', err);
+      setFeedback({ type: 'error', message: err.message || 'Falha ao carregar lista de usuários.' });
+    } finally {
+      setLoadingUsuarios(false);
+    }
+  };
+
+  const handleSalvarUsuario = async (dados: {
+    nome_usuario: string;
+    email_usuario: string;
+    phone_usuario: string;
+    role: Role;
+    senha_usuario?: string;
+    nova_senha?: string;
+  }) => {
+    if (usuarioEditando) {
+      await usuarioApi.editar(usuarioEditando.id_usuario, {
+        nome_usuario: dados.nome_usuario,
+        email_usuario: dados.email_usuario,
+        phone_usuario: dados.phone_usuario,
+        role: dados.role,
+        nova_senha: dados.nova_senha,
+      });
+      setFeedback({
+        type: 'success',
+        message: `Usuário "${dados.nome_usuario}" atualizado com sucesso!`,
+      });
+    } else {
+      await usuarioApi.cadastrar({
+        nome_usuario: dados.nome_usuario,
+        email_usuario: dados.email_usuario,
+        senha_usuario: dados.senha_usuario || '123456',
+        phone_usuario: dados.phone_usuario,
+        role: dados.role,
+      });
+      setFeedback({
+        type: 'success',
+        message: `Usuário "${dados.nome_usuario}" criado com sucesso!`,
+      });
+    }
+    await carregarUsuarios();
+  };
+
+  const handleExcluirUsuario = async (u: Usuario) => {
+    try {
+      await usuarioApi.excluir(u.id_usuario);
+      setFeedback({
+        type: 'success',
+        message: `Usuário "${u.nome_usuario}" excluído com sucesso!`,
+      });
+      await carregarUsuarios();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Falha ao excluir usuário.',
+      });
     }
   };
 
@@ -829,6 +911,19 @@ export const AdminDashboard: React.FC = () => {
               <Settings2 className="w-4 h-4" />
               <span>Gestão de Quadras</span>
             </button>
+            {isMasterAdmin && (
+              <button
+                onClick={() => setActiveTab('usuarios')}
+                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition active:scale-[0.98] ${
+                  activeTab === 'usuarios'
+                    ? 'bg-white text-zinc-950 shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>Gestão de Usuários</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -855,7 +950,7 @@ export const AdminDashboard: React.FC = () => {
             onAbrirAgendaDoDia={abrirAgendaDoDia}
           />
         </div>
-      ) : (
+      ) : activeTab === 'quadras' ? (
         /* Gestão de Quadras */
         <CourtManagementList
           minhasQuadras={minhasQuadras}
@@ -866,6 +961,22 @@ export const AdminDashboard: React.FC = () => {
           onAbrirEdicao={abrirModalEdicao}
           onExcluirQuadra={handleExcluirQuadra}
           getAssetUrl={getAssetUrl}
+        />
+      ) : (
+        /* Gestão de Usuários (Apenas Master Admin) */
+        <UserManagementList
+          usuarios={usuarios}
+          loading={loadingUsuarios}
+          onRefresh={carregarUsuarios}
+          onNovoUsuario={() => {
+            setUsuarioEditando(null);
+            setUserModalOpen(true);
+          }}
+          onEditarUsuario={(u) => {
+            setUsuarioEditando(u);
+            setUserModalOpen(true);
+          }}
+          onExcluirUsuario={handleExcluirUsuario}
         />
       )}
 
@@ -957,6 +1068,17 @@ export const AdminDashboard: React.FC = () => {
           setQuadraDetalhes(q);
         }}
         getTempoRestantePix={getTempoRestantePix}
+      />
+
+      {/* Modal de Cadastro / Edição de Usuários (Master Admin) */}
+      <UserFormModal
+        isOpen={userModalOpen}
+        usuarioParaEditar={usuarioEditando}
+        onClose={() => {
+          setUserModalOpen(false);
+          setUsuarioEditando(null);
+        }}
+        onSalvar={handleSalvarUsuario}
       />
 
       {/* Modal de Detalhes da Quadra com Carrossel */}
