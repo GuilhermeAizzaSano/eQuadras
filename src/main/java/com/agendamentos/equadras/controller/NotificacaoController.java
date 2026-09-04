@@ -1,6 +1,6 @@
 package com.agendamentos.equadras.controller;
 
-import com.agendamentos.equadras.model.Notificacao;
+import com.agendamentos.equadras.model.entity.Notificacao;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.NotificacaoService;

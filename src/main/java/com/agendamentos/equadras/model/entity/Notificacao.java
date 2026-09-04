@@ -1,6 +1,5 @@
-package com.agendamentos.equadras.model;
+package com.agendamentos.equadras.model.entity;
 
-import com.agendamentos.equadras.model.entity.Usuario;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

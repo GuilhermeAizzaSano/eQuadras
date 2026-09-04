@@ -1,6 +1,6 @@
 package com.agendamentos.equadras.service;
 
-import com.agendamentos.equadras.model.Notificacao;
+import com.agendamentos.equadras.model.entity.Notificacao;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.repository.NotificacaoRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;

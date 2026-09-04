@@ -472,7 +472,7 @@ class AgendamentoServiceTest {
 
         when(agendamentoRepository.findAll()).thenReturn(List.of(a1));
 
-        List<AgendamentoResponseDTO> lista = agendamentoService.listarTodos(99L);
+        List<AgendamentoResponseDTO> lista = agendamentoService.listarTodos(99L, true);
 
         assertEquals(1, lista.size());
         verify(agendamentoRepository, times(1)).findAll();
