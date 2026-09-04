@@ -187,7 +187,7 @@ export const AdminDashboard: React.FC = () => {
 
   const carregarAgendamentos = async () => {
     try {
-      const agendamentos = await agendamentoApi.listar();
+      const agendamentos = await agendamentoApi.listar(true);
       setAgendamentosAdmin(agendamentos);
     } catch (err) {
       console.error(err);
@@ -218,7 +218,7 @@ export const AdminDashboard: React.FC = () => {
     try {
       const [quadras, agendamentos] = await Promise.all([
         quadraApi.listar(),
-        agendamentoApi.listar(),
+        agendamentoApi.listar(true),
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);

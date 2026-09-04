@@ -326,6 +326,11 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarTodos(Long usuarioId) {
+        return listarTodos(usuarioId, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarTodos(Long usuarioId, boolean historico) {
         List<Agendamento> agendamentos;
         
         if (usuarioId != null) {
@@ -339,7 +344,15 @@ public class AgendamentoService {
                     agendamentos = agendamentoRepository.findByAdminId(usuarioId);
                 }
             } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
-                agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+                if (historico) {
+                    agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+                } else {
+                    agendamentos = agendamentoRepository.findAtivosByUsuarioId(
+                            usuarioId,
+                            StatusAgendamento.CANCELADO,
+                            LocalDateTime.now()
+                    );
+                }
             } else {
                 agendamentos = agendamentoRepository.findAll();
             }
