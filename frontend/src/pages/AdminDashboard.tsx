@@ -6,6 +6,9 @@ import { FeedbackBanner, ConfirmModal, LoadingOverlay, CourtDetailsModal } from 
 import {
   AdminMetricsGrid,
   CalendarOccupancy,
+  AdminScheduleToolbar,
+  UpcomingMatchesBar,
+  AdminDailyTimelineGrid,
   DayAgendaModal,
   CourtBlockModal,
   CourtFormModal,
@@ -88,6 +91,11 @@ export const AdminDashboard: React.FC = () => {
   const [longitude, setLongitude] = useState<number | undefined>();
 
   // Controle do Calendário Mensal
+  // Visualização e Filtros da Agenda / Toolbar
+  const [viewMode, setViewMode] = useState<'TIMELINE' | 'CALENDAR'>('TIMELINE');
+  const [buscaTermoSchedule, setBuscaTermoSchedule] = useState('');
+  const [statusFiltroSchedule, setStatusFiltroSchedule] = useState<'TODOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES'>('TODOS');
+
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() => new Date());
   const [dataSelecionada, setDataSelecionada] = useState<string>(() => {
     return new Date().toISOString().split('T')[0];
@@ -489,6 +497,52 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setLoadingHorariosModal(false);
     }
+  };
+
+  const handleBloquearSlot = (quadraId: number, data: string, horaInicio: string, horaFim: string) => {
+    const quadra = minhasQuadras.find((q) => q.id_quadra === quadraId);
+    if (!quadra) return;
+    setBloqueioModalQuadra(quadra);
+    setBloqueioData(data);
+    setBloqueioHoraInicio(horaInicio);
+    setBloqueioHoraFim(horaFim);
+    setBloqueioMotivo('');
+    carregarBloqueios(quadraId);
+  };
+
+  const handleDesbloquearSlot = async (bloqueioId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Desbloquear Horário',
+      description: 'Deseja realmente remover este bloqueio de horário?',
+      isDestructive: true,
+      confirmLabel: 'Sim, desbloquear',
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        try {
+          let quadraIdEncontrada: number | null = null;
+          for (const [qIdStr, bList] of Object.entries(mapaBloqueiosPorQuadra)) {
+            if (bList.some((b) => b.id === bloqueioId)) {
+              quadraIdEncontrada = Number(qIdStr);
+              break;
+            }
+          }
+          if (!quadraIdEncontrada) return;
+          await bloqueioApi.remover(quadraIdEncontrada, bloqueioId);
+          setFeedback({ type: 'success', message: 'Horário desbloqueado com sucesso!' });
+          await carregarDados();
+        } catch (err: any) {
+          setFeedback({ type: 'error', message: err.message || 'Erro ao remover bloqueio.' });
+        }
+      },
+    });
+  };
+
+  const handleAbrirAgendamentoDetalhe = (ag: Agendamento) => {
+    const dataIso = ag.dataHoraInicio.split('T')[0];
+    abrirAgendaDoDia(dataIso);
+    setQuadraSelecionadaAgendaId(ag.quadraId);
+    setHighlightedAgendamentoId(ag.id_agendamento);
   };
 
   const abrirGerenciamentoBloqueios = async (q: Quadra) => {
@@ -933,22 +987,84 @@ export const AdminDashboard: React.FC = () => {
           {/* Métricas / KPIs */}
           <AdminMetricsGrid metricas={metricas} />
 
-          {/* Calendário Mensal de Ocupação */}
-          <CalendarOccupancy
-            currentMonthDate={currentMonthDate}
-            dataSelecionada={dataSelecionada}
-            quadraFiltroCalendarId={quadraFiltroCalendarId}
-            statusFiltroCalendar={statusFiltroCalendar}
-            minhasQuadras={minhasQuadras}
+          {/* Próximas Partidas de Hoje (Próximas 4 horas) */}
+          <UpcomingMatchesBar
             agendamentosAdmin={agendamentosAdmin}
-            mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
-            onQuadraFiltroChange={setQuadraFiltroCalendarId}
-            onStatusFiltroChange={setStatusFiltroCalendar}
-            onMudarMes={(offset) =>
-              setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))
-            }
-            onAbrirAgendaDoDia={abrirAgendaDoDia}
+            minhasQuadras={minhasQuadras}
+            onAbrirAgendamento={handleAbrirAgendamentoDetalhe}
           />
+
+          {/* Toolbar da Agenda */}
+          <AdminScheduleToolbar
+            dataSelecionada={dataSelecionada}
+            viewMode={viewMode}
+            minhasQuadras={minhasQuadras}
+            quadraFiltroId={quadraFiltroCalendarId}
+            statusFiltro={statusFiltroSchedule}
+            buscaTermo={buscaTermoSchedule}
+            onDataChange={(novaData) => {
+              setDataSelecionada(novaData);
+              const [ano, mes] = novaData.split('-').map(Number);
+              setCurrentMonthDate(new Date(ano, mes - 1, 1));
+            }}
+            onViewModeChange={setViewMode}
+            onQuadraFiltroChange={setQuadraFiltroCalendarId}
+            onStatusFiltroChange={setStatusFiltroSchedule}
+            onBuscaTermoChange={setBuscaTermoSchedule}
+            onHojeClick={() => {
+              const hoje = new Date().toISOString().split('T')[0];
+              setDataSelecionada(hoje);
+              setCurrentMonthDate(new Date());
+            }}
+          />
+
+          {/* Alternância entre Grade Diária e Calendário Mensal */}
+          {viewMode === 'TIMELINE' ? (
+            <AdminDailyTimelineGrid
+              dataSelecionada={dataSelecionada}
+              minhasQuadras={minhasQuadras}
+              agendamentosAdmin={agendamentosAdmin}
+              mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
+              quadraFiltroId={quadraFiltroCalendarId}
+              statusFiltro={statusFiltroSchedule}
+              buscaTermo={buscaTermoSchedule}
+              onAbrirAgendamento={handleAbrirAgendamentoDetalhe}
+              onBloquearSlot={handleBloquearSlot}
+              onDesbloquear={handleDesbloquearSlot}
+            />
+          ) : (
+            <CalendarOccupancy
+              currentMonthDate={currentMonthDate}
+              dataSelecionada={dataSelecionada}
+              quadraFiltroCalendarId={quadraFiltroCalendarId}
+              statusFiltroCalendar={
+                statusFiltroSchedule === 'CONFIRMADOS'
+                  ? 'AGENDADOS'
+                  : statusFiltroSchedule === 'PENDENTES'
+                  ? 'AGENDADOS'
+                  : statusFiltroSchedule === 'BLOQUEADOS'
+                  ? 'BLOQUEADOS'
+                  : statusFiltroSchedule === 'LIVRES'
+                  ? 'LIVRES'
+                  : 'TODOS'
+              }
+              minhasQuadras={minhasQuadras}
+              agendamentosAdmin={agendamentosAdmin}
+              mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
+              onQuadraFiltroChange={setQuadraFiltroCalendarId}
+              onStatusFiltroChange={(novoStatus) => {
+                setStatusFiltroCalendar(novoStatus);
+                if (novoStatus === 'AGENDADOS') setStatusFiltroSchedule('CONFIRMADOS');
+                else if (novoStatus === 'BLOQUEADOS') setStatusFiltroSchedule('BLOQUEADOS');
+                else if (novoStatus === 'LIVRES') setStatusFiltroSchedule('LIVRES');
+                else setStatusFiltroSchedule('TODOS');
+              }}
+              onMudarMes={(offset) =>
+                setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))
+              }
+              onAbrirAgendaDoDia={abrirAgendaDoDia}
+            />
+          )}
         </div>
       ) : activeTab === 'quadras' ? (
         /* Gestão de Quadras */
