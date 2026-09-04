@@ -77,10 +77,10 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
     dotClass: string;
   }> = [
     { id: 'TODOS', label: 'Todos', activeClass: 'bg-zinc-800 text-white border-zinc-700', dotClass: 'bg-zinc-400' },
-    { id: 'CONFIRMADOS', label: 'Confirmados', activeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80', dotClass: 'bg-emerald-400' },
+    { id: 'CONFIRMADOS', label: 'Confirmados', activeClass: 'bg-blue-950/80 text-blue-300 border-blue-800/80', dotClass: 'bg-blue-400' },
     { id: 'PENDENTES', label: 'Pendentes Pix', activeClass: 'bg-amber-950/80 text-amber-300 border-amber-800/80', dotClass: 'bg-amber-400' },
     { id: 'BLOQUEADOS', label: 'Bloqueados', activeClass: 'bg-rose-950/80 text-rose-300 border-rose-800/80', dotClass: 'bg-rose-400' },
-    { id: 'LIVRES', label: 'Livres', activeClass: 'bg-blue-950/80 text-blue-300 border-blue-800/80', dotClass: 'bg-blue-400' },
+    { id: 'LIVRES', label: 'Livres', activeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80', dotClass: 'bg-emerald-400' },
   ];
 
   return (
