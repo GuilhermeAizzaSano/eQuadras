@@ -66,6 +66,8 @@ curl -X GET "https://equadras.app/quadras" \
 | **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
 | **Agendamentos** | `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
 | **Agendamentos** | `POST` | `/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
+| **Agendamentos** | `POST` | `/agendamentos/bot` | Público / Bot | Criar agendamento flexível via Bot/WhatsApp com auto-cadastro e resolução de datas |
+| **Agendamentos** | `GET` | `/agendamentos/horarios-disponiveis` | Público | Consulta consolidada e flexível de grade de horários por data/esporte/quadra |
 | **Agendamentos** | `GET` | `/agendamentos` | Autenticado | Listar reservas do atleta/admin (`?historico=true` para histórico completo) |
 | **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
 | **Agendamentos** | `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
@@ -1051,6 +1053,89 @@ Authorization: Bearer <TOKEN>
   "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
   "criadoEm": "2026-09-02T16:50:00"
 }
+```
+
+---
+
+### 6.7 Agendamento Flexível via Bot / WhatsApp
+Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19h"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
+
+- **Método:** `POST`
+- **URL:** `/agendamentos/bot`
+- **Autenticação:** Pública / Bot
+
+#### Requisição:
+```http
+POST /agendamentos/bot HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{
+  "nomeQuadra": "Arena Society",
+  "data": "amanha",
+  "horaInicio": "19h",
+  "horaFim": "20h",
+  "nomeCliente": "Arthur Prado",
+  "telefoneCliente": "11999998888"
+}
+```
+
+#### Resposta de Sucesso (201 Created):
+```json
+{
+  "id_agendamento": 42,
+  "usuarioId": 18,
+  "nomeUsuario": "Arthur Prado",
+  "telefoneUsuario": "11999998888",
+  "quadraId": 1,
+  "nomeQuadra": "Arena Gol Society",
+  "dataHoraInicio": "2026-09-05T19:00:00",
+  "dataHoraFim": "2026-09-05T20:00:00",
+  "valorTotal": 120.00,
+  "status": "PENDENTE",
+  "transacaoPagamentoId": "mp-pix-987654321",
+  "pixCopiaECola": "00020126580014br.gov.bcb.pix...",
+  "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAA...",
+  "criadoEm": "2026-09-04T15:45:00"
+}
+```
+
+---
+
+### 6.8 Consultar Grade Consolidada de Horários (Busca Flexível)
+Permite buscar a grade de horários de quadras com suporte a linguagem flexível de datas (`"hoje"`, `"amanha"`, datas ISO), com filtros opcionais por esporte, quadraId e opção de trazer somente horários disponíveis (`apenasDisponiveis=true`).
+
+- **Método:** `GET`
+- **URL:** `/agendamentos/horarios-disponiveis?data=amanha&tipoEsporte=FUTEBOL&apenasDisponiveis=true`
+- **Autenticação:** Pública
+
+#### Resposta de Sucesso (200 OK):
+```json
+[
+  {
+    "id_quadra": 1,
+    "nome_quadra": "Arena Gol Society",
+    "tipoEsporte": "FUTEBOL",
+    "valorHora": 120.00,
+    "data": "2026-09-05",
+    "horarios": [
+      {
+        "inicio": "18:00:00",
+        "fim": "19:00:00",
+        "disponivel": true,
+        "status": "DISPONIVEL",
+        "motivo": "Disponível"
+      },
+      {
+        "inicio": "20:00:00",
+        "fim": "21:00:00",
+        "disponivel": true,
+        "status": "DISPONIVEL",
+        "motivo": "Disponível"
+      }
+    ]
+  }
+]
 ```
 
 ---
