@@ -6,9 +6,9 @@ export const getBaseUrl = (): string => {
     return metaEnv.VITE_API_URL;
   }
   if (typeof window !== 'undefined' && window.location && window.location.hostname) {
-    return `http://${window.location.hostname}:8080`;
+    return window.location.origin;
   }
-  return 'http://localhost:8080';
+  return window.location.origin;
 };
 
 export const getAssetUrl = (url: string): string => {
@@ -167,7 +167,8 @@ export const bloqueioApi = {
 
 // --- Agendamentos ---
 export const agendamentoApi = {
-  listar: () => apiFetch<Agendamento[]>('/agendamentos'),
+  listar: (historico = false) =>
+    apiFetch<Agendamento[]>(historico ? '/agendamentos?historico=true' : '/agendamentos'),
 
   buscarPorId: (id: number) => apiFetch<Agendamento>(`/agendamentos/${id}`),
 

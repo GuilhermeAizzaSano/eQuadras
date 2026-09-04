@@ -48,6 +48,20 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     List<Agendamento> findByUsuarioId(@Param("usuarioId") Long usuarioId);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("""
+        SELECT a FROM Agendamento a
+        WHERE a.usuario.id_usuario = :usuarioId
+        AND a.status <> :statusCancelado
+        AND a.dataHoraFim >= :agora
+        ORDER BY a.dataHoraInicio ASC
+    """)
+    List<Agendamento> findAtivosByUsuarioId(
+            @Param("usuarioId") Long usuarioId,
+            @Param("statusCancelado") StatusAgendamento statusCancelado,
+            @Param("agora") LocalDateTime agora
+    );
+
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a WHERE a.quadra.admin.id_usuario = :adminId")
     List<Agendamento> findByAdminId(@Param("adminId") Long adminId);
 

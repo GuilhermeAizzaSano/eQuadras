@@ -36,10 +36,13 @@ public class AgendamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
-    @Operation(summary = "Listar agendamentos do usuário autenticado", description = "Retorna o histórico de todas as reservas realizadas pelo atleta logado ou pelas quadras do admin.")
+    @Operation(summary = "Listar agendamentos do usuário autenticado", description = "Retorna os agendamentos do atleta logado (ativos por padrão, ou histórico completo com historico=true) ou pelas quadras do admin.")
     @GetMapping
-    public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        return ResponseEntity.ok(agendamentoService.listarTodos(usuarioLogado.id()));
+    public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
+            @RequestParam(required = false, defaultValue = "false") boolean historico,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarTodos(usuarioLogado.id(), historico));
     }
 
     @Operation(summary = "Buscar agendamento por ID", description = "Retorna os detalhes completos do agendamento pertencente ao usuário autenticado ou admin da quadra.")

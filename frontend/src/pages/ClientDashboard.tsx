@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
-import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2 } from 'lucide-react';
 
 const ESPORTES = ['TODOS', 'FUTEBOL', 'BEACH_TENNIS', 'TENIS', 'FUTSAL', 'VOLEI', 'BASQUETE'] as const;
 
@@ -39,6 +39,8 @@ export const ClientDashboard: React.FC = () => {
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
   const [slotsSelecionados, setSlotsSelecionados] = useState<HorarioDisponivel[]>([]);
   const [meusAgendamentos, setMeusAgendamentos] = useState<Agendamento[]>([]);
+  const [historicoCarregado, setHistoricoCarregado] = useState(false);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
   const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
   // Aba de filtro de status das reservas
   const [filtroStatusReservas, setFiltroStatusReservas] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
@@ -285,13 +287,32 @@ export const ClientDashboard: React.FC = () => {
     }
   };
 
-  const carregarMeusAgendamentos = async () => {
+  const carregarMeusAgendamentos = async (buscarHistorico?: boolean) => {
     if (!user) return;
+    const deveBuscarHistorico = buscarHistorico ?? historicoCarregado;
     try {
-      const data = await agendamentoApi.listar();
+      const data = await agendamentoApi.listar(deveBuscarHistorico);
       setMeusAgendamentos(data);
+      if (deveBuscarHistorico) {
+        setHistoricoCarregado(true);
+      }
     } catch (err: any) {
       console.error(err);
+    }
+  };
+
+  const carregarHistorico = async () => {
+    if (carregandoHistorico) return;
+    setCarregandoHistorico(true);
+    try {
+      const data = await agendamentoApi.listar(true);
+      setMeusAgendamentos(data);
+      setHistoricoCarregado(true);
+    } catch (err: any) {
+      console.error(err);
+      setFeedback({ type: 'error', message: 'Falha ao carregar o histórico de reservas.' });
+    } finally {
+      setCarregandoHistorico(false);
     }
   };
 
@@ -677,7 +698,7 @@ export const ClientDashboard: React.FC = () => {
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                   filtroStatusReservas === 'REALIZADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
                 }`}>
-                  {contadoresReservas.realizados}
+                  {historicoCarregado ? contadoresReservas.realizados : '—'}
                 </span>
               </button>
 
@@ -693,13 +714,44 @@ export const ClientDashboard: React.FC = () => {
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
                   filtroStatusReservas === 'CANCELADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
                 }`}>
-                  {contadoresReservas.cancelados}
+                  {historicoCarregado ? contadoresReservas.cancelados : '—'}
                 </span>
               </button>
             </div>
 
-            {/* Listagem de Reservas */}
-            {agendamentosFiltrados.length === 0 ? (
+            {/* Listagem de Reservas ou Botão de Carregar Histórico */}
+            {filtroStatusReservas !== 'ATIVOS' && !historicoCarregado ? (
+              <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-zinc-950/60 border border-zinc-800/80 rounded-2xl space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                  <History className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5 max-w-md">
+                  <h4 className="text-sm font-semibold text-white">
+                    Histórico não carregado
+                  </h4>
+                  <p className="text-xs text-zinc-400">
+                    Por padrão carregamos apenas suas reservas ativas para maior rapidez. Clique abaixo para carregar todo o seu histórico.
+                  </p>
+                </div>
+                <button
+                  onClick={carregarHistorico}
+                  disabled={carregandoHistorico}
+                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 disabled:opacity-60 text-white font-semibold text-xs shadow-lg shadow-primary-950/30 transition active:scale-[0.98]"
+                >
+                  {carregandoHistorico ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Carregando histórico...</span>
+                    </>
+                  ) : (
+                    <>
+                      <History className="w-4 h-4" />
+                      <span>Carregar histórico de reservas</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : agendamentosFiltrados.length === 0 ? (
               <EmptyState
                 icon={Clock}
                 title={

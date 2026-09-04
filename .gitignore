@@ -81,3 +81,4 @@ docs/
 
 # Maven Wrapper binaries
 .mvn/wrapper/maven-wrapper.jar
+*.sqlite

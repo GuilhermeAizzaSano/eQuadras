@@ -227,7 +227,8 @@ class AgendamentoServiceTest {
                 .build();
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(agendamentoRepository.findByUsuarioId(1L)).thenReturn(List.of(agendamento));
+        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
+                .thenReturn(List.of(agendamento));
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L);
 
@@ -237,6 +238,32 @@ class AgendamentoServiceTest {
         assertEquals("tx-123", dto.transacaoPagamentoId());
         assertNull(dto.pixCopiaECola());
         assertNull(dto.qrCodeBase64());
+        verify(agendamentoRepository, times(1)).findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class));
+        verify(agendamentoRepository, never()).findByUsuarioId(1L);
+    }
+
+    @Test
+    @DisplayName("Deve listar histórico completo do cliente quando historico for true")
+    void deveListarHistoricoCompletoQuandoHistoricoTrue() {
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(21L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().minusDays(2))
+                .dataHoraFim(LocalDateTime.now().minusDays(2).plusHours(1))
+                .valorTotal(BigDecimal.valueOf(80.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(agendamentoRepository.findByUsuarioId(1L)).thenReturn(List.of(agendamento));
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L, true);
+
+        assertEquals(1, resultado.size());
+        assertEquals(21L, resultado.get(0).id_agendamento());
+        verify(agendamentoRepository, times(1)).findByUsuarioId(1L);
+        verify(agendamentoRepository, never()).findAtivosByUsuarioId(any(), any(), any());
     }
 
     @Test

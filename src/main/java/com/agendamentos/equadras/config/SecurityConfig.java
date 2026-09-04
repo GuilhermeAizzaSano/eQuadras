@@ -46,7 +46,7 @@ public class SecurityConfig {
                 "http://172.29.*:*",
                 "http://172.30.*:*",
                 "http://172.31.*:*",
-                "http://*:*"
+                "http://*:*", "http://*", "https://*", "https://*:*", "https://equadras.app", "https://www.equadras.app"
         ));
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
