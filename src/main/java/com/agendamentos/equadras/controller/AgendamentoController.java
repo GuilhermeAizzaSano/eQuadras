@@ -92,12 +92,20 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
+    @Operation(
+            summary = "Agendamento simplificado via Bot / WhatsApp",
+            description = "Permite a criação e reserva direta de horário a partir de integrações externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09') e cria a reserva com lock pessimista gerando os dados de Pix."
+    )
     @PostMapping("/bot")
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(@RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
         AgendamentoResponseDTO resposta = agendamentoService.agendarViaBot(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
+    @Operation(
+            summary = "Consultar grade consolidada de horários (Busca Flexível)",
+            description = "Permite consultar a disponibilidade de slots de horários com suporte a filtros combinados por data flexível ('hoje', 'amanha', '2026-09-05'), quadraId, nome da quadra ou tipo de esporte. Pode filtrar estritamente apenas slots livres com 'apenasDisponiveis=true'."
+    )
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO>> consultarGradeHorarios(
             @RequestParam(required = false) String data,

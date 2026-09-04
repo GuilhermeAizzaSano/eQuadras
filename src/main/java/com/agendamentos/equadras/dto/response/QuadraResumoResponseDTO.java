@@ -2,15 +2,28 @@ package com.agendamentos.equadras.dto.response;
 
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 
+@Schema(description = "Resumo cadastral simplificado da quadra para listagens e bots")
 public record QuadraResumoResponseDTO(
+        @Schema(description = "Identificador único da quadra", example = "1")
         Long id_quadra,
+
+        @Schema(description = "Nome da quadra esportiva", example = "Arena Gol Society")
         String nome,
+
+        @Schema(description = "Tipo de esporte praticado na quadra", example = "FUTEBOL")
         TipoEsporte tipoEsporte,
+
+        @Schema(description = "Valor cobrado por hora de locação", example = "120.00")
         BigDecimal valorHora,
+
+        @Schema(description = "Endereço textual formatado", example = "Rua das Palmeiras, Centro - São Paulo")
         String endereco,
+
+        @Schema(description = "CEP da quadra", example = "15000-000")
         String cep
 ) {
     public static QuadraResumoResponseDTO fromEntity(Quadra quadra) {
