@@ -15,8 +15,8 @@ interface CalendarOccupancyProps {
   minhasQuadras: Quadra[];
   agendamentosAdmin: Agendamento[];
   mapaBloqueiosPorQuadra: Record<number, BloqueioHorario[]>;
-  onQuadraFiltroChange: (id: number | 'TODAS') => void;
-  onStatusFiltroChange: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS') => void;
+  onQuadraFiltroChange?: (id: number | 'TODAS') => void;
+  onStatusFiltroChange?: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS') => void;
   onMudarMes: (offset: number) => void;
   onAbrirAgendaDoDia: (dataIso: string) => void;
 }
@@ -29,8 +29,6 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
   minhasQuadras,
   agendamentosAdmin,
   mapaBloqueiosPorQuadra,
-  onQuadraFiltroChange,
-  onStatusFiltroChange,
   onMudarMes,
   onAbrirAgendaDoDia,
 }) => {
@@ -212,97 +210,6 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
           <p className="text-xs text-zinc-400 mt-1">
             Visão completa de disponibilidade. Clique em qualquer dia para abrir a agenda detalhada com os horários.
           </p>
-        </div>
-
-        {/* Controles de Filtros: Por Quadra e Por Status */}
-        <div className="flex flex-wrap items-center gap-3">
-          {minhasQuadras.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-400 font-medium">Quadra:</span>
-              <select
-                value={quadraFiltroCalendarId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onQuadraFiltroChange(val === 'TODAS' ? 'TODAS' : Number(val));
-                }}
-                className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 transition cursor-pointer [color-scheme:dark]"
-              >
-                <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
-                {minhasQuadras.map((q) => (
-                  <option key={q.id_quadra} value={q.id_quadra}>
-                    {q.nome} {!q.ativa ? '(Inativa)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Filtro de Status no Calendário */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs flex-wrap">
-            <button
-              type="button"
-              onClick={() => onStatusFiltroChange('TODOS')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition ${
-                statusFiltroCalendar === 'TODOS'
-                  ? 'bg-zinc-750 text-white shadow-sm font-semibold'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusFiltroChange('LIVRES')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                statusFiltroCalendar === 'LIVRES'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold'
-                  : 'text-zinc-400 hover:text-emerald-400'
-              }`}
-              title="Destacar dias com horários disponíveis"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Disponíveis</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusFiltroChange('AGENDADOS')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS'
-                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold'
-                  : 'text-zinc-400 hover:text-blue-400'
-              }`}
-              title="Destacar dias com agendamentos confirmados"
-            >
-              <span className="w-2 h-2 rounded-full bg-blue-400" />
-              <span>Confirmados</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusFiltroChange('PENDENTES')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                statusFiltroCalendar === 'PENDENTES'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
-                  : 'text-zinc-400 hover:text-amber-400'
-              }`}
-              title="Destacar dias com reservas aguardando Pix"
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
-              <span>Pendentes Pix</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onStatusFiltroChange('BLOQUEADOS')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                statusFiltroCalendar === 'BLOQUEADOS'
-                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold'
-                  : 'text-zinc-400 hover:text-rose-400'
-              }`}
-              title="Destacar dias com bloqueios administrativos"
-            >
-              <Ban className="w-3 h-3 text-rose-400" />
-              <span>Bloqueados</span>
-            </button>
-          </div>
         </div>
 
         {/* Navegação de Mês */}
