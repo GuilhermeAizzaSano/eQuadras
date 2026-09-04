@@ -46,7 +46,7 @@ public class BloqueioHorarioService {
             throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.");
         }
 
-        if (dto.data().isBefore(LocalDate.now())) {
+        if (dto.data().isBefore(LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL))) {
             throw new IllegalArgumentException("A data do bloqueio não pode ser no passado.");
         }
 
