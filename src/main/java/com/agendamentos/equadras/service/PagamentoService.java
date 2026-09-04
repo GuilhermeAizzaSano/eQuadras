@@ -59,7 +59,7 @@ public class PagamentoService {
         // e rejeita domínios @testuser.com não gerados na mesma aplicação (code 4390)
         String email = agendamento.getUsuario().getEmail_usuario();
         if (email == null || !email.contains("@") || email.endsWith("@equadras.com") || email.contains("testuser.com")) {
-            email = "cliente_pagador_test@gmail.com";
+            email = "comprador_test@equadras.com";
         }
 
         String nome = agendamento.getUsuario().getNome_usuario();

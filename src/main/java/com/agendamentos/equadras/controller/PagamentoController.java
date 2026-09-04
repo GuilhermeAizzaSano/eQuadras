@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.Optional;
 
-@Tag(name = "Pagamentos e Webhooks", description = "Endpoints de integração de pagamentos Pix Mercado Pago e simulação de confirmação em ambiente de desenvolvimento.")
+@Tag(name = "Pagamentos (Integração e Webhook)", description = "Endpoints para lidar com simulações, webhook oficial e consultas de status via Mercado Pago.")
 @RestController
-@RequestMapping("/pagamentos")
+@RequestMapping({"/pagamentos", "/api/pagamentos"})
 public class PagamentoController {
 
     private static final Logger log = LoggerFactory.getLogger(PagamentoController.class);

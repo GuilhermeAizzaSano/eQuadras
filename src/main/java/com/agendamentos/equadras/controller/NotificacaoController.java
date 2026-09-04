@@ -13,9 +13,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
-@Tag(name = "Notificações em Tempo Real (SSE)", description = "Streaming de eventos e gerenciamento de notificações para administradores.")
+@Tag(name = "Notificações", description = "Endpoints para consulta e marcação de notificações de administradores (Apenas Admin).")
 @RestController
-@RequestMapping("/notificacoes")
+@RequestMapping({"/notificacoes", "/api/notificacoes"})
 public class NotificacaoController {
 
     private final NotificacaoService notificacaoService;

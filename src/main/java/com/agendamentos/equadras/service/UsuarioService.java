@@ -183,4 +183,27 @@ public class UsuarioService {
         usuario.setSenha_usuario(passwordEncoder.encode(dto.novaSenha()));
         usuarioRepository.save(usuario);
     }
+
+    @Transactional
+    public Usuario obterOuCriarUsuarioBot(String nome, String telefone) {
+        String telefoneSanitizado = telefone != null ? telefone.replaceAll("\\D", "") : "";
+        
+        return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
+                .orElseGet(() -> {
+                    try {
+                        Usuario novoUsuario = Usuario.builder()
+                                .nome_usuario(nome != null ? nome : "Usuário Bot")
+                                .phone_usuario(telefoneSanitizado)
+                                .email_usuario("bot_" + telefoneSanitizado + "@equadras.com")
+                                .senha_usuario(passwordEncoder.encode("senhaBot123!"))
+                                .role(Role.CLIENT)
+                                .build();
+                        return usuarioRepository.saveAndFlush(novoUsuario);
+                    } catch (Exception e) {
+                        // Concurrency issue fallback: someone just created the user
+                        return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
+                                .orElseThrow(() -> new RuntimeException("Erro ao obter/criar usuário do bot: " + e.getMessage()));
+                    }
+                });
+    }
 }

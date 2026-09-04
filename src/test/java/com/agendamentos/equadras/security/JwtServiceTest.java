@@ -4,16 +4,19 @@ import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JwtServiceTest {
 
-    private final JwtService jwtService = new JwtService(
-            "chave-de-teste-com-pelo-menos-32-bytes-de-tamanho",
-            28800000L
-    );
+    private JwtService jwtService;
+
+    @BeforeEach
+    void setUp() {
+        jwtService = new JwtService("chave-secreta-para-testes-unitarios-com-jwt-seguro", 3600000L, null, null);
+    }
 
     @Test
     void deveGerarTokenEExtrairClaimsCorretamente() {
@@ -38,7 +41,7 @@ class JwtServiceTest {
     void deveLancarExcecaoParaTokenAssinadoComOutraChave() {
         JwtService outroServico = new JwtService(
                 "outra-chave-de-teste-com-pelo-menos-32-bytes-de-tamanho",
-                28800000L
+                28800000L, null, null
         );
         Usuario usuario = Usuario.builder().id_usuario(1L).role(Role.CLIENT).build();
         String token = outroServico.gerarToken(usuario);

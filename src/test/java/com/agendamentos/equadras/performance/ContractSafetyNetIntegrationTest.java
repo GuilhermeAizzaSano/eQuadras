@@ -92,7 +92,7 @@ public class ContractSafetyNetIntegrationTest {
     @Test
     @DisplayName("Garante contrato JSON de GET /quadras")
     void devePreservarContratoGetQuadras() throws Exception {
-        mockMvc.perform(get("/quadras").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/quadras").header("X-Client", "frontend").contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", not(empty())))
                 .andExpect(jsonPath("$[0].id_quadra").exists())

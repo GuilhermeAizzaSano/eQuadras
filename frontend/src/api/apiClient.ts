@@ -36,6 +36,8 @@ export async function apiFetch<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
+  headers.set('X-Client', 'frontend');
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,

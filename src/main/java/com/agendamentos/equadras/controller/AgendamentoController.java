@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "Agendamentos e Reservas", description = "Endpoints para agendamento concorrente com lock pessimista, verificação de slots e cancelamento de reservas.")
 @RestController
-@RequestMapping("/agendamentos")
+@RequestMapping({"/agendamentos", "/api/agendamentos"})
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
@@ -90,5 +90,22 @@ public class AgendamentoController {
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
+    }
+
+    @PostMapping("/bot")
+    public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(@RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
+        AgendamentoResponseDTO resposta = agendamentoService.agendarViaBot(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+    }
+
+    @GetMapping("/horarios-disponiveis")
+    public ResponseEntity<List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO>> consultarGradeHorarios(
+            @RequestParam(required = false) String data,
+            @RequestParam(required = false) Long quadraId,
+            @RequestParam(required = false) String tipoEsporte,
+            @RequestParam(required = false) String nomeQuadra,
+            @RequestParam(required = false, defaultValue = "false") boolean apenasDisponiveis
+    ) {
+        return ResponseEntity.ok(agendamentoService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));
     }
 }

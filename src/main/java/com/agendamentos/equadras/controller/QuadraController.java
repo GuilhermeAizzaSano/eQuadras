@@ -17,7 +17,7 @@ import java.util.List;
 
 @Tag(name = "Quadras Esportivas", description = "Endpoints para consulta pública, busca por geolocalização e gestão de quadras e horários de funcionamento.")
 @RestController
-@RequestMapping("/quadras")
+@RequestMapping({"/quadras", "/api/quadras"})
 public class QuadraController {
 
     private final QuadraService quadraService;
@@ -39,13 +39,30 @@ public class QuadraController {
 
     @Operation(summary = "Listar quadras ativas / por proximidade", description = "Lista todas as quadras ativas. Permite filtrar por proximidade geográfica informando latitude, longitude e raio em KM.")
     @GetMapping
-    public ResponseEntity<List<QuadraResponseDTO>> listarTodas(
+    public ResponseEntity<?> listarTodas(
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
-            @RequestParam(required = false, defaultValue = "2.0") Double raioKm) {
+            @RequestParam(required = false, defaultValue = "2.0") Double raioKm,
+            @RequestParam(required = false) String tipoEsporte,
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String cidade,
+            @RequestParam(required = false) String bairro,
+            @RequestParam(required = false) String cep,
+            @RequestParam(required = false, defaultValue = "false") boolean resumido,
+            @RequestHeader(value = "X-Client", required = false) String client,
+            @RequestHeader(value = "X-View", required = false) String view,
+            @RequestHeader(value = "Origin", required = false) String origin) {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
         Long usuarioId = usuarioLogado != null ? usuarioLogado.id() : null;
-        return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm));
+
+        boolean clientFrontend = "frontend".equalsIgnoreCase(client);
+        boolean fromBrowser = origin != null && (origin.contains("localhost") || origin.contains("127.0.0.1"));
+
+        if (resumido || (!clientFrontend && !fromBrowser)) {
+            return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep));
+        }
+
+        return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep));
     }
 
     @Operation(summary = "Buscar quadra por ID", description = "Retorna os detalhes completos, fotos e horários de funcionamento de uma quadra específica.")
