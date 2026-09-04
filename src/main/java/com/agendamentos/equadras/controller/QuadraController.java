@@ -37,9 +37,13 @@ public class QuadraController {
         return ResponseEntity.status(HttpStatus.CREATED).body(quadraCriada);
     }
 
-    @Operation(summary = "Listar quadras ativas / por proximidade", description = "Lista todas as quadras ativas. Permite filtrar por proximidade geográfica informando latitude, longitude e raio em KM.")
+    @Operation(
+            summary = "Listar quadras ativas / por proximidade e filtros",
+            description = "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO). Também suporta o parâmetro 'resumido=true/false'."
+    )
     @GetMapping
     public ResponseEntity<?> listarTodas(
+            jakarta.servlet.http.HttpServletRequest request,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false, defaultValue = "2.0") Double raioKm,
@@ -48,17 +52,30 @@ public class QuadraController {
             @RequestParam(required = false) String cidade,
             @RequestParam(required = false) String bairro,
             @RequestParam(required = false) String cep,
-            @RequestParam(required = false, defaultValue = "false") boolean resumido,
+            @RequestParam(required = false) Boolean resumido,
             @RequestHeader(value = "X-Client", required = false) String client,
             @RequestHeader(value = "X-View", required = false) String view,
             @RequestHeader(value = "Origin", required = false) String origin) {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
         Long usuarioId = usuarioLogado != null ? usuarioLogado.id() : null;
 
-        boolean clientFrontend = "frontend".equalsIgnoreCase(client);
-        boolean fromBrowser = origin != null && (origin.contains("localhost") || origin.contains("127.0.0.1"));
+        String uri = request != null ? request.getRequestURI() : "";
+        boolean isApiRoute = uri != null && uri.contains("/api/");
 
-        if (resumido || (!clientFrontend && !fromBrowser)) {
+        boolean querResumido;
+        if (resumido != null) {
+            querResumido = resumido;
+        } else if ("frontend".equalsIgnoreCase(client) || "full".equalsIgnoreCase(view)) {
+            querResumido = false;
+        } else if ("resumo".equalsIgnoreCase(view) || "summary".equalsIgnoreCase(view) || "api".equalsIgnoreCase(client)) {
+            querResumido = true;
+        } else {
+            // Se chamado via /api/quadras -> padrão resumido (para bots e terceiros)
+            // Se chamado via /quadras -> padrão completo (para frontend)
+            querResumido = isApiRoute;
+        }
+
+        if (querResumido) {
             return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep));
         }
 
