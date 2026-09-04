@@ -61,6 +61,18 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  React.useEffect(() => {
+    if (highlightedAgendamentoId && isOpen) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`agendamento-card-${highlightedAgendamentoId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin]);
+
   const agendamentosDoDia = agendamentosAdmin
     .filter((a) => {
       const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
@@ -503,9 +515,10 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     return (
                       <div
                         key={ag.id_agendamento}
+                        id={`agendamento-card-${ag.id_agendamento}`}
                         className={`p-4 rounded-xl border space-y-2.5 transition-all duration-300 ${
                           isHighlighted
-                            ? 'bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/50 shadow-lg shadow-blue-950/50'
+                            ? 'bg-emerald-950/60 border-emerald-400 ring-2 ring-emerald-400 shadow-xl shadow-emerald-950/80 scale-[1.01]'
                             : 'bg-zinc-900/60 border-zinc-850 hover:border-zinc-700'
                         }`}
                       >
