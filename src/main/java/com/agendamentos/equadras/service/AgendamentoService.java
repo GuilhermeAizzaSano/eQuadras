@@ -63,7 +63,7 @@ public class AgendamentoService {
             throw new IllegalArgumentException("A data/hora de término deve ser posterior à data/hora de início.");
         }
 
-        if (dto.dataHoraInicio().isBefore(LocalDateTime.now())) {
+        if (dto.dataHoraInicio().isBefore(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
             throw new IllegalArgumentException("Não é possível realizar agendamentos em horários passados.");
         }
 
@@ -204,7 +204,7 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Este agendamento já está cancelado.");
         }
 
-        if (agendamento.getDataHoraInicio().isBefore(LocalDateTime.now())) {
+        if (agendamento.getDataHoraInicio().isBefore(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
             throw new IllegalArgumentException("Não é possível cancelar um agendamento retroativo ou já iniciado.");
         }
 
@@ -258,7 +258,7 @@ public class AgendamentoService {
                 fimDoDia
         );
 
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
         List<HorarioDisponivelDTO> slots = new ArrayList<>();
 
         boolean dataLimiteExcedida = quadra.getDataLimiteAgendamento() != null && data.isAfter(quadra.getDataLimiteAgendamento());
@@ -349,7 +349,7 @@ public class AgendamentoService {
                     } else {
                         agendamentos = agendamentoRepository.findAtivosAll(
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now()
+                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
                         );
                     }
                 } else {
@@ -360,7 +360,7 @@ public class AgendamentoService {
                         agendamentos = agendamentoRepository.findAtivosByAdminId(
                                 usuarioId,
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now()
+                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
                         );
                     }
                 }
@@ -371,7 +371,7 @@ public class AgendamentoService {
                     agendamentos = agendamentoRepository.findAtivosByUsuarioId(
                             usuarioId,
                             StatusAgendamento.CANCELADO,
-                            LocalDateTime.now()
+                            LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
                     );
                 }
             } else {
