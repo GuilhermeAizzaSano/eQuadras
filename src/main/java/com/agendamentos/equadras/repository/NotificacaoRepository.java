@@ -1,6 +1,6 @@
 package com.agendamentos.equadras.repository;
 
-import com.agendamentos.equadras.model.Notificacao;
+import com.agendamentos.equadras.model.entity.Notificacao;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

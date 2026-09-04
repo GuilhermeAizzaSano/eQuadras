@@ -2,14 +2,12 @@ package com.agendamentos.equadras.model.entity;
 
 import com.agendamentos.equadras.model.enums.Role;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
 @Table(name = "usuarios")
-@Valid
 public class Usuario {
 
     @Id
