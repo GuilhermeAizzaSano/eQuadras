@@ -10,6 +10,7 @@ import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
+import com.agendamentos.equadras.util.DataFlexivelUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
