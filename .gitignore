@@ -82,3 +82,6 @@ docs/
 # Maven Wrapper binaries
 .mvn/wrapper/maven-wrapper.jar
 *.sqlite
+*.sql
+restart.ps1
+restart.sh

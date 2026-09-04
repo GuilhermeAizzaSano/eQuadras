@@ -2,9 +2,10 @@
 
 Bem-vindo à documentação técnica oficial da API REST do **eQuadras**. Este documento descreve detalhadamente todos os endpoints disponíveis, fluxos de autenticação, estruturas de requisição/resposta, exemplos práticos e regras de negócio.
 
-A documentação interativa com Swagger UI / OpenAPI 3 também está disponível em execução local em:
-- **Swagger UI:** `http://localhost:8080/swagger-ui.html`
-- **OpenAPI JSON Spec:** `http://localhost:8080/v3/api-docs`
+A documentação interativa com Swagger UI / OpenAPI 3 está disponível nos seguintes ambientes:
+- **Produção (HTTPS):** [`https://equadras.app/swagger-ui/index.html`](https://equadras.app/swagger-ui/index.html)
+- **OpenAPI JSON Spec (Produção):** [`https://equadras.app/v3/api-docs`](https://equadras.app/v3/api-docs)
+- **Execução Local:** `http://localhost:8080/swagger-ui.html` | `http://localhost:8080/v3/api-docs`
 
 ---
 
@@ -15,23 +16,29 @@ A API adota o modelo **Stateless** baseado em tokens no cabeçalho HTTP:
 Authorization: Bearer <TOKEN>
 ```
 
-### 1.1 Token Fixo de Administração (Master Admin Token)
-Para facilitar testes manuais, integrações com Postman/Insomnia, testes automatizados e chamadas diretas via `curl`, a API disponibiliza um token de autenticação estático com privilégios de `ROLE_ADMIN` vinculado ao administrador padrão do sistema:
-
-```text
-equadras_master_admin_token_2026_secret_key_fixed
-```
-
-**Exemplo de uso via cURL:**
-```bash
-curl -X GET "http://localhost:8080/quadras" \
-  -H "Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed"
-```
-
-### 1.2 Autenticação Dinâmica via JWT
-Para atletas e administradores:
+### 1.1 Autenticação via JWT
+Para atletas e administradores, o acesso é autenticado via Json Web Token (JWT):
 - **Endpoint:** `POST /usuarios/login`
+- **Corpo da Requisição:**
+  ```json
+  {
+    "email": "admin@equadras.com",
+    "senha": "sua_senha_aqui"
+  }
+  ```
 - **Retorno:** Token JWT com expiração configurada (default 8 horas) e dados do perfil.
+
+**Exemplo de uso via cURL (Produção):**
+```bash
+# 1. Realizar login e obter o token JWT
+TOKEN=$(curl -s -X POST "https://equadras.app/usuarios/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@equadras.com","senha":"sua_senha_aqui"}' | jq -r '.token')
+
+# 2. Utilizar o token nas requisições autenticadas
+curl -X GET "https://equadras.app/quadras" \
+  -H "Authorization: Bearer $TOKEN"
+```
 
 ---
 
@@ -59,14 +66,15 @@ Para atletas e administradores:
 | **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
 | **Agendamentos** | `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
 | **Agendamentos** | `POST` | `/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
-| **Agendamentos** | `GET` | `/agendamentos` | Autenticado | Listar histórico de reservas do atleta ou admin |
+| **Agendamentos** | `GET` | `/agendamentos` | Autenticado | Listar reservas do atleta/admin (`?historico=true` para histórico completo) |
 | **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
 | **Agendamentos** | `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
 | **Pagamentos** | `POST` | `/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
 | **Pagamentos** | `POST` | `/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
 | **Notificações** | `GET` | `/notificacoes/stream` | `ROLE_ADMIN` | Iniciar stream SSE em tempo real de novos pagamentos |
 | **Notificações** | `GET` | `/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
-| **Notificações** | `PUT` | `/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação como lida |
+| **Notificações** | `PUT` | `/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
+| **Notificações** | `PUT` | `/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
 
 ---
 
@@ -1182,6 +1190,27 @@ Authorization: Bearer <TOKEN>
 ```http
 PUT /notificacoes/1/ler HTTP/1.1
 Host: localhost:8080
+Authorization: Bearer <TOKEN>
+```
+
+#### Resposta de Sucesso:
+```http
+HTTP/1.1 204 No Content
+```
+
+---
+
+### 8.4 Marcar Todas as Notificações como Lidas
+Marca todas as notificações recebidas pelo administrador autenticado como lidas em uma única operação.
+
+- **Método:** `PUT`
+- **URL:** `/notificacoes/ler-todas`
+- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+
+#### Requisição:
+```http
+PUT /notificacoes/ler-todas HTTP/1.1
+Host: equadras.app
 Authorization: Bearer <TOKEN>
 ```
 

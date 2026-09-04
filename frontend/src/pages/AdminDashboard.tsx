@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
+import { getHojeLocalIso } from '../utils/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
   const { user, token, isMasterAdmin } = useAuth();
@@ -94,14 +95,11 @@ export const AdminDashboard: React.FC = () => {
   // Visualização e Filtros da Agenda / Toolbar
   const [viewMode, setViewMode] = useState<'TIMELINE' | 'CALENDAR'>('TIMELINE');
   const [buscaTermoSchedule, setBuscaTermoSchedule] = useState('');
-  const [statusFiltroSchedule, setStatusFiltroSchedule] = useState<'TODOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES'>('TODOS');
+  const [statusFiltroSchedule, setStatusFiltroSchedule] = useState<'TODOS' | 'CONFIRMADOS' | 'REALIZADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES'>('TODOS');
 
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() => new Date());
-  const [dataSelecionada, setDataSelecionada] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  const [dataSelecionada, setDataSelecionada] = useState<string>(() => getHojeLocalIso());
   const [quadraFiltroCalendarId, setQuadraFiltroCalendarId] = useState<number | 'TODAS'>('TODAS');
-  const [statusFiltroCalendar, setStatusFiltroCalendar] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS'>('TODOS');
   const [modalAgendaDiaOpen, setModalAgendaDiaOpen] = useState(false);
   const [quadraSelecionadaAgendaId, setQuadraSelecionadaAgendaId] = useState<number | 'TODAS'>('TODAS');
   const [statusFiltroModal, setStatusFiltroModal] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS'>('TODOS');
@@ -193,9 +191,9 @@ export const AdminDashboard: React.FC = () => {
     return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
   };
 
-  const carregarAgendamentos = async () => {
+  const carregarAgendamentos = async (buscarHistorico: boolean = true) => {
     try {
-      const agendamentos = await agendamentoApi.listar(true);
+      const agendamentos = await agendamentoApi.listar(buscarHistorico);
       setAgendamentosAdmin(agendamentos);
     } catch (err) {
       console.error(err);
@@ -221,12 +219,22 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const marcarTodasComoLidas = async () => {
+    try {
+      setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
+      await notificacaoApi.marcarTodasComoLidas();
+    } catch (err) {
+      console.error('Erro ao marcar todas notificações como lidas:', err);
+      carregarNotificacoes();
+    }
+  };
+
   const carregarDados = async () => {
     if (!user) return;
     try {
       const [quadras, agendamentos] = await Promise.all([
         quadraApi.listar(),
-        agendamentoApi.listar(true),
+        agendamentoApi.listar(true), // Carrega agendamentos para calendário e grade
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
@@ -248,11 +256,6 @@ export const AdminDashboard: React.FC = () => {
         console.error('Erro ao carregar mapa de bloqueios consolidado:', bErr);
         setMapaBloqueiosPorQuadra({});
       }
-
-      // Se for Master Admin, carregar usuários
-      if (isMasterAdmin) {
-        carregarUsuarios();
-      }
     } catch (err: any) {
       console.error(err);
     }
@@ -271,6 +274,13 @@ export const AdminDashboard: React.FC = () => {
       setLoadingUsuarios(false);
     }
   };
+
+  // Lazy load para Usuários (Master Admin): só carrega quando entrar na aba de usuários
+  useEffect(() => {
+    if (activeTab === 'usuarios' && isMasterAdmin && usuarios.length === 0 && !loadingUsuarios) {
+      carregarUsuarios();
+    }
+  }, [activeTab, isMasterAdmin, usuarios.length, loadingUsuarios]);
 
   const handleSalvarUsuario = async (dados: {
     nome_usuario: string;
@@ -483,8 +493,14 @@ export const AdminDashboard: React.FC = () => {
   const abrirAgendaDoDia = async (dataIso: string) => {
     setDataSelecionada(dataIso);
     setQuadraSelecionadaAgendaId(quadraFiltroCalendarId);
-    const modalStatus = (statusFiltroCalendar === 'CONFIRMADOS' || statusFiltroCalendar === 'PENDENTES') ? 'AGENDADOS' : statusFiltroCalendar;
+    const modalStatus = (statusFiltroSchedule === 'CONFIRMADOS' || statusFiltroSchedule === 'PENDENTES' || statusFiltroSchedule === 'REALIZADOS') ? 'AGENDADOS' : statusFiltroSchedule;
     setStatusFiltroModal(modalStatus as any);
+    if (statusFiltroSchedule === 'REALIZADOS') {
+      setFiltroAgendaAdmin('REALIZADOS');
+    } else if (statusFiltroSchedule === 'CONFIRMADOS' || statusFiltroSchedule === 'PENDENTES') {
+      setFiltroAgendaAdmin('ATIVOS');
+    }
+
     setHighlightedAgendamentoId(null);
     setModalAgendaDiaOpen(true);
     setLoadingHorariosModal(true);
@@ -917,13 +933,30 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Bell className="w-4 h-4 text-emerald-400" />
                     <h3 className="text-sm font-bold text-white">Notificações</h3>
+                    {notificacoes.filter((n) => !n.lida).length > 0 && (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-1.5 py-0.5 rounded-full font-mono">
+                        {notificacoes.filter((n) => !n.lida).length}
+                      </span>
+                    )}
                   </div>
-                  <button 
-                    onClick={() => setShowNotifications(false)}
-                    className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {notificacoes.some((n) => !n.lida) && (
+                      <button
+                        type="button"
+                        onClick={marcarTodasComoLidas}
+                        className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition hover:underline active:scale-95"
+                      >
+                        Marcar tudo como lido
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => setShowNotifications(false)}
+                      className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition"
+                      title="Fechar"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div className="max-h-88 overflow-y-auto divide-y divide-zinc-850/60 scrollbar-thin">
                   {notificacoes.length === 0 ? (
@@ -1036,7 +1069,7 @@ export const AdminDashboard: React.FC = () => {
             onStatusFiltroChange={setStatusFiltroSchedule}
             onBuscaTermoChange={setBuscaTermoSchedule}
             onHojeClick={() => {
-              const hoje = new Date().toISOString().split('T')[0];
+              const hoje = getHojeLocalIso();
               setDataSelecionada(hoje);
               setCurrentMonthDate(new Date());
             }}
@@ -1065,11 +1098,6 @@ export const AdminDashboard: React.FC = () => {
               minhasQuadras={minhasQuadras}
               agendamentosAdmin={agendamentosAdmin}
               mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
-              onQuadraFiltroChange={setQuadraFiltroCalendarId}
-              onStatusFiltroChange={(novoStatus) => {
-                setStatusFiltroCalendar(novoStatus);
-                setStatusFiltroSchedule(novoStatus as any);
-              }}
               onMudarMes={(offset) =>
                 setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))
               }

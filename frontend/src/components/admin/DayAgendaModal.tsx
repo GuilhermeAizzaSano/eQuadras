@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Quadra, Agendamento, HorarioDisponivel, BloqueioHorario } from '../../types';
 import { Badge, EmptyState } from '../ui';
 import {
@@ -9,8 +9,10 @@ import {
   Ban,
   ShieldCheck,
   Phone,
-  Info
+  Info,
+  History
 } from 'lucide-react';
+import { parseDataHoraLocal } from '../../utils/dateUtils';
 
 interface DayAgendaModalProps {
   isOpen: boolean;
@@ -59,10 +61,27 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   onVerQuadra,
   getTempoRestantePix,
 }) => {
-  if (!isOpen) return null;
+  const [realizadosCarregados, setRealizadosCarregados] = React.useState(false);
+  const [canceladosCarregados, setCanceladosCarregados] = React.useState(false);
+
+  React.useEffect(() => {
+    setRealizadosCarregados(false);
+    setCanceladosCarregados(false);
+  }, [dataSelecionada]);
 
   React.useEffect(() => {
     if (highlightedAgendamentoId && isOpen) {
+      const ag = agendamentosAdmin.find((a) => a.id_agendamento === highlightedAgendamentoId);
+      if (ag) {
+        const isCancelado = ag.status === 'CANCELADO';
+        const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
+        if (isCancelado) {
+          setCanceladosCarregados(true);
+        } else if (isPassado) {
+          setRealizadosCarregados(true);
+        }
+      }
+
       const timer = setTimeout(() => {
         const el = document.getElementById(`agendamento-card-${highlightedAgendamentoId}`);
         if (el) {
@@ -71,7 +90,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin]);
+  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin, agendamentosAdmin]);
+
+  if (!isOpen) return null;
 
   const agendamentosDoDia = agendamentosAdmin
     .filter((a) => {
@@ -84,7 +105,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   const agoraLocal = new Date();
 
   const agendamentosDoDiaFiltrados = agendamentosDoDia.filter((ag) => {
-    const dataFim = new Date(ag.dataHoraFim);
+    const dataFim = parseDataHoraLocal(ag.dataHoraFim);
     const isCancelado = ag.status === 'CANCELADO';
     const isPassado = dataFim < agoraLocal;
 
@@ -98,7 +119,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   let contadoresRealizados = 0;
 
   agendamentosDoDia.forEach((ag) => {
-    const dataFim = new Date(ag.dataHoraFim);
+    const dataFim = parseDataHoraLocal(ag.dataHoraFim);
     const isCancelado = ag.status === 'CANCELADO';
     const isPassado = dataFim < agoraLocal;
     if (isCancelado) contadoresCancelados++;
@@ -386,7 +407,10 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                   onQuadraChange(quadra.id_quadra);
                                   onSelectHighlightedAgendamento(agendamentoCorrespondente.id_agendamento);
                                   
-                                  const isAgPassado = new Date(agendamentoCorrespondente.dataHoraFim) < new Date();
+                                  const isAgPassado = parseDataHoraLocal(agendamentoCorrespondente.dataHoraFim) < new Date();
+                                  if (isAgPassado) {
+                                    setRealizadosCarregados(true);
+                                  }
                                   onFiltroAgendaAdminChange(isAgPassado ? 'REALIZADOS' : 'ATIVOS');
                                   onVisualizacaoAbaChange('LISTA_RESERVAS');
                                 }
@@ -489,7 +513,61 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                 </button>
               </div>
 
-              {agendamentosDoDiaFiltrados.length === 0 ? (
+              {filtroAgendaAdmin === 'REALIZADOS' && !realizadosCarregados ? (
+                contadoresRealizados === 0 ? (
+                  <EmptyState
+                    icon={CalendarIcon}
+                    title="Nenhum jogo finalizado para este dia"
+                    description="Nenhuma reserva localizada com este status para o dia selecionado."
+                    className="py-12"
+                  />
+                ) : (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-zinc-850 rounded-2xl bg-zinc-900/30">
+                    <div className="w-12 h-12 rounded-full bg-purple-950/40 border border-purple-800/40 flex items-center justify-center text-purple-400 mb-3 shadow-inner">
+                      <History className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-white">Jogos Finalizados</h4>
+                    <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-4">
+                      Existem {contadoresRealizados} {contadoresRealizados === 1 ? 'reserva concluída' : 'reservas concluídas'} neste dia. Clique abaixo para visualizar os detalhes.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setRealizadosCarregados(true)}
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 border border-zinc-700 hover:border-zinc-600 transition active:scale-95 shadow-sm"
+                    >
+                      <History className="w-4 h-4 text-purple-400" />
+                      <span>Carregar Realizados ({contadoresRealizados})</span>
+                    </button>
+                  </div>
+                )
+              ) : filtroAgendaAdmin === 'CANCELADOS' && !canceladosCarregados ? (
+                contadoresCancelados === 0 ? (
+                  <EmptyState
+                    icon={CalendarIcon}
+                    title="Nenhum jogo cancelado para este dia"
+                    description="Nenhuma reserva localizada com este status para o dia selecionado."
+                    className="py-12"
+                  />
+                ) : (
+                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-zinc-850 rounded-2xl bg-zinc-900/30">
+                    <div className="w-12 h-12 rounded-full bg-rose-950/40 border border-rose-800/40 flex items-center justify-center text-rose-400 mb-3 shadow-inner">
+                      <Ban className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-white">Reservas Canceladas</h4>
+                    <p className="text-xs text-zinc-400 max-w-sm mt-1 mb-4">
+                      Existem {contadoresCancelados} {contadoresCancelados === 1 ? 'reserva cancelada' : 'reservas canceladas'} neste dia. Clique abaixo para visualizar os detalhes.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCanceladosCarregados(true)}
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center gap-2 border border-zinc-700 hover:border-zinc-600 transition active:scale-95 shadow-sm"
+                    >
+                      <Ban className="w-4 h-4 text-rose-400" />
+                      <span>Carregar Cancelados ({contadoresCancelados})</span>
+                    </button>
+                  </div>
+                )
+              ) : agendamentosDoDiaFiltrados.length === 0 ? (
                 <EmptyState
                   icon={CalendarIcon}
                   title={
@@ -506,7 +584,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                 <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
                   {agendamentosDoDiaFiltrados.map((ag) => {
                     const isCancelado = ag.status === 'CANCELADO';
-                    const isPassado = new Date(ag.dataHoraFim) < new Date();
+                    const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
                     const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
                     const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
                     const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);

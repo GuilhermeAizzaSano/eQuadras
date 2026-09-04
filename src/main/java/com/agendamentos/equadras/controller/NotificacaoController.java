@@ -42,4 +42,11 @@ public class NotificacaoController {
         notificacaoService.marcarComoLidaSeDoUsuario(id, usuarioLogado.id());
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Marcar todas as notificações como lidas", description = "Marca todas as notificações do administrador autenticado como lidas.")
+    @PutMapping("/ler-todas")
+    public ResponseEntity<Void> marcarTodasComoLidas(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        notificacaoService.marcarTodasComoLidas(usuarioLogado.id());
+        return ResponseEntity.noContent().build();
+    }
 }
