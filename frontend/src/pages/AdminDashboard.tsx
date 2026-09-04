@@ -101,7 +101,7 @@ export const AdminDashboard: React.FC = () => {
     return new Date().toISOString().split('T')[0];
   });
   const [quadraFiltroCalendarId, setQuadraFiltroCalendarId] = useState<number | 'TODAS'>('TODAS');
-  const [statusFiltroCalendar, setStatusFiltroCalendar] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS'>('TODOS');
+  const [statusFiltroCalendar, setStatusFiltroCalendar] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS'>('TODOS');
   const [modalAgendaDiaOpen, setModalAgendaDiaOpen] = useState(false);
   const [quadraSelecionadaAgendaId, setQuadraSelecionadaAgendaId] = useState<number | 'TODAS'>('TODAS');
   const [statusFiltroModal, setStatusFiltroModal] = useState<'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS'>('TODOS');
@@ -483,7 +483,8 @@ export const AdminDashboard: React.FC = () => {
   const abrirAgendaDoDia = async (dataIso: string) => {
     setDataSelecionada(dataIso);
     setQuadraSelecionadaAgendaId(quadraFiltroCalendarId);
-    setStatusFiltroModal(statusFiltroCalendar);
+    const modalStatus = (statusFiltroCalendar === 'CONFIRMADOS' || statusFiltroCalendar === 'PENDENTES') ? 'AGENDADOS' : statusFiltroCalendar;
+    setStatusFiltroModal(modalStatus as any);
     setHighlightedAgendamentoId(null);
     setModalAgendaDiaOpen(true);
     setLoadingHorariosModal(true);
@@ -540,9 +541,32 @@ export const AdminDashboard: React.FC = () => {
 
   const handleAbrirAgendamentoDetalhe = (ag: Agendamento) => {
     const dataIso = ag.dataHoraInicio.split('T')[0];
-    abrirAgendaDoDia(dataIso);
+    setDataSelecionada(dataIso);
     setQuadraSelecionadaAgendaId(ag.quadraId);
+    setStatusFiltroModal('TODOS');
+    setVisualizacaoAgendaAba('LISTA_RESERVAS');
+
+    const agoraLocal = new Date();
+    const dataFim = new Date(ag.dataHoraFim);
+    if (ag.status === 'CANCELADO') {
+      setFiltroAgendaAdmin('CANCELADOS');
+    } else if (dataFim < agoraLocal) {
+      setFiltroAgendaAdmin('REALIZADOS');
+    } else {
+      setFiltroAgendaAdmin('ATIVOS');
+    }
+
     setHighlightedAgendamentoId(ag.id_agendamento);
+    setModalAgendaDiaOpen(true);
+    setLoadingHorariosModal(true);
+
+    agendamentoApi.listarHorariosDoDiaAdmin(dataIso)
+      .then((slots) => setHorariosDisponiveisPorQuadra(slots || {}))
+      .catch((err) => {
+        console.error('Erro ao carregar horários consolidados:', err);
+        setHorariosDisponiveisPorQuadra({});
+      })
+      .finally(() => setLoadingHorariosModal(false));
   };
 
   const abrirGerenciamentoBloqueios = async (q: Quadra) => {
@@ -1037,27 +1061,14 @@ export const AdminDashboard: React.FC = () => {
               currentMonthDate={currentMonthDate}
               dataSelecionada={dataSelecionada}
               quadraFiltroCalendarId={quadraFiltroCalendarId}
-              statusFiltroCalendar={
-                statusFiltroSchedule === 'CONFIRMADOS'
-                  ? 'AGENDADOS'
-                  : statusFiltroSchedule === 'PENDENTES'
-                  ? 'AGENDADOS'
-                  : statusFiltroSchedule === 'BLOQUEADOS'
-                  ? 'BLOQUEADOS'
-                  : statusFiltroSchedule === 'LIVRES'
-                  ? 'LIVRES'
-                  : 'TODOS'
-              }
+              statusFiltroCalendar={statusFiltroSchedule}
               minhasQuadras={minhasQuadras}
               agendamentosAdmin={agendamentosAdmin}
               mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
               onQuadraFiltroChange={setQuadraFiltroCalendarId}
               onStatusFiltroChange={(novoStatus) => {
                 setStatusFiltroCalendar(novoStatus);
-                if (novoStatus === 'AGENDADOS') setStatusFiltroSchedule('CONFIRMADOS');
-                else if (novoStatus === 'BLOQUEADOS') setStatusFiltroSchedule('BLOQUEADOS');
-                else if (novoStatus === 'LIVRES') setStatusFiltroSchedule('LIVRES');
-                else setStatusFiltroSchedule('TODOS');
+                setStatusFiltroSchedule(novoStatus as any);
               }}
               onMudarMes={(offset) =>
                 setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))

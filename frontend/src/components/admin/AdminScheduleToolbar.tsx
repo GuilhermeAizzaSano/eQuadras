@@ -6,11 +6,11 @@ import {
   ChevronRight,
   Columns,
   Search,
-  RotateCcw
+  RotateCcw,
 } from 'lucide-react';
 
-export interface AdminScheduleToolbarProps {
-  dataSelecionada: string; // formato YYYY-MM-DD
+interface AdminScheduleToolbarProps {
+  dataSelecionada: string;
   viewMode: 'TIMELINE' | 'CALENDAR';
   minhasQuadras: Quadra[];
   quadraFiltroId: number | 'TODAS';
@@ -38,33 +38,32 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
   onBuscaTermoChange,
   onHojeClick,
 }) => {
-  const formatarDataExtenso = (isoDate: string) => {
-    if (!isoDate) return '';
+  const navegarDia = (offset: number) => {
     try {
-      const [ano, mes, dia] = isoDate.split('-').map(Number);
-      const data = new Date(ano, mes - 1, dia);
-      const str = data.toLocaleDateString('pt-BR', {
+      const [ano, mes, dia] = dataSelecionada.split('-').map(Number);
+      const d = new Date(ano, mes - 1, dia);
+      d.setDate(d.getDate() + offset);
+      const novoAno = d.getFullYear();
+      const novoMes = String(d.getMonth() + 1).padStart(2, '0');
+      const novoDia = String(d.getDate()).padStart(2, '0');
+      onDataChange(`${novoAno}-${novoMes}-${novoDia}`);
+    } catch {
+      // fallback
+    }
+  };
+
+  const formatarDataExtenso = (iso: string) => {
+    try {
+      const [ano, mes, dia] = iso.split('-').map(Number);
+      const d = new Date(ano, mes - 1, dia);
+      return d.toLocaleDateString('pt-BR', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
       });
-      return str.charAt(0).toUpperCase() + str.slice(1);
     } catch {
-      return isoDate;
-    }
-  };
-
-  const navegarDia = (offset: number) => {
-    try {
-      const [ano, mes, dia] = dataSelecionada.split('-').map(Number);
-      const novaData = new Date(ano, mes - 1, dia + offset);
-      const y = novaData.getFullYear();
-      const m = String(novaData.getMonth() + 1).padStart(2, '0');
-      const d = String(novaData.getDate()).padStart(2, '0');
-      onDataChange(`${y}-${m}-${d}`);
-    } catch {
-      // fallback
+      return iso;
     }
   };
 
@@ -77,9 +76,9 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
     activeClass: string;
     dotClass: string;
   }> = [
-    { id: 'TODOS', label: 'Todos os Status', activeClass: 'bg-zinc-800 text-white border-zinc-700', dotClass: 'bg-zinc-400' },
+    { id: 'TODOS', label: 'Todos', activeClass: 'bg-zinc-800 text-white border-zinc-700', dotClass: 'bg-zinc-400' },
     { id: 'CONFIRMADOS', label: 'Confirmados', activeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80', dotClass: 'bg-emerald-400' },
-    { id: 'PENDENTES', label: 'Pendentes (Pix)', activeClass: 'bg-amber-950/80 text-amber-300 border-amber-800/80', dotClass: 'bg-amber-400' },
+    { id: 'PENDENTES', label: 'Pendentes Pix', activeClass: 'bg-amber-950/80 text-amber-300 border-amber-800/80', dotClass: 'bg-amber-400' },
     { id: 'BLOQUEADOS', label: 'Bloqueados', activeClass: 'bg-rose-950/80 text-rose-300 border-rose-800/80', dotClass: 'bg-rose-400' },
     { id: 'LIVRES', label: 'Livres', activeClass: 'bg-blue-950/80 text-blue-300 border-blue-800/80', dotClass: 'bg-blue-400' },
   ];
@@ -162,35 +161,27 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
         </div>
       </div>
 
-      {/* Linha 2: Filtros de Quadras, Status e Busca */}
+      {/* Linha 2: Filtros (Quadras na Dropbox, Status e Busca) */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-zinc-800/80">
-        {/* Pílulas de Quadras e Status */}
         <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3">
-          {/* Pílulas de Quadras */}
-          <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0 scrollbar-thin">
-            <button
-              onClick={() => onQuadraFiltroChange('TODAS')}
-              className={`px-3 py-1 text-xs font-medium rounded-full border transition whitespace-nowrap ${
-                quadraFiltroId === 'TODAS'
-                  ? 'bg-zinc-100 text-zinc-950 border-white shadow-sm font-semibold'
-                  : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
-              }`}
+          {/* Dropdown exclusiva de Quadras */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-zinc-400 font-medium whitespace-nowrap">Quadra:</label>
+            <select
+              value={quadraFiltroId}
+              onChange={(e) => {
+                const val = e.target.value;
+                onQuadraFiltroChange(val === 'TODAS' ? 'TODAS' : Number(val));
+              }}
+              className="bg-zinc-950 border border-zinc-800 text-xs sm:text-sm text-white rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer [color-scheme:dark]"
             >
-              Todas Quadras ({minhasQuadras.length})
-            </button>
-            {minhasQuadras.map((q) => (
-              <button
-                key={q.id_quadra}
-                onClick={() => onQuadraFiltroChange(q.id_quadra)}
-                className={`px-3 py-1 text-xs font-medium rounded-full border transition whitespace-nowrap ${
-                  quadraFiltroId === q.id_quadra
-                    ? 'bg-zinc-100 text-zinc-950 border-white shadow-sm font-semibold'
-                    : 'bg-zinc-950/60 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
-                }`}
-              >
-                {q.nome}
-              </button>
-            ))}
+              <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
+              {minhasQuadras.map((q) => (
+                <option key={q.id_quadra} value={q.id_quadra}>
+                  {q.nome} {!q.ativa ? '(Inativa)' : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="h-4 w-px bg-zinc-800 hidden sm:block" />

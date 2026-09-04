@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Quadra, BloqueioHorario, Agendamento, DiaSemana } from '../../types';
 import {
   Calendar as CalendarIcon,
@@ -11,12 +11,12 @@ interface CalendarOccupancyProps {
   currentMonthDate: Date;
   dataSelecionada: string;
   quadraFiltroCalendarId: number | 'TODAS';
-  statusFiltroCalendar: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS';
+  statusFiltroCalendar: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS';
   minhasQuadras: Quadra[];
   agendamentosAdmin: Agendamento[];
   mapaBloqueiosPorQuadra: Record<number, BloqueioHorario[]>;
   onQuadraFiltroChange: (id: number | 'TODAS') => void;
-  onStatusFiltroChange: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS') => void;
+  onStatusFiltroChange: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS') => void;
   onMudarMes: (offset: number) => void;
   onAbrirAgendaDoDia: (dataIso: string) => void;
 }
@@ -53,6 +53,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
     isToday: boolean;
     isPassado: boolean;
     count: number;
+    confirmados: number;
+    pendentes: number;
     bloqueados: number;
     livres: number;
   }[] = [];
@@ -69,6 +71,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isToday: false,
       isPassado: true,
       count: 0,
+      confirmados: 0,
+      pendentes: 0,
       bloqueados: 0,
       livres: 0,
     });
@@ -84,11 +88,15 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       ? minhasQuadras
       : minhasQuadras.filter((q) => q.id_quadra === quadraFiltroCalendarId);
 
-    const count = agendamentosAdmin.filter(
+    const agendamentosDoDia = agendamentosAdmin.filter(
       (a) => a.dataHoraInicio.startsWith(iso) && 
              a.status !== 'CANCELADO' && 
              (quadraFiltroCalendarId === 'TODAS' || a.quadraId === quadraFiltroCalendarId)
-    ).length;
+    );
+
+    const count = agendamentosDoDia.length;
+    const pendentes = agendamentosDoDia.filter((a) => a.status === 'PENDENTE').length;
+    const confirmados = agendamentosDoDia.filter((a) => a.status === 'CONFIRMADO').length;
 
     const bloqueiosDoDia: BloqueioHorario[] = [];
     quadrasConsideradas.forEach((q) => {
@@ -167,6 +175,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isToday: isHoje,
       isPassado,
       count,
+      confirmados,
+      pendentes,
       bloqueados: bloqueadosCont,
       livres: livresCont,
     });
@@ -184,6 +194,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isToday: false,
       isPassado: false,
       count: 0,
+      confirmados: 0,
+      pendentes: 0,
       bloqueados: 0,
       livres: 0,
     });
@@ -213,7 +225,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                   const val = e.target.value;
                   onQuadraFiltroChange(val === 'TODAS' ? 'TODAS' : Number(val));
                 }}
-                className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 transition"
+                className="bg-zinc-900 border border-zinc-800 text-xs text-white rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-400 transition cursor-pointer [color-scheme:dark]"
               >
                 <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
                 {minhasQuadras.map((q) => (
@@ -226,7 +238,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
           )}
 
           {/* Filtro de Status no Calendário */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs">
+          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 p-1 rounded-xl text-xs flex-wrap">
             <button
               type="button"
               onClick={() => onStatusFiltroChange('TODOS')}
@@ -255,26 +267,39 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
               type="button"
               onClick={() => onStatusFiltroChange('AGENDADOS')}
               className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
-                statusFiltroCalendar === 'AGENDADOS'
+                statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS'
                   ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 font-semibold'
                   : 'text-zinc-400 hover:text-blue-400'
               }`}
-              title="Filtrar dias que possuem agendamentos"
+              title="Destacar dias com agendamentos confirmados"
             >
               <span className="w-2 h-2 rounded-full bg-blue-400" />
-              <span>Agendados</span>
+              <span>Confirmados</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onStatusFiltroChange('PENDENTES')}
+              className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
+                statusFiltroCalendar === 'PENDENTES'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                  : 'text-zinc-400 hover:text-amber-400'
+              }`}
+              title="Destacar dias com reservas aguardando Pix"
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Pendentes Pix</span>
             </button>
             <button
               type="button"
               onClick={() => onStatusFiltroChange('BLOQUEADOS')}
               className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1.5 ${
                 statusFiltroCalendar === 'BLOQUEADOS'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
-                  : 'text-zinc-400 hover:text-amber-400'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold'
+                  : 'text-zinc-400 hover:text-rose-400'
               }`}
-              title="Filtrar dias que possuem horários ou dias bloqueados"
+              title="Destacar dias com bloqueios administrativos"
             >
-              <Ban className="w-3 h-3 text-amber-400" />
+              <Ban className="w-3 h-3 text-rose-400" />
               <span>Bloqueados</span>
             </button>
           </div>
@@ -325,6 +350,10 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
               ? day.livres > 0
               : statusFiltroCalendar === 'AGENDADOS'
               ? day.count > 0
+              : statusFiltroCalendar === 'CONFIRMADOS'
+              ? day.confirmados > 0
+              : statusFiltroCalendar === 'PENDENTES'
+              ? day.pendentes > 0
               : statusFiltroCalendar === 'BLOQUEADOS'
               ? day.bloqueados > 0
               : true;
@@ -339,19 +368,21 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                 if (!day.isCurrentMonth) return;
                 onAbrirAgendaDoDia(day.iso);
               }}
-              className={`min-h-[100px] sm:min-h-[115px] p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between items-start transition-all group ${
+              className={`min-h-[105px] sm:min-h-[120px] p-2.5 sm:p-3 rounded-2xl border flex flex-col justify-between items-start transition-all group ${
                 !day.isCurrentMonth
                   ? 'opacity-20 bg-zinc-950/40 border-zinc-900 text-zinc-600 cursor-default'
                   : isDimmed
                   ? 'opacity-30 bg-zinc-950/60 border-zinc-900/60 hover:opacity-75'
                   : isSelected
                   ? 'bg-zinc-900 border-white/60 shadow-xl ring-2 ring-white/40 z-10'
+                  : statusFiltroCalendar === 'PENDENTES' && day.pendentes > 0
+                  ? 'bg-amber-950/25 border-amber-500/60 hover:border-amber-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                  : (statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS') && (day.confirmados > 0 || day.count > 0)
+                  ? 'bg-blue-950/20 border-blue-500/50 hover:border-blue-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                   : statusFiltroCalendar === 'LIVRES' && day.livres > 0
                   ? 'bg-emerald-950/15 border-emerald-500/40 hover:border-emerald-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
-                  : statusFiltroCalendar === 'AGENDADOS' && day.count > 0
-                  ? 'bg-blue-950/20 border-blue-500/50 hover:border-blue-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                   : statusFiltroCalendar === 'BLOQUEADOS' && day.bloqueados > 0
-                  ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                  ? 'bg-rose-950/20 border-rose-500/50 hover:border-rose-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                   : 'bg-zinc-900/50 border-zinc-850 hover:border-emerald-500/50 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
               }`}
             >
@@ -380,19 +411,35 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
               {/* Linha Central / Inferior: Contadores de Horários */}
               {day.isCurrentMonth && (
                 <div className="w-full space-y-1 mt-2">
-                  {day.count > 0 && (
+                  {day.confirmados > 0 && (
                     <div
                       className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
-                        statusFiltroCalendar === 'AGENDADOS'
+                        statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS'
                           ? 'bg-blue-500/25 border-blue-400 text-blue-200 ring-1 ring-blue-500/30 font-semibold'
                           : 'bg-blue-500/15 border-blue-500/30 text-blue-300'
                       }`}
                     >
                       <span className="flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                        <span className="truncate">Agendados</span>
+                        <span className="truncate">Confirmados</span>
                       </span>
-                      <span className="font-bold">{day.count}</span>
+                      <span className="font-bold">{day.confirmados}</span>
+                    </div>
+                  )}
+
+                  {day.pendentes > 0 && (
+                    <div
+                      className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                        statusFiltroCalendar === 'PENDENTES'
+                          ? 'bg-amber-500/25 border-amber-400 text-amber-200 ring-1 ring-amber-500/30 font-semibold'
+                          : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        <span className="truncate">Pendentes Pix</span>
+                      </span>
+                      <span className="font-bold">{day.pendentes}</span>
                     </div>
                   )}
 
@@ -400,12 +447,12 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                     <div
                       className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'BLOQUEADOS'
-                          ? 'bg-amber-500/25 border-amber-400 text-amber-200 ring-1 ring-amber-500/30 font-semibold'
-                          : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                          ? 'bg-rose-500/25 border-rose-400 text-rose-200 ring-1 ring-rose-500/30 font-semibold'
+                          : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
                       }`}
                     >
                       <span className="flex items-center gap-1">
-                        <Ban className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                        <Ban className="w-2.5 h-2.5 text-rose-400 shrink-0" />
                         <span className="truncate">Bloqueados</span>
                       </span>
                       <span className="font-bold">{day.bloqueados}</span>
