@@ -48,14 +48,14 @@ export const ClientDashboard: React.FC = () => {
   const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
 
   useEffect(() => {
-    if (selectedQuadra) {
+    if (isBookingModalOpen && selectedQuadra) {
       bloqueioApi.listar(selectedQuadra)
         .then(setBloqueiosQuadra)
         .catch(() => setBloqueiosQuadra([]));
-    } else {
+    } else if (!isBookingModalOpen) {
       setBloqueiosQuadra([]);
     }
-  }, [selectedQuadra]);
+  }, [isBookingModalOpen, selectedQuadra]);
 
   // Filtragem dinâmica de agendamentos do cliente
   const agendamentosFiltrados = useMemo(() => {
@@ -267,13 +267,13 @@ export const ClientDashboard: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (selectedQuadra && dataSelecionada) {
+    if (isBookingModalOpen && selectedQuadra && dataSelecionada) {
       carregarHorarios(selectedQuadra, dataSelecionada);
-    } else {
+    } else if (!isBookingModalOpen) {
       setHorarios([]);
       setSlotsSelecionados([]);
     }
-  }, [selectedQuadra, dataSelecionada]);
+  }, [isBookingModalOpen, selectedQuadra, dataSelecionada]);
 
   const carregarQuadras = async () => {
     try {
@@ -510,8 +510,7 @@ export const ClientDashboard: React.FC = () => {
       </div>
 
       {/* ABA 1: EXPLORAR QUADRAS */}
-      {abaPrincipal === 'QUADRAS' && (
-        <div className="space-y-6">
+      <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
           {/* Barra de Filtros e Busca */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-zinc-900/50 p-3 sm:p-4 rounded-2xl border border-zinc-850">
             {/* Dropdown de Esportes no Mobile */}
@@ -661,12 +660,10 @@ export const ClientDashboard: React.FC = () => {
               })}
             </div>
           )}
-        </div>
-      )}
+      </div>
 
       {/* ABA 2: MINHAS RESERVAS */}
-      {abaPrincipal === 'RESERVAS' && (
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
           <div className="bg-zinc-900/90 border border-zinc-850 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
             {/* Sub-abas de Filtro de Reservas */}
             <div className="flex bg-zinc-950 p-1.5 rounded-xl border border-zinc-800 text-xs">
@@ -848,7 +845,6 @@ export const ClientDashboard: React.FC = () => {
             )}
           </div>
         </div>
-      )}
 
       {/* Modal Dedicado de Horários e Agendamento (BookingModal) */}
       <BookingModal

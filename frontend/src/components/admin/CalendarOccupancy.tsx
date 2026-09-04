@@ -6,17 +6,16 @@ import {
   ChevronRight,
   Ban
 } from 'lucide-react';
+import { parseDataHoraLocal, getHojeLocalIso } from '../../utils/dateUtils';
 
 interface CalendarOccupancyProps {
   currentMonthDate: Date;
   dataSelecionada: string;
   quadraFiltroCalendarId: number | 'TODAS';
-  statusFiltroCalendar: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS';
+  statusFiltroCalendar: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'REALIZADOS' | 'PENDENTES' | 'BLOQUEADOS';
   minhasQuadras: Quadra[];
   agendamentosAdmin: Agendamento[];
   mapaBloqueiosPorQuadra: Record<number, BloqueioHorario[]>;
-  onQuadraFiltroChange?: (id: number | 'TODAS') => void;
-  onStatusFiltroChange?: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS') => void;
   onMudarMes: (offset: number) => void;
   onAbrirAgendaDoDia: (dataIso: string) => void;
 }
@@ -44,6 +43,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
   const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthTotalDays = new Date(year, month, 0).getDate();
 
+  const agoraMomento = new Date();
+
   const days: {
     dayNum: number;
     iso: string;
@@ -52,6 +53,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
     isPassado: boolean;
     count: number;
     confirmados: number;
+    realizados: number;
     pendentes: number;
     bloqueados: number;
     livres: number;
@@ -70,13 +72,14 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isPassado: true,
       count: 0,
       confirmados: 0,
+      realizados: 0,
       pendentes: 0,
       bloqueados: 0,
       livres: 0,
     });
   }
 
-  const hojeIso = new Date().toISOString().split('T')[0];
+  const hojeIso = getHojeLocalIso();
 
   // Dias do mês atual
   for (let d = 1; d <= totalDaysInMonth; d++) {
@@ -94,7 +97,19 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
 
     const count = agendamentosDoDia.length;
     const pendentes = agendamentosDoDia.filter((a) => a.status === 'PENDENTE').length;
-    const confirmados = agendamentosDoDia.filter((a) => a.status === 'CONFIRMADO').length;
+    
+    // Separar agendamentos realizados (já passados) de confirmados futuros/em andamento
+    let confirmados = 0;
+    let realizados = 0;
+    agendamentosDoDia.forEach((a) => {
+      const dataFim = parseDataHoraLocal(a.dataHoraFim);
+      const jaPassou = dataFim < agoraMomento;
+      if (jaPassou) {
+        realizados++;
+      } else if (a.status === 'CONFIRMADO') {
+        confirmados++;
+      }
+    });
 
     const bloqueiosDoDia: BloqueioHorario[] = [];
     quadrasConsideradas.forEach((q) => {
@@ -174,6 +189,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isPassado,
       count,
       confirmados,
+      realizados,
       pendentes,
       bloqueados: bloqueadosCont,
       livres: livresCont,
@@ -193,6 +209,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       isPassado: false,
       count: 0,
       confirmados: 0,
+      realizados: 0,
       pendentes: 0,
       bloqueados: 0,
       livres: 0,
@@ -259,6 +276,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
               ? day.count > 0
               : statusFiltroCalendar === 'CONFIRMADOS'
               ? day.confirmados > 0
+              : statusFiltroCalendar === 'REALIZADOS'
+              ? day.realizados > 0
               : statusFiltroCalendar === 'PENDENTES'
               ? day.pendentes > 0
               : statusFiltroCalendar === 'BLOQUEADOS'
@@ -284,6 +303,8 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                   ? 'bg-zinc-900 border-white/60 shadow-xl ring-2 ring-white/40 z-10'
                   : statusFiltroCalendar === 'PENDENTES' && day.pendentes > 0
                   ? 'bg-amber-950/25 border-amber-500/60 hover:border-amber-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
+                  : statusFiltroCalendar === 'REALIZADOS' && day.realizados > 0
+                  ? 'bg-purple-950/25 border-purple-500/60 hover:border-purple-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                   : (statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS') && (day.confirmados > 0 || day.count > 0)
                   ? 'bg-blue-950/20 border-blue-500/50 hover:border-blue-400 hover:bg-zinc-900 active:scale-[0.99] cursor-pointer'
                   : statusFiltroCalendar === 'LIVRES' && day.livres > 0
@@ -331,6 +352,22 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                         <span className="truncate">Confirmados</span>
                       </span>
                       <span className="font-bold">{day.confirmados}</span>
+                    </div>
+                  )}
+
+                  {day.realizados > 0 && (
+                    <div
+                      className={`w-full px-1.5 py-0.5 rounded-md border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                        statusFiltroCalendar === 'REALIZADOS'
+                          ? 'bg-purple-500/25 border-purple-400 text-purple-200 ring-1 ring-purple-500/30 font-semibold'
+                          : 'bg-purple-500/15 border-purple-500/30 text-purple-300'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                        <span className="truncate">Realizados</span>
+                      </span>
+                      <span className="font-bold">{day.realizados}</span>
                     </div>
                   )}
 

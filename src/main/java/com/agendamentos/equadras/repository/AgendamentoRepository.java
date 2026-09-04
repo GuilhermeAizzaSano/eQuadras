@@ -65,6 +65,32 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     @Query("SELECT a FROM Agendamento a WHERE a.quadra.admin.id_usuario = :adminId")
     List<Agendamento> findByAdminId(@Param("adminId") Long adminId);
 
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("""
+        SELECT a FROM Agendamento a
+        WHERE a.quadra.admin.id_usuario = :adminId
+        AND a.status <> :statusCancelado
+        AND a.dataHoraFim >= :agora
+        ORDER BY a.dataHoraInicio ASC
+    """)
+    List<Agendamento> findAtivosByAdminId(
+            @Param("adminId") Long adminId,
+            @Param("statusCancelado") StatusAgendamento statusCancelado,
+            @Param("agora") LocalDateTime agora
+    );
+
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("""
+        SELECT a FROM Agendamento a
+        WHERE a.status <> :statusCancelado
+        AND a.dataHoraFim >= :agora
+        ORDER BY a.dataHoraInicio ASC
+    """)
+    List<Agendamento> findAtivosAll(
+            @Param("statusCancelado") StatusAgendamento statusCancelado,
+            @Param("agora") LocalDateTime agora
+    );
+
     @Query("SELECT COUNT(a) > 0 FROM Agendamento a WHERE a.quadra.id_quadra = :quadraId")
     boolean existsByQuadraId(@Param("quadraId") Long quadraId);
 

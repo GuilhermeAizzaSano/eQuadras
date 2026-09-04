@@ -95,4 +95,9 @@ public class NotificacaoService {
         notif.setLida(true);
         notificacaoRepository.save(notif);
     }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void marcarTodasComoLidas(Long adminId) {
+        notificacaoRepository.marcarTodasComoLidas(adminId);
+    }
 }

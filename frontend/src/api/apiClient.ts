@@ -189,6 +189,7 @@ export const agendamentoApi = {
 export const notificacaoApi = {
   listarPorAdmin: () => apiFetch<import('../types').Notificacao[]>('/notificacoes/admin'),
   marcarComoLida: (id: number) => apiFetch<void>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
+  marcarTodasComoLidas: () => apiFetch<void>('/notificacoes/ler-todas', { method: 'PUT' }),
 };
 
 // --- Pagamentos ---

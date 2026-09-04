@@ -337,11 +337,26 @@ public class AgendamentoService {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
                 if (usuario.isMasterAdmin()) {
-                    // Master Admin vê todos os agendamentos cadastrados no sistema
-                    agendamentos = agendamentoRepository.findAll();
+                    // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
+                    if (historico) {
+                        agendamentos = agendamentoRepository.findAll();
+                    } else {
+                        agendamentos = agendamentoRepository.findAtivosAll(
+                                StatusAgendamento.CANCELADO,
+                                LocalDateTime.now()
+                        );
+                    }
                 } else {
-                    // Admin comum vê os agendamentos das suas quadras
-                    agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                    // Admin comum vê os agendamentos das suas quadras (histórico completo ou apenas ativos)
+                    if (historico) {
+                        agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                    } else {
+                        agendamentos = agendamentoRepository.findAtivosByAdminId(
+                                usuarioId,
+                                StatusAgendamento.CANCELADO,
+                                LocalDateTime.now()
+                        );
+                    }
                 }
             } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
                 if (historico) {

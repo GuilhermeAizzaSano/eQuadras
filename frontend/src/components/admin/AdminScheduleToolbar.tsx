@@ -8,18 +8,19 @@ import {
   Search,
   RotateCcw,
 } from 'lucide-react';
+import { getHojeLocalIso } from '../../utils/dateUtils';
 
 interface AdminScheduleToolbarProps {
   dataSelecionada: string;
   viewMode: 'TIMELINE' | 'CALENDAR';
   minhasQuadras: Quadra[];
   quadraFiltroId: number | 'TODAS';
-  statusFiltro: 'TODOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES';
+  statusFiltro: 'TODOS' | 'CONFIRMADOS' | 'REALIZADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES';
   buscaTermo: string;
   onDataChange: (data: string) => void;
   onViewModeChange: (mode: 'TIMELINE' | 'CALENDAR') => void;
   onQuadraFiltroChange: (id: number | 'TODAS') => void;
-  onStatusFiltroChange: (status: 'TODOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES') => void;
+  onStatusFiltroChange: (status: 'TODOS' | 'CONFIRMADOS' | 'REALIZADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES') => void;
   onBuscaTermoChange: (termo: string) => void;
   onHojeClick: () => void;
 }
@@ -67,17 +68,18 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
     }
   };
 
-  const hojeIso = new Date().toISOString().split('T')[0];
+  const hojeIso = getHojeLocalIso();
   const isHoje = dataSelecionada === hojeIso;
 
   const statusOptions: Array<{
-    id: 'TODOS' | 'CONFIRMADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES';
+    id: 'TODOS' | 'CONFIRMADOS' | 'REALIZADOS' | 'PENDENTES' | 'BLOQUEADOS' | 'LIVRES';
     label: string;
     activeClass: string;
     dotClass: string;
   }> = [
     { id: 'TODOS', label: 'Todos', activeClass: 'bg-zinc-800 text-white border-zinc-700', dotClass: 'bg-zinc-400' },
     { id: 'CONFIRMADOS', label: 'Confirmados', activeClass: 'bg-blue-950/80 text-blue-300 border-blue-800/80', dotClass: 'bg-blue-400' },
+    { id: 'REALIZADOS', label: 'Realizados', activeClass: 'bg-purple-950/80 text-purple-300 border-purple-800/80', dotClass: 'bg-purple-400' },
     { id: 'PENDENTES', label: 'Pendentes Pix', activeClass: 'bg-amber-950/80 text-amber-300 border-amber-800/80', dotClass: 'bg-amber-400' },
     { id: 'BLOQUEADOS', label: 'Bloqueados', activeClass: 'bg-rose-950/80 text-rose-300 border-rose-800/80', dotClass: 'bg-rose-400' },
     { id: 'LIVRES', label: 'Livres', activeClass: 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80', dotClass: 'bg-emerald-400' },
@@ -132,8 +134,8 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
           </span>
         </div>
 
-        {/* Alternador de Visualização (Grade vs Calendário) */}
-        <div className="flex items-center gap-2">
+        {/* Alternador de Visualização */}
+        <div className="flex items-center gap-2.5">
           <div className="inline-flex rounded-xl bg-zinc-950 p-1 border border-zinc-800 shadow-inner">
             <button
               onClick={() => onViewModeChange('TIMELINE')}
