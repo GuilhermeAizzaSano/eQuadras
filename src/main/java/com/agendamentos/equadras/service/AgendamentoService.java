@@ -35,6 +35,8 @@ public class AgendamentoService {
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
     private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
+    private final QuadraService quadraService;
+    private final UsuarioService usuarioService;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
@@ -42,7 +44,9 @@ public class AgendamentoService {
                               NotificacaoService notificacaoService,
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
-                              com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository) {
+                              com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
+                              @org.springframework.context.annotation.Lazy QuadraService quadraService,
+                              UsuarioService usuarioService) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
@@ -50,6 +54,8 @@ public class AgendamentoService {
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
+        this.quadraService = quadraService;
+        this.usuarioService = usuarioService;
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
@@ -385,7 +391,6 @@ public class AgendamentoService {
         Usuario admin = usuarioRepository.findById(adminId).orElse(null);
         List<Quadra> quadrasDoAdmin;
         if (admin != null && admin.isMasterAdmin()) {
-            // Master Admin tem a visão do dia de todas as quadras ativas do sistema
             quadrasDoAdmin = quadraRepository.findAllWithAdminEFotos();
         } else {
             quadrasDoAdmin = quadraRepository.findByAdminId(adminId);
@@ -403,5 +408,124 @@ public class AgendamentoService {
         }
 
         return mapaResultado;
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> consultarGradeHorarios(
+            LocalDate data, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
+        
+        List<Quadra> quadras = quadraService.filtrarQuadrasEntidades(null, null, null, null, tipoEsporte, nomeQuadra, null, null, null);
+        if (quadraId != null) {
+            quadras = quadras.stream().filter(q -> q.getId_quadra().equals(quadraId)).toList();
+        }
+
+        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultado = new ArrayList<>();
+        for (Quadra q : quadras) {
+            List<HorarioDisponivelDTO> slots = listarHorariosDisponiveis(q.getId_quadra(), data);
+            if (apenasDisponiveis) {
+                slots = slots.stream().filter(HorarioDisponivelDTO::disponivel).toList();
+            }
+            if (!slots.isEmpty() || !apenasDisponiveis) {
+                resultado.add(new com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO(
+                        q.getId_quadra(),
+                        q.getNome(),
+                        q.getTipoEsporte(),
+                        q.getValorHora(),
+                        data,
+                        slots
+                ));
+            }
+        }
+
+        return resultado;
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> consultarGradeHorariosFlexivel(
+            String dataFlexivel, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
+        LocalDate dataResolvida = com.agendamentos.equadras.util.DataFlexivelUtil.resolverData(dataFlexivel);
+        
+        if (dataResolvida != null) {
+            return consultarGradeHorarios(dataResolvida, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
+        }
+
+        // Predição de 14 dias para encontrar o próximo dia com horários disponíveis
+        LocalDate inicio = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultadoFinal = new ArrayList<>();
+        
+        for (int i = 0; i < 14; i++) {
+            LocalDate dataAlvo = inicio.plusDays(i);
+            List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> gradeDia = 
+                    consultarGradeHorarios(dataAlvo, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
+            
+            if (!gradeDia.isEmpty()) {
+                resultadoFinal.addAll(gradeDia);
+                // Retorna apenas os horários do primeiro dia que tiver disponibilidade
+                return resultadoFinal;
+            }
+        }
+        
+        return resultadoFinal;
+    }
+
+    @Transactional
+    public AgendamentoResponseDTO agendarViaBot(com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
+        Long quadraId = dto.quadraId();
+        if (quadraId == null) {
+            List<Quadra> quadras = quadraService.filtrarQuadrasEntidades(null, null, null, null, dto.tipoEsporte(), dto.nomeQuadra(), null, null, null);
+            if (quadras.isEmpty()) {
+                throw new IllegalArgumentException("Nenhuma quadra encontrada para o esporte ou nome informado.");
+            }
+            quadraId = quadras.get(0).getId_quadra();
+        }
+
+        LocalDate data = com.agendamentos.equadras.util.DataFlexivelUtil.resolverData(dto.data());
+        if (data == null) {
+            data = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+        }
+
+        LocalTime horaInicio = parseHora(dto.horaInicio());
+        LocalTime horaFim;
+        if (dto.horaFim() != null && !dto.horaFim().isBlank()) {
+            horaFim = parseHora(dto.horaFim());
+        } else {
+            horaFim = horaInicio.plusHours(1);
+        }
+
+        if (!horaInicio.isBefore(horaFim)) {
+            throw new IllegalArgumentException("Hora de início deve ser anterior à hora de término.");
+        }
+
+        Usuario usuario = usuarioService.obterOuCriarUsuarioBot(dto.nomeCliente(), dto.telefoneCliente());
+
+        AgendamentoCriacaoDTO criacaoDTO = new AgendamentoCriacaoDTO(
+                usuario.getId_usuario(),
+                quadraId,
+                data.atTime(horaInicio),
+                data.atTime(horaFim)
+        );
+
+        return agendar(criacaoDTO, usuario.getId_usuario());
+    }
+
+    private LocalTime parseHora(String horaStr) {
+        if (horaStr == null || horaStr.isBlank()) {
+            throw new IllegalArgumentException("Hora não pode ser vazia.");
+        }
+        try {
+            if (horaStr.length() == 5 && horaStr.contains(":")) {
+                return LocalTime.parse(horaStr);
+            }
+            if (horaStr.length() <= 2) {
+                return LocalTime.of(Integer.parseInt(horaStr), 0);
+            }
+            String limpo = horaStr.replaceAll("[^0-9]", "");
+            if (limpo.length() >= 4) {
+                return LocalTime.of(Integer.parseInt(limpo.substring(0, 2)), Integer.parseInt(limpo.substring(2, 4)));
+            }
+            throw new IllegalArgumentException("Formato de hora inválido: " + horaStr);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Não foi possível entender a hora: " + horaStr);
+        }
     }
 }

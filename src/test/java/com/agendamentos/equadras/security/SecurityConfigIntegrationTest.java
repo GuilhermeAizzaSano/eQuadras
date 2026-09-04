@@ -52,12 +52,12 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /usuarios deve retornar 401 ou 403 sem token (cadastro fechado)")
-    void postUsuariosSemTokenDeveSerNegado() throws Exception {
+    @DisplayName("POST /usuarios deve ser acessível publicamente (auto-cadastro)")
+    void postUsuariosSemTokenDeveSerPermitido() throws Exception {
         mockMvc.perform(post("/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome_usuario\":\"Teste\",\"email_usuario\":\"t@t.com\",\"senha_usuario\":\"123456\",\"phone_usuario\":\"11999999999\"}"))
-                .andExpect(status().isForbidden());
+                        .content("{\"nome_usuario\":\"Teste\",\"email_usuario\":\"test_public_" + System.currentTimeMillis() + "@t.com\",\"senha_usuario\":\"SenhaForte123!\",\"phone_usuario\":\"11999999999\"}"))
+                .andExpect(status().isCreated());
     }
 
     @Test

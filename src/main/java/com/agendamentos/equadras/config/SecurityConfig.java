@@ -65,25 +65,28 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Públicos
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/", "/api/usuarios", "/api/usuarios/").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**", "/api/agendamentos/quadra/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/horarios-disponiveis", "/api/agendamentos/horarios-disponiveis").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
                         // Apenas ADMIN
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers("/notificacoes", "/notificacoes/**", "/api/notificacoes", "/api/notificacoes/**").hasRole("ADMIN")
 
                         // Qualquer autenticado (CLIENT ou ADMIN)
-                        .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
-                        .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
-                        .requestMatchers("/usuarios", "/usuarios/**").authenticated()
+                        .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**").authenticated()
+                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**").authenticated()
+                        .requestMatchers("/usuarios", "/usuarios/**", "/api/usuarios", "/api/usuarios/**").authenticated()
 
                         // Qualquer outra requer autenticação
                         .anyRequest().authenticated()

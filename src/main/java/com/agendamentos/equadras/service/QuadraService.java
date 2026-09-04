@@ -211,6 +211,39 @@ public class QuadraService {
 
     @Transactional(readOnly = true)
     public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm) {
+        return listar(usuarioId, latitude, longitude, raioKm, (String) null, null, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                          com.agendamentos.equadras.model.enums.TipoEsporte tipoEsporte,
+                                          String nome, String cidade, String bairro, String cep) {
+        return listar(usuarioId, latitude, longitude, raioKm, tipoEsporte != null ? tipoEsporte.name() : null, nome, cidade, bairro, cep);
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                          String tipoEsporte,
+                                          String nome, String cidade, String bairro, String cep) {
+        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep)
+                .stream()
+                .map(QuadraResponseDTO::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                                        String tipoEsporte,
+                                                        String nome, String cidade, String bairro, String cep) {
+        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep)
+                .stream()
+                .map(com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO::fromEntity)
+                .toList();
+    }
+
+    public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                                String tipoEsporte,
+                                                String nome, String cidade, String bairro, String cep) {
         List<Quadra> quadras;
         double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
         
@@ -218,14 +251,11 @@ public class QuadraService {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == Role.ADMIN) {
                 if (usuario.isMasterAdmin()) {
-                    // Master Admin vê todas as quadras cadastradas no sistema
                     quadras = quadraRepository.findAllWithAdminEFotos();
                 } else {
-                    // Admin comum vê apenas as suas
                     quadras = quadraRepository.findByAdminId(usuarioId);
                 }
             } else {
-                // Cliente vê todas as ativas (filtradas por raio se lat/lon informados)
                 if (latitude != null && longitude != null) {
                     quadras = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(latitude, longitude, raio);
                 } else {
@@ -233,7 +263,6 @@ public class QuadraService {
                 }
             }
         } else {
-            // Visitante não logado vê ativas
             if (latitude != null && longitude != null) {
                 quadras = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(latitude, longitude, raio);
             } else {
@@ -241,7 +270,6 @@ public class QuadraService {
             }
         }
 
-        // Garante inicialização das fotos e disponibilidades dentro da transação para evitar LazyInitializationException
         quadras.forEach(q -> {
             if (q.getFotos() != null) {
                 q.getFotos().size();
@@ -251,9 +279,82 @@ public class QuadraService {
             }
         });
 
-        return quadras.stream()
-                .map(QuadraResponseDTO::fromEntity)
-                .toList();
+        java.util.stream.Stream<Quadra> stream = quadras.stream();
+
+        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
+            com.agendamentos.equadras.model.enums.TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
+            if (esporteEnum != null) {
+                stream = stream.filter(q -> q.getTipoEsporte() == esporteEnum);
+            } else {
+                stream = stream.filter(q -> false);
+            }
+        }
+
+        if (nome != null && !nome.isBlank()) {
+            String nomeNorm = normalizarTexto(nome);
+            stream = stream.filter(q -> q.getNome() != null && normalizarTexto(q.getNome()).contains(nomeNorm));
+        }
+
+        if (cidade != null && !cidade.isBlank()) {
+            String cidadeNorm = normalizarTexto(cidade);
+            stream = stream.filter(q -> q.getCidade() != null && normalizarTexto(q.getCidade()).contains(cidadeNorm));
+        }
+
+        if (bairro != null && !bairro.isBlank()) {
+            String bairroNorm = normalizarTexto(bairro);
+            stream = stream.filter(q -> q.getBairro() != null && normalizarTexto(q.getBairro()).contains(bairroNorm));
+        }
+
+        if (cep != null && !cep.isBlank()) {
+            String cepLimpo = cep.replaceAll("[^0-9]", "");
+            stream = stream.filter(q -> q.getCep() != null && q.getCep().replaceAll("[^0-9]", "").equals(cepLimpo));
+        }
+
+        return stream.toList();
+    }
+
+    private String normalizarTexto(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .trim();
+    }
+
+    private com.agendamentos.equadras.model.enums.TipoEsporte parseTipoEsporte(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        String normalizado = normalizarTexto(valor).toUpperCase(java.util.Locale.ROOT).replace("-", "_").replace(" ", "_");
+
+        for (com.agendamentos.equadras.model.enums.TipoEsporte t : com.agendamentos.equadras.model.enums.TipoEsporte.values()) {
+            if (t.name().equals(normalizado)) {
+                return t;
+            }
+        }
+
+        if (normalizado.contains("SOCIETY") || normalizado.contains("CAMPO") || normalizado.contains("FUT")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTEBOL;
+        }
+        if (normalizado.contains("SALAO")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTSAL;
+        }
+        if (normalizado.contains("BEACH") || normalizado.contains("AREIA") || normalizado.contains("FUTEVOLEI") || normalizado.contains("BIT")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.BEACH_TENNIS;
+        }
+        if (normalizado.contains("BASQUET")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.BASQUETE;
+        }
+        if (normalizado.contains("TENIS")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.TENIS;
+        }
+        if (normalizado.contains("VOLEI")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.VOLEI;
+        }
+
+        return null;
     }
 
     @Transactional(readOnly = true)

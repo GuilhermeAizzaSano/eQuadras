@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "Usuários e Autenticação", description = "Endpoints para cadastro de atletas/admins, login com emissão de token JWT e consulta de perfis.")
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping({"/usuarios", "/api/usuarios"})
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -28,12 +28,17 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for anônimo, auto-cadastra como CLIENT.")
     @PostMapping
-    public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto,
-                                                        @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+    public ResponseEntity<?> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto) {
+        UsuarioAutenticado usuarioLogado = com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
+        if (usuarioLogado != null && usuarioService.isMasterAdmin(usuarioLogado.id())) {
+            var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
+            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+        } else {
+            var resposta = usuarioService.cadastrar(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+        }
     }
 
     @Operation(summary = "Editar usuário existente (Apenas Admin Geral)", description = "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil e opcionalmente senha). Apenas o Administrador Geral possui permissão.")
