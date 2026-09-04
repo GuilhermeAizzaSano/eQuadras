@@ -16,7 +16,7 @@ import java.util.List;
 
 @Tag(name = "Bloqueios de Quadra", description = "Endpoints para gerenciamento de bloqueios pontuais (manutenções, feriados, horários indisponíveis) por quadra.")
 @RestController
-@RequestMapping("/quadras")
+@RequestMapping({"/quadras", "/api/quadras"})
 public class BloqueioHorarioController {
 
     private final BloqueioHorarioService bloqueioHorarioService;
