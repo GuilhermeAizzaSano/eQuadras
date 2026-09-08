@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export interface FeedbackData {
   type: 'success' | 'error';
@@ -12,54 +12,61 @@ interface FeedbackBannerProps {
 }
 
 export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClose }) => {
+  useEffect(() => {
+    if (!feedback) return;
+    // Auto-dismiss após 5 segundos
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [feedback, onClose]);
+
   if (!feedback) return null;
 
   const isSuccess = feedback.type === 'success';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
-    >
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-md p-7 shadow-2xl space-y-6 text-center flex flex-col items-center">
+    <div className="fixed top-5 right-5 z-[9999] max-w-md w-[calc(100vw-2.5rem)] animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
+      <div
+        className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-start gap-3.5 transition-all ${
+          isSuccess
+            ? 'bg-surface-900/95 border-emerald-500/40 text-surface-100 shadow-emerald-950/40'
+            : 'bg-surface-900/95 border-red-500/40 text-surface-100 shadow-red-950/40'
+        }`}
+      >
         <div
-          className={`p-4 rounded-2xl border ${
+          className={`p-2 rounded-xl shrink-0 border ${
             isSuccess
-              ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-400'
-              : 'bg-red-950/40 border-red-900/60 text-red-400'
+              ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-400'
+              : 'bg-red-950/60 border-red-500/30 text-red-400'
           }`}
         >
           {isSuccess ? (
-            <CheckCircle className="w-9 h-9 text-emerald-400" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           ) : (
-            <AlertCircle className="w-9 h-9 text-red-400" />
+            <AlertTriangle className="w-5 h-5 text-red-400" />
           )}
         </div>
 
-        <div className="space-y-2.5 w-full">
-          <h3 className="text-lg font-bold text-white tracking-tight">
-            {isSuccess ? 'Ação Concluída' : 'Atenção / Erro'}
-          </h3>
-          <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line break-words max-w-sm mx-auto">
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-0.5">
+            {isSuccess ? 'Sucesso' : 'Atenção'}
+          </p>
+          <p className="text-xs sm:text-sm text-surface-200 leading-snug whitespace-pre-line break-words">
             {feedback.message}
           </p>
         </div>
 
-        <div className="w-full pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`w-full font-bold py-3 rounded-xl text-xs transition shadow-lg active:scale-[0.98] ${
-              isSuccess
-                ? 'bg-white hover:bg-zinc-200 text-zinc-950'
-                : 'bg-red-600 hover:bg-red-500 text-white'
-            }`}
-          >
-            Entendido
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar notificação"
+          className="p-1 rounded-lg text-surface-400 hover:text-white hover:bg-surface-800 transition shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
 };
+

@@ -93,6 +93,53 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET /api/quadras com token CLIENT deve retornar 200 OK (somente leitura permitido)")
+    void getApiQuadrasComClienteDeveRetornar200() throws Exception {
+        Usuario cliente = Usuario.builder()
+                .id_usuario(999L)
+                .email_usuario("cliente_api@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String tokenCliente = jwtService.gerarToken(cliente);
+
+        mockMvc.perform(get("/api/quadras")
+                        .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /api/quadras com token CLIENT deve retornar 403 Forbidden (mutação na API bloqueada para cliente)")
+    void postApiQuadrasComClienteDeveRetornar403() throws Exception {
+        Usuario cliente = Usuario.builder()
+                .id_usuario(999L)
+                .email_usuario("cliente_api2@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String tokenCliente = jwtService.gerarToken(cliente);
+
+        mockMvc.perform(post("/api/quadras")
+                        .header("Authorization", "Bearer " + tokenCliente)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /usuarios/{outroId} com token CLIENT deve retornar 403 Forbidden (mitigação de IDOR)")
+    void getUsuariosOutroIdComClienteDeveRetornar403() throws Exception {
+        Usuario clienteLogado = Usuario.builder()
+                .id_usuario(555L)
+                .email_usuario("meu_usuario@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String tokenCliente = jwtService.gerarToken(clienteLogado);
+
+        mockMvc.perform(get("/usuarios/999")
+                        .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("Gerar tokens para testes de performance")
     void exportPerfTokens() {
         Usuario admin = Usuario.builder()

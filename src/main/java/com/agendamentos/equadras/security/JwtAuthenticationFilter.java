@@ -31,8 +31,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (header != null && header.startsWith("Bearer ")) {
             token = header.substring(7);
-        } else if (request.getParameter("token") != null) {
-            token = request.getParameter("token");
+        } else {
+            String uri = request.getRequestURI();
+            // Apenas o streaming SSE (/notificacoes/stream) pode receber token via query param devido à limitação nativa do EventSource no navegador
+            if (uri != null && uri.contains("/notificacoes/stream") && request.getParameter("token") != null) {
+                token = request.getParameter("token");
+            }
         }
 
         if (token != null) {

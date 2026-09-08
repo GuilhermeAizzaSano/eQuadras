@@ -906,35 +906,48 @@ export const AdminDashboard: React.FC = () => {
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Header & Navegação por Abas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-800 pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Painel Administrativo</h1>
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
+            <span>Painel Administrativo</span>
+            {isMasterAdmin && (
+              <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400">
+                Master Admin
+              </span>
+            )}
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
+            Gestão operacional em tempo real de quadras, reservas e agenda.
+          </p>
         </div>
 
         {/* Abas e Notificações */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           
           {/* Sino de Notificações */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-zinc-400 hover:text-white transition rounded-full hover:bg-zinc-800"
+              className="relative p-2 text-zinc-400 hover:text-white transition rounded-xl bg-surface-900 border border-surface-800 hover:border-surface-700 hover:bg-surface-850 cursor-pointer"
+              aria-label="Notificações"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4" />
               {notificacoes.filter(n => !n.lida).length > 0 && (
-                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-white rounded-full ring-2 ring-zinc-950" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-400 rounded-full ring-2 ring-surface-950 animate-pulse" />
               )}
             </button>
 
             {/* Popover de Notificações */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-zinc-850 flex justify-between items-center bg-zinc-950">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-900 border border-surface-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col backdrop-blur-xl">
+                <div className="p-4 border-b border-surface-800 flex justify-between items-center bg-surface-950/80">
                   <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-emerald-400" />
-                    <h3 className="text-sm font-bold text-white">Notificações</h3>
+                    <div className="w-6 h-6 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
+                      <Bell className="w-3.5 h-3.5 text-brand-400" />
+                    </div>
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Notificações</h3>
                     {notificacoes.filter((n) => !n.lida).length > 0 && (
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold px-1.5 py-0.5 rounded-full font-mono">
+                      <span className="text-[10px] bg-brand-500/20 text-brand-300 border border-brand-500/30 font-bold px-1.5 py-0.2 rounded-full font-mono">
                         {notificacoes.filter((n) => !n.lida).length}
                       </span>
                     )}
@@ -944,21 +957,21 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={marcarTodasComoLidas}
-                        className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition hover:underline active:scale-95"
+                        className="text-[11px] font-semibold text-brand-400 hover:text-brand-300 transition hover:underline active:scale-95 cursor-pointer"
                       >
-                        Marcar tudo como lido
+                        Marcar tudo lido
                       </button>
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
-                      className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition"
+                      className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-surface-800 transition cursor-pointer"
                       title="Fechar"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="max-h-88 overflow-y-auto divide-y divide-zinc-850/60 scrollbar-thin">
+                <div className="max-h-88 overflow-y-auto divide-y divide-surface-800/80 scrollbar-thin">
                   {notificacoes.length === 0 ? (
                     <div className="p-8 text-center text-zinc-500 text-xs">
                       Nenhuma notificação por enquanto.
@@ -967,8 +980,8 @@ export const AdminDashboard: React.FC = () => {
                     notificacoes.map((notif) => (
                       <div 
                         key={notif.id} 
-                        className={`p-4 flex flex-col gap-2.5 transition ${
-                          notif.lida ? 'bg-zinc-950/40 opacity-60' : 'bg-zinc-900/40 hover:bg-zinc-900/70'
+                        className={`p-4 flex flex-col gap-2 transition ${
+                          notif.lida ? 'bg-surface-950/40 opacity-60' : 'bg-surface-900/60 hover:bg-surface-850'
                         }`}
                       >
                         <p className="text-xs text-zinc-200 leading-relaxed whitespace-normal break-words">
@@ -985,7 +998,7 @@ export const AdminDashboard: React.FC = () => {
                                 e.stopPropagation();
                                 lerNotificacao(notif.id);
                               }}
-                              className="text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition active:scale-95"
+                              className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 underline underline-offset-2 transition active:scale-95 cursor-pointer"
                             >
                               Marcar como lida
                             </button>
@@ -999,39 +1012,40 @@ export const AdminDashboard: React.FC = () => {
             )}
           </div>
 
-          <div className="flex bg-zinc-900/90 p-1 rounded-xl border border-zinc-800">
+          {/* Segmented Control de Abas */}
+          <div className="flex bg-surface-950 p-1 rounded-2xl border border-surface-800">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition active:scale-[0.98] ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'bg-white text-zinc-950 shadow-sm'
+                  ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <LayoutDashboard className="w-4 h-4" />
+              <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Agenda & Métricas</span>
             </button>
             <button
               onClick={() => setActiveTab('quadras')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition active:scale-[0.98] ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
                 activeTab === 'quadras'
-                  ? 'bg-white text-zinc-950 shadow-sm'
+                  ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <Settings2 className="w-4 h-4" />
+              <Settings2 className="w-3.5 h-3.5" />
               <span>Gestão de Quadras</span>
             </button>
             {isMasterAdmin && (
               <button
                 onClick={() => setActiveTab('usuarios')}
-                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition active:scale-[0.98] ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
                   activeTab === 'usuarios'
-                    ? 'bg-white text-zinc-950 shadow-sm'
+                    ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-3.5 h-3.5" />
                 <span>Gestão de Usuários</span>
               </button>
             )}

@@ -40,6 +40,7 @@ public record QuadraCriacaoDTO(
         Double latitude,
         Double longitude,
         @Size(max = 2000, message = "A descrição deve ter no máximo 2000 caracteres")
+        @Pattern(regexp = "^[^<>]*$", message = "Caracteres HTML não são permitidos na descrição")
         String descricao,
         java.time.LocalDate dataLimiteAgendamento,
         java.util.List<String> fotos,

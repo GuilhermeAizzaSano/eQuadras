@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
-
 import { getAssetUrl } from '../../api/apiClient';
 
 interface CourtCarouselProps {
@@ -18,10 +17,10 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Lista de fotos ou fallback esportivo
-  const listaFotos = fotos && fotos.length > 0 
-    ? fotos 
-    : ['https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80'];
+  const listaFotos =
+    fotos && fotos.length > 0
+      ? fotos
+      : ['https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80'];
 
   const prevSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -44,29 +43,31 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
   };
 
   return (
-    <div className={`relative w-full overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-850 group ${aspectClasses[aspectRatio]} ${className}`}>
+    <div
+      className={`relative w-full overflow-hidden rounded-2xl bg-surface-950 border border-surface-800/90 group ${aspectClasses[aspectRatio]} ${className}`}
+    >
       {/* Imagem Atual */}
       <img
         src={resolveImageUrl(listaFotos[currentIndex])}
         alt={`${nomeQuadra} - foto ${currentIndex + 1}`}
-        className="w-full h-full object-cover select-none transition-transform duration-500 group-hover:scale-[1.02]"
+        className="w-full h-full object-cover select-none transition-transform duration-500 group-hover:scale-[1.03]"
         onError={(e) => {
-          // Fallback caso a imagem quebre
-          e.currentTarget.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80';
+          e.currentTarget.src =
+            'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=1200&q=80';
         }}
       />
 
-      {/* Gradiente de sobreposição sutil */}
-      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-black/20 pointer-events-none" />
+      {/* Gradiente sutil */}
+      <div className="absolute inset-0 bg-gradient-to-t from-surface-950/85 via-surface-950/20 to-transparent pointer-events-none" />
 
-      {/* Botões de Navegação (se tiver mais de 1 foto) */}
+      {/* Botões de Navegação */}
       {listaFotos.length > 1 && (
         <>
           <button
             type="button"
             onClick={prevSlide}
             aria-label="Foto anterior"
-            className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-zinc-950/70 hover:bg-zinc-900 text-white border border-zinc-700/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all active:scale-95 shadow-lg"
+            className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-surface-950/80 hover:bg-surface-900 text-white border border-surface-750 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all active:scale-95 shadow-xl cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -75,13 +76,13 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
             type="button"
             onClick={nextSlide}
             aria-label="Próxima foto"
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-zinc-950/70 hover:bg-zinc-900 text-white border border-zinc-700/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all active:scale-95 shadow-lg"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-surface-950/80 hover:bg-surface-900 text-white border border-surface-750 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all active:scale-95 shadow-xl cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          {/* Indicadores de Paginação / Bolinhas */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-950/60 backdrop-blur-md border border-zinc-800">
+          {/* Indicadores de Paginação */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-950/70 backdrop-blur-md border border-surface-800">
             {listaFotos.map((_, idx) => (
               <button
                 key={idx}
@@ -90,8 +91,8 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
                   e.stopPropagation();
                   setCurrentIndex(idx);
                 }}
-                className={`h-1.5 rounded-full transition-all ${
-                  currentIndex === idx ? 'w-5 bg-emerald-400' : 'w-1.5 bg-zinc-500 hover:bg-zinc-300'
+                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                  currentIndex === idx ? 'w-5 bg-brand-400' : 'w-1.5 bg-surface-600 hover:bg-surface-400'
                 }`}
                 aria-label={`Ir para foto ${idx + 1}`}
               />
@@ -101,9 +102,11 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
       )}
 
       {/* Contador numérico de fotos */}
-      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-zinc-950/70 backdrop-blur-md border border-zinc-800 text-[11px] font-mono text-zinc-300 flex items-center gap-1.5">
-        <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-        <span>{currentIndex + 1} / {listaFotos.length}</span>
+      <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-surface-950/80 backdrop-blur-md border border-surface-800 text-[11px] font-mono text-surface-200 flex items-center gap-1.5 shadow-sm">
+        <ImageIcon className="w-3.5 h-3.5 text-brand-400" />
+        <span>
+          {currentIndex + 1} / {listaFotos.length}
+        </span>
       </div>
     </div>
   );

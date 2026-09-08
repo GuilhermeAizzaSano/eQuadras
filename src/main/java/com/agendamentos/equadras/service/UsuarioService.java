@@ -161,6 +161,14 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
+    public UsuarioResponseDTO buscarPorId(Long id, Long usuarioLogadoId) {
+        if (usuarioLogadoId == null || (!usuarioLogadoId.equals(id) && !isMasterAdmin(usuarioLogadoId))) {
+            throw new AccessDeniedException("Você não tem permissão para visualizar os dados de outro usuário.");
+        }
+        return buscarPorId(id);
+    }
+
+    @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));

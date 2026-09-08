@@ -74,6 +74,7 @@ desktop.ini
 .agents/
 .gemini/
 .superpowers/
+.codegraph/
 docs/
 !docs/api/
 !docs/api/**

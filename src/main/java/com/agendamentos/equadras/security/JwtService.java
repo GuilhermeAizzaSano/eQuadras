@@ -51,14 +51,13 @@ public class JwtService {
     }
 
     public String gerarToken(Usuario usuario) {
-        Date agora = new Date();
-        Date expiracao = new Date(agora.getTime() + expiracaoMs);
+        String roleStr = usuario.getRole() != null ? usuario.getRole().name() : "CLIENT";
+        String scope = "ADMIN".equalsIgnoreCase(roleStr) ? "read,write" : "read";
 
         return Jwts.builder()
                 .subject(usuario.getId_usuario().toString())
-                .claim("role", usuario.getRole().name())
-                .issuedAt(agora)
-                .expiration(expiracao)
+                .claim("role", roleStr)
+                .claim("scope", scope)
                 .signWith(chave)
                 .compact();
     }
