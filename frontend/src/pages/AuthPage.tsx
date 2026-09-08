@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usuarioApi } from '../api/apiClient';
-import { FeedbackBanner, Logo, Button, Input } from '../components/ui';
+import { FeedbackBanner, Button, Input } from '../components/ui';
 import {
   ArrowRight,
   Lock,
   Mail,
-  ShieldCheck,
-  Sparkles,
   Eye,
   EyeOff,
   CalendarCheck2,
@@ -59,22 +57,9 @@ export const AuthPage: React.FC = () => {
       </div>
 
       {/* Lado Esquerdo: Identidade Visual e Ambientação Esportiva (Desktop) */}
-      <div className="relative z-10 flex-1 hidden md:flex flex-col justify-between p-10 lg:p-14 xl:p-16 text-white min-h-screen">
-        {/* Topo: Logo & Badge */}
-        <div className="flex items-center gap-3">
-          <Logo size={42} showText={true} />
-          <span className="text-[11px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-surface-900/80 border border-surface-750 text-surface-300 backdrop-blur-md">
-            Gestão de Arenas
-          </span>
-        </div>
-
+      <div className="relative z-10 flex-1 hidden md:flex flex-col justify-center p-10 lg:p-14 xl:p-16 text-white min-h-screen">
         {/* Centro: Chamada de Impacto */}
-        <div className="my-auto py-8 max-w-xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-900/80 border border-brand-500/30 text-brand-400 text-xs font-semibold backdrop-blur-md shadow-lg shadow-black/40">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-            <span>Plataforma Oficial de Agendamentos & Quadras</span>
-          </div>
-
+        <div className="max-w-xl space-y-6">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-white drop-shadow-md">
             Alta performance para <br />
             <span className="bg-gradient-to-r from-brand-400 via-emerald-300 to-teal-200 bg-clip-text text-transparent">
@@ -102,12 +87,6 @@ export const AuthPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Rodapé Esquerdo */}
-        <div className="flex items-center gap-3 text-xs text-surface-400 font-medium">
-          <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-          <span>Sistema Operacional eQuadras • Alta Disponibilidade</span>
-        </div>
       </div>
 
       {/* Lado Direito: Formulário Exclusivo de Login */}
@@ -118,24 +97,13 @@ export const AuthPage: React.FC = () => {
         />
 
         <div className="my-auto w-full max-w-md mx-auto space-y-7 py-6">
-          {/* Logo exibido no mobile ou cabeçalho do formulário */}
-          <div className="space-y-3 text-left">
-            <div className="flex items-center justify-between">
-              <Logo size={42} showText={true} />
-              <div className="md:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-900/90 border border-surface-800 text-[10px] font-medium text-surface-300">
-                <Sparkles className="w-3 h-3 text-brand-400" />
-                <span>eQuadras</span>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Entrar na Conta
-              </h2>
-              <p className="text-xs sm:text-sm text-surface-400 mt-1">
-                Informe seu e-mail e senha para acessar o painel
-              </p>
-            </div>
+          <div className="space-y-1 text-left">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Entrar na Conta
+            </h2>
+            <p className="text-xs sm:text-sm text-surface-400 mt-1">
+              Informe seu e-mail e senha para acessar o painel
+            </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -183,16 +151,6 @@ export const AuthPage: React.FC = () => {
               Entrar na Conta
             </Button>
           </form>
-
-          {/* Rodapé de Segurança / Informação */}
-          <div className="pt-4 border-t border-surface-800/80">
-            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-surface-900/60 border border-surface-800 text-surface-400">
-              <ShieldCheck className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
-              <div className="text-[11px] leading-relaxed">
-                <span className="font-semibold text-surface-300">Acesso Restrito</span> — Novas contas e acessos são gerenciados exclusivamente pela administração da arena.
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Copyright */}
