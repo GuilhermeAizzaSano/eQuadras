@@ -526,7 +526,7 @@ export const ClientDashboard: React.FC = () => {
             >
               {ESPORTES.map((esp) => (
                 <option key={esp} value={esp} className="bg-surface-950 text-white">
-                  {esp === 'TODOS' ? '⚡ Todos os Esportes' : esp.replace('_', ' ')}
+                  {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
                 </option>
               ))}
             </select>
