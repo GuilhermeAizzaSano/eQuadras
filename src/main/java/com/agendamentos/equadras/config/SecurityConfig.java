@@ -68,10 +68,8 @@ public class SecurityConfig {
                         // Públicos
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/", "/api/usuarios", "/api/usuarios/").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/quadra/**", "/api/agendamentos/quadra/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/logout", "/api/usuarios/logout").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/agendamentos/horarios-disponiveis", "/api/agendamentos/horarios-disponiveis").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
@@ -93,7 +91,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
                         .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
 
-                        // Demais rotas web autenticadas (CLIENT ou ADMIN)
+                        // Demais rotas web autenticadas (CLIENT ou ADMIN via cookie de sessão)
+                        .requestMatchers("/quadras", "/quadras/**").authenticated()
                         .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
                         .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
                         .requestMatchers("/usuarios", "/usuarios/**").authenticated()

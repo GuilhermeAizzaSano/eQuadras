@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: eQuadras API - Gestão e Agendamento Esportivo
-  description: "Documentação oficial das APIs REST da plataforma eQuadras para integraç\
-    ão de sistemas externos, parceiros e aplicativos clientes."
+  description: "Documentação oficial das APIs REST externas da plataforma eQuadras\
+    \ para integrações de sistemas parceiros, bots e clientes de API."
   contact:
     name: Suporte Técnico eQuadras
     url: https://github.com/GuilhermeAizzaSano/eQuadras
@@ -17,36 +17,28 @@ servers:
 security:
 - BearerAuth: []
 tags:
-- name: Quadras
-  description: Endpoints de quadras para consumo do Frontend e catálogo geral.
-- name: Quadras - API - TCC
-  description: Endpoints da API (/api/quadras) otimizados para bots e integrações
-    externas (retorno resumido).
-- name: Agendamentos
-  description: Endpoints de agendamentos e reservas para o Frontend.
-- name: Agendamentos - API - TCC
-  description: Endpoints da API (/api/agendamentos) para agendamentos via Bot e integrações.
-- name: Usuários e Autenticação
-  description: Endpoints de usuários e autenticação para o Frontend.
-- name: Usuários - API - TCC
-  description: Endpoints da API (/api/usuarios) para integrações externas e login.
-- name: Pagamentos
-  description: Endpoints de pagamentos Pix e simulações para o Frontend.
-- name: Pagamentos - API - TCC
-  description: Endpoints da API (/api/pagamentos) e webhooks para parceiros.
-- name: Notificações
-  description: Endpoints de notificações para o painel administrativo do Frontend.
-- name: Notificações - API - TCC
-  description: Endpoints da API (/api/notificacoes) para streaming SSE e integrações.
-- name: Bloqueios de Quadra
-  description: Endpoints de bloqueios de horários para o Frontend.
-- name: Bloqueios - API - TCC
-  description: Endpoints da API (/api/quadras/bloqueios) para bloqueios externos.
+- name: Quadras - API
+  description: Endpoints da API externa (/api/quadras) para consulta e gestão de quadras
+    esportivas.
+- name: Agendamentos - API
+  description: "Endpoints da API externa (/api/agendamentos) para reservas, integraç\
+    ão com Bot e horários disponíveis."
+- name: Usuários - API
+  description: Endpoints da API externa (/api/usuarios) para autenticação JWT e administração
+    de usuários.
+- name: Pagamentos - API
+  description: Endpoints da API externa (/api/pagamentos) para pagamentos Pix e webhooks.
+- name: Notificações - API
+  description: Endpoints da API externa (/api/notificacoes) para streaming SSE e histórico
+    de alertas.
+- name: Bloqueios - API
+  description: Endpoints da API externa (/api/quadras/bloqueios) para gestão de bloqueios
+    de horários.
 paths:
-  /usuarios/{id}:
+  /api/usuarios/{id}:
     get:
       tags:
-      - Usuários e Autenticação
+      - Usuários - API
       summary: Buscar usuário por ID
       description: Consulta os dados de um usuário pelo seu identificador único. Apenas
         o próprio usuário ou o Admin Geral tem permissão.
@@ -67,7 +59,7 @@ paths:
                 $ref: "#/components/schemas/UsuarioResponseDTO"
     put:
       tags:
-      - Usuários e Autenticação
+      - Usuários - API
       summary: Editar usuário existente (Apenas Admin Geral)
       description: "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil\
         \ e opcionalmente senha). Apenas o Administrador Geral possui permissão."
@@ -94,7 +86,7 @@ paths:
                 $ref: "#/components/schemas/UsuarioResponseDTO"
     delete:
       tags:
-      - Usuários e Autenticação
+      - Usuários - API
       summary: Excluir usuário (Apenas Admin Geral)
       description: Remove um usuário do sistema. Apenas o Administrador Geral possui
         permissão.
@@ -109,13 +101,13 @@ paths:
       responses:
         "200":
           description: OK
-  /api/usuarios/{id}:
+  /api/quadras/{id}:
     get:
       tags:
-      - Usuários - API - TCC
-      summary: Buscar usuário por ID
-      description: Consulta os dados de um usuário pelo seu identificador único. Apenas
-        o próprio usuário ou o Admin Geral tem permissão.
+      - Quadras - API
+      summary: Buscar quadra por ID
+      description: "Retorna os detalhes completos, fotos e horários de funcionamento\
+        \ de uma quadra específica."
       operationId: buscarPorId_1
       parameters:
       - name: id
@@ -130,13 +122,13 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/UsuarioResponseDTO"
+                $ref: "#/components/schemas/QuadraResponseDTO"
     put:
       tags:
-      - Usuários - API - TCC
-      summary: Editar usuário existente (Apenas Admin Geral)
-      description: "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil\
-        \ e opcionalmente senha). Apenas o Administrador Geral possui permissão."
+      - Quadras - API
+      summary: Atualizar quadra (Admin)
+      description: "Atualiza os dados cadastrais, endereço e horários de funcionamento\
+        \ da quadra do admin autenticado."
       operationId: editar_1
       parameters:
       - name: id
@@ -149,7 +141,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UsuarioEdicaoDTO"
+              $ref: "#/components/schemas/QuadraCriacaoDTO"
         required: true
       responses:
         "200":
@@ -157,144 +149,13 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/UsuarioResponseDTO"
+                $ref: "#/components/schemas/QuadraResponseDTO"
     delete:
       tags:
-      - Usuários - API - TCC
-      summary: Excluir usuário (Apenas Admin Geral)
-      description: Remove um usuário do sistema. Apenas o Administrador Geral possui
-        permissão.
+      - Quadras - API
+      summary: Excluir quadra (Admin)
+      description: Remove a quadra do sistema caso ela não possua histórico de reservas.
       operationId: excluir_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-  /quadras/{id}:
-    get:
-      tags:
-      - Quadras
-      summary: Buscar quadra por ID
-      description: "Retorna os detalhes completos, fotos e horários de funcionamento\
-        \ de uma quadra específica."
-      operationId: buscarPorId_2
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-    put:
-      tags:
-      - Quadras
-      summary: Atualizar quadra (Admin)
-      description: "Atualiza os dados cadastrais, endereço e horários de funcionamento\
-        \ da quadra do admin autenticado."
-      operationId: editar_2
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuadraCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-    delete:
-      tags:
-      - Quadras
-      summary: Excluir quadra (Admin)
-      description: Remove a quadra do sistema caso ela não possua histórico de reservas.
-      operationId: excluir_2
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-  /api/quadras/{id}:
-    get:
-      tags:
-      - Quadras - API - TCC
-      summary: Buscar quadra por ID
-      description: "Retorna os detalhes completos, fotos e horários de funcionamento\
-        \ de uma quadra específica."
-      operationId: buscarPorId_3
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-    put:
-      tags:
-      - Quadras - API - TCC
-      summary: Atualizar quadra (Admin)
-      description: "Atualiza os dados cadastrais, endereço e horários de funcionamento\
-        \ da quadra do admin autenticado."
-      operationId: editar_3
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuadraCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-    delete:
-      tags:
-      - Quadras - API - TCC
-      summary: Excluir quadra (Admin)
-      description: Remove a quadra do sistema caso ela não possua histórico de reservas.
-      operationId: excluir_3
       parameters:
       - name: id
         in: path
@@ -308,7 +169,7 @@ paths:
   /api/notificacoes/{id}/ler:
     put:
       tags:
-      - Notificações - API - TCC
+      - Notificações - API
       summary: Marcar notificação como lida
       description: Atualiza o estado de leitura da notificação.
       operationId: marcarComoLida
@@ -322,47 +183,30 @@ paths:
       responses:
         "200":
           description: OK
-  /notificacoes/{id}/ler:
+  /api/notificacoes/ler-todas:
     put:
       tags:
-      - Notificações
-      summary: Marcar notificação como lida
-      description: Atualiza o estado de leitura da notificação.
-      operationId: marcarComoLida_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-  /notificacoes/ler-todas:
-    put:
-      tags:
-      - Notificações
+      - Notificações - API
       summary: Marcar todas as notificações como lidas
       description: Marca todas as notificações do administrador autenticado como lidas.
       operationId: marcarTodasComoLidas
       responses:
         "200":
           description: OK
-  /api/notificacoes/ler-todas:
-    put:
+  /api/usuarios/logout:
+    post:
       tags:
-      - Notificações - API - TCC
-      summary: Marcar todas as notificações como lidas
-      description: Marca todas as notificações do administrador autenticado como lidas.
-      operationId: marcarTodasComoLidas_1
+      - Usuários - API
+      summary: Realizar logout
+      description: Encerra a sessão do usuário limpando o cookie HttpOnly.
+      operationId: logout
       responses:
         "200":
           description: OK
-  /usuarios/login:
+  /api/usuarios/login:
     post:
       tags:
-      - Usuários e Autenticação
+      - Usuários - API
       summary: Realizar login
       description: Autentica via e-mail e senha e retorna o token JWT assinado para
         autenticação nas demais rotas.
@@ -380,31 +224,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/LoginResponseDTO"
-  /api/usuarios/login:
-    post:
-      tags:
-      - Usuários - API - TCC
-      summary: Realizar login
-      description: Autentica via e-mail e senha e retorna o token JWT assinado para
-        autenticação nas demais rotas.
-      operationId: login_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UsuarioLoginDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/LoginResponseDTO"
   /api/usuarios:
     get:
       tags:
-      - Usuários - API - TCC
+      - Usuários - API
       summary: Listar todos os usuários (Apenas Admin Geral)
       description: Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT).
         Apenas o Administrador Geral possui permissão.
@@ -420,7 +243,7 @@ paths:
                   $ref: "#/components/schemas/UsuarioResponseDTO"
     post:
       tags:
-      - Usuários - API - TCC
+      - Usuários - API
       summary: Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)
       description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for\
         \ anônimo, auto-cadastra como CLIENT."
@@ -438,47 +261,10 @@ paths:
             '*/*':
               schema:
                 type: object
-  /usuarios:
-    get:
-      tags:
-      - Usuários e Autenticação
-      summary: Listar todos os usuários (Apenas Admin Geral)
-      description: Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT).
-        Apenas o Administrador Geral possui permissão.
-      operationId: listarTodos_1
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UsuarioResponseDTO"
+  /api/quadras/{quadraId}/desbloquear:
     post:
       tags:
-      - Usuários e Autenticação
-      summary: Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)
-      description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for\
-        \ anônimo, auto-cadastra como CLIENT."
-      operationId: cadastrar_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UsuarioCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /quadras/{quadraId}/desbloquear:
-    post:
-      tags:
-      - Bloqueios de Quadra
+      - Bloqueios - API
       summary: Desbloquear horários/dia da quadra (Admin)
       description: Desbloqueia horários ou dias de uma quadra informando o ID do bloqueio
         ou a data e horários no corpo da requisição. Requer ROLE_ADMIN e ser dono
@@ -506,41 +292,10 @@ paths:
                 type: object
                 additionalProperties:
                   type: object
-  /api/quadras/{quadraId}/desbloquear:
-    post:
-      tags:
-      - Bloqueios - API - TCC
-      summary: Desbloquear horários/dia da quadra (Admin)
-      description: Desbloqueia horários ou dias de uma quadra informando o ID do bloqueio
-        ou a data e horários no corpo da requisição. Requer ROLE_ADMIN e ser dono
-        da quadra.
-      operationId: desbloquear_1
-      parameters:
-      - name: quadraId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DesbloqueioHorarioDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-  /quadras/{id}/fotos:
+  /api/quadras/{id}/fotos:
     get:
       tags:
-      - Quadras
+      - Quadras - API
       summary: Consultar fotos da quadra
       description: "Retorna a galeria de fotos de uma quadra específica por ID, Nome,\
         \ Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos\
@@ -604,7 +359,7 @@ paths:
                 type: object
     post:
       tags:
-      - Quadras
+      - Quadras - API
       summary: Upload de fotos da quadra (Admin)
       description: "Envia imagens (JPEG, PNG, WebP) de até 5MB para a galeria da quadra\
         \ (máximo 5 fotos)."
@@ -638,7 +393,7 @@ paths:
                 $ref: "#/components/schemas/QuadraResponseDTO"
     delete:
       tags:
-      - Quadras
+      - Quadras - API
       summary: Remover foto da quadra (Admin)
       description: Exclui uma foto específica da galeria e do armazenamento de disco.
       operationId: removerFoto
@@ -661,134 +416,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/QuadraResponseDTO"
-  /api/quadras/{id}/fotos:
+  /api/quadras/{id}/bloqueios:
     get:
       tags:
-      - Quadras - API - TCC
-      summary: Consultar fotos da quadra
-      description: "Retorna a galeria de fotos de uma quadra específica por ID, Nome,\
-        \ Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos\
-        \ se nenhum parâmetro for informado."
-      operationId: consultarFotos_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: id
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: quadraId
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: nome
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: nomeQuadra
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: tipoEsporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: esporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: cidade
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: bairro
-        in: query
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-    post:
-      tags:
-      - Quadras - API - TCC
-      summary: Upload de fotos da quadra (Admin)
-      description: "Envia imagens (JPEG, PNG, WebP) de até 5MB para a galeria da quadra\
-        \ (máximo 5 fotos)."
-      operationId: uploadFotos_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                fotos:
-                  type: array
-                  items:
-                    type: string
-                    format: binary
-              required:
-              - fotos
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-    delete:
-      tags:
-      - Quadras - API - TCC
-      summary: Remover foto da quadra (Admin)
-      description: Exclui uma foto específica da galeria e do armazenamento de disco.
-      operationId: removerFoto_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: fotoUrl
-        in: query
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-  /quadras/{id}/bloqueios:
-    get:
-      tags:
-      - Bloqueios de Quadra
+      - Bloqueios - API
       summary: Listar bloqueios da quadra
       description: Lista todos os bloqueios ativos e futuros da quadra.
       operationId: listarBloqueios
@@ -810,7 +441,7 @@ paths:
                   $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
     post:
       tags:
-      - Bloqueios de Quadra
+      - Bloqueios - API
       summary: Criar bloqueio de horário/dia (Admin)
       description: Bloqueia um dia inteiro ou um intervalo de horários de uma quadra.
         Requer ROLE_ADMIN e ser dono da quadra.
@@ -835,60 +466,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
-  /api/quadras/{id}/bloqueios:
-    get:
-      tags:
-      - Bloqueios - API - TCC
-      summary: Listar bloqueios da quadra
-      description: Lista todos os bloqueios ativos e futuros da quadra.
-      operationId: listarBloqueios_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
-    post:
-      tags:
-      - Bloqueios - API - TCC
-      summary: Criar bloqueio de horário/dia (Admin)
-      description: Bloqueia um dia inteiro ou um intervalo de horários de uma quadra.
-        Requer ROLE_ADMIN e ser dono da quadra.
-      operationId: criarBloqueio_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BloqueioHorarioCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
   /api/quadras:
     get:
       tags:
-      - Quadras - API - TCC
+      - Quadras - API
       summary: Listar quadras ativas / por proximidade e filtros
       description: "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna\
         \ a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota\
@@ -963,7 +544,7 @@ paths:
       responses:
         "200":
           description: Lista resumida de quadras otimizada para bots e integrações
-            (Formato API / TCC)
+            externas
           content:
             application/json:
               schema:
@@ -972,120 +553,13 @@ paths:
                   $ref: "#/components/schemas/QuadraResumoResponseDTO"
     post:
       tags:
-      - Quadras - API - TCC
+      - Quadras - API
       summary: Cadastrar nova quadra (Admin)
       description: "Cria uma nova quadra esportiva definindo nome, tipo de esporte,\
         \ valor/hora, localização, data limite de agendamento (opcional), até 5 fotos\
         \ e grade personalizada de horários por dia da semana (disponibilidades).\
         \ Requer ROLE_ADMIN."
-      operationId: cadastrar_2
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/QuadraCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-  /quadras:
-    get:
-      tags:
-      - Quadras
-      summary: Listar quadras ativas / por proximidade e filtros
-      description: "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna\
-        \ a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota\
-        \ /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO).\
-        \ Também suporta o parâmetro 'resumido=true/false'."
-      operationId: listarTodas_1
-      parameters:
-      - name: latitude
-        in: query
-        required: false
-        schema:
-          type: number
-          format: double
-      - name: longitude
-        in: query
-        required: false
-        schema:
-          type: number
-          format: double
-      - name: raioKm
-        in: query
-        required: false
-        schema:
-          type: number
-          format: double
-          default: 2.0
-      - name: tipoEsporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: nome
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: cidade
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: bairro
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: cep
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: resumido
-        in: query
-        required: false
-        schema:
-          type: boolean
-      - name: X-Client
-        in: header
-        required: false
-        schema:
-          type: string
-      - name: X-View
-        in: header
-        required: false
-        schema:
-          type: string
-      - name: Origin
-        in: header
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: Lista completa de quadras com fotos e disponibilidades (Formato
-            Frontend)
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/QuadraResponseDTO"
-    post:
-      tags:
-      - Quadras
-      summary: Cadastrar nova quadra (Admin)
-      description: "Cria uma nova quadra esportiva definindo nome, tipo de esporte,\
-        \ valor/hora, localização, data limite de agendamento (opcional), até 5 fotos\
-        \ e grade personalizada de horários por dia da semana (disponibilidades).\
-        \ Requer ROLE_ADMIN."
-      operationId: cadastrar_3
+      operationId: cadastrar_1
       requestBody:
         content:
           application/json:
@@ -1102,7 +576,7 @@ paths:
   /api/pagamentos/{agendamentoId}/simular-aprovacao:
     post:
       tags:
-      - Pagamentos - API - TCC
+      - Pagamentos - API
       summary: Simular aprovação de pagamento Pix (Dev)
       description: Transita uma reserva pendente para CONFIRMADO e notifica o administrador
         via SSE.
@@ -1121,32 +595,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /pagamentos/{agendamentoId}/simular-aprovacao:
+  /api/pagamentos/webhook:
     post:
       tags:
-      - Pagamentos
-      summary: Simular aprovação de pagamento Pix (Dev)
-      description: Transita uma reserva pendente para CONFIRMADO e notifica o administrador
-        via SSE.
-      operationId: simularAprovacao_1
-      parameters:
-      - name: agendamentoId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /pagamentos/webhook:
-    post:
-      tags:
-      - Pagamentos
+      - Pagamentos - API
       summary: Webhook do Mercado Pago
       description: Recepção de notificações assíncronas de pagamento instantâneo do
         gateway.
@@ -1188,55 +640,10 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-  /api/pagamentos/webhook:
+  /api/agendamentos/bot:
     post:
       tags:
-      - Pagamentos - API - TCC
-      summary: Webhook do Mercado Pago
-      description: Recepção de notificações assíncronas de pagamento instantâneo do
-        gateway.
-      operationId: webhook_1
-      parameters:
-      - name: id
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: topic
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: type
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: data.id
-        in: query
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                type: object
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
-  /agendamentos/bot:
-    post:
-      tags:
-      - Agendamentos
+      - Agendamentos - API
       summary: Agendamento simplificado via Bot / WhatsApp
       description: "Permite a criação e reserva direta de horário a partir de integraç\
         ões externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo\
@@ -1257,38 +664,14 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /api/agendamentos/bot:
-    post:
-      tags:
-      - Agendamentos - API - TCC
-      summary: Agendamento simplificado via Bot / WhatsApp
-      description: "Permite a criação e reserva direta de horário a partir de integraç\
-        ões externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo\
-        \ do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve\
-        \ datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09')\
-        \ e cria a reserva com lock pessimista gerando os dados de Pix."
-      operationId: agendarViaBot_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AgendamentoBotRequestDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/agendamentos:
     get:
       tags:
-      - Agendamentos - API - TCC
+      - Agendamentos - API
       summary: Listar agendamentos do usuário autenticado
       description: "Retorna os agendamentos do atleta logado (ativos por padrão, ou\
         \ histórico completo com historico=true) ou pelas quadras do admin."
-      operationId: listarTodos_2
+      operationId: listarTodos_1
       parameters:
       - name: historico
         in: query
@@ -1307,7 +690,7 @@ paths:
                   $ref: "#/components/schemas/AgendamentoResponseDTO"
     post:
       tags:
-      - Agendamentos - API - TCC
+      - Agendamentos - API
       summary: Criar novo agendamento com Lock e Pix
       description: Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes
         e gera a cobrança Pix.
@@ -1325,54 +708,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /agendamentos:
-    get:
-      tags:
-      - Agendamentos
-      summary: Listar agendamentos do usuário autenticado
-      description: "Retorna os agendamentos do atleta logado (ativos por padrão, ou\
-        \ histórico completo com historico=true) ou pelas quadras do admin."
-      operationId: listarTodos_3
-      parameters:
-      - name: historico
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AgendamentoResponseDTO"
-    post:
-      tags:
-      - Agendamentos
-      summary: Criar novo agendamento com Lock e Pix
-      description: Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes
-        e gera a cobrança Pix.
-      operationId: agendar_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AgendamentoCriacaoDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/usuarios/minha-senha:
     patch:
       tags:
-      - Usuários - API - TCC
+      - Usuários - API
       summary: Alterar minha senha
       description: "Permite que o próprio usuário autenticado altere sua senha informando\
         \ a atual e a nova (mínimo 6 chars, 1 maiúscula, 1 minúscula, 1 número e 1\
@@ -1387,28 +726,10 @@ paths:
       responses:
         "200":
           description: OK
-  /usuarios/minha-senha:
+  /api/quadras/{id}/status:
     patch:
       tags:
-      - Usuários e Autenticação
-      summary: Alterar minha senha
-      description: "Permite que o próprio usuário autenticado altere sua senha informando\
-        \ a atual e a nova (mínimo 6 chars, 1 maiúscula, 1 minúscula, 1 número e 1\
-        \ símbolo)."
-      operationId: alterarMinhaSenha_1
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AlterarSenhaDTO"
-        required: true
-      responses:
-        "200":
-          description: OK
-  /quadras/{id}/status:
-    patch:
-      tags:
-      - Quadras
+      - Quadras - API
       summary: Alternar status da quadra (Admin)
       description: Ativa ou inativa a quadra para novos agendamentos.
       operationId: alternarStatus
@@ -1431,36 +752,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/QuadraResponseDTO"
-  /api/quadras/{id}/status:
+  /api/agendamentos/{id}/cancelar:
     patch:
       tags:
-      - Quadras - API - TCC
-      summary: Alternar status da quadra (Admin)
-      description: Ativa ou inativa a quadra para novos agendamentos.
-      operationId: alternarStatus_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: ativa
-        in: query
-        required: true
-        schema:
-          type: boolean
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/QuadraResponseDTO"
-  /agendamentos/{id}/cancelar:
-    patch:
-      tags:
-      - Agendamentos
+      - Agendamentos - API
       summary: Cancelar agendamento
       description: Cancela uma reserva ativa pertencente ao usuário autenticado ou
         ao administrador da quadra.
@@ -1479,96 +774,15 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /api/agendamentos/{id}/cancelar:
-    patch:
-      tags:
-      - Agendamentos - API - TCC
-      summary: Cancelar agendamento
-      description: Cancela uma reserva ativa pertencente ao usuário autenticado ou
-        ao administrador da quadra.
-      operationId: cancelar_1
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/quadras/fotos:
     get:
       tags:
-      - Quadras - API - TCC
+      - Quadras - API
       summary: Consultar fotos da quadra
       description: "Retorna a galeria de fotos de uma quadra específica por ID, Nome,\
         \ Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos\
         \ se nenhum parâmetro for informado."
-      operationId: consultarFotos_2
-      parameters:
-      - name: id
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: quadraId
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: nome
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: nomeQuadra
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: tipoEsporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: esporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: cidade
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: bairro
-        in: query
-        required: false
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-  /quadras/fotos:
-    get:
-      tags:
-      - Quadras
-      summary: Consultar fotos da quadra
-      description: "Retorna a galeria de fotos de uma quadra específica por ID, Nome,\
-        \ Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos\
-        \ se nenhum parâmetro for informado."
-      operationId: consultarFotos_3
+      operationId: consultarFotos_1
       parameters:
       - name: id
         in: query
@@ -1622,7 +836,7 @@ paths:
   /api/quadras/bloqueios:
     get:
       tags:
-      - Bloqueios - API - TCC
+      - Bloqueios - API
       summary: Listar todos os bloqueios das quadras do Admin (Admin)
       description: Retorna todos os bloqueios cadastrados em todas as quadras pertencentes
         ao administrador autenticado em uma única requisição.
@@ -1636,27 +850,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
-  /quadras/bloqueios:
+  /api/pagamentos/{agendamentoId}/status:
     get:
       tags:
-      - Bloqueios de Quadra
-      summary: Listar todos os bloqueios das quadras do Admin (Admin)
-      description: Retorna todos os bloqueios cadastrados em todas as quadras pertencentes
-        ao administrador autenticado em uma única requisição.
-      operationId: listarTodosBloqueiosDoAdmin_1
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BloqueioHorarioResponseDTO"
-  /pagamentos/{agendamentoId}/status:
-    get:
-      tags:
-      - Pagamentos
+      - Pagamentos - API
       summary: Consultar status de pagamento da reserva
       description: Verifica se o agendamento já foi confirmado ou se o pagamento foi
         aprovado no gateway.
@@ -1675,32 +872,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /api/pagamentos/{agendamentoId}/status:
-    get:
-      tags:
-      - Pagamentos - API - TCC
-      summary: Consultar status de pagamento da reserva
-      description: Verifica se o agendamento já foi confirmado ou se o pagamento foi
-        aprovado no gateway.
-      operationId: consultarStatus_1
-      parameters:
-      - name: agendamentoId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/notificacoes/stream:
     get:
       tags:
-      - Notificações - API - TCC
+      - Notificações - API
       summary: Streaming SSE de notificações
       description: Estabelece conexão unidirecional persistente (Server-Sent Events)
         para receber notificações em tempo real. Requer ROLE_ADMIN.
@@ -1712,25 +887,10 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/SseEmitter"
-  /notificacoes/stream:
-    get:
-      tags:
-      - Notificações
-      summary: Streaming SSE de notificações
-      description: Estabelece conexão unidirecional persistente (Server-Sent Events)
-        para receber notificações em tempo real. Requer ROLE_ADMIN.
-      operationId: stream_1
-      responses:
-        "200":
-          description: OK
-          content:
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/SseEmitter"
   /api/notificacoes/admin:
     get:
       tags:
-      - Notificações - API - TCC
+      - Notificações - API
       summary: Listar notificações do administrador
       description: Retorna o histórico de notificações de reservas e pagamentos do
         administrador autenticado.
@@ -1744,53 +904,14 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Notificacao"
-  /notificacoes/admin:
-    get:
-      tags:
-      - Notificações
-      summary: Listar notificações do administrador
-      description: Retorna o histórico de notificações de reservas e pagamentos do
-        administrador autenticado.
-      operationId: listarPorAdmin_1
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Notificacao"
-  /agendamentos/{id}:
-    get:
-      tags:
-      - Agendamentos
-      summary: Buscar agendamento por ID
-      description: Retorna os detalhes completos do agendamento pertencente ao usuário
-        autenticado ou admin da quadra.
-      operationId: buscarPorId_4
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/agendamentos/{id}:
     get:
       tags:
-      - Agendamentos - API - TCC
+      - Agendamentos - API
       summary: Buscar agendamento por ID
       description: Retorna os detalhes completos do agendamento pertencente ao usuário
         autenticado ou admin da quadra.
-      operationId: buscarPorId_5
+      operationId: buscarPorId_2
       parameters:
       - name: id
         in: path
@@ -1805,10 +926,10 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /agendamentos/quadra/{quadraId}/horarios-disponiveis:
+  /api/agendamentos/quadra/{quadraId}/horarios-disponiveis:
     get:
       tags:
-      - Agendamentos
+      - Agendamentos - API
       summary: Consultar horários dinâmicos e status do dia
       description: "Gera a grade completa de horários de 1 hora para a quadra na data\
         \ informada, retornando o status detalhado de cada horário: DISPONIVEL, BLOQUEADO\
@@ -1836,41 +957,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/HorarioDisponivelDTO"
-  /api/agendamentos/quadra/{quadraId}/horarios-disponiveis:
+  /api/agendamentos/quadra/{quadraId}/data:
     get:
       tags:
-      - Agendamentos - API - TCC
-      summary: Consultar horários dinâmicos e status do dia
-      description: "Gera a grade completa de horários de 1 hora para a quadra na data\
-        \ informada, retornando o status detalhado de cada horário: DISPONIVEL, BLOQUEADO\
-        \ ou AGENDADO, acompanhado do motivo e do indicador booleano 'disponivel'."
-      operationId: listarHorariosDisponiveis_1
-      parameters:
-      - name: quadraId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: data
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/HorarioDisponivelDTO"
-  /agendamentos/quadra/{quadraId}/data:
-    get:
-      tags:
-      - Agendamentos
+      - Agendamentos - API
       summary: Listar agendamentos por quadra e data
       description: Retorna as reservas cadastradas para uma quadra em um determinado
         dia.
@@ -1897,40 +987,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /api/agendamentos/quadra/{quadraId}/data:
+  /api/agendamentos/horarios-disponiveis:
     get:
       tags:
-      - Agendamentos - API - TCC
-      summary: Listar agendamentos por quadra e data
-      description: Retorna as reservas cadastradas para uma quadra em um determinado
-        dia.
-      operationId: listarPorQuadraEData_1
-      parameters:
-      - name: quadraId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: data
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AgendamentoResponseDTO"
-  /agendamentos/horarios-disponiveis:
-    get:
-      tags:
-      - Agendamentos
+      - Agendamentos - API
       summary: Consultar grade consolidada de horários (Busca Flexível)
       description: "Permite consultar a disponibilidade de slots de horários com suporte\
         \ a filtros combinados por data flexível ('hoje', 'amanha', '2026-09-05'),\
@@ -1974,57 +1034,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/GradeHorariosResponseDTO"
-  /api/agendamentos/horarios-disponiveis:
-    get:
-      tags:
-      - Agendamentos - API - TCC
-      summary: Consultar grade consolidada de horários (Busca Flexível)
-      description: "Permite consultar a disponibilidade de slots de horários com suporte\
-        \ a filtros combinados por data flexível ('hoje', 'amanha', '2026-09-05'),\
-        \ quadraId, nome da quadra ou tipo de esporte. Pode filtrar estritamente apenas\
-        \ slots livres com 'apenasDisponiveis=true'."
-      operationId: consultarGradeHorarios_1
-      parameters:
-      - name: data
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: quadraId
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int64
-      - name: tipoEsporte
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: nomeQuadra
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: apenasDisponiveis
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GradeHorariosResponseDTO"
   /api/agendamentos/dia:
     get:
       tags:
-      - Agendamentos - API - TCC
+      - Agendamentos - API
       summary: Consultar horários consolidados do dia para todas as quadras do Admin
         (Admin)
       description: Retorna em uma única requisição a grade completa de horários de
@@ -2048,65 +1061,14 @@ paths:
                   type: array
                   items:
                     $ref: "#/components/schemas/HorarioDisponivelDTO"
-  /agendamentos/dia:
-    get:
-      tags:
-      - Agendamentos
-      summary: Consultar horários consolidados do dia para todas as quadras do Admin
-        (Admin)
-      description: Retorna em uma única requisição a grade completa de horários de
-        todas as quadras ativas do administrador autenticado para a data indicada.
-      operationId: listarHorariosDoDiaParaAdmin_1
-      parameters:
-      - name: data
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/HorarioDisponivelDTO"
   /api/quadras/{quadraId}/bloqueios/{bloqueioId}:
     delete:
       tags:
-      - Bloqueios - API - TCC
+      - Bloqueios - API
       summary: Remover bloqueio por ID (Admin)
       description: Remove um bloqueio existente pelo seu ID. Requer ROLE_ADMIN e ser
         dono da quadra.
       operationId: removerBloqueio
-      parameters:
-      - name: quadraId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: bloqueioId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        "200":
-          description: OK
-  /quadras/{quadraId}/bloqueios/{bloqueioId}:
-    delete:
-      tags:
-      - Bloqueios de Quadra
-      summary: Remover bloqueio por ID (Admin)
-      description: Remove um bloqueio existente pelo seu ID. Requer ROLE_ADMIN e ser
-        dono da quadra.
-      operationId: removerBloqueio_1
       parameters:
       - name: quadraId
         in: path

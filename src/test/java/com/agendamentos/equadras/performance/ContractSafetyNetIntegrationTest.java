@@ -92,7 +92,10 @@ public class ContractSafetyNetIntegrationTest {
     @Test
     @DisplayName("Garante contrato JSON de GET /quadras")
     void devePreservarContratoGetQuadras() throws Exception {
-        mockMvc.perform(get("/quadras").header("X-Client", "frontend").contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
+                        .header("X-Client", "frontend")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", not(empty())))
                 .andExpect(jsonPath("$[0].id_quadra").exists())
@@ -112,6 +115,7 @@ public class ContractSafetyNetIntegrationTest {
     @DisplayName("Garante contrato JSON de GET /agendamentos")
     void devePreservarContratoGetAgendamentos() throws Exception {
         mockMvc.perform(get("/agendamentos")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
@@ -121,6 +125,7 @@ public class ContractSafetyNetIntegrationTest {
     @DisplayName("Garante contrato JSON de GET /agendamentos/quadra/{id}/horarios-disponiveis")
     void devePreservarContratoHorariosDisponiveis() throws Exception {
         mockMvc.perform(get("/agendamentos/quadra/" + quadraId + "/horarios-disponiveis")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
                         .param("data", LocalDate.now().plusDays(1).toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())

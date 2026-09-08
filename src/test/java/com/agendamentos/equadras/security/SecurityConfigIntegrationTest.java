@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -38,17 +39,41 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /quadras deve ser acessível publicamente sem token")
-    void getQuadrasDeveSerPublico() throws Exception {
+    @DisplayName("GET /quadras sem cookie deve retornar 401 Unauthorized (requisição forçada recusada)")
+    void getQuadrasSemCookieDeveRetornar401() throws Exception {
         mockMvc.perform(get("/quadras"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("GET /quadras com cookie de sessão válido deve retornar 200 OK")
+    void getQuadrasComCookieDeveRetornar200() throws Exception {
+        Usuario cliente = Usuario.builder()
+                .id_usuario(888L)
+                .email_usuario("cliente_cookie@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String token = jwtService.gerarToken(cliente);
+
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", token)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("GET /usuarios deve retornar 401 ou 403 sem token")
+    @DisplayName("POST /usuarios/logout deve limpar o cookie de sessão com maxAge 0")
+    void postLogoutDeveLimparCookie() throws Exception {
+        mockMvc.perform(post("/usuarios/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().exists("equadras_session"))
+                .andExpect(cookie().maxAge("equadras_session", 0));
+    }
+
+    @Test
+    @DisplayName("GET /usuarios sem cookie ou token deve retornar 401 Unauthorized")
     void getUsuariosSemTokenDeveSerNegado() throws Exception {
         mockMvc.perform(get("/usuarios"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -71,6 +96,7 @@ public class SecurityConfigIntegrationTest {
         String tokenCliente = jwtService.gerarToken(cliente);
 
         mockMvc.perform(post("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
                         .header("Authorization", "Bearer " + tokenCliente)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -88,6 +114,7 @@ public class SecurityConfigIntegrationTest {
         String tokenAdmin = jwtService.gerarToken(admin);
 
         mockMvc.perform(get("/notificacoes/admin")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
                         .header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk());
     }
@@ -135,6 +162,7 @@ public class SecurityConfigIntegrationTest {
         String tokenCliente = jwtService.gerarToken(clienteLogado);
 
         mockMvc.perform(get("/usuarios/999")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
                         .header("Authorization", "Bearer " + tokenCliente))
                 .andExpect(status().isForbidden());
     }

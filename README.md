@@ -20,38 +20,38 @@
 </p>
 
 <p align="center">
-  🌐 <strong>Ambiente Online Oficial:</strong> <a href="https://equadras.app">https://equadras.app</a> (ou <a href="https://www.equadras.app">https://www.equadras.app</a>)<br/>
-  📖 <strong>Swagger UI (Produção):</strong> <a href="https://equadras.app/swagger-ui/index.html">https://equadras.app/swagger-ui/index.html</a><br/>
-  📄 <strong>OpenAPI JSON Spec:</strong> <a href="https://equadras.app/v3/api-docs">https://equadras.app/v3/api-docs</a><br/>
-  📚 <strong>Guia Técnico da API:</strong> <a href="docs/api/API_DOCUMENTATION.md">docs/api/API_DOCUMENTATION.md</a>
+  <strong>Ambiente Online Oficial:</strong> <a href="https://equadras.app">https://equadras.app</a> (ou <a href="https://www.equadras.app">https://www.equadras.app</a>)<br/>
+  <strong>Swagger UI (Produção):</strong> <a href="https://equadras.app/swagger-ui/index.html">https://equadras.app/swagger-ui/index.html</a><br/>
+  <strong>OpenAPI JSON Spec:</strong> <a href="https://equadras.app/v3/api-docs">https://equadras.app/v3/api-docs</a><br/>
+  <strong>Guia Técnico da API:</strong> <a href="docs/api/API_DOCUMENTATION.md">docs/api/API_DOCUMENTATION.md</a>
 </p>
 
 ---
 
-## 📌 Sumário
-1. [Visão Geral](#-visão-geral)
-2. [Acesso em Produção (Novo Domínio DNS)](#-acesso-em-produção-novo-domínio-dns)
-3. [Destaques das Funcionalidades Recentes](#-destaques-das-funcionalidades-recentes)
-4. [Módulos da Plataforma](#-módulos-da-plataforma)
+## Sumário
+1. [Visão Geral](#visao-geral)
+2. [Acesso em Produção](#acesso-em-producao)
+3. [Destaques das Funcionalidades Recentes](#destaques-das-funcionalidades-recentes)
+4. [Módulos da Plataforma](#modulos-da-plataforma)
    - [4.1 Portal do Atleta (Cliente)](#41-portal-do-atleta-cliente)
    - [4.2 Painel Administrativo (Gestor de Quadras)](#42-painel-administrativo-gestor-de-quadras)
    - [4.3 Painel Master Admin](#43-painel-master-admin)
-5. [Arquitetura do Sistema e Código](#-arquitetura-do-sistema-e-código)
-6. [Stack Tecnológica Completa](#-stack-tecnológica-completa)
-7. [Modelo de Dados e Diagrama ER](#-modelo-de-dados-e-diagrama-er)
-8. [Estratégia de Índices e Performance](#-estratégia-de-índices-e-performance)
-9. [Segurança, Concorrência e Resiliência](#-segurança-concorrência-e-resiliência)
-10. [Integrações Externas](#-integrações-externas)
-11. [Otimizações de Performance e Rede](#-otimizações-de-performance-e-rede)
-12. [Infraestrutura, Deploy e Automação](#-infraestrutura-deploy-e-automação)
-13. [Guia de Instalação e Execução Local](#-guia-de-instalação-e-execução-local)
-14. [Endpoints Principais da API](#-endpoints-principais-da-api)
-15. [Variáveis de Ambiente](#-variáveis-de-ambiente)
-16. [Licença e Autoria](#-licença-e-autoria)
+5. [Arquitetura do Sistema e Código](#arquitetura-do-sistema-e-codigo)
+6. [Stack Tecnológica Completa](#stack-tecnologica-completa)
+7. [Modelo de Dados e Diagrama ER](#modelo-de-dados-e-diagrama-er)
+8. [Estratégia de Índices e Performance](#estrategia-de-indices-e-performance)
+9. [Segurança, Concorrência e Resiliência](#seguranca-concorrencia-e-resiliencia)
+10. [Integrações Externas](#integracoes-externas)
+11. [Otimizações de Performance e Rede](#otimizacoes-de-performance-e-rede)
+12. [Infraestrutura, Deploy e Automação](#infraestrutura-deploy-e-automacao)
+13. [Guia de Instalação e Execução Local](#guia-de-instalacao-e-execucao-local)
+14. [Endpoints Principais da API](#endpoints-principais-da-api)
+15. [Variáveis de Ambiente](#variaveis-de-ambiente)
+16. [Licença e Autoria](#licenca-e-autoria)
 
 ---
 
-## 📖 Visão Geral
+## Visão Geral
 
 O **eQuadras** é uma solução completa desenvolvida para transformar a locação e administração de complexos esportivos (Futebol Society, Beach Tennis, Tênis, Futsal, Vôlei e Basquete). 
 
@@ -59,7 +59,7 @@ A plataforma resolve os principais gargalos tradicionais: conflitos de reservas 
 
 ---
 
-## 🌐 Acesso em Produção (Novo Domínio DNS)
+## Acesso em Produção
 
 O sistema está implantado e disponível publicamente sob o domínio oficial com terminação segura TLS/HTTPS via Let's Encrypt:
 
@@ -70,7 +70,7 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 ---
 
-## 🚀 Destaques das Funcionalidades Recentes
+## Destaques das Funcionalidades Recentes
 
 1. **Grade Diária Visual (Timeline Grid):**
    - Visualização horizontal interativa das 06:00 às 23:00 para todas as quadras.
@@ -98,7 +98,7 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 ---
 
-## 🎯 Módulos da Plataforma
+## Módulos da Plataforma
 
 ### 4.1 Portal do Atleta (Cliente)
 - **Busca por Geolocalização & CEP:** Integração com ViaCEP e OpenStreetMap/Nominatim calculando a distância exata em raio de até 10 km (Fórmula de Haversine).
@@ -126,7 +126,7 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 ---
 
-## 🏗 Arquitetura do Sistema e Código
+## Arquitetura do Sistema e Código
 
 O backend adota o padrão em camadas desacopladas (Clean Architecture / Domain-Driven Design simplificado):
 
@@ -163,7 +163,7 @@ equadras/
 
 ---
 
-## ⚡ Stack Tecnológica Completa
+## Stack Tecnológica Completa
 
 | Camada | Tecnologia | Versão | Destaque de Engenharia |
 |---|---|---|---|
@@ -182,7 +182,7 @@ equadras/
 
 ---
 
-## 🗄 Modelo de Dados e Diagrama ER
+## Modelo de Dados e Diagrama ER
 
 ```mermaid
 erDiagram
@@ -270,7 +270,7 @@ erDiagram
 
 ---
 
-## ⚡ Estratégia de Índices e Performance
+## Estratégia de Índices e Performance
 
 Para garantir tempos de resposta sub-milissegundo em consultas analíticas e transacionais, índices estratégicos foram aplicados:
 
@@ -287,7 +287,7 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
 
 ---
 
-## 🔒 Segurança, Concorrência e Resiliência
+## Segurança, Concorrência e Resiliência
 
 1. **Prevenção de Double Booking via Lock Pessimista:**
    - O método `buscarComLockParaAgendamento` no repositório bloqueia a linha da quadra com cláusula `SELECT ... FOR UPDATE` durante a validação da janela horária, garantindo atomicidade absoluta mesmo sob centenas de requisições simultâneas.
@@ -298,10 +298,13 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
    - Em caso de indisponibilidade do gateway externo, o sistema ativa fallback inteligente com geração determinística de chave Pix para garantir continuidade operacional.
 4. **Tratamento Global de Exceções (RFC 7807):**
    - Respostas de erro padronizadas em `application/problem+json` detalhando mensagens de validação e regras de negócio violadas.
+5. **Segregação de Rotas e Proteção de Sessão por Cookie no Frontend:**
+   - As consultas realizadas pela aplicação web frontend exigem obrigatoriamente validação de sessão ativa via cookie seguro HttpOnly (`equadras_session`). Requisições não autenticadas ou forçadas (cURL, bots não autorizados, scrapers) enviadas às rotas internas são recusadas com HTTP 401 Unauthorized.
+   - A API externa (`/api/**`) é a única documentada publicamente no Swagger e utiliza autenticação por token no cabeçalho HTTP (`Authorization: Bearer <token>`), isolando os clientes externos do tráfego interno da aplicação web.
 
 ---
 
-## 🌐 Integrações Externas
+## Integrações Externas
 
 - **Mercado Pago Payments API (`v1/payments`):** Criação de pagamentos Pix com QR Code e chave copia-e-cola com chave de idempotência.
 - **ViaCEP API (`viacep.com.br/ws/{cep}/json`):** Autocomplete automático de endereços no cadastro de quadras e no filtro de busca do atleta.
@@ -310,7 +313,7 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
 
 ---
 
-## ⚡ Otimizações de Performance e Rede
+## Otimizações de Performance e Rede
 
 1. **Abas sem Reprocessamento de DOM:** As abas do cliente usam alternância por classes CSS `hidden`, mantendo as quadras e fotos em memória no DOM, sem recarregar recursos ao navegar entre telas.
 2. **Carregamento Sob Demanda:**
@@ -322,13 +325,13 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
 
 ---
 
-## 🚀 Infraestrutura, Deploy e Automação
+## Infraestrutura, Deploy e Automação
 
 ### Arquitetura de Servidor (Nuvem Oracle Cloud)
 - **Instância:** Ubuntu Linux com systemd gerenciando o serviço `equadras-backend.service`.
 - **Reverse Proxy Nginx:**
   - Serve os arquivos estáticos compilados do frontend em `/home/ubuntu/eQuadras/frontend/dist`.
-  - Encaminha requisições de `/usuarios`, `/quadras`, `/agendamentos`, `/notificacoes`, etc., para `http://127.0.0.1:8080`.
+  - Encaminha requisições da API externa `/api/**` e rotas internas para `http://127.0.0.1:8080`.
   - Configurado com `proxy_buffering off` e timeouts estendidos para suporte contínuo a Server-Sent Events (SSE).
 - **Certificados SSL:** Let's Encrypt gerenciados pelo Certbot com renovação automática.
 
@@ -350,7 +353,7 @@ powershell -ExecutionPolicy Bypass -File .\restart.ps1 -Local
 
 ---
 
-## 💻 Guia de Instalação e Execução Local
+## Guia de Instalação e Execução Local
 
 ### Pré-requisitos
 - **Java 21 JDK** instalado e configurado no `PATH`
@@ -389,33 +392,34 @@ O frontend estará acessível em `http://localhost:3000` (ou `http://localhost:5
 
 ---
 
-## 📡 Endpoints Principais da API
+## Endpoints Principais da API
 
 | Método | Endpoint | Permissão | Descrição |
 |---|---|:---:|---|
-| `POST` | `/usuarios` | Público | Cadastro de novo atleta |
-| `POST` | `/usuarios/login` | Público | Login e emissão de token JWT |
-| `GET` | `/usuarios` | `ROLE_ADMIN` | Listagem de usuários (Master Admin) |
-| `GET` | `/quadras` | Público | Listar quadras (filtros de esporte, CEP e raio KM) |
-| `POST` | `/quadras` | `ROLE_ADMIN` | Cadastrar quadra com horários e data limite |
-| `PUT` | `/quadras/{id}` | `ROLE_ADMIN` | Editar dados cadastrais e grade de funcionamento |
-| `PATCH`| `/quadras/{id}/status` | `ROLE_ADMIN` | Alternar quadra entre ativa e inativa |
-| `POST` | `/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de até 5 fotos |
-| `GET` | `/quadras/bloqueios` | `ROLE_ADMIN` | Listar todos os bloqueios do gestor em lote |
-| `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou intervalo horária |
-| `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Horários consolidados de todas as quadras para a data |
-| `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Público | Grade com status dinâmico dos slots da quadra |
-| `POST` | `/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
-| `GET` | `/agendamentos` | Autenticado | Listar reservas (`?historico=true` para histórico completo) |
-| `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
-| `GET` | `/notificacoes/stream` | `ROLE_ADMIN` | Conexão SSE para notificações em tempo real |
-| `GET` | `/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
-| `PUT` | `/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
-| `PUT` | `/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
+| `POST` | `/api/usuarios` | Público | Cadastro de novo atleta |
+| `POST` | `/api/usuarios/login` | Público | Login e emissão de token JWT |
+| `GET` | `/api/usuarios` | `ROLE_ADMIN` | Listagem de usuários (Master Admin) |
+| `GET` | `/api/quadras` | Autenticado | Listar quadras (filtros de esporte, CEP e raio KM) |
+| `POST` | `/api/quadras` | `ROLE_ADMIN` | Cadastrar quadra com horários e data limite |
+| `PUT` | `/api/quadras/{id}` | `ROLE_ADMIN` | Editar dados cadastrais e grade de funcionamento |
+| `PATCH`| `/api/quadras/{id}/status` | `ROLE_ADMIN` | Alternar quadra entre ativa e inativa |
+| `POST` | `/api/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de até 5 fotos |
+| `GET` | `/api/quadras/bloqueios` | `ROLE_ADMIN` | Listar todos os bloqueios do gestor em lote |
+| `POST` | `/api/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou intervalo de horários |
+| `GET` | `/api/agendamentos/dia` | `ROLE_ADMIN` | Horários consolidados de todas as quadras para a data |
+| `GET` | `/api/agendamentos/quadra/{id}/horarios-disponiveis` | Autenticado | Grade com status dinâmico dos slots da quadra |
+| `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
+| `POST` | `/api/agendamentos/bot` | Público / Bot | Agendamento simplificado com linguagem natural para bots |
+| `GET` | `/api/agendamentos` | Autenticado | Listar reservas (`?historico=true` para histórico completo) |
+| `PATCH`| `/api/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
+| `GET` | `/api/notificacoes/stream` | `ROLE_ADMIN` | Conexão SSE para notificações em tempo real |
+| `GET` | `/api/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
+| `PUT` | `/api/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
+| `PUT` | `/api/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
 
 ---
 
-## ⚙️ Variáveis de Ambiente
+## Variáveis de Ambiente
 
 Crie ou configure o arquivo de variáveis de ambiente com os seguintes parâmetros:
 
@@ -438,7 +442,7 @@ EQUADRAS_CORS_ORIGENS=https://equadras.app,https://www.equadras.app,http://local
 
 ---
 
-## 👨‍💻 Autoria & Licença
+## Autoria & Licença
 
 Desenvolvido com excelência por **[Guilherme Aizza Sano](https://github.com/GuilhermeAizzaSano)**.
 

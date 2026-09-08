@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,18 +27,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        String token = null;
 
-        if (header != null && header.startsWith("Bearer ")) {
-            token = header.substring(7);
-        } else {
-            String uri = request.getRequestURI();
-            // Apenas o streaming SSE (/notificacoes/stream) pode receber token via query param devido à limitação nativa do EventSource no navegador
-            if (uri != null && uri.contains("/notificacoes/stream") && request.getParameter("token") != null) {
-                token = request.getParameter("token");
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+
+        // 1. Extrai token do cookie de sessão HttpOnly
+        String cookieToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie c : request.getCookies()) {
+                if ("equadras_session".equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                    cookieToken = c.getValue();
+                    break;
+                }
             }
         }
+
+        // 2. Extrai token do cabeçalho Authorization
+        String headerToken = null;
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            headerToken = header.substring(7);
+        }
+
+        // 3. Suporte a SSE (/notificacoes/stream) via query parameter
+        String sseToken = null;
+        if (uri != null && uri.contains("/notificacoes/stream") && request.getParameter("token") != null) {
+            sseToken = request.getParameter("token");
+        }
+
+        // Determina o token a ser validado
+        String token = (headerToken != null) ? headerToken : ((cookieToken != null) ? cookieToken : sseToken);
 
         if (token != null) {
             try {
@@ -67,6 +86,54 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        // 4. Verificação de segurança para rotas internas consultadas pelo Frontend (rotas não /api)
+        // Requer validação obrigatória de cookie de login e recusa requisições forçadas não autenticadas
+        boolean isApiRoute = uri != null && (uri.startsWith("/api/") || uri.equals("/api"));
+        if (!isApiRoute && !isPublicFrontendRoute(uri, method)) {
+            if (cookieToken == null || SecurityContextHolder.getContext().getAuthentication() == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/problem+json;charset=UTF-8");
+                response.getWriter().write("""
+                    {
+                        "status": 401,
+                        "title": "Acesso não autorizado",
+                        "detail": "Acesso restrito: para consultar recursos do sistema pelo frontend é obrigatório possuir uma sessão ativa com cookie de login. Requisições não autenticadas ou forçadas foram recusadas."
+                    }
+                    """);
+                return;
+            }
+        }
+
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicFrontendRoute(String uri, String method) {
+        if (uri == null) return true;
+        if ("OPTIONS".equalsIgnoreCase(method)) return true;
+
+        // Login, auto-cadastro e logout
+        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios") || uri.equals("/usuarios/"))) return true;
+        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios/login") || uri.equals("/usuarios/login/"))) return true;
+        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios/logout") || uri.equals("/usuarios/logout/"))) return true;
+
+        // Webhook Mercado Pago e Bot
+        if ("POST".equalsIgnoreCase(method) && uri.contains("/pagamentos/webhook")) return true;
+        if ("POST".equalsIgnoreCase(method) && uri.contains("/agendamentos/bot")) return true;
+
+        // Uploads de arquivos e fotos
+        if (uri.startsWith("/uploads/")) return true;
+
+        // Documentação OpenAPI e Swagger UI
+        if (uri.startsWith("/v3/api-docs") || uri.startsWith("/swagger-ui") || uri.contains("swagger")) return true;
+        if (uri.startsWith("/h2-console")) return true;
+        if (uri.startsWith("/error")) return true;
+
+        // Recursos estáticos
+        if (uri.startsWith("/assets/") || uri.endsWith(".ico") || uri.endsWith(".png") || uri.endsWith(".jpg")
+                || uri.endsWith(".svg") || uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".html")) {
+            return true;
+        }
+
+        return false;
     }
 }
