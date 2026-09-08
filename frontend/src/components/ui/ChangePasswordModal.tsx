@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Lock, Check, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { usuarioApi } from '../../api/apiClient';
 import { Button } from './Button';
@@ -75,13 +76,13 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
     >
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <button
           type="button"
           onClick={onClose}
@@ -230,6 +231,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
