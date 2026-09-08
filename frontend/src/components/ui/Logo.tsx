@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface LogoProps {
+export interface LogoProps {
   className?: string;
   size?: number;
   showText?: boolean;
@@ -8,46 +8,43 @@ interface LogoProps {
 
 export const Logo: React.FC<LogoProps> = ({ className = '', size = 32, showText = true }) => {
   return (
-    <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      <div 
-        style={{ width: size, height: size }} 
-        className="relative flex items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 shadow-sm shrink-0 overflow-hidden"
+    <div className={`inline-flex items-center gap-3 select-none ${className}`}>
+      <div
+        style={{ width: size, height: size }}
+        className="relative flex items-center justify-center rounded-xl bg-surface-900 border border-surface-750 shadow-md shadow-black/60 shrink-0 overflow-hidden group"
       >
+        {/* Glow de fundo sutil */}
+        <div className="absolute inset-0 bg-brand-500/10 group-hover:bg-brand-500/20 transition-all duration-300" />
+        
         <svg
           viewBox="0 0 100 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-[78%] h-[78%]"
+          className="w-[74%] h-[74%] relative z-10 transition-transform duration-300 group-hover:scale-105"
         >
+          {/* Perímetro da quadra */}
           <rect
             x="14"
             y="14"
             width="72"
             height="72"
-            rx="8"
+            rx="10"
             stroke="white"
             strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          {/* Linhas transversais de demarcação */}
           <line
             x1="14"
-            y1="14"
+            y1="50"
             x2="86"
-            y2="86"
-            stroke="white"
-            strokeWidth="5"
+            y2="50"
+            stroke="rgba(255,255,255,0.7)"
+            strokeWidth="4"
             strokeLinecap="round"
           />
-          <line
-            x1="14"
-            y1="86"
-            x2="86"
-            y2="14"
-            stroke="white"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
+          {/* Círculo central da quadra */}
           <circle
             cx="50"
             cy="50"
@@ -55,8 +52,9 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 32, showText 
             stroke="white"
             strokeWidth="5"
           />
+          {/* Traço de bola/dinamismo em neon esmeralda */}
           <path
-            d="M 66 76 L 88 88"
+            d="M 68 76 L 88 88"
             stroke="#34d399"
             strokeWidth="8"
             strokeLinecap="round"
@@ -65,11 +63,12 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 32, showText 
       </div>
 
       {showText && (
-        <div className="flex items-baseline font-bold tracking-tight">
-          <span className="text-emerald-400 text-lg md:text-xl font-mono">e</span>
-          <span className="text-white text-lg md:text-xl font-sans">Quadras</span>
+        <div className="flex items-baseline font-extrabold tracking-tight">
+          <span className="text-brand-400 text-xl font-mono tracking-normal">e</span>
+          <span className="text-white text-xl font-sans tracking-tight">Quadras</span>
         </div>
       )}
     </div>
   );
 };
+

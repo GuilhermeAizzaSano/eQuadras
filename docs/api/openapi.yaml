@@ -48,7 +48,8 @@ paths:
       tags:
       - Usuários e Autenticação
       summary: Buscar usuário por ID
-      description: Consulta os dados de um usuário pelo seu identificador único.
+      description: Consulta os dados de um usuário pelo seu identificador único. Apenas
+        o próprio usuário ou o Admin Geral tem permissão.
       operationId: buscarPorId
       parameters:
       - name: id
@@ -113,7 +114,8 @@ paths:
       tags:
       - Usuários - API - TCC
       summary: Buscar usuário por ID
-      description: Consulta os dados de um usuário pelo seu identificador único.
+      description: Consulta os dados de um usuário pelo seu identificador único. Apenas
+        o próprio usuário ou o Admin Geral tem permissão.
       operationId: buscarPorId_1
       parameters:
       - name: id
@@ -2253,6 +2255,7 @@ components:
           type: string
           maxLength: 2000
           minLength: 0
+          pattern: "^[^<>]*$"
         dataLimiteAgendamento:
           type: string
           format: date
@@ -2435,6 +2438,7 @@ components:
           $ref: "#/components/schemas/LocalTime"
         motivo:
           type: string
+          pattern: "^[^<>]*$"
         substituirDiaInteiro:
           type: boolean
       required:

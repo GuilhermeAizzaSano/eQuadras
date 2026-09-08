@@ -454,54 +454,58 @@ export const ClientDashboard: React.FC = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-7">
       {/* Feedback Unificado */}
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Top Header com Abas Principais: Explorar Quadras vs Minhas Reservas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-800 pb-5">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white">
-            {abaPrincipal === 'QUADRAS' ? 'Escolha a sua Quadra' : 'Minhas Reservas'}
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            {abaPrincipal === 'QUADRAS' ? 'Encontre sua Quadra' : 'Minhas Reservas'}
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs sm:text-sm text-surface-400 mt-1">
             {abaPrincipal === 'QUADRAS'
-              ? 'Encontre e reserve os melhores horários nas quadras esportivas'
-              : 'Acompanhe o status dos seus jogos e pagamentos Pix'}
+              ? 'Consulte disponibilidades em tempo real e garanta sua partida'
+              : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
           </p>
         </div>
 
         {/* Segmented Control / Botões de Abas */}
-        <div className="flex bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800 w-full sm:w-auto shrink-0 shadow-lg">
+        <div className="flex bg-surface-900/90 p-1.5 rounded-2xl border border-surface-800 w-full sm:w-auto shrink-0 shadow-xl">
           <button
             onClick={() => setAbaPrincipal('QUADRAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
               abaPrincipal === 'QUADRAS'
-                ? 'bg-white text-zinc-950 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-white text-surface-950 shadow-md'
+                : 'text-surface-400 hover:text-white'
             }`}
           >
-            <MapPin className="w-4 h-4 text-emerald-500" />
+            <MapPin className="w-4 h-4 text-brand-500" />
             <span>Explorar Quadras</span>
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-              abaPrincipal === 'QUADRAS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-300'
-            }`}>
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                abaPrincipal === 'QUADRAS'
+                  ? 'bg-surface-200 text-surface-950'
+                  : 'bg-surface-800 text-surface-300'
+              }`}
+            >
               {quadrasFiltradas.length}
             </span>
           </button>
 
           <button
             onClick={() => setAbaPrincipal('RESERVAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
               abaPrincipal === 'RESERVAS'
-                ? 'bg-white text-zinc-950 shadow-sm'
-                : 'text-zinc-400 hover:text-white'
+                ? 'bg-white text-surface-950 shadow-md'
+                : 'text-surface-400 hover:text-white'
             }`}
           >
             <Clock className="w-4 h-4 text-sky-400" />
             <span>Minhas Reservas</span>
             {contadoresReservas.ativos > 0 && (
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-zinc-950 animate-pulse">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-500 text-surface-950 animate-pulse">
                 {contadoresReservas.ativos}
               </span>
             )}
@@ -511,148 +515,371 @@ export const ClientDashboard: React.FC = () => {
 
       {/* ABA 1: EXPLORAR QUADRAS */}
       <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
-          {/* Barra de Filtros e Busca */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-zinc-900/50 p-3 sm:p-4 rounded-2xl border border-zinc-850">
-            {/* Dropdown de Esportes no Mobile */}
-            <div className="relative block sm:hidden w-full">
-              <select
-                value={filtroEsporte}
-                onChange={(e) => setFiltroEsporte(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-zinc-500 transition appearance-none cursor-pointer pr-10 shadow-sm"
-              >
-                {ESPORTES.map((esp) => (
-                  <option key={esp} value={esp} className="bg-zinc-900 text-white">
-                    {esp === 'TODOS' ? '🏟️ Todos os Esportes' : `⚡ ${esp.replace('_', ' ')}`}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-
-            {/* Filtro por Esporte (Pills no Desktop) */}
-            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
+        {/* Barra de Filtros e Busca */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-900/60 p-3 sm:p-4 rounded-2xl border border-surface-800/80">
+          {/* Dropdown de Esportes no Mobile */}
+          <div className="relative block sm:hidden w-full">
+            <select
+              value={filtroEsporte}
+              onChange={(e) => setFiltroEsporte(e.target.value)}
+              className="w-full bg-surface-950 border border-surface-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-brand-400 transition appearance-none cursor-pointer pr-10 shadow-sm"
+            >
               {ESPORTES.map((esp) => (
-                <button
-                  key={esp}
-                  onClick={() => setFiltroEsporte(esp)}
-                  className={`text-xs px-3.5 py-2 rounded-xl border whitespace-nowrap transition-all active:scale-[0.98] ${
-                    filtroEsporte === esp
-                      ? 'bg-white text-zinc-950 font-bold border-white shadow-sm'
-                      : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:border-zinc-700 hover:text-white'
-                  }`}
-                >
-                  {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
-                </button>
+                <option key={esp} value={esp} className="bg-surface-950 text-white">
+                  {esp === 'TODOS' ? '⚡ Todos os Esportes' : esp.replace('_', ' ')}
+                </option>
               ))}
-            </div>
-
-            {/* Filtro por CEP */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <input
-                type="text"
-                placeholder="Filtrar por CEP (ex: 15700-010)"
-                value={cepBusca}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').substring(0, 9);
-                  setCepBusca(val);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && buscarQuadrasPorLocalizacao()}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition w-full md:w-52"
-              />
-              <button
-                onClick={buscarQuadrasPorLocalizacao}
-                disabled={loading}
-                className="bg-zinc-850 hover:bg-zinc-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition border border-zinc-750 disabled:opacity-50 shrink-0 active:scale-[0.98]"
-              >
-                Buscar
-              </button>
-            </div>
+            </select>
+            <ChevronDown className="w-4 h-4 text-surface-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
-          {/* Grade de Quadras */}
-          {quadrasFiltradas.length === 0 ? (
-            <EmptyState
-              icon={MapPin}
-              title="Nenhuma quadra encontrada"
-              description="Tente alternar a categoria esportiva ou buscar sem restrição de CEP."
-              className="py-14"
+          {/* Filtro por Esporte (Pills no Desktop) */}
+          <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
+            {ESPORTES.map((esp) => (
+              <button
+                key={esp}
+                onClick={() => setFiltroEsporte(esp)}
+                className={`text-xs px-3.5 py-2 rounded-xl border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer ${
+                  filtroEsporte === esp
+                    ? 'bg-white text-surface-950 font-bold border-white shadow-sm'
+                    : 'bg-surface-950/80 text-surface-400 border-surface-800 hover:border-surface-700 hover:text-white'
+                }`}
+              >
+                {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
+
+          {/* Filtro por CEP */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Filtrar por CEP (ex: 15700-010)"
+              value={cepBusca}
+              onChange={(e) => {
+                const val = e.target.value
+                  .replace(/\D/g, '')
+                  .replace(/(\d{5})(\d)/, '$1-$2')
+                  .substring(0, 9);
+                setCepBusca(val);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && buscarQuadrasPorLocalizacao()}
+              className="bg-surface-950 border border-surface-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-surface-500 focus:outline-none focus:border-brand-400 transition w-full md:w-52 font-mono"
             />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quadrasFiltradas.map((q) => {
-                const primeiraFoto = q.fotos && q.fotos.length > 0
+            <button
+              onClick={buscarQuadrasPorLocalizacao}
+              disabled={loading}
+              className="bg-surface-850 hover:bg-surface-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition border border-surface-750 disabled:opacity-50 shrink-0 active:scale-[0.98] cursor-pointer"
+            >
+              Buscar
+            </button>
+          </div>
+        </div>
+
+        {/* Grade de Quadras */}
+        {quadrasFiltradas.length === 0 ? (
+          <EmptyState
+            icon={MapPin}
+            title="Nenhuma quadra encontrada"
+            description="Tente alternar a categoria esportiva ou buscar sem restrição de CEP."
+            className="py-14"
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {quadrasFiltradas.map((q) => {
+              const primeiraFoto =
+                q.fotos && q.fotos.length > 0
                   ? getAssetUrl(q.fotos[0])
                   : 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
 
-                return (
-                  <div
-                    key={q.id_quadra}
-                    onClick={() => setQuadraDetalhes(q)}
-                    className="group relative rounded-2xl border border-zinc-850 hover:border-zinc-700 bg-zinc-900/80 hover:bg-zinc-900 overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-xl active:scale-[0.99]"
-                  >
-                    {/* Foto de Capa da Quadra */}
-                    <div className="relative aspect-video w-full overflow-hidden bg-zinc-950">
-                      <img
-                        src={primeiraFoto}
-                        alt={q.nome}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
-                        }}
+              return (
+                <div
+                  key={q.id_quadra}
+                  onClick={() => setQuadraDetalhes(q)}
+                  className="group relative rounded-2xl border border-surface-800 hover:border-surface-700 bg-surface-900/80 hover:bg-surface-900 overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-xl shadow-black/40 active:scale-[0.99]"
+                >
+                  {/* Foto de Capa da Quadra */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-surface-950">
+                    <img
+                      src={primeiraFoto}
+                      alt={q.nome}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/20 to-transparent" />
+
+                    {/* Badge de Esporte e Status sobre a imagem */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                      <Badge
+                        variant="neutral"
+                        className="bg-surface-950/80 backdrop-blur-md border border-surface-800 text-white text-[10px]"
+                      >
+                        {q.tipoEsporte.replace('_', ' ')}
+                      </Badge>
+
+                      <span className="p-1.5 rounded-full bg-surface-950/80 backdrop-blur-md border border-surface-800 text-surface-300 group-hover:text-white transition shadow-sm">
+                        <Info className="w-3.5 h-3.5 text-surface-300" />
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-2.5 left-3.5 right-3.5 flex items-end justify-between">
+                      <div
+                        className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                        title="Quadra Ativa"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
-                      
-                      {/* Badge de Esporte e Status sobre a imagem */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                        <Badge variant="neutral" className="bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-white text-[10px]">
-                          {q.tipoEsporte.replace('_', ' ')}
-                        </Badge>
-                        
-                        <span className="p-1.5 rounded-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800 text-zinc-300 group-hover:text-white transition">
-                          <Info className="w-3.5 h-3.5 text-zinc-300" />
+                    </div>
+                  </div>
+
+                  {/* Informações da Quadra */}
+                  <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="text-base font-bold text-white group-hover:text-brand-400 transition-colors">
+                        {q.nome}
+                      </div>
+
+                      {q.cidade && q.estado && (
+                        <div className="text-xs text-surface-400 flex items-center gap-1.5 mt-1">
+                          <MapPin className="w-3.5 h-3.5 text-surface-500 shrink-0" />
+                          <span className="truncate">
+                            {q.bairro ? `${q.bairro}, ` : ''}
+                            {q.cidade} - {q.estado}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-surface-800 flex items-center justify-between gap-2 mt-auto">
+                      <div>
+                        <span className="text-[10px] text-surface-500 uppercase tracking-wider font-semibold block">
+                          Valor / hora
+                        </span>
+                        <span className="text-sm font-semibold text-white font-mono">
+                          R$ {q.valorHora.toFixed(2)}
                         </span>
                       </div>
 
-                      <div className="absolute bottom-2.5 left-3.5 right-3.5 flex items-end justify-between">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" title="Quadra Ativa" />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedQuadra(q.id_quadra);
+                          setIsBookingModalOpen(true);
+                        }}
+                        className="text-xs px-3.5 py-2 rounded-xl transition-all font-semibold flex items-center gap-1.5 active:scale-95 text-surface-200 hover:text-white bg-surface-850 border border-surface-750 hover:border-surface-650 hover:bg-surface-800 shadow-sm cursor-pointer"
+                      >
+                        <CalendarIcon className="w-3.5 h-3.5 text-brand-400" />
+                        <span>Ver Horários</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+
+      {/* ABA 2: MINHAS RESERVAS */}
+      <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
+        <div className="bg-surface-900/90 border border-surface-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6">
+          {/* Sub-abas de Filtro de Reservas */}
+          <div className="flex bg-surface-950 p-1.5 rounded-2xl border border-surface-800 text-xs">
+            <button
+              onClick={() => setFiltroStatusReservas('ATIVOS')}
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+                filtroStatusReservas === 'ATIVOS'
+                  ? 'bg-white text-surface-950 shadow-md font-bold'
+                  : 'text-surface-400 hover:text-white'
+              }`}
+            >
+              <span>Ativos</span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                  filtroStatusReservas === 'ATIVOS'
+                    ? 'bg-surface-200 text-surface-950'
+                    : 'bg-surface-800 text-surface-400'
+                }`}
+              >
+                {contadoresReservas.ativos}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setFiltroStatusReservas('REALIZADOS')}
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+                filtroStatusReservas === 'REALIZADOS'
+                  ? 'bg-white text-surface-950 shadow-md font-bold'
+                  : 'text-surface-400 hover:text-white'
+              }`}
+            >
+              <span>Realizados</span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                  filtroStatusReservas === 'REALIZADOS'
+                    ? 'bg-surface-200 text-surface-950'
+                    : 'bg-surface-800 text-surface-400'
+                }`}
+              >
+                {historicoCarregado ? contadoresReservas.realizados : '—'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setFiltroStatusReservas('CANCELADOS')}
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+                filtroStatusReservas === 'CANCELADOS'
+                  ? 'bg-white text-surface-950 shadow-md font-bold'
+                  : 'text-surface-400 hover:text-white'
+              }`}
+            >
+              <span>Cancelados</span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                  filtroStatusReservas === 'CANCELADOS'
+                    ? 'bg-surface-200 text-surface-950'
+                    : 'bg-surface-800 text-surface-400'
+                }`}
+              >
+                {historicoCarregado ? contadoresReservas.cancelados : '—'}
+              </span>
+            </button>
+          </div>
+
+          {/* Listagem de Reservas ou Botão de Carregar Histórico */}
+          {filtroStatusReservas !== 'ATIVOS' && !historicoCarregado ? (
+            <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-surface-950/60 border border-surface-800/80 rounded-2xl space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-surface-850 border border-surface-750 flex items-center justify-center text-surface-400 shadow-md">
+                <History className="w-7 h-7 text-brand-400" />
+              </div>
+              <div className="space-y-1.5 max-w-md">
+                <h4 className="text-sm font-bold text-white tracking-tight">
+                  Histórico não carregado
+                </h4>
+                <p className="text-xs text-surface-400">
+                  Por padrão carregamos apenas suas reservas ativas para maior rapidez. Clique abaixo para carregar todo o seu histórico.
+                </p>
+              </div>
+              <button
+                onClick={carregarHistorico}
+                disabled={carregandoHistorico}
+                className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 disabled:opacity-60 text-surface-950 font-bold text-xs shadow-lg transition active:scale-[0.98] cursor-pointer"
+              >
+                {carregandoHistorico ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Carregando histórico...</span>
+                  </>
+                ) : (
+                  <>
+                    <History className="w-4 h-4" />
+                    <span>Carregar histórico de reservas</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : agendamentosFiltrados.length === 0 ? (
+            <EmptyState
+              icon={Clock}
+              title={
+                filtroStatusReservas === 'ATIVOS'
+                  ? 'Nenhuma reserva ativa no momento'
+                  : filtroStatusReservas === 'REALIZADOS'
+                  ? 'Nenhuma reserva realizada no histórico'
+                  : 'Nenhuma reserva cancelada'
+              }
+              description={
+                filtroStatusReservas === 'ATIVOS'
+                  ? 'Clique na aba "Explorar Quadras" para encontrar uma quadra e agendar seu jogo.'
+                  : 'Seus registros aparecerão aqui conforme as partidas forem finalizadas ou canceladas.'
+              }
+              className="py-14"
+            />
+          ) : (
+            <div className="space-y-3.5">
+              {agendamentosFiltrados.map((ag) => {
+                const isCancelado = ag.status === 'CANCELADO';
+                const isPassado = new Date(ag.dataHoraFim) < new Date();
+                const [data, tempoInicio] = ag.dataHoraInicio.split('T');
+                const [, tempoFim] = ag.dataHoraFim.split('T');
+                const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
+                const horaFim = tempoFim ? tempoFim.substring(0, 5) : '';
+
+                return (
+                  <div
+                    key={ag.id_agendamento}
+                    className="p-4 sm:p-5 rounded-2xl bg-surface-950 border border-surface-800 space-y-3.5 transition hover:border-surface-700 shadow-lg shadow-black/40"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <div className="text-base font-bold text-white tracking-tight">
+                          {ag.nomeQuadra}
+                        </div>
+                        <div className="text-xs text-surface-400 flex items-center gap-1.5 mt-1">
+                          <CalendarIcon className="w-3.5 h-3.5 text-surface-500" />
+                          <span>{data.split('-').reverse().join('/')}</span>
+                          <span className="text-surface-600">•</span>
+                          <span>{horaInicio} às {horaFim}</span>
+                        </div>
+                        {ag.status === 'PENDENTE' && !isPassado && (() => {
+                          const tempo = getTempoRestantePix(ag.criadoEm);
+                          return tempo ? (
+                            <div className="text-xs text-amber-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-amber-950/30 border border-amber-500/20 px-2.5 py-1 rounded-lg w-fit">
+                              <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                              <span>Pague via Pix em até {tempo}</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-red-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-red-950/30 border border-red-500/20 px-2.5 py-1 rounded-lg w-fit">
+                              <Clock className="w-3.5 h-3.5 text-red-400" />
+                              <span>Tempo de pagamento expirado</span>
+                            </div>
+                          );
+                        })()}
                       </div>
+
+                      <Badge
+                        variant={
+                          isCancelado
+                            ? 'outline'
+                            : isPassado
+                            ? 'neutral'
+                            : ag.status === 'PENDENTE'
+                            ? 'warning'
+                            : 'success'
+                        }
+                        withDot
+                      >
+                        {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
+                      </Badge>
                     </div>
 
-                    {/* Informações da Quadra */}
-                    <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">
-                          {q.nome}
-                        </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-surface-800/80 text-xs">
+                      <span className="text-white font-mono font-bold text-sm tracking-tight">
+                        R$ {ag.valorTotal.toFixed(2)}
+                      </span>
 
-                        {q.cidade && q.estado && (
-                          <div className="text-xs text-zinc-400 flex items-center gap-1.5 mt-1">
-                            <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                            <span className="truncate">{q.bairro ? `${q.bairro}, ` : ''}{q.cidade} - {q.estado}</span>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        {ag.status === 'PENDENTE' && (
+                          <button
+                            onClick={() => setAgendamentoPixModal(ag)}
+                            className="text-xs bg-brand-500 hover:bg-brand-400 text-surface-950 font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-brand-500/20 active:scale-[0.98] cursor-pointer"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Pagar com Pix</span>
+                          </button>
                         )}
-                      </div>
 
-                      <div className="pt-3 border-t border-zinc-850 flex items-center justify-between gap-2 mt-auto">
-                        <div>
-                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold block">Valor / hora</span>
-                          <span className="text-sm font-semibold text-white font-mono">
-                            R$ {q.valorHora.toFixed(2)}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedQuadra(q.id_quadra);
-                            setIsBookingModalOpen(true);
-                          }}
-                          className="text-xs px-3.5 py-2 rounded-xl transition-all font-semibold flex items-center gap-1.5 active:scale-95 text-zinc-200 hover:text-white bg-zinc-850 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 shadow-sm"
-                        >
-                          <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Ver Horários</span>
-                        </button>
+                        {!isCancelado && (
+                          <button
+                            onClick={() => cancelarAgendamento(ag.id_agendamento)}
+                            className="text-xs text-red-400 hover:text-red-300 font-semibold transition underline underline-offset-2 active:scale-95 cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -660,191 +887,9 @@ export const ClientDashboard: React.FC = () => {
               })}
             </div>
           )}
+        </div>
       </div>
 
-      {/* ABA 2: MINHAS RESERVAS */}
-      <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
-          <div className="bg-zinc-900/90 border border-zinc-850 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-            {/* Sub-abas de Filtro de Reservas */}
-            <div className="flex bg-zinc-950 p-1.5 rounded-xl border border-zinc-800 text-xs">
-              <button
-                onClick={() => setFiltroStatusReservas('ATIVOS')}
-                className={`flex-1 py-2 px-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
-                  filtroStatusReservas === 'ATIVOS'
-                    ? 'bg-white text-zinc-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <span>Ativos</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                  filtroStatusReservas === 'ATIVOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                }`}>
-                  {contadoresReservas.ativos}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setFiltroStatusReservas('REALIZADOS')}
-                className={`flex-1 py-2 px-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
-                  filtroStatusReservas === 'REALIZADOS'
-                    ? 'bg-white text-zinc-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <span>Realizados</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                  filtroStatusReservas === 'REALIZADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                }`}>
-                  {historicoCarregado ? contadoresReservas.realizados : '—'}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setFiltroStatusReservas('CANCELADOS')}
-                className={`flex-1 py-2 px-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
-                  filtroStatusReservas === 'CANCELADOS'
-                    ? 'bg-white text-zinc-950 shadow-sm'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <span>Cancelados</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                  filtroStatusReservas === 'CANCELADOS' ? 'bg-zinc-200 text-zinc-950' : 'bg-zinc-800 text-zinc-400'
-                }`}>
-                  {historicoCarregado ? contadoresReservas.cancelados : '—'}
-                </span>
-              </button>
-            </div>
-
-            {/* Listagem de Reservas ou Botão de Carregar Histórico */}
-            {filtroStatusReservas !== 'ATIVOS' && !historicoCarregado ? (
-              <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-zinc-950/60 border border-zinc-800/80 rounded-2xl space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
-                  <History className="w-6 h-6" />
-                </div>
-                <div className="space-y-1.5 max-w-md">
-                  <h4 className="text-sm font-semibold text-white">
-                    Histórico não carregado
-                  </h4>
-                  <p className="text-xs text-zinc-400">
-                    Por padrão carregamos apenas suas reservas ativas para maior rapidez. Clique abaixo para carregar todo o seu histórico.
-                  </p>
-                </div>
-                <button
-                  onClick={carregarHistorico}
-                  disabled={carregandoHistorico}
-                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-500 disabled:opacity-60 text-white font-semibold text-xs shadow-lg shadow-primary-950/30 transition active:scale-[0.98]"
-                >
-                  {carregandoHistorico ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Carregando histórico...</span>
-                    </>
-                  ) : (
-                    <>
-                      <History className="w-4 h-4" />
-                      <span>Carregar histórico de reservas</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            ) : agendamentosFiltrados.length === 0 ? (
-              <EmptyState
-                icon={Clock}
-                title={
-                  filtroStatusReservas === 'ATIVOS'
-                    ? 'Nenhuma reserva ativa no momento'
-                    : filtroStatusReservas === 'REALIZADOS'
-                    ? 'Nenhuma reserva realizada no histórico'
-                    : 'Nenhuma reserva cancelada'
-                }
-                description={
-                  filtroStatusReservas === 'ATIVOS'
-                    ? 'Clique na aba "Explorar Quadras" para encontrar uma quadra e agendar seu jogo.'
-                    : 'Seus registros aparecerão aqui conforme as partidas forem finalizadas ou canceladas.'
-                }
-                className="py-14"
-              />
-            ) : (
-              <div className="space-y-3.5">
-                {agendamentosFiltrados.map((ag) => {
-                  const isCancelado = ag.status === 'CANCELADO';
-                  const isPassado = new Date(ag.dataHoraFim) < new Date();
-                  const [data, tempoInicio] = ag.dataHoraInicio.split('T');
-                  const [, tempoFim] = ag.dataHoraFim.split('T');
-                  const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
-                  const horaFim = tempoFim ? tempoFim.substring(0, 5) : '';
-
-                  return (
-                    <div
-                      key={ag.id_agendamento}
-                      className="p-4 sm:p-5 rounded-2xl bg-zinc-950 border border-zinc-850 space-y-3 transition hover:border-zinc-700 shadow-md"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div>
-                          <div className="text-base font-bold text-white">
-                            {ag.nomeQuadra}
-                          </div>
-                          <div className="text-xs text-zinc-400 flex items-center gap-1.5 mt-1">
-                            <CalendarIcon className="w-3.5 h-3.5 text-zinc-500" />
-                            <span>{data.split('-').reverse().join('/')}</span>
-                            <span className="text-zinc-600">•</span>
-                            <span>{horaInicio} às {horaFim}</span>
-                          </div>
-                          {ag.status === 'PENDENTE' && !isPassado && (() => {
-                            const tempo = getTempoRestantePix(ag.criadoEm);
-                            return tempo ? (
-                              <div className="text-xs text-amber-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-amber-950/30 border border-amber-500/20 px-2.5 py-1 rounded-lg w-fit">
-                                <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400" />
-                                <span>Pague via Pix em até {tempo}</span>
-                              </div>
-                            ) : (
-                              <div className="text-xs text-red-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-red-950/30 border border-red-500/20 px-2.5 py-1 rounded-lg w-fit">
-                                <Clock className="w-3.5 h-3.5 text-red-400" />
-                                <span>Tempo de pagamento expirado</span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        <Badge variant={isCancelado ? 'outline' : isPassado ? 'neutral' : ag.status === 'PENDENTE' ? 'warning' : 'success'}>
-                          {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-zinc-850 text-xs">
-                        <span className="text-zinc-200 font-mono font-bold text-sm">
-                          R$ {ag.valorTotal.toFixed(2)}
-                        </span>
-
-                        <div className="flex items-center gap-3">
-                          {ag.status === 'PENDENTE' && (
-                            <button
-                              onClick={() => setAgendamentoPixModal(ag)}
-                              className="text-xs bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98]"
-                            >
-                              <QrCode className="w-3.5 h-3.5" />
-                              <span>Pagar com Pix</span>
-                            </button>
-                          )}
-
-                          {!isCancelado && (
-                            <button
-                              onClick={() => cancelarAgendamento(ag.id_agendamento)}
-                              className="text-xs text-red-400 hover:text-red-300 font-semibold transition underline underline-offset-2 active:scale-95"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
 
       {/* Modal Dedicado de Horários e Agendamento (BookingModal) */}
       <BookingModal

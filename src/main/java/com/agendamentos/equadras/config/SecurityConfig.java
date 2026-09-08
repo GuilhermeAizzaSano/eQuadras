@@ -46,7 +46,8 @@ public class SecurityConfig {
                 "http://172.29.*:*",
                 "http://172.30.*:*",
                 "http://172.31.*:*",
-                "http://*:*", "http://*", "https://*", "https://*:*", "https://equadras.app", "https://www.equadras.app"
+                "https://equadras.app",
+                "https://www.equadras.app"
         ));
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
@@ -76,23 +77,33 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
-                        // Apenas ADMIN
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
-                        .requestMatchers("/notificacoes", "/notificacoes/**", "/api/notificacoes", "/api/notificacoes/**").hasRole("ADMIN")
+                        // Restrição específica da API (/api/**):
+                        // Usuário com Role CLIENT pode apenas consultar/listar dados (GET)
+                        // Modificações (POST, PUT, PATCH, DELETE) na API exigem ROLE_ADMIN
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
 
-                        // Qualquer autenticado (CLIENT ou ADMIN)
-                        .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**").authenticated()
-                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**").authenticated()
-                        .requestMatchers("/usuarios", "/usuarios/**", "/api/usuarios", "/api/usuarios/**").authenticated()
+                        // Endpoints Web restritos a ADMIN
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
+                        .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
+
+                        // Demais rotas web autenticadas (CLIENT ou ADMIN)
+                        .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
+                        .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
+                        .requestMatchers("/usuarios", "/usuarios/**").authenticated()
 
                         // Qualquer outra requer autenticação
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new com.agendamentos.equadras.security.RateLimitFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }

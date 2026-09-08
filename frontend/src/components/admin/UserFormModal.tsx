@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, Role } from '../../types';
-import { X, User, Mail, Phone, Lock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { X, User, Mail, Phone, Lock, AlertCircle } from 'lucide-react';
+import { Button, Input, Select } from '../ui';
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -108,11 +109,11 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-950/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
+          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-surface-800 transition cursor-pointer"
           title="Fechar"
         >
           <X className="w-5 h-5" />
@@ -130,126 +131,88 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         </div>
 
         {erro && (
-          <div className="p-3 rounded-xl bg-red-950/40 border border-red-900/60 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2 font-mono">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{erro}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1">
-              Nome Completo
-            </label>
-            <div className="relative">
-              <User className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                required
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Nome do usuário"
-                className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white transition"
-              />
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Nome Completo"
+            required
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Nome do usuário"
+            leftIcon={<User className="w-4 h-4 text-zinc-500" />}
+          />
 
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1">
-              E-mail
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                required
-                disabled={isMaster}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@dominio.com"
-                className={`w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white transition ${
-                  isMaster ? 'opacity-60 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
+            <Input
+              label="E-mail"
+              type="email"
+              required
+              disabled={isMaster}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="usuario@dominio.com"
+              leftIcon={<Mail className="w-4 h-4 text-zinc-500" />}
+            />
             {isMaster && (
-              <span className="text-[10px] text-zinc-500 mt-0.5 block">
+              <span className="text-[10px] text-zinc-500 mt-1 block font-mono">
                 O e-mail da conta Master não pode ser alterado.
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1">
-                Telefone
-              </label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  required
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  placeholder="(11) 99999-9999"
-                  className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white transition"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Telefone"
+              required
+              value={phone}
+              onChange={handlePhoneChange}
+              placeholder="(11) 99999-9999"
+              leftIcon={<Phone className="w-4 h-4 text-zinc-500" />}
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1">
-                Perfil de Acesso
-              </label>
-              <div className="relative">
-                <ShieldCheck className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <select
-                  value={role}
-                  disabled={isMaster}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                  className={`w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-white transition ${
-                    isMaster ? 'opacity-60 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <option value="CLIENT">Cliente (Atleta)</option>
-                  <option value="ADMIN">Administrador</option>
-                </select>
-              </div>
-            </div>
+            <Select
+              label="Perfil de Acesso"
+              value={role}
+              disabled={isMaster}
+              onChange={(e) => setRole(e.target.value as Role)}
+            >
+              <option value="CLIENT">Cliente (Atleta)</option>
+              <option value="ADMIN">Administrador</option>
+            </Select>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1">
-              {usuarioParaEditar ? 'Nova Senha (opcional)' : 'Senha de Acesso'}
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                required={!usuarioParaEditar}
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder={usuarioParaEditar ? 'Deixe em branco para manter a atual' : 'Mínimo 6 caracteres'}
-                className="w-full bg-zinc-900/80 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white transition"
-              />
-            </div>
-          </div>
+          <Input
+            label={usuarioParaEditar ? 'Nova Senha (opcional)' : 'Senha de Acesso'}
+            type="password"
+            required={!usuarioParaEditar}
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            placeholder={usuarioParaEditar ? 'Deixe em branco para manter a atual' : 'Mínimo 6 caracteres'}
+            leftIcon={<Lock className="w-4 h-4 text-zinc-500" />}
+          />
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-850">
-            <button
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-surface-800">
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white rounded-xl transition"
+              className="cursor-pointer"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
               disabled={loading}
-              className="bg-white hover:bg-zinc-200 text-black font-semibold text-xs py-2 px-4 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="cursor-pointer font-bold"
             >
               {loading ? 'Salvando...' : usuarioParaEditar ? 'Salvar Alterações' : 'Criar Usuário'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

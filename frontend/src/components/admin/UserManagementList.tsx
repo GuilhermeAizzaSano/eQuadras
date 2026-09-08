@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Usuario, Role } from '../../types';
 import { UserPlus, Edit, Trash2, Shield, User, Search, RefreshCw } from 'lucide-react';
-import { Badge, ConfirmModal } from '../ui';
+import { Badge, ConfirmModal, Button } from '../ui';
 
 interface UserManagementListProps {
   usuarios: Usuario[];
@@ -37,23 +37,23 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
   return (
     <div className="space-y-4">
       {/* Barra de Ações Superior */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/80">
-        <div className="flex items-center gap-2 flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-900 p-4 rounded-2xl border border-surface-800">
+        <div className="flex items-center gap-2.5 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Buscar por nome, e-mail ou telefone..."
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700"
+              className="w-full bg-surface-950 border border-surface-750 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-brand-400 transition font-sans"
             />
           </div>
 
           <select
             value={roleFiltro}
             onChange={(e) => setRoleFiltro(e.target.value as any)}
-            className="bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700"
+            className="bg-surface-950 border border-surface-750 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-brand-400 transition cursor-pointer font-mono"
           >
             <option value="TODOS">Todos os Perfis</option>
             <option value="ADMIN">Administradores</option>
@@ -65,45 +65,46 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 hover:text-white transition disabled:opacity-50"
+            className="p-2.5 rounded-xl border border-surface-800 bg-surface-950 hover:bg-surface-850 text-zinc-400 hover:text-white transition disabled:opacity-50 cursor-pointer"
             title="Atualizar lista"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
-          <button
+          <Button
+            variant="primary"
             onClick={onNovoUsuario}
-            className="bg-white hover:bg-zinc-200 text-black font-semibold text-xs py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+            className="cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>Novo Usuário</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Tabela de Usuários */}
-      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-surface-900 border border-surface-800 rounded-3xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-zinc-300">
-            <thead className="bg-zinc-900/80 text-zinc-400 uppercase tracking-wider font-semibold border-b border-zinc-800 text-[10px]">
+            <thead className="bg-surface-950/80 text-zinc-400 uppercase tracking-wider font-bold border-b border-surface-800 text-[10px] font-mono">
               <tr>
-                <th className="py-3.5 px-4">Usuário</th>
+                <th className="py-3.5 px-5">Usuário</th>
                 <th className="py-3.5 px-4">E-mail</th>
                 <th className="py-3.5 px-4">Telefone</th>
                 <th className="py-3.5 px-4">Perfil</th>
-                <th className="py-3.5 px-4 text-right">Ações</th>
+                <th className="py-3.5 px-5 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-850">
+            <tbody className="divide-y divide-surface-800/60">
               {loading && usuarios.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-zinc-500">
+                  <td colSpan={5} className="py-12 text-center text-zinc-500 font-mono text-xs">
                     Carregando usuários...
                   </td>
                 </tr>
               ) : usuariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-zinc-500">
+                  <td colSpan={5} className="py-12 text-center text-zinc-500 font-mono text-xs">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -111,25 +112,25 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                 usuariosFiltrados.map((u) => {
                   const isMaster = u.email_usuario.toLowerCase() === 'gui@gmail.com';
                   return (
-                    <tr key={u.id_usuario} className="hover:bg-zinc-900/40 transition">
-                      <td className="py-3.5 px-4 font-medium text-white flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300">
+                    <tr key={u.id_usuario} className="hover:bg-surface-850/50 transition">
+                      <td className="py-3.5 px-5 font-medium text-white flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-surface-950 border border-surface-800 flex items-center justify-center text-zinc-300">
                           {u.role === 'ADMIN' ? (
                             <Shield className="w-4 h-4 text-amber-400" />
                           ) : (
-                            <User className="w-4 h-4 text-zinc-400" />
+                            <User className="w-4 h-4 text-brand-400" />
                           )}
                         </div>
                         <div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 font-bold text-sm">
                             <span>{u.nome_usuario}</span>
                             {isMaster && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/80 font-mono font-semibold">
+                              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/30 font-mono font-bold">
                                 MASTER
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-zinc-500">ID: #{u.id_usuario}</span>
+                          <span className="text-[10px] text-zinc-500 font-mono">ID: #{u.id_usuario}</span>
                         </div>
                       </td>
 
@@ -142,16 +143,16 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <Badge variant={u.role === 'ADMIN' ? 'warning' : 'neutral'}>
+                        <Badge variant={u.role === 'ADMIN' ? 'warning' : 'neutral'} withDot>
                           {u.role === 'ADMIN' ? 'Administrador' : 'Cliente'}
                         </Badge>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => onEditarUsuario(u)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-surface-800 transition cursor-pointer"
                             title="Editar usuário"
                           >
                             <Edit className="w-4 h-4" />
@@ -160,7 +161,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                           {!isMaster ? (
                             <button
                               onClick={() => setUsuarioParaExcluir(u)}
-                              className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-950/30 transition"
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
                               title="Excluir usuário"
                             >
                               <Trash2 className="w-4 h-4" />

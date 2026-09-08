@@ -1,6 +1,6 @@
-﻿import React from 'react';
+import React from 'react';
 import { Quadra, BloqueioHorario } from '../../types';
-import { Badge, EmptyState } from '../ui';
+import { Badge, EmptyState, Button } from '../ui';
 import {
   ShieldCheck,
   Ban,
@@ -8,7 +8,8 @@ import {
   Power,
   Edit2,
   Trash2,
-  PlusCircle
+  PlusCircle,
+  MapPin
 } from 'lucide-react';
 
 interface CourtManagementListProps {
@@ -36,25 +37,26 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">Minhas Quadras Cadastradas</h2>
+          <h2 className="text-xl font-bold text-white tracking-tight">Minhas Quadras Cadastradas</h2>
           <p className="text-xs text-zinc-400 mt-1">
-            Cadastre novas arenas esportivas, defina valores por hora, edite fotos e ative ou inative quadras.
+            Cadastre novas arenas esportivas, defina valores por hora, edite fotos e gerencie status de disponibilidade.
           </p>
         </div>
-        <button
+        <Button
+          variant="primary"
           onClick={onAbrirCriacao}
-          className="bg-white hover:bg-zinc-200 text-black font-semibold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-2 transition shadow-lg active:scale-95"
+          className="cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           Cadastrar Nova Quadra
-        </button>
+        </Button>
       </div>
 
       {minhasQuadras.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
           title="Nenhuma quadra cadastrada"
-          description="Você ainda não cadastrou nenhuma quadra esportiva. Clique no botão acima para adicionar a sua primeira quadra."
+          description="Você ainda não cadastrou nenhuma quadra esportiva. Adicione a sua primeira quadra para começar a receber reservas."
           actionLabel="Cadastrar Primeira Quadra"
           onAction={onAbrirCriacao}
           className="py-16"
@@ -68,46 +70,48 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
             return (
               <div
                 key={q.id_quadra}
-                className="bg-zinc-950 border border-zinc-850 rounded-2xl overflow-hidden shadow-xl hover:border-zinc-700 transition flex flex-col justify-between group"
+                className="bg-surface-900 border border-surface-800 rounded-3xl overflow-hidden shadow-xl hover:border-surface-700 transition-all flex flex-col justify-between group relative hover:-translate-y-0.5"
               >
                 {/* Imagem de Capa com Badges */}
-                <div className="relative aspect-video bg-zinc-900 overflow-hidden">
+                <div className="relative aspect-video bg-surface-950 overflow-hidden">
                   {q.fotos && q.fotos.length > 0 ? (
                     <img
                       src={getAssetUrl(q.fotos[0])}
                       alt={q.nome}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                    <div className="w-full h-full flex items-center justify-center text-zinc-700">
                       <ShieldCheck className="w-12 h-12 stroke-1" />
                     </div>
                   )}
 
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <Badge variant={q.ativa ? 'success' : 'outline'}>
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface-950/80 via-transparent to-black/30 pointer-events-none" />
+
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <Badge variant={q.ativa ? 'success' : 'neutral'} withDot>
                       {q.ativa ? 'ATIVA' : 'INATIVA'}
                     </Badge>
                   </div>
 
                   {temBloqueiosAtivos && (
-                    <div className="absolute top-3 left-3 bg-amber-500/90 backdrop-blur-sm text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg">
+                    <div className="absolute top-3 left-3 bg-amber-500/90 backdrop-blur-md text-surface-950 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-lg font-mono">
                       <Ban className="w-3 h-3" />
                       <span>{bloqueiosDesta.length} {bloqueiosDesta.length === 1 ? 'bloqueio' : 'bloqueios'}</span>
                     </div>
                   )}
 
-                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-white font-mono text-xs font-bold">
-                    R$ {q.valorHora.toFixed(2)} / hora
+                  <div className="absolute bottom-3 left-3 bg-surface-950/80 backdrop-blur-md px-3 py-1 rounded-xl border border-surface-700/60 text-white font-mono text-xs font-bold shadow-lg">
+                    R$ {q.valorHora.toFixed(2)} <span className="text-zinc-400 font-normal">/ hora</span>
                   </div>
                 </div>
 
                 {/* Informações da Quadra */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-base font-bold text-white truncate">{q.nome}</h3>
-                      <span className="text-[10px] font-semibold text-zinc-400 uppercase px-2 py-0.5 bg-zinc-900 rounded-md border border-zinc-800 shrink-0 font-mono">
+                      <h3 className="text-base font-bold text-white truncate group-hover:text-brand-300 transition-colors">{q.nome}</h3>
+                      <span className="text-[10px] font-semibold text-zinc-400 uppercase px-2 py-0.5 bg-surface-950 rounded-lg border border-surface-800 shrink-0 font-mono">
                         {q.tipoEsporte.replace('_', ' ')}
                       </span>
                     </div>
@@ -117,25 +121,26 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                     </p>
 
                     {q.dataLimiteAgendamento && (
-                      <div className="text-[11px] text-amber-400/90 font-mono flex items-center gap-1.5 bg-amber-950/20 border border-amber-800/30 px-2 py-1 rounded-lg">
-                        <Clock className="w-3 h-3 text-amber-400" />
-                        <span>Limite de reservas: <strong>{q.dataLimiteAgendamento.split('-').reverse().join('/')}</strong></span>
+                      <div className="text-[11px] text-amber-400/90 font-mono flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
+                        <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Limite reservas: <strong>{q.dataLimiteAgendamento.split('-').reverse().join('/')}</strong></span>
                       </div>
                     )}
 
-                    <div className="text-xs text-zinc-500 truncate pt-1">
-                      {q.logradouro}, {q.bairro} - {q.cidade}/{q.estado}
+                    <div className="text-xs text-zinc-500 truncate pt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                      <span className="truncate">{q.logradouro}, {q.bairro} - {q.cidade}/{q.estado}</span>
                     </div>
                   </div>
 
                   {/* Ações Rápidas */}
-                  <div className="flex items-center justify-between gap-2 pt-4 border-t border-zinc-850">
+                  <div className="flex items-center justify-between gap-2 pt-4 border-t border-surface-800/80">
                     <button
                       onClick={() => onAlternarStatus(q)}
-                      className={`flex-1 py-2 px-2.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-[0.98] ${
+                      className={`flex-1 py-2 px-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                         q.ativa
-                          ? 'border-zinc-800 text-zinc-400 hover:text-amber-400 hover:border-amber-900/50 bg-zinc-900/40'
-                          : 'border-emerald-900/50 text-emerald-400 bg-emerald-950/30 hover:bg-emerald-950/60'
+                          ? 'border-surface-800 text-zinc-400 hover:text-amber-400 hover:border-amber-500/30 bg-surface-950/40'
+                          : 'border-brand-500/30 text-brand-400 bg-brand-500/10 hover:bg-brand-500/20'
                       }`}
                       title={q.ativa ? 'Desativar quadra' : 'Ativar quadra'}
                     >
@@ -145,10 +150,10 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
 
                     <button
                       onClick={() => onAbrirBloqueios(q)}
-                      className={`p-2 rounded-lg border text-xs transition active:scale-[0.98] flex items-center gap-1.5 font-medium ${
+                      className={`px-3 py-2 rounded-xl border text-xs transition-all cursor-pointer active:scale-[0.98] flex items-center gap-1.5 font-medium ${
                         temBloqueiosAtivos
-                          ? 'bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-950/70'
-                          : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-400 hover:text-white'
+                          ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
+                          : 'bg-surface-950 hover:bg-surface-800 border-surface-800 text-zinc-400 hover:text-white'
                       }`}
                       title="Gerenciar bloqueios de horários e datas desta quadra"
                     >
@@ -158,7 +163,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
 
                     <button
                       onClick={() => onAbrirEdicao(q)}
-                      className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs transition active:scale-[0.98]"
+                      className="p-2 rounded-xl bg-surface-950 hover:bg-surface-800 border border-surface-800 text-zinc-300 hover:text-white text-xs transition-all cursor-pointer active:scale-[0.98]"
                       title="Editar quadra"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -166,7 +171,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
 
                     <button
                       onClick={() => onExcluirQuadra(q)}
-                      className="p-2 rounded-lg bg-red-950/30 hover:bg-red-950/60 border border-red-900/40 text-red-400 hover:text-red-300 text-xs transition active:scale-[0.98]"
+                      className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 hover:text-rose-300 text-xs transition-all cursor-pointer active:scale-[0.98]"
                       title="Excluir quadra"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

@@ -80,9 +80,10 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Buscar usuário por ID", description = "Consulta os dados de um usuário pelo seu identificador único.")
+    @Operation(summary = "Buscar usuário por ID", description = "Consulta os dados de um usuário pelo seu identificador único. Apenas o próprio usuário ou o Admin Geral tem permissão.")
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(usuarioService.buscarPorId(id));
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id,
+                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        return ResponseEntity.ok(usuarioService.buscarPorId(id, usuarioLogado.id()));
     }
 }

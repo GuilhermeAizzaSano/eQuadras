@@ -4,30 +4,64 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        zinc: {
-          950: '#0f141c', // Fundo principal grafite elegante (não preto breu)
-          900: '#18202c', // Cartões e blocos em relevo com destaque
-          850: '#212a3b', // Superfícies intermediárias e cabeçalhos
-          800: '#2d3748', // Bordas nítidas e destacadas
-          750: '#38455a',
-          700: '#4a5b75', // Bordas de foco e divisores
-          600: '#64748b',
-          500: '#94a3b8',
-          400: '#cbd5e1', // Texto secundário com excelente contraste
-          300: '#e2e8f0', // Texto de formulários e labels
-          200: '#f1f5f9', // Títulos destacados
-          100: '#f8fafc',
-          50: '#ffffff'
+        brand: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+          950: '#022c22',
         },
-        background: "#0f141c",
-        surface: "#18202c",
-        surfaceSubtle: "#212a3b",
-        border: "#2d3748",
-        borderFocus: "#38bdf8",
-      }
+        surface: {
+          950: '#090d14',
+          900: '#0f1724',
+          850: '#162032',
+          800: '#1d2a40',
+          750: '#26354f',
+          700: '#334464',
+          600: '#475d84',
+          500: '#64748b',
+          400: '#94a3b8',
+          300: '#cbd5e1',
+          200: '#e2e8f0',
+          100: '#f1f5f9',
+          50: '#f8fafc',
+        },
+        zinc: {
+          950: '#090d14',
+          900: '#0f1724',
+          850: '#162032',
+          800: '#1d2a40',
+          750: '#26354f',
+          700: '#334464',
+          600: '#475d84',
+          500: '#64748b',
+          400: '#94a3b8',
+          300: '#cbd5e1',
+          200: '#e2e8f0',
+          100: '#f1f5f9',
+          50: '#ffffff',
+        },
+        background: "#090d14",
+      },
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      boxShadow: {
+        'glow-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.25)',
+        'glow-sky': '0 0 25px -5px rgba(56, 189, 248, 0.25)',
+        'subtle-border': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.07)',
+      },
     },
   },
   plugins: [],
