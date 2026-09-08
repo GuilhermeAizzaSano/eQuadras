@@ -8,9 +8,6 @@ import {
   Mail,
   Eye,
   EyeOff,
-  CalendarCheck2,
-  Trophy,
-  Zap,
 } from 'lucide-react';
 import loginBg from '../assets/login-bg.jpg';
 
@@ -45,64 +42,33 @@ export const AuthPage: React.FC = () => {
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
           src={loginBg}
-          alt="Vista aérea de quadras poliesportivas, tênis e futebol"
+          alt="Vista aérea de quadras esportivas"
           fetchPriority="high"
           loading="eager"
-          className="w-full h-full object-cover object-center pointer-events-none select-none scale-[1.01]"
+          className="w-full h-full object-cover object-center pointer-events-none select-none"
         />
-        {/* Camadas de contraste cinematográfico */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-zinc-950/40 md:hidden pointer-events-none" />
-        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-zinc-950/65 via-zinc-950/35 to-zinc-950/95 pointer-events-none" />
-        <div className="hidden md:block absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(16,185,129,0.1),transparent_50%)] pointer-events-none" />
+        {/* Contraste suave e natural */}
+        <div className="absolute inset-0 bg-black/60 md:hidden pointer-events-none" />
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/20 via-black/40 to-black/90 pointer-events-none" />
       </div>
 
-      {/* Lado Esquerdo: Identidade Visual e Ambientação Esportiva (Desktop) */}
-      <div className="relative z-10 flex-1 hidden md:flex flex-col justify-center p-10 lg:p-14 xl:p-16 text-white min-h-screen">
-        {/* Centro: Chamada de Impacto */}
-        <div className="max-w-xl space-y-6">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-white drop-shadow-md">
-            Alta performance para <br />
-            <span className="bg-gradient-to-r from-brand-400 via-emerald-300 to-teal-200 bg-clip-text text-transparent">
-              suas partidas e quadras.
-            </span>
-          </h1>
+      {/* Lado Esquerdo: Espaço livre para a foto das quadras respirar */}
+      <div className="flex-1 hidden md:block" />
 
-          <p className="text-sm sm:text-base text-surface-300 max-w-lg leading-relaxed drop-shadow">
-            Agende horários em segundos, controle a ocupação em tempo real e gerencie sua arena com máxima eficiência.
-          </p>
-
-          {/* Destaques Rápidos */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-950/70 border border-white/10 backdrop-blur-md shadow-md">
-              <CalendarCheck2 className="w-4 h-4 text-brand-400 shrink-0" />
-              <span className="text-xs font-medium text-surface-200">Reserva Ágil</span>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-950/70 border border-white/10 backdrop-blur-md shadow-md">
-              <Trophy className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-medium text-surface-200">Multiesportes</span>
-            </div>
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-surface-950/70 border border-white/10 backdrop-blur-md shadow-md">
-              <Zap className="w-4 h-4 text-sky-400 shrink-0" />
-              <span className="text-xs font-medium text-surface-200">PIX Imediato</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Lado Direito: Formulário Exclusivo de Login */}
-      <div className="relative z-20 w-full md:w-[460px] lg:w-[500px] xl:w-[540px] min-h-screen flex flex-col justify-between bg-surface-950/90 md:bg-surface-950/85 backdrop-blur-xl md:backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/10 p-6 sm:p-10 lg:p-12 shadow-[-20px_0_60px_rgba(0,0,0,0.85)]">
+      {/* Lado Direito: Formulário Direto de Login */}
+      <div className="relative z-20 w-full md:w-[440px] lg:w-[480px] min-h-screen flex flex-col justify-between bg-zinc-950/95 md:bg-zinc-950/90 md:backdrop-blur-xl border-t md:border-t-0 md:border-l border-zinc-800 p-8 sm:p-12">
         <FeedbackBanner
           feedback={error ? { type: 'error', message: error } : null}
           onClose={() => setError(null)}
         />
 
-        <div className="my-auto w-full max-w-md mx-auto space-y-7 py-6">
+        <div className="my-auto w-full max-w-sm mx-auto space-y-6">
           <div className="space-y-1 text-left">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Entrar na Conta
-            </h2>
-            <p className="text-xs sm:text-sm text-surface-400 mt-1">
-              Informe seu e-mail e senha para acessar o painel
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              Entrar
+            </h1>
+            <p className="text-sm text-zinc-400">
+              Informe seu e-mail e senha para acessar a plataforma
             </p>
           </div>
 
@@ -131,7 +97,7 @@ export const AuthPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1 text-surface-400 hover:text-white transition-colors focus:outline-none"
+                  className="p-1 text-zinc-400 hover:text-white transition-colors focus:outline-none"
                   title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
                   tabIndex={-1}
                 >
@@ -145,17 +111,16 @@ export const AuthPage: React.FC = () => {
               variant="primary"
               size="lg"
               isLoading={loading}
-              className="w-full mt-2 shadow-lg shadow-brand-500/20"
+              className="w-full mt-2"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Entrar na Conta
+              Entrar
             </Button>
           </form>
         </div>
 
-        {/* Copyright */}
-        <div className="pt-4 text-center md:text-left text-[11px] text-surface-500">
-          © {new Date().getFullYear()} eQuadras. Todos os direitos reservados.
+        <div className="pt-4 text-xs text-zinc-500">
+          eQuadras
         </div>
       </div>
     </div>
