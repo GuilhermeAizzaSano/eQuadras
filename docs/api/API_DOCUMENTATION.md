@@ -11,14 +11,16 @@ A documentação interativa com Swagger UI / OpenAPI 3 está disponível nos seg
 
 ## 1. Autenticação & Segurança
 
-A API adota o modelo **Stateless** baseado em tokens no cabeçalho HTTP:
+A plataforma eQuadras adota uma arquitetura de segurança segregada entre o tráfego da aplicação web frontend e a API REST externa de integrações.
+
+### 1.1 Autenticação da API Externa (/api/**)
+As rotas da API externa (`/api/**`) utilizam o modelo **Stateless** baseado em tokens no cabeçalho HTTP:
 ```http
 Authorization: Bearer <TOKEN>
 ```
 
-### 1.1 Autenticação via JWT
-Para atletas e administradores, o acesso é autenticado via Json Web Token (JWT):
-- **Endpoint:** `POST /usuarios/login`
+Para integrações externas, parceiros e bots (WhatsApp):
+- **Endpoint de Login:** `POST /api/usuarios/login`
 - **Corpo da Requisição:**
   ```json
   {
@@ -31,14 +33,21 @@ Para atletas e administradores, o acesso é autenticado via Json Web Token (JWT)
 **Exemplo de uso via cURL (Produção):**
 ```bash
 # 1. Realizar login e obter o token JWT
-TOKEN=$(curl -s -X POST "https://equadras.app/usuarios/login" \
+TOKEN=$(curl -s -X POST "https://equadras.app/api/usuarios/login" \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@equadras.com","senha":"sua_senha_aqui"}' | jq -r '.token')
 
-# 2. Utilizar o token nas requisições autenticadas
-curl -X GET "https://equadras.app/quadras" \
+# 2. Utilizar o token nas requisições autenticadas da API externa
+curl -X GET "https://equadras.app/api/quadras" \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+### 1.2 Proteção de Sessão da Aplicação Web (Frontend)
+As consultas realizadas pela aplicação web frontend utilizam sessão protegida por cookie seguro HttpOnly (`equadras_session`):
+- O cookie é emitido automaticamente nos endpoints de autenticação (`/usuarios/login` e auto-cadastro) e limpo no logout (`/usuarios/logout`).
+- O backend valida a existência e autenticidade da sessão via cookie em todas as consultas internas.
+- Requisições diretas, forçadas ou não autenticadas (cURL sem sessão, scrapers não autorizados) enviadas às rotas internas do frontend são terminantemente recusadas com status **HTTP 401 Unauthorized**.
+- As rotas de consumo interno do frontend são omitidas do Swagger e desta documentação pública, garantindo a proteção e integridade da aplicação.
 
 ---
 
@@ -46,37 +55,37 @@ curl -X GET "https://equadras.app/quadras" \
 
 | Módulo | Método | Endpoint | Permissão | Descrição |
 |---|---|---|---|---|
-| **Usuários** | `POST` | `/usuarios` | Público | Cadastro de novo usuário (`CLIENT`) |
-| **Usuários** | `POST` | `/usuarios/login` | Público | Autenticação e emissão de token JWT |
-| **Usuários** | `GET` | `/usuarios` | `ROLE_ADMIN` | Listar todos os usuários do sistema |
-| **Usuários** | `GET` | `/usuarios/{id}` | Autenticado | Buscar dados de usuário por ID |
-| **Quadras** | `POST` | `/quadras` | `ROLE_ADMIN` | Cadastrar nova quadra com horários e data limite |
-| **Quadras** | `GET` | `/quadras` | Público | Listar todas as quadras ativas ou filtrar por raio KM |
-| **Quadras** | `GET` | `/quadras/{id}` | Público | Buscar detalhes completos e horários da quadra |
-| **Quadras** | `PUT` | `/quadras/{id}` | `ROLE_ADMIN` | Atualizar dados cadastrais, horários e data limite |
-| **Quadras** | `DELETE` | `/quadras/{id}` | `ROLE_ADMIN` | Excluir quadra sem histórico de reservas |
-| **Quadras** | `POST` | `/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de fotos (multipart/form-data) |
-| **Quadras** | `DELETE` | `/quadras/{id}/fotos` | `ROLE_ADMIN` | Remover foto da galeria por URL |
-| **Quadras** | `PATCH` | `/quadras/{id}/status` | `ROLE_ADMIN` | Alternar status ativo/inativo |
-| **Bloqueios** | `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou horário pontual |
-| **Bloqueios** | `GET` | `/quadras/bloqueios` | `ROLE_ADMIN` | Listar todos os bloqueios de todas as quadras do admin em lote |
-| **Bloqueios** | `GET` | `/quadras/{id}/bloqueios` | Público | Listar bloqueios ativos da quadra |
-| **Bloqueios** | `DELETE`| `/quadras/{quadraId}/bloqueios/{bloqueioId}` | `ROLE_ADMIN` | Remover bloqueio por ID |
-| **Bloqueios** | `POST` | `/quadras/{quadraId}/desbloquear` | `ROLE_ADMIN` | Desbloquear horários/dias via corpo da requisição |
-| **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
-| **Agendamentos** | `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
-| **Agendamentos** | `POST` | `/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
-| **Agendamentos** | `POST` | `/agendamentos/bot` | Público / Bot | Criar agendamento flexível via Bot/WhatsApp com auto-cadastro e resolução de datas |
-| **Agendamentos** | `GET` | `/agendamentos/horarios-disponiveis` | Público | Consulta consolidada e flexível de grade de horários por data/esporte/quadra |
-| **Agendamentos** | `GET` | `/agendamentos` | Autenticado | Listar reservas do atleta/admin (`?historico=true` para histórico completo) |
-| **Agendamentos** | `GET` | `/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
-| **Agendamentos** | `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
-| **Pagamentos** | `POST` | `/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
-| **Pagamentos** | `POST` | `/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
-| **Notificações** | `GET` | `/notificacoes/stream` | `ROLE_ADMIN` | Iniciar stream SSE em tempo real de novos pagamentos |
-| **Notificações** | `GET` | `/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
-| **Notificações** | `PUT` | `/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
-| **Notificações** | `PUT` | `/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
+| **Usuários** | `POST` | `/api/usuarios` | Público | Cadastro de novo usuário (`CLIENT`) |
+| **Usuários** | `POST` | `/api/usuarios/login` | Público | Autenticação e emissão de token JWT |
+| **Usuários** | `GET` | `/api/usuarios` | `ROLE_ADMIN` | Listar todos os usuários do sistema |
+| **Usuários** | `GET` | `/api/usuarios/{id}` | Autenticado | Buscar dados de usuário por ID |
+| **Quadras** | `POST` | `/api/quadras` | `ROLE_ADMIN` | Cadastrar nova quadra com horários e data limite |
+| **Quadras** | `GET` | `/api/quadras` | Público | Listar todas as quadras ativas ou filtrar por raio KM |
+| **Quadras** | `GET` | `/api/quadras/{id}` | Público | Buscar detalhes completos e horários da quadra |
+| **Quadras** | `PUT` | `/api/quadras/{id}` | `ROLE_ADMIN` | Atualizar dados cadastrais, horários e data limite |
+| **Quadras** | `DELETE` | `/api/quadras/{id}` | `ROLE_ADMIN` | Excluir quadra sem histórico de reservas |
+| **Quadras** | `POST` | `/api/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de fotos (multipart/form-data) |
+| **Quadras** | `DELETE` | `/api/quadras/{id}/fotos` | `ROLE_ADMIN` | Remover foto da galeria por URL |
+| **Quadras** | `PATCH` | `/api/quadras/{id}/status` | `ROLE_ADMIN` | Alternar status ativo/inativo |
+| **Bloqueios** | `POST` | `/api/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou horário pontual |
+| **Bloqueios** | `GET` | `/api/quadras/bloqueios` | `ROLE_ADMIN` | Listar todos os bloqueios de todas as quadras do admin em lote |
+| **Bloqueios** | `GET` | `/api/quadras/{id}/bloqueios` | Público | Listar bloqueios ativos da quadra |
+| **Bloqueios** | `DELETE`| `/api/quadras/{quadraId}/bloqueios/{bloqueioId}` | `ROLE_ADMIN` | Remover bloqueio por ID |
+| **Bloqueios** | `POST` | `/api/quadras/{quadraId}/desbloquear` | `ROLE_ADMIN` | Desbloquear horários/dias via corpo da requisição |
+| **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
+| **Agendamentos** | `GET` | `/api/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
+| **Agendamentos** | `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
+| **Agendamentos** | `POST` | `/api/agendamentos/bot` | Público / Bot | Criar agendamento flexível via Bot/WhatsApp com auto-cadastro e resolução de datas |
+| **Agendamentos** | `GET` | `/api/agendamentos/horarios-disponiveis` | Público | Consulta consolidada e flexível de grade de horários por data/esporte/quadra |
+| **Agendamentos** | `GET` | `/api/agendamentos` | Autenticado | Listar reservas do atleta/admin (`?historico=true` para histórico completo) |
+| **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
+| **Agendamentos** | `PATCH`| `/api/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
+| **Pagamentos** | `POST` | `/api/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
+| **Pagamentos** | `POST` | `/api/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
+| **Notificações** | `GET` | `/api/notificacoes/stream` | `ROLE_ADMIN` | Iniciar stream SSE em tempo real de novos pagamentos |
+| **Notificações** | `GET` | `/api/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
+| **Notificações** | `PUT` | `/api/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
+| **Notificações** | `PUT` | `/api/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
 
 ---
 
@@ -86,12 +95,12 @@ curl -X GET "https://equadras.app/quadras" \
 Cria uma nova conta de atleta no sistema e já retorna o perfil criado acompanhado do token JWT pronto para uso.
 
 - **Método:** `POST`
-- **URL:** `/usuarios`
+- **URL:** `/api/usuarios`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-POST /usuarios HTTP/1.1
+POST /api/usuarios HTTP/1.1
 Host: localhost:8080
 Content-Type: application/json
 
@@ -134,12 +143,12 @@ Content-Type: application/json
 Autentica o usuário por e-mail e senha, retornando o token JWT e as informações do usuário logado.
 
 - **Método:** `POST`
-- **URL:** `/usuarios/login`
+- **URL:** `/api/usuarios/login`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-POST /usuarios/login HTTP/1.1
+POST /api/usuarios/login HTTP/1.1
 Host: localhost:8080
 Content-Type: application/json
 
@@ -180,12 +189,12 @@ Content-Type: application/json
 Retorna a listagem de todos os usuários registrados no sistema.
 
 - **Método:** `GET`
-- **URL:** `/usuarios`
+- **URL:** `/api/usuarios`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-GET /usuarios HTTP/1.1
+GET /api/usuarios HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed
 ```
@@ -216,12 +225,12 @@ Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed
 
 ### 3.4 Buscar Usuário por ID
 - **Método:** `GET`
-- **URL:** `/usuarios/{id}`
+- **URL:** `/api/usuarios/{id}`
 - **Autenticação:** `Bearer <TOKEN>`
 
 #### Requisição:
 ```http
-GET /usuarios/14 HTTP/1.1
+GET /api/usuarios/14 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -246,12 +255,12 @@ Authorization: Bearer <TOKEN>
 Cria uma nova quadra esportiva definindo nome, modalidade, valor/hora, endereço completo com coordenadas geográficas, **data limite de agendamento** (opcional), até 5 fotos e **grade de funcionamento semanal personalizada** (`disponibilidades`).
 
 - **Método:** `POST`
-- **URL:** `/quadras`
+- **URL:** `/api/quadras`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-POST /quadras HTTP/1.1
+POST /api/quadras HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed
 Content-Type: application/json
@@ -325,12 +334,12 @@ Content-Type: application/json
 Retorna a relação de todas as quadras ativas. Permite cálculo e ordenação por proximidade ao enviar parâmetros de geolocalização.
 
 - **Método:** `GET`
-- **URL:** `/quadras` ou `/quadras?latitude=-20.2730&longitude=-50.5398&raioKm=5.0`
+- **URL:** `/api/quadras` ou `/api/quadras?latitude=-20.2730&longitude=-50.5398&raioKm=5.0`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-GET /quadras?latitude=-20.2730&longitude=-50.5398&raioKm=5.0 HTTP/1.1
+GET /api/quadras?latitude=-20.2730&longitude=-50.5398&raioKm=5.0 HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -366,12 +375,12 @@ Host: localhost:8080
 
 ### 4.3 Buscar Detalhes da Quadra por ID
 - **Método:** `GET`
-- **URL:** `/quadras/{id}`
+- **URL:** `/api/quadras/{id}`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-GET /quadras/11 HTTP/1.1
+GET /api/quadras/11 HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -408,12 +417,12 @@ Host: localhost:8080
 Permite atualizar todas as informações cadastrais, horários semanais e a data limite de agendamentos.
 
 - **Método:** `PUT`
-- **URL:** `/quadras/{id}`
+- **URL:** `/api/quadras/{id}`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
-PUT /quadras/11 HTTP/1.1
+PUT /api/quadras/11 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -466,12 +475,12 @@ Content-Type: application/json
 
 ### 4.5 Alternar Status da Quadra (Ativar/Inativar)
 - **Método:** `PATCH`
-- **URL:** `/quadras/{id}/status?ativa=false`
+- **URL:** `/api/quadras/{id}/status?ativa=false`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
-PATCH /quadras/11/status?ativa=false HTTP/1.1
+PATCH /api/quadras/11/status?ativa=false HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -504,13 +513,13 @@ Authorization: Bearer <TOKEN>
 Envia arquivos de imagem (JPEG, PNG, WebP) de até 5MB para a galeria da quadra (máximo 5 fotos).
 
 - **Método:** `POST`
-- **URL:** `/quadras/{id}/fotos`
+- **URL:** `/api/quadras/{id}/fotos`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 - **Content-Type:** `multipart/form-data`
 
 #### Requisição:
 ```http
-POST /quadras/11/fotos HTTP/1.1
+POST /api/quadras/11/fotos HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
@@ -551,12 +560,12 @@ Content-Type: image/jpeg
 
 ### 4.7 Remover Foto da Quadra
 - **Método:** `DELETE`
-- **URL:** `/quadras/{id}/fotos?fotoUrl=/uploads/quadra_11_foto1_1725298800000.jpg`
+- **URL:** `/api/quadras/{id}/fotos?fotoUrl=/uploads/quadra_11_foto1_1725298800000.jpg`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
-DELETE /quadras/11/fotos?fotoUrl=/uploads/quadra_11_foto1_1725298800000.jpg HTTP/1.1
+DELETE /api/quadras/11/fotos?fotoUrl=/uploads/quadra_11_foto1_1725298800000.jpg HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -589,12 +598,12 @@ Authorization: Bearer <TOKEN>
 Exclui a quadra definitivamente, desde que ela não possua histórico de agendamentos no banco.
 
 - **Método:** `DELETE`
-- **URL:** `/quadras/{id}`
+- **URL:** `/api/quadras/{id}`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
-DELETE /quadras/11 HTTP/1.1
+DELETE /api/quadras/11 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -622,12 +631,12 @@ Permite criar suspensões pontuais de funcionamento (manutenções, feriados, re
 
 ### 5.1 Criar Bloqueio
 - **Método:** `POST`
-- **URL:** `/quadras/{id}/bloqueios`
+- **URL:** `/api/quadras/{id}/bloqueios`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição (Cenário 1: Intervalo de Horários Pontual):
 ```http
-POST /quadras/11/bloqueios HTTP/1.1
+POST /api/quadras/11/bloqueios HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -656,7 +665,7 @@ Content-Type: application/json
 
 #### Requisição (Cenário 2: Dia Inteiro):
 ```http
-POST /quadras/11/bloqueios HTTP/1.1
+POST /api/quadras/11/bloqueios HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -687,12 +696,12 @@ Content-Type: application/json
 Retorna em uma única chamada HTTP todos os bloqueios ativos e futuros de todas as quadras pertencentes ao administrador autenticado.
 
 - **Método:** `GET`
-- **URL:** `/quadras/bloqueios`
+- **URL:** `/api/quadras/bloqueios`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-GET /quadras/bloqueios HTTP/1.1
+GET /api/quadras/bloqueios HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -725,12 +734,12 @@ Authorization: Bearer <TOKEN>
 
 ### 5.3 Listar Bloqueios de uma Quadra Específica
 - **Método:** `GET`
-- **URL:** `/quadras/{id}/bloqueios`
+- **URL:** `/api/quadras/{id}/bloqueios`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-GET /quadras/11/bloqueios HTTP/1.1
+GET /api/quadras/11/bloqueios HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -755,11 +764,11 @@ Host: localhost:8080
 
 #### Opção A: Remover por ID do Bloqueio
 - **Método:** `DELETE`
-- **URL:** `/quadras/{quadraId}/bloqueios/{bloqueioId}`
+- **URL:** `/api/quadras/{quadraId}/bloqueios/{bloqueioId}`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 ```http
-DELETE /quadras/11/bloqueios/4 HTTP/1.1
+DELETE /api/quadras/11/bloqueios/4 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -771,11 +780,11 @@ HTTP/1.1 204 No Content
 
 #### Opção B: Desbloquear via Requisição com Dados do Horário/Data
 - **Método:** `POST`
-- **URL:** `/quadras/{quadraId}/desbloquear`
+- **URL:** `/api/quadras/{quadraId}/desbloquear`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
 
 ```http
-POST /quadras/11/desbloquear HTTP/1.1
+POST /api/quadras/11/desbloquear HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -807,12 +816,12 @@ Gera a relação completa de horários de 1 em 1 hora para a data indicada, info
 - `INDISPONIVEL`: Horário já transcorrido no dia (passado) ou quadra inativa.
 
 - **Método:** `GET`
-- **URL:** `/agendamentos/quadra/{quadraId}/horarios-disponiveis?data=2026-09-10`
+- **URL:** `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis?data=2026-09-10`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-GET /agendamentos/quadra/11/horarios-disponiveis?data=2026-09-10 HTTP/1.1
+GET /api/agendamentos/quadra/11/horarios-disponiveis?data=2026-09-10 HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -863,12 +872,12 @@ Host: localhost:8080
 Retorna em uma única requisição a grade completa com o status de cada horário de todas as quadras ativas pertencentes ao administrador autenticado para a data indicada.
 
 - **Método:** `GET`
-- **URL:** `/agendamentos/dia?data=2026-09-10`
+- **URL:** `/api/agendamentos/dia?data=2026-09-10`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-GET /agendamentos/dia?data=2026-09-10 HTTP/1.1
+GET /api/agendamentos/dia?data=2026-09-10 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -901,12 +910,12 @@ Authorization: Bearer <TOKEN>
 Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra, registra o agendamento `PENDENTE` e gera o payload Pix para pagamento.
 
 - **Método:** `POST`
-- **URL:** `/agendamentos`
+- **URL:** `/api/agendamentos`
 - **Autenticação:** `Bearer <TOKEN>`
 
 #### Requisição:
 ```http
-POST /agendamentos HTTP/1.1
+POST /api/agendamentos HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Content-Type: application/json
@@ -954,12 +963,12 @@ Content-Type: application/json
 Retorna o histórico de todas as reservas realizadas pelo atleta autenticado ou pelas quadras do admin logado.
 
 - **Método:** `GET`
-- **URL:** `/agendamentos`
+- **URL:** `/api/agendamentos`
 - **Autenticação:** `Bearer <TOKEN>`
 
 #### Requisição:
 ```http
-GET /agendamentos HTTP/1.1
+GET /api/agendamentos HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -990,12 +999,12 @@ Authorization: Bearer <TOKEN>
 
 ### 6.5 Listar Reservas por Quadra e Data
 - **Método:** `GET`
-- **URL:** `/agendamentos/quadra/{quadraId}/data?data=2026-09-10`
+- **URL:** `/api/agendamentos/quadra/{quadraId}/data?data=2026-09-10`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-GET /agendamentos/quadra/11/data?data=2026-09-10 HTTP/1.1
+GET /api/agendamentos/quadra/11/data?data=2026-09-10 HTTP/1.1
 Host: localhost:8080
 ```
 
@@ -1025,12 +1034,12 @@ Host: localhost:8080
 
 ### 6.6 Cancelar Agendamento
 - **Método:** `PATCH`
-- **URL:** `/agendamentos/{id}/cancelar`
+- **URL:** `/api/agendamentos/{id}/cancelar`
 - **Autenticação:** `Bearer <TOKEN>` (Atleta dono da reserva ou Administrador da quadra)
 
 #### Requisição:
 ```http
-PATCH /agendamentos/25/cancelar HTTP/1.1
+PATCH /api/agendamentos/25/cancelar HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -1061,12 +1070,12 @@ Authorization: Bearer <TOKEN>
 Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19h"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
 
 - **Método:** `POST`
-- **URL:** `/agendamentos/bot`
+- **URL:** `/api/agendamentos/bot`
 - **Autenticação:** Pública / Bot
 
 #### Requisição:
 ```http
-POST /agendamentos/bot HTTP/1.1
+POST /api/agendamentos/bot HTTP/1.1
 Host: localhost:8080
 Content-Type: application/json
 
@@ -1106,7 +1115,7 @@ Content-Type: application/json
 Permite buscar a grade de horários de quadras com suporte a linguagem flexível de datas (`"hoje"`, `"amanha"`, datas ISO), com filtros opcionais por esporte, quadraId e opção de trazer somente horários disponíveis (`apenasDisponiveis=true`).
 
 - **Método:** `GET`
-- **URL:** `/agendamentos/horarios-disponiveis?data=amanha&tipoEsporte=FUTEBOL&apenasDisponiveis=true`
+- **URL:** `/api/agendamentos/horarios-disponiveis?data=amanha&tipoEsporte=FUTEBOL&apenasDisponiveis=true`
 - **Autenticação:** Pública
 
 #### Resposta de Sucesso (200 OK):
@@ -1146,12 +1155,12 @@ Permite buscar a grade de horários de quadras com suporte a linguagem flexível
 Transita uma reserva pendente para `CONFIRMADO` e notifica o administrador via SSE em tempo real.
 
 - **Método:** `POST`
-- **URL:** `/pagamentos/{agendamentoId}/simular-aprovacao`
+- **URL:** `/api/pagamentos/{agendamentoId}/simular-aprovacao`
 - **Autenticação:** `Bearer <TOKEN>`
 
 #### Requisição:
 ```http
-POST /pagamentos/25/simular-aprovacao HTTP/1.1
+POST /api/pagamentos/25/simular-aprovacao HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -1182,12 +1191,12 @@ Authorization: Bearer <TOKEN>
 Endpoint para notificações assíncronas do gateway de pagamentos.
 
 - **Método:** `POST`
-- **URL:** `/pagamentos/webhook?id=12345678&topic=payment`
+- **URL:** `/api/pagamentos/webhook?id=12345678&topic=payment`
 - **Autenticação:** Pública
 
 #### Requisição:
 ```http
-POST /pagamentos/webhook?id=12345678&topic=payment HTTP/1.1
+POST /api/pagamentos/webhook?id=12345678&topic=payment HTTP/1.1
 Host: localhost:8080
 Content-Type: application/json
 
@@ -1217,13 +1226,13 @@ Content-Type: application/json
 Estabelece conexão persistente unidirecional para recebimento de alertas de reservas pagas em tempo real.
 
 - **Método:** `GET`
-- **URL:** `/notificacoes/stream`
+- **URL:** `/api/notificacoes/stream`
 - **Headers:** `Accept: text/event-stream`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`) ou `?token=<TOKEN>`
 
 #### Requisição:
 ```http
-GET /notificacoes/stream HTTP/1.1
+GET /api/notificacoes/stream HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 Accept: text/event-stream
@@ -1242,12 +1251,12 @@ data: {"id":1,"mensagem":"Novo pagamento aprovado para a quadra Arena Central Pr
 
 ### 8.2 Listar Notificações do Administrador
 - **Método:** `GET`
-- **URL:** `/notificacoes/admin`
+- **URL:** `/api/notificacoes/admin`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-GET /notificacoes/admin HTTP/1.1
+GET /api/notificacoes/admin HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -1268,12 +1277,12 @@ Authorization: Bearer <TOKEN>
 
 ### 8.3 Marcar Notificação como Lida
 - **Método:** `PUT`
-- **URL:** `/notificacoes/{id}/ler`
+- **URL:** `/api/notificacoes/{id}/ler`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-PUT /notificacoes/1/ler HTTP/1.1
+PUT /api/notificacoes/1/ler HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
@@ -1289,12 +1298,12 @@ HTTP/1.1 204 No Content
 Marca todas as notificações recebidas pelo administrador autenticado como lidas em uma única operação.
 
 - **Método:** `PUT`
-- **URL:** `/notificacoes/ler-todas`
+- **URL:** `/api/notificacoes/ler-todas`
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-PUT /notificacoes/ler-todas HTTP/1.1
+PUT /api/notificacoes/ler-todas HTTP/1.1
 Host: equadras.app
 Authorization: Bearer <TOKEN>
 ```

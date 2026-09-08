@@ -37,7 +37,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("eQuadras API - Gestão e Agendamento Esportivo")
-                        .description("Documentação oficial das APIs REST da plataforma eQuadras para integração de sistemas externos, parceiros e aplicativos clientes.")
+                        .description("Documentação oficial das APIs REST externas da plataforma eQuadras para integrações de sistemas parceiros, bots e clientes de API.")
                         .version("v1.0.0")
                         .contact(new Contact()
                                 .name("Suporte Técnico eQuadras")
@@ -59,7 +59,7 @@ public class OpenApiConfig {
     }
 
     @Bean
-    public OpenApiCustomizer separateApiAndFrontendTagsCustomizer() {
+    public OpenApiCustomizer filterExternalApiRoutesCustomizer() {
         return openApi -> {
             if (openApi.getComponents() != null) {
                 // Registra explicitamente o schema de QuadraResumoResponseDTO para exibição no Swagger
@@ -68,77 +68,52 @@ public class OpenApiConfig {
             }
 
             if (openApi.getPaths() != null) {
-                openApi.getPaths().forEach((path, pathItem) -> {
-                    boolean isApi = path.startsWith("/api/") || path.equals("/api");
+                // Remove todas as rotas internas consultadas pelo frontend, mantendo apenas as rotas da API externa (/api/**)
+                openApi.getPaths().entrySet().removeIf(entry -> !entry.getKey().startsWith("/api"));
 
+                openApi.getPaths().forEach((path, pathItem) -> {
                     pathItem.readOperations().forEach(operation -> {
                         if (operation.getTags() != null) {
-                            List<String> newTags = operation.getTags().stream().map(tag -> {
-                                String base = getBaseTagName(tag);
-                                return isApi ? getApiTagName(base) : base;
-                            }).distinct().toList();
+                            List<String> newTags = operation.getTags().stream().map(this::getApiTagName).distinct().toList();
                             operation.setTags(newTags);
                         }
                     });
 
-                    // Customiza resposta do GET /quadras vs GET /api/quadras
-                    if ("/quadras".equals(path) && pathItem.getGet() != null && pathItem.getGet().getResponses() != null) {
-                        ApiResponse resp200 = pathItem.getGet().getResponses().get("200");
-                        if (resp200 != null) {
-                            MediaType mediaType = new MediaType().schema(
-                                    new ArraySchema().items(new Schema<>().$ref("#/components/schemas/QuadraResponseDTO"))
-                            );
-                            resp200.setDescription("Lista completa de quadras com fotos e disponibilidades (Formato Frontend)");
-                            resp200.setContent(new Content().addMediaType("application/json", mediaType));
-                        }
-                    }
-
+                    // Customiza resposta do GET /api/quadras
                     if ("/api/quadras".equals(path) && pathItem.getGet() != null && pathItem.getGet().getResponses() != null) {
                         ApiResponse resp200 = pathItem.getGet().getResponses().get("200");
                         if (resp200 != null) {
                             MediaType mediaType = new MediaType().schema(
                                     new ArraySchema().items(new Schema<>().$ref("#/components/schemas/QuadraResumoResponseDTO"))
                             );
-                            resp200.setDescription("Lista resumida de quadras otimizada para bots e integrações (Formato API / TCC)");
+                            resp200.setDescription("Lista resumida de quadras otimizada para bots e integrações externas");
                             resp200.setContent(new Content().addMediaType("application/json", mediaType));
                         }
                     }
                 });
             }
 
-            // Define e ordena as tags exibidas no Swagger UI
+            // Define e ordena exclusivamente as tags da API externa no Swagger UI
             List<Tag> organizedTags = new ArrayList<>();
-            organizedTags.add(new Tag().name("Quadras").description("Endpoints de quadras para consumo do Frontend e catálogo geral."));
-            organizedTags.add(new Tag().name("Quadras - API - TCC").description("Endpoints da API (/api/quadras) otimizados para bots e integrações externas (retorno resumido)."));
-            organizedTags.add(new Tag().name("Agendamentos").description("Endpoints de agendamentos e reservas para o Frontend."));
-            organizedTags.add(new Tag().name("Agendamentos - API - TCC").description("Endpoints da API (/api/agendamentos) para agendamentos via Bot e integrações."));
-            organizedTags.add(new Tag().name("Usuários e Autenticação").description("Endpoints de usuários e autenticação para o Frontend."));
-            organizedTags.add(new Tag().name("Usuários - API - TCC").description("Endpoints da API (/api/usuarios) para integrações externas e login."));
-            organizedTags.add(new Tag().name("Pagamentos").description("Endpoints de pagamentos Pix e simulações para o Frontend."));
-            organizedTags.add(new Tag().name("Pagamentos - API - TCC").description("Endpoints da API (/api/pagamentos) e webhooks para parceiros."));
-            organizedTags.add(new Tag().name("Notificações").description("Endpoints de notificações para o painel administrativo do Frontend."));
-            organizedTags.add(new Tag().name("Notificações - API - TCC").description("Endpoints da API (/api/notificacoes) para streaming SSE e integrações."));
-            organizedTags.add(new Tag().name("Bloqueios de Quadra").description("Endpoints de bloqueios de horários para o Frontend."));
-            organizedTags.add(new Tag().name("Bloqueios - API - TCC").description("Endpoints da API (/api/quadras/bloqueios) para bloqueios externos."));
+            organizedTags.add(new Tag().name("Quadras - API").description("Endpoints da API externa (/api/quadras) para consulta e gestão de quadras esportivas."));
+            organizedTags.add(new Tag().name("Agendamentos - API").description("Endpoints da API externa (/api/agendamentos) para reservas, integração com Bot e horários disponíveis."));
+            organizedTags.add(new Tag().name("Usuários - API").description("Endpoints da API externa (/api/usuarios) para autenticação JWT e administração de usuários."));
+            organizedTags.add(new Tag().name("Pagamentos - API").description("Endpoints da API externa (/api/pagamentos) para pagamentos Pix e webhooks."));
+            organizedTags.add(new Tag().name("Notificações - API").description("Endpoints da API externa (/api/notificacoes) para streaming SSE e histórico de alertas."));
+            organizedTags.add(new Tag().name("Bloqueios - API").description("Endpoints da API externa (/api/quadras/bloqueios) para gestão de bloqueios de horários."));
 
             openApi.setTags(organizedTags);
         };
     }
 
-    private String getBaseTagName(String tag) {
-        if (tag == null) return "Geral";
-        if (tag.contains("Quadra") && !tag.contains("Bloqueio")) return "Quadras";
-        if (tag.contains("Bloqueio")) return "Bloqueios de Quadra";
-        if (tag.contains("Agendamento") || tag.contains("Reserva")) return "Agendamentos";
-        if (tag.contains("Usuário") || tag.contains("Autenticação")) return "Usuários e Autenticação";
-        if (tag.contains("Pagamento")) return "Pagamentos";
-        if (tag.contains("Notificação")) return "Notificações";
-        return tag;
-    }
-
-    private String getApiTagName(String base) {
-        if ("Usuários e Autenticação".equals(base)) return "Usuários - API - TCC";
-        if ("Bloqueios de Quadra".equals(base)) return "Bloqueios - API - TCC";
-        return base + " - API - TCC";
+    private String getApiTagName(String tag) {
+        if (tag == null) return "Geral - API";
+        if (tag.contains("Quadra") && !tag.contains("Bloqueio")) return "Quadras - API";
+        if (tag.contains("Bloqueio")) return "Bloqueios - API";
+        if (tag.contains("Agendamento") || tag.contains("Reserva")) return "Agendamentos - API";
+        if (tag.contains("Usuário") || tag.contains("Autenticação")) return "Usuários - API";
+        if (tag.contains("Pagamento")) return "Pagamentos - API";
+        if (tag.contains("Notificação")) return "Notificações - API";
+        return tag.endsWith("- API") ? tag : tag + " - API";
     }
 }

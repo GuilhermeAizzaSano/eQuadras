@@ -30,8 +30,12 @@ public class QueryCountSafetyNetIntegrationTest {
     @Autowired
     private QuadraRepository quadraRepository;
 
+    @Autowired
+    private com.agendamentos.equadras.security.JwtService jwtService;
+
     private MockMvc mockMvc;
     private Statistics statistics;
+    private String token;
 
     @BeforeEach
     void setUp() {
@@ -43,6 +47,13 @@ public class QueryCountSafetyNetIntegrationTest {
         SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
         statistics = sessionFactory.getStatistics();
         statistics.setStatisticsEnabled(true);
+
+        com.agendamentos.equadras.model.entity.Usuario user = com.agendamentos.equadras.model.entity.Usuario.builder()
+                .id_usuario(9999L)
+                .email_usuario("perf_query@teste.com")
+                .role(com.agendamentos.equadras.model.enums.Role.CLIENT)
+                .build();
+        token = jwtService.gerarToken(user);
     }
 
     @Test
@@ -50,7 +61,8 @@ public class QueryCountSafetyNetIntegrationTest {
     void deveMonitorarContagemDeQueriesGetQuadras() throws Exception {
         statistics.clear();
 
-        mockMvc.perform(get("/quadras"))
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", token)))
                 .andExpect(status().isOk());
 
         long queryCount = statistics.getPrepareStatementCount();

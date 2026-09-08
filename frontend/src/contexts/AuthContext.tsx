@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { Usuario } from '../types';
+import { usuarioApi } from '../api/apiClient';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -29,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    usuarioApi.logout().catch(() => {});
     setUser(null);
     setToken(null);
     localStorage.removeItem('equadras_auth_user');

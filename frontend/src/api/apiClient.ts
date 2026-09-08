@@ -40,6 +40,7 @@ export async function apiFetch<T>(
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
@@ -59,6 +60,11 @@ export const usuarioApi = {
     apiFetch<LoginResponse>('/usuarios/login', {
       method: 'POST',
       body: JSON.stringify({ email_usuario, senha_usuario }),
+    }),
+
+  logout: () =>
+    apiFetch<void>('/usuarios/logout', {
+      method: 'POST',
     }),
 
   cadastrar: (dados: {

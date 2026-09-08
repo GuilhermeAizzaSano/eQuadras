@@ -10,11 +10,14 @@ import com.agendamentos.equadras.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.util.List;
 
 @Tag(name = "Usuários e Autenticação", description = "Endpoints para cadastro de atletas/admins, login com emissão de token JWT e consulta de perfis.")
@@ -23,9 +26,21 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final com.agendamentos.equadras.security.JwtService jwtService;
 
-    public UsuarioController(UsuarioService usuarioService) {
+    public UsuarioController(UsuarioService usuarioService, com.agendamentos.equadras.security.JwtService jwtService) {
         this.usuarioService = usuarioService;
+        this.jwtService = jwtService;
+    }
+
+    private ResponseCookie criarCookieSessao(String token) {
+        return ResponseCookie.from("equadras_session", token)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(Duration.ofMillis(jwtService.getExpiracaoMs()))
+                .sameSite("Lax")
+                .build();
     }
 
     @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for anônimo, auto-cadastra como CLIENT.")
@@ -37,7 +52,10 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
         } else {
             var resposta = usuarioService.cadastrar(dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
+            ResponseCookie cookie = criarCookieSessao(resposta.token());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(resposta);
         }
     }
 
@@ -62,7 +80,25 @@ public class UsuarioController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid UsuarioLoginDTO dto) {
         var resposta = usuarioService.login(dto);
-        return ResponseEntity.ok(resposta);
+        ResponseCookie cookie = criarCookieSessao(resposta.token());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(resposta);
+    }
+
+    @Operation(summary = "Realizar logout", description = "Encerra a sessão do usuário limpando o cookie HttpOnly.")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        ResponseCookie cookie = ResponseCookie.from("equadras_session", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
     }
 
     @Operation(summary = "Listar todos os usuários (Apenas Admin Geral)", description = "Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.")
