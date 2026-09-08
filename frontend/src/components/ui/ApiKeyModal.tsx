@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, KeyRound, Copy, Check, ShieldCheck, UserCheck, Terminal, Info } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from './Button';
@@ -35,13 +36,13 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
   const curlExemplo = `curl -X GET "http://localhost:8080/api/quadras" \\
   -H "Authorization: Bearer ${token || 'SEU_TOKEN'}"`;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
     >
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <button
           type="button"
           onClick={onClose}
@@ -143,6 +144,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

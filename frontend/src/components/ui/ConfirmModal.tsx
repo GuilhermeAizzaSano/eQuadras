@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, CalendarCheck, X } from 'lucide-react';
 import { Button } from './Button';
 
@@ -25,13 +26,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
     >
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl shadow-black/80 space-y-6 animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-900 border border-surface-800 rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-2xl shadow-black/80 space-y-6 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div
@@ -82,7 +83,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
