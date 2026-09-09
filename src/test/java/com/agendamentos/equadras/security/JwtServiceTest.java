@@ -15,7 +15,7 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService("chave-secreta-para-testes-unitarios-com-jwt-seguro", 3600000L, null, null);
+        jwtService = new JwtService("chave-secreta-para-testes-unitarios-com-jwt-seguro", 3600000L);
     }
 
     @Test
@@ -58,7 +58,7 @@ class JwtServiceTest {
     void deveLancarExcecaoParaTokenAssinadoComOutraChave() {
         JwtService outroServico = new JwtService(
                 "outra-chave-de-teste-com-pelo-menos-32-bytes-de-tamanho",
-                28800000L, null, null
+                28800000L
         );
         Usuario usuario = Usuario.builder().id_usuario(1L).role(Role.CLIENT).build();
         String token = outroServico.gerarToken(usuario);

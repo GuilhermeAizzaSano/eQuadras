@@ -10,22 +10,17 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @Component
 public class JwtService {
 
     private final SecretKey chave;
     private final long expiracaoMs;
-    private final String fixedToken;
-    private final Long fixedUserId;
 
     @org.springframework.beans.factory.annotation.Autowired
     public JwtService(
             @Value("${jwt.secret}") String segredo,
-            @Value("${jwt.expiracao-ms}") long expiracaoMs,
-            @Value("${jwt.fixed-token:}") String fixedToken,
-            @Value("${jwt.fixed-user-id:}") Long fixedUserId) {
+            @Value("${jwt.expiracao-ms}") long expiracaoMs) {
         
         byte[] bytes = segredo.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
@@ -38,16 +33,6 @@ public class JwtService {
         }
         this.chave = Keys.hmacShaKeyFor(bytes);
         this.expiracaoMs = expiracaoMs;
-        this.fixedToken = fixedToken;
-        this.fixedUserId = fixedUserId;
-    }
-
-    public boolean isFixedToken(String token) {
-        return fixedToken != null && !fixedToken.isBlank() && fixedToken.equals(token);
-    }
-
-    public Long getFixedUserId() {
-        return fixedUserId;
     }
 
     public String gerarToken(Usuario usuario) {
