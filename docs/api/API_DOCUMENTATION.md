@@ -205,7 +205,7 @@ Retorna a listagem de todos os usuários registrados no sistema.
 ```http
 GET /api/usuarios HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed
+Authorization: Bearer <TOKEN_ADMIN>
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -271,7 +271,7 @@ Cria uma nova quadra esportiva definindo nome, modalidade, valor/hora, endereço
 ```http
 POST /api/quadras HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer equadras_master_admin_token_2026_secret_key_fixed
+Authorization: Bearer <TOKEN_ADMIN>
 Content-Type: application/json
 
 {

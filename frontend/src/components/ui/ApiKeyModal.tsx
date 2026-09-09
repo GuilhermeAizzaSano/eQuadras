@@ -33,7 +33,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
     }
   };
 
-  const curlExemplo = `curl -X GET "http://localhost:8080/api/quadras" \\
+  const curlExemplo = `curl -X GET "${window.location.origin}/api/quadras" \\
   -H "Authorization: Bearer ${token || 'SEU_TOKEN'}"`;
 
   return createPortal(
@@ -56,9 +56,9 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
           <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-surface-850 border border-surface-750 text-white mb-1 shadow-md">
             <KeyRound className="w-5 h-5 text-brand-400" />
           </div>
-          <h3 className="text-lg font-bold text-white tracking-tight">Sua API-KEY de Integração</h3>
+          <h3 className="text-lg font-bold text-white tracking-tight">Sua Chave de API (Token JWT)</h3>
           <p className="text-xs text-surface-400">
-            Token fixo e permanente vinculado à sua conta ({user?.email_usuario}).
+            Token de autenticação vinculado à sua sessão ativa ({user?.email_usuario}).
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-surface-300">Token de Autenticação (Bearer)</span>
-            <span className="text-[11px] text-brand-400 font-mono font-medium">Não expira</span>
+            <span className="text-[11px] text-emerald-400 font-mono font-medium">Sessão JWT</span>
           </div>
 
           <div className="relative">
@@ -132,7 +132,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         <div className="pt-3 border-t border-surface-800/80 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-[11px] text-surface-500">
             <Info className="w-3.5 h-3.5 text-surface-400" />
-            <span>Mantenha sua chave em sigilo.</span>
+            <span>Mantenha seu token em sigilo.</span>
           </div>
           <Button
             type="button"
