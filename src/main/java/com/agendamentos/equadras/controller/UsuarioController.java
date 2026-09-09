@@ -43,19 +43,16 @@ public class UsuarioController {
                 .build();
     }
 
-    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for anônimo, auto-cadastra como CLIENT.")
+    @Operation(summary = "Cadastrar novo usuário (Apenas Administrador)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer token de autenticação com privilégios de Administrador.")
     @PostMapping
-    public ResponseEntity<?> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto) {
-        UsuarioAutenticado usuarioLogado = com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
+    public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto,
+                                                        @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         if (usuarioLogado != null && usuarioService.isMasterAdmin(usuarioLogado.id())) {
             var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
             return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
         } else {
             var resposta = usuarioService.cadastrar(dto);
-            ResponseCookie cookie = criarCookieSessao(resposta.token());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(resposta);
+            return ResponseEntity.status(HttpStatus.CREATED).body(resposta.usuario());
         }
     }
 
