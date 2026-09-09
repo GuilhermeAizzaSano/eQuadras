@@ -402,9 +402,9 @@ paths:
     post:
       tags:
       - Usuários - API
-      summary: Cadastrar novo usuário (Apenas Admin Geral ou Auto-cadastro)
-      description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Se for\
-        \ anônimo, auto-cadastra como CLIENT."
+      summary: Cadastrar novo usuário (Apenas Administrador)
+      description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer\
+        \ token de autenticação com privilégios de Administrador."
       operationId: cadastrar
       requestBody:
         content:
@@ -423,7 +423,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/UsuarioResponseDTO"
         "201":
           description: Usuário cadastrado com sucesso
           content:

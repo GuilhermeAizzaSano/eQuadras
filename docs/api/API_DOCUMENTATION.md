@@ -91,39 +91,48 @@ As consultas realizadas pela aplicação web frontend utilizam sessão protegida
 
 ## 3. Módulo de Usuários e Autenticação
 
-### 3.1 Cadastrar Novo Usuário (Atleta)
-Cria uma nova conta de atleta no sistema e já retorna o perfil criado acompanhado do token JWT pronto para uso.
+### 3.1 Cadastrar Novo Usuário (Apenas Administrador)
+Cria uma nova conta de usuário (Role: `CLIENT` ou `ADMIN`) no sistema. Apenas Administradores autenticados com token JWT possuem permissão.
 
 - **Método:** `POST`
 - **URL:** `/api/usuarios`
-- **Autenticação:** Pública
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 POST /api/usuarios HTTP/1.1
 Host: localhost:8080
+Authorization: Bearer <TOKEN_ADMIN>
 Content-Type: application/json
 
 {
   "nome_usuario": "Carlos Silva",
   "email_usuario": "carlos.silva@email.com",
-  "senha_usuario": "senha123",
-  "phone_usuario": "(17) 99876-5432"
+  "senha_usuario": "SenhaForte@123",
+  "phone_usuario": "(17) 99876-5432",
+  "role": "CLIENT"
 }
 ```
 
 #### Resposta de Sucesso (201 Created):
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYXJsb3Muc2lsdmFAZW1haWwuY29tIiwicm9sZSI6IkNMSUVOVCIsImlkIjoxNCwiaWF0IjoxNzg4MzgwNDAwLCJleHAiOjE3ODg0MDkyMDB9.signature...",
-  "usuario": {
-    "id_usuario": 14,
-    "nome_usuario": "Carlos Silva",
-    "email_usuario": "carlos.silva@email.com",
-    "phone_usuario": "(17) 99876-5432",
-    "role": "CLIENT",
-    "criadoEm": "2026-09-02T16:30:00"
-  }
+  "id_usuario": 14,
+  "nome_usuario": "Carlos Silva",
+  "email_usuario": "carlos.silva@email.com",
+  "phone_usuario": "(17) 99876-5432",
+  "role": "CLIENT",
+  "criadoEm": "2026-09-02T16:30:00"
+}
+```
+
+#### Resposta de Erro (403 Forbidden - Tentativa sem Token Admin):
+```json
+{
+  "type": "https://api.equadras.com/erros/forbidden",
+  "title": "Acesso Proibido",
+  "status": 403,
+  "detail": "Acesso negado. A criação de usuários exige permissões de Administrador."
 }
 ```
 

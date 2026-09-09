@@ -396,7 +396,7 @@ O frontend estará acessível em `http://localhost:3000` (ou `http://localhost:5
 
 | Método | Endpoint | Permissão | Descrição |
 |---|---|:---:|---|
-| `POST` | `/api/usuarios` | Público | Cadastro de novo atleta |
+| `POST` | `/api/usuarios` | `ROLE_ADMIN` | Cadastrar novo usuário (CLIENT ou ADMIN) |
 | `POST` | `/api/usuarios/login` | Público | Login e emissão de token JWT |
 | `GET` | `/api/usuarios` | `ROLE_ADMIN` | Listagem de usuários (Master Admin) |
 | `GET` | `/api/quadras` | Autenticado | Listar quadras (filtros de esporte, CEP e raio KM) |
