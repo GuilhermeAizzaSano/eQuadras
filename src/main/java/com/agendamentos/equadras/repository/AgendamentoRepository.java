@@ -103,4 +103,12 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     @Override
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     java.util.Optional<Agendamento> findById(Long id);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Agendamento a SET a.status = :statusCancelado WHERE a.status = :statusPendente AND a.criadoEm < :limite")
+    int cancelarPendentesExpirados(
+            @Param("statusPendente") StatusAgendamento statusPendente,
+            @Param("statusCancelado") StatusAgendamento statusCancelado,
+            @Param("limite") LocalDateTime limite
+    );
 }

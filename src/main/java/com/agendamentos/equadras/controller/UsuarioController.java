@@ -36,7 +36,7 @@ public class UsuarioController {
     private ResponseCookie criarCookieSessao(String token) {
         return ResponseCookie.from("equadras_session", token)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(Duration.ofMillis(jwtService.getExpiracaoMs()))
                 .sameSite("Lax")
@@ -88,7 +88,7 @@ public class UsuarioController {
     public ResponseEntity<Void> logout() {
         ResponseCookie cookie = ResponseCookie.from("equadras_session", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")

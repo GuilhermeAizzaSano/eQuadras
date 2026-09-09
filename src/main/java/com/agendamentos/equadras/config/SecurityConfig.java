@@ -25,7 +25,12 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
+        configuration.setAllowedOriginPatterns(java.util.List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://equadras.app",
+                "https://www.equadras.app"
+        ));
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setExposedHeaders(java.util.List.of("Authorization", "Set-Cookie", "Content-Disposition", "X-Total-Count"));
@@ -50,12 +55,11 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
                         // Restrição específica da API (/api/**):
-                        // Usuário com Role CLIENT pode apenas consultar/listar dados (GET)
-                        // Modificações (POST, PUT, PATCH, DELETE) na API exigem ROLE_ADMIN
+                        // Permite que usuários com ROLE_CLIENT ou ROLE_ADMIN criem agendamentos via API externa
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/agendamentos", "/api/agendamentos/").hasAnyRole("CLIENT", "ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/usuarios/minha-senha", "/usuarios/minha-senha").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/**").hasRole("ADMIN")
@@ -73,7 +77,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
                         .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
 
-                        // Demais rotas web autenticadas (CLIENT ou ADMIN via cookie de sessão)
+                        // Demais rotas web autenticadas (CLIENT ou ADMIN via cookie de sessão ou Bearer token)
                         .requestMatchers("/quadras", "/quadras/**").authenticated()
                         .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
                         .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
@@ -82,7 +86,7 @@ public class SecurityConfig {
                         // Qualquer outra requer autenticação
                         .anyRequest().authenticated()
                 )
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new com.agendamentos.equadras.security.RateLimitFilter(), JwtAuthenticationFilter.class);
 

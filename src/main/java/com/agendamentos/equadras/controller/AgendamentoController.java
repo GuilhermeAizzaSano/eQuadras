@@ -28,7 +28,10 @@ public class AgendamentoController {
         this.agendamentoService = agendamentoService;
     }
 
-    @Operation(summary = "Criar novo agendamento com Lock e Pix", description = "Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes e gera a cobrança Pix.")
+    @Operation(
+            summary = "Criar novo agendamento com Lock e Pix",
+            description = "Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes e gera a cobrança Pix. Requisitos: horários em horas cheias (minutos zerados) e duração mínima de 1 hora (múltipla de 60 min). Agendamentos pendentes sem pagamento expiram e são cancelados automaticamente após 15 minutos."
+    )
     @PostMapping
     public ResponseEntity<AgendamentoResponseDTO> agendar(@RequestBody @Valid AgendamentoCriacaoDTO dto,
                                                           @UsuarioLogado UsuarioAutenticado usuarioLogado) {

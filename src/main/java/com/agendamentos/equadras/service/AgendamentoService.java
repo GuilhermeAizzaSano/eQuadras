@@ -529,4 +529,15 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Não foi possível entender a hora: " + horaStr);
         }
     }
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
+    @Transactional
+    public void expirarAgendamentosPendentes() {
+        LocalDateTime limite = LocalDateTime.now().minusMinutes(15);
+        agendamentoRepository.cancelarPendentesExpirados(
+                StatusAgendamento.PENDENTE,
+                StatusAgendamento.CANCELADO,
+                limite
+        );
+    }
 }

@@ -298,9 +298,13 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
    - Em caso de indisponibilidade do gateway externo, o sistema ativa fallback inteligente com geração determinística de chave Pix para garantir continuidade operacional.
 4. **Tratamento Global de Exceções (RFC 7807):**
    - Respostas de erro padronizadas em `application/problem+json` detalhando mensagens de validação e regras de negócio violadas.
-5. **Segregação de Rotas e Proteção de Sessão por Cookie no Frontend:**
-   - As consultas realizadas pela aplicação web frontend exigem obrigatoriamente validação de sessão ativa via cookie seguro HttpOnly (`equadras_session`). Requisições não autenticadas ou forçadas (cURL, bots não autorizados, scrapers) enviadas às rotas internas são recusadas com HTTP 401 Unauthorized.
-   - A API externa (`/api/**`) é a única documentada publicamente no Swagger e utiliza autenticação por token no cabeçalho HTTP (`Authorization: Bearer <token>`), isolando os clientes externos do tráfego interno da aplicação web.
+5. **Segregação de Rotas, Dupla Autenticação e Cookie Seguro:**
+   - As consultas realizadas pela aplicação web frontend utilizam cookie seguro com atributos `HttpOnly`, `SameSite=Lax` e `Secure=true` (`equadras_session`). Requisições não autenticadas enviadas às rotas internas são recusadas com HTTP 401 Unauthorized.
+   - A API suporta clientes headless/externos enviando `Authorization: Bearer <token>` diretamente no cabeçalho HTTP, aceitando tanto roles `CLIENT` quanto `ADMIN` na criação de reservas.
+6. **Regras Estritas de Agendamento e Expiração Automática de Pendentes (TTL 15 min):**
+   - **Horas Cheias:** O agendamento valida estritamente início e término em horas inteiras (`HH:00:00`), com minutos zerados.
+   - **Duração e Granularidade:** Mínimo de 1 hora e sempre múltiplo de 60 minutos.
+   - **Cancelamento Automático de Pix Expirado:** Um agendador em background (`@Scheduled` no Spring Boot) executa a cada minuto a limpeza e cancelamento em lote de agendamentos com status `PENDENTE` há mais de 15 minutos, liberando slots imediatamente para novos usuários.
 
 ---
 
@@ -408,7 +412,7 @@ O frontend estará acessível em `http://localhost:3000` (ou `http://localhost:5
 | `POST` | `/api/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de dia inteiro ou intervalo de horários |
 | `GET` | `/api/agendamentos/dia` | `ROLE_ADMIN` | Horários consolidados de todas as quadras para a data |
 | `GET` | `/api/agendamentos/quadra/{id}/horarios-disponiveis` | Autenticado | Grade com status dinâmico dos slots da quadra |
-| `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
+| `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista (horas cheias, mín. 1h, expira em 15 min se pendente) |
 | `POST` | `/api/agendamentos/bot` | Público / Bot | Agendamento simplificado com linguagem natural para bots |
 | `GET` | `/api/agendamentos` | Autenticado | Listar reservas (`?historico=true` para histórico completo) |
 | `PATCH`| `/api/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
