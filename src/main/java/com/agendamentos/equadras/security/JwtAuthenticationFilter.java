@@ -77,17 +77,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 4. Verificação de segurança para rotas internas consultadas pelo Frontend (rotas não /api)
-        // Requer validação obrigatória de cookie de login e recusa requisições forçadas não autenticadas
+        // Permite requisições que possuam sessão válida (cookie ou token Bearer)
         boolean isApiRoute = uri != null && (uri.startsWith("/api/") || uri.equals("/api"));
         if (!isApiRoute && !isPublicFrontendRoute(uri, method)) {
-            if (cookieToken == null || SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/problem+json;charset=UTF-8");
                 response.getWriter().write("""
                     {
                         "status": 401,
                         "title": "Acesso não autorizado",
-                        "detail": "Acesso restrito: para consultar recursos do sistema pelo frontend é obrigatório possuir uma sessão ativa com cookie de login. Requisições não autenticadas ou forçadas foram recusadas."
+                        "detail": "Acesso restrito: para consultar recursos do sistema é obrigatório possuir uma autenticação válida (sessão ativa com cookie de login ou token de autorização). Requisições não autenticadas foram recusadas."
                     }
                     """);
                 return;

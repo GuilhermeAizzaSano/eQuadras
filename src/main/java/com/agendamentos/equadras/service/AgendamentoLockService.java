@@ -53,6 +53,15 @@ public class AgendamentoLockService {
             throw new IllegalArgumentException("Horário selecionado está fora do horário de funcionamento da quadra.");
         }
 
+        if (dto.dataHoraInicio().getMinute() != 0 || dto.dataHoraFim().getMinute() != 0) {
+            throw new IllegalArgumentException("Os horários de início e término devem ser em horas cheias (minutos zerados).");
+        }
+
+        long duracaoMinutos = Duration.between(dto.dataHoraInicio(), dto.dataHoraFim()).toMinutes();
+        if (duracaoMinutos < 60 || duracaoMinutos % 60 != 0) {
+            throw new IllegalArgumentException("A duração do agendamento deve ser de no mínimo 1 hora e múltipla de 60 minutos.");
+        }
+
         java.time.LocalDate dataAgendamento = dto.dataHoraInicio().toLocalDate();
         java.time.LocalTime horaInicio = dto.dataHoraInicio().toLocalTime();
         java.time.LocalTime horaFim = dto.dataHoraFim().toLocalTime();
