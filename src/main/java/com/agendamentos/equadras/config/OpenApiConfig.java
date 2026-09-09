@@ -41,6 +41,17 @@ public class OpenApiConfig {
                 .description("Horário no formato HH:mm:ss");
 
         return new OpenAPI()
+                .servers(List.of(
+                        new io.swagger.v3.oas.models.servers.Server()
+                                .url("https://equadras.app")
+                                .description("Servidor de Produção (HTTPS)"),
+                        new io.swagger.v3.oas.models.servers.Server()
+                                .url("/")
+                                .description("Servidor Relativo (Mesma Origem)"),
+                        new io.swagger.v3.oas.models.servers.Server()
+                                .url("http://localhost:8080")
+                                .description("Ambiente Local (Desenvolvimento)")
+                ))
                 .info(new Info()
                         .title("eQuadras API - Gestão e Agendamento Esportivo")
                         .description("Documentação oficial das APIs REST da plataforma eQuadras para integrações de sistemas parceiros, bots e clientes de API. Todos os endpoints incluem exemplos reais de requisição e resposta.")
@@ -57,7 +68,7 @@ public class OpenApiConfig {
                         .addSchemas("LocalTime", timeSchema)
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
-                                        .type(SecurityScheme.Type.HTTP)
+                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
                                         .description("Informe o token JWT no formato: `Bearer <seu_token>` gerado no endpoint de login.")
@@ -67,6 +78,18 @@ public class OpenApiConfig {
     @Bean
     public OpenApiCustomizer filterExternalApiRoutesCustomizer() {
         return openApi -> {
+            openApi.setServers(List.of(
+                    new io.swagger.v3.oas.models.servers.Server()
+                            .url("https://equadras.app")
+                            .description("Servidor de Produção (HTTPS)"),
+                    new io.swagger.v3.oas.models.servers.Server()
+                            .url("/")
+                            .description("Servidor Relativo (Mesma Origem)"),
+                    new io.swagger.v3.oas.models.servers.Server()
+                            .url("http://localhost:8080")
+                            .description("Ambiente Local (Desenvolvimento)")
+            ));
+
             if (openApi.getComponents() != null) {
                 // Registra explicitamente o schema de QuadraResumoResponseDTO para exibição no Swagger
                 Map<String, Schema> schemas = ModelConverters.getInstance().read(QuadraResumoResponseDTO.class);

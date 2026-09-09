@@ -13,8 +13,12 @@ info:
     url: https://opensource.org/licenses/MIT
   version: v1.0.0
 servers:
-- url: http://localhost
-  description: Generated server url
+- url: https://equadras.app
+  description: Servidor de Produção (HTTPS)
+- url: /
+  description: Servidor Relativo (Mesma Origem)
+- url: http://localhost:8080
+  description: Ambiente Local (Desenvolvimento)
 security:
 - BearerAuth: []
 tags:
