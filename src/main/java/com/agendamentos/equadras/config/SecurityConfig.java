@@ -66,7 +66,6 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Públicos
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/", "/api/usuarios", "/api/usuarios/").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/logout", "/api/usuarios/logout").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
@@ -78,6 +77,7 @@ public class SecurityConfig {
                         // Restrição específica da API (/api/**):
                         // Usuário com Role CLIENT pode apenas consultar/listar dados (GET)
                         // Modificações (POST, PUT, PATCH, DELETE) na API exigem ROLE_ADMIN
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/usuarios/minha-senha", "/usuarios/minha-senha").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/**").hasRole("ADMIN")
@@ -85,6 +85,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
 
                         // Endpoints Web restritos a ADMIN
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/usuarios", "/usuarios/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/usuarios", "/usuarios/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**").hasRole("ADMIN")

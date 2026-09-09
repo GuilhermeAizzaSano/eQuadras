@@ -77,11 +77,28 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /usuarios deve ser acessível publicamente (auto-cadastro)")
-    void postUsuariosSemTokenDeveSerPermitido() throws Exception {
+    @DisplayName("POST /usuarios sem token ADMIN deve retornar 403 Forbidden (auto-cadastro desabilitado)")
+    void postUsuariosSemTokenAdminDeveSerBloqueado() throws Exception {
         mockMvc.perform(post("/usuarios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome_usuario\":\"Teste\",\"email_usuario\":\"test_public_" + System.currentTimeMillis() + "@t.com\",\"senha_usuario\":\"SenhaForte123!\",\"phone_usuario\":\"11999999999\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("POST /usuarios com token ADMIN deve criar usuário com sucesso (201 Created)")
+    void postUsuariosComTokenAdminDeveCriar() throws Exception {
+        Usuario admin = Usuario.builder()
+                .id_usuario(1L)
+                .email_usuario("admin_sec@equadras.com")
+                .role(Role.ADMIN)
+                .build();
+        String tokenAdmin = jwtService.gerarToken(admin);
+
+        mockMvc.perform(post("/usuarios")
+                        .header("Authorization", "Bearer " + tokenAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome_usuario\":\"Novo Atleta\",\"email_usuario\":\"atleta_" + System.currentTimeMillis() + "@t.com\",\"senha_usuario\":\"SenhaForte123!\",\"phone_usuario\":\"11999999999\",\"role\":\"CLIENT\"}"))
                 .andExpect(status().isCreated());
     }
 
