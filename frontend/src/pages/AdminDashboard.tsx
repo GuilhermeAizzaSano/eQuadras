@@ -493,8 +493,13 @@ export const AdminDashboard: React.FC = () => {
   const abrirAgendaDoDia = async (dataIso: string) => {
     setDataSelecionada(dataIso);
     setQuadraSelecionadaAgendaId(quadraFiltroCalendarId);
-    const modalStatus = (statusFiltroSchedule === 'CONFIRMADOS' || statusFiltroSchedule === 'PENDENTES' || statusFiltroSchedule === 'REALIZADOS') ? 'AGENDADOS' : statusFiltroSchedule;
-    setStatusFiltroModal(modalStatus as any);
+    const modalStatus: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS' =
+      (statusFiltroSchedule === 'CONFIRMADOS' || statusFiltroSchedule === 'PENDENTES' || statusFiltroSchedule === 'REALIZADOS')
+        ? 'AGENDADOS'
+        : (statusFiltroSchedule === 'BLOQUEADOS' || statusFiltroSchedule === 'LIVRES')
+          ? statusFiltroSchedule
+          : 'TODOS';
+    setStatusFiltroModal(modalStatus);
     if (statusFiltroSchedule === 'REALIZADOS') {
       setFiltroAgendaAdmin('REALIZADOS');
     } else if (statusFiltroSchedule === 'CONFIRMADOS' || statusFiltroSchedule === 'PENDENTES') {

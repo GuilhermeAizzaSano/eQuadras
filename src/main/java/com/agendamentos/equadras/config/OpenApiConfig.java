@@ -463,8 +463,8 @@ public class OpenApiConfig {
                             "valorTotal": 140.00,
                             "status": "CONFIRMADO",
                             "transacaoPagamentoId": "mp-pix-987654321",
-                            "pixCopiaECola": null,
-                            "qrCodeBase64": null,
+                            "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
+                            "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
                             "criadoEm": "2026-09-09T00:30:00"
                           }
                         ]
@@ -517,8 +517,8 @@ public class OpenApiConfig {
                       "valorTotal": 140.00,
                       "status": "CONFIRMADO",
                       "transacaoPagamentoId": "mp-pix-987654321",
-                      "pixCopiaECola": null,
-                      "qrCodeBase64": null,
+                      "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
+                      "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
                       "criadoEm": "2026-09-09T00:30:00"
                     }
                     """, "Detalhes completos do agendamento");
@@ -539,8 +539,8 @@ public class OpenApiConfig {
                       "valorTotal": 140.00,
                       "status": "CANCELADO",
                       "transacaoPagamentoId": "mp-pix-987654321",
-                      "pixCopiaECola": null,
-                      "qrCodeBase64": null,
+                      "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
+                      "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
                       "criadoEm": "2026-09-09T00:30:00"
                     }
                     """, "Agendamento cancelado com sucesso");
@@ -579,6 +579,8 @@ public class OpenApiConfig {
                       }
                     ]
                     """, "Grade completa de slots de 1 hora para o dia com disponibilidade");
+                addErrorResponse(operation, "400", "Data Inválida", "A data informada é inválida ou não segue o formato YYYY-MM-DD.", path);
+                addErrorResponse(operation, "404", "Quadra Não Encontrada", "A quadra informada não foi localizada.", path);
             }
 
             case "/api/agendamentos/dia" -> {

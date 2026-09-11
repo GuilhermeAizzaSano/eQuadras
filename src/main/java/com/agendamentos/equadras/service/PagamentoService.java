@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +27,7 @@ public class PagamentoService {
     private String mercadoPagoAccessToken;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
+            .connectTimeout(Duration.ofMillis(4000))
             .build();
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -43,8 +44,14 @@ public class PagamentoService {
         if (mercadoPagoAccessToken != null && !mercadoPagoAccessToken.isBlank() && !mercadoPagoAccessToken.startsWith("TEST-MOCK")) {
             try {
                 return gerarPixMercadoPagoApi(agendamento);
+            } catch (HttpTimeoutException e) {
+                log.error("Timeout de 4s excedido ao chamar API do Mercado Pago para agendamento {}.", agendamento.getId_agendamento(), e);
+                throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento (tempo limite excedido).", e);
+            } catch (IllegalStateException e) {
+                throw e;
             } catch (Exception e) {
-                log.error("Erro ao chamar API do Mercado Pago. Usando gerador de contingencia/mock para Dev.", e);
+                log.error("Erro ao chamar API do Mercado Pago para agendamento {}.", agendamento.getId_agendamento(), e);
+                throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento.", e);
             }
         }
 
@@ -88,7 +95,7 @@ public class PagamentoService {
                 .header("Authorization", "Bearer " + mercadoPagoAccessToken)
                 .header("Content-Type", "application/json")
                 .header("X-Idempotency-Key", idempotencyKey)
-                .timeout(Duration.ofSeconds(10))
+                .timeout(Duration.ofMillis(4000))
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                 .build();
 
@@ -112,8 +119,8 @@ public class PagamentoService {
 
             return new PixDados(id, qrCode, qrCodeBase64);
         } else {
-            log.warn("Mercado Pago retornou status {}: {}. Usando fallback dev para nao interromper a experiencia.", response.statusCode(), response.body());
-            return gerarPixMock(agendamento);
+            log.error("Mercado Pago retornou erro {}: {}", response.statusCode(), response.body());
+            throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento.");
         }
     }
 
@@ -134,7 +141,7 @@ public class PagamentoService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.mercadopago.com/v1/payments/" + paymentId.trim()))
                     .header("Authorization", "Bearer " + mercadoPagoAccessToken)
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(Duration.ofMillis(4000))
                     .GET()
                     .build();
 
@@ -152,6 +159,8 @@ public class PagamentoService {
             } else {
                 log.warn("Falha ao consultar pagamento {} no MP. Status: {}", paymentId, response.statusCode());
             }
+        } catch (HttpTimeoutException e) {
+            log.error("Timeout de 4s excedido ao consultar pagamento no Mercado Pago: {}", paymentId, e);
         } catch (Exception e) {
             log.error("Erro ao consultar pagamento no Mercado Pago: {}", paymentId, e);
         }

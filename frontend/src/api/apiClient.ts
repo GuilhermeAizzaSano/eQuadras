@@ -21,13 +21,18 @@ export const getAssetUrl = (url: string): string => {
 
 export const BASE_URL = getBaseUrl();
 
+export interface ApiFetchOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
 export async function apiFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiFetchOptions = {}
 ): Promise<T> {
-  const headers = new Headers(options.headers || {});
+  const { timeoutMs = 8000, ...fetchOptions } = options;
+  const headers = new Headers(fetchOptions.headers || {});
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  if (!headers.has('Content-Type') && !(fetchOptions.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -38,8 +43,20 @@ export async function apiFetch<T>(
 
   headers.set('X-Client', 'frontend');
 
+  if (!headers.has('X-Correlation-Id')) {
+    const correlationId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `front-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    headers.set('X-Correlation-Id', correlationId);
+  }
+
+  const signal = fetchOptions.signal || (typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
+    ? AbortSignal.timeout(timeoutMs)
+    : undefined);
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
+    ...fetchOptions,
+    signal,
     credentials: 'include',
     headers,
   });
@@ -142,7 +159,7 @@ export const quadraApi = {
   uploadFotos: (id: number, files: File[]) => {
     const formData = new FormData();
     files.forEach((file) => formData.append('fotos', file));
-    return apiFetch<Quadra>(`/quadras/${id}/fotos`, { method: 'POST', body: formData });
+    return apiFetch<Quadra>(`/quadras/${id}/fotos`, { method: 'POST', body: formData, timeoutMs: 30000 });
   },
 
   removerFoto: (id: number, fotoUrl: string) =>

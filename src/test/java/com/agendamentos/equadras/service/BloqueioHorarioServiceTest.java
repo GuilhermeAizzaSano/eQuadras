@@ -7,6 +7,7 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
+import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
@@ -39,6 +40,9 @@ class BloqueioHorarioServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private AgendamentoRepository agendamentoRepository;
 
     @InjectMocks
     private BloqueioHorarioService bloqueioHorarioService;
@@ -299,5 +303,23 @@ class BloqueioHorarioServiceTest {
         bloqueioHorarioService.removerBloqueio(10L, 200L, 99L);
 
         verify(bloqueioHorarioRepository, times(1)).delete(bloqueio);
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao criar bloqueio se houver agendamento ativo no período")
+    void deveFalharSeHouverConflitoComReservaAtiva() {
+        LocalDate dataBloqueio = LocalDate.now().plusDays(2);
+        LocalTime inicio = LocalTime.of(14, 0);
+        LocalTime fim = LocalTime.of(16, 0);
+        BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(dataBloqueio, inicio, fim, "Manutenção");
+
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.existeConflitoHorario(eq(10L), any(), any(), any())).thenReturn(true);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                bloqueioHorarioService.criarBloqueio(10L, dto, 1L));
+
+        assertTrue(ex.getMessage().contains("já existem reservas ativas"));
+        verify(bloqueioHorarioRepository, never()).save(any());
     }
 }

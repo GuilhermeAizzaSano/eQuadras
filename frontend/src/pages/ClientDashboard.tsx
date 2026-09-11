@@ -229,32 +229,49 @@ export const ClientDashboard: React.FC = () => {
       const data = await response.json();
       
       if (!data.erro) {
-        const query = encodeURIComponent(`${data.logradouro || ''}, ${data.localidade || 'Jales'}, ${data.uf || 'SP'}`);
-        const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
-        const nominatimData = await nominatimRes.json();
+        // Tenta buscar com logradouro + cidade + UF, e fallback para cidade + UF se não encontrar
+        const queryCompleta = [data.logradouro, data.bairro, data.localidade, data.uf, 'Brasil']
+          .filter(Boolean)
+          .join(', ');
+        
+        let nominatimRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryCompleta)}&limit=1`,
+          { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
+        ).catch(() => null);
+
+        let nominatimData = nominatimRes && nominatimRes.ok ? await nominatimRes.json().catch(() => []) : [];
+
+        // Se a busca completa não encontrar, tenta pelo menos com cidade e UF
+        if ((!nominatimData || nominatimData.length === 0) && data.localidade) {
+          const queryCidade = `${data.localidade}, ${data.uf || 'SP'}, Brasil`;
+          nominatimRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryCidade)}&limit=1`,
+            { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
+          ).catch(() => null);
+          nominatimData = nominatimRes && nominatimRes.ok ? await nominatimRes.json().catch(() => []) : [];
+        }
         
         if (nominatimData && nominatimData.length > 0) {
           const lat = parseFloat(nominatimData[0].lat);
           const lon = parseFloat(nominatimData[0].lon);
           
-          const q = await quadraApi.listar(lat, lon, 10.0);
+          const q = await quadraApi.listar(lat, lon, 2.0);
           const filtradas = q.filter(quadra => quadra.ativa);
           setQuadras(filtradas);
           
           if (filtradas.length === 0) {
-            setFeedback({ type: 'error', message: `Nenhuma quadra ativa encontrada em um raio de até 10 km do CEP ${cepBusca}.` });
+            setFeedback({ type: 'error', message: `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.` });
           } else {
-            setFeedback({ type: 'success', message: `${filtradas.length} quadra(s) encontrada(s) no raio do seu CEP!` });
+            setFeedback({ type: 'success', message: `${filtradas.length} quadra(s) encontrada(s) a até 2 km do seu CEP!` });
           }
           return;
         }
       }
       
-      setFeedback({ type: 'error', message: 'Não foi possível obter a localização exata do CEP digitado.' });
-      carregarQuadras();
-    } catch (err) {
-      console.error(err);
-      carregarQuadras();
+      setFeedback({ type: 'error', message: 'Não foi possível obter as coordenadas do CEP digitado.' });
+    } catch (err: any) {
+      console.error('Erro na busca por CEP:', err);
+      setFeedback({ type: 'error', message: err?.message || 'Falha ao buscar localização do CEP.' });
     } finally {
       setLoading(false);
       setLoadingMessage('Processando dados...');
@@ -554,7 +571,7 @@ export const ClientDashboard: React.FC = () => {
           <div className="flex items-center gap-2 w-full md:w-auto">
             <input
               type="text"
-              placeholder="Filtrar por CEP (ex: 15700-010)"
+              placeholder="Filtrar por CEP até 2 km"
               value={cepBusca}
               onChange={(e) => {
                 const val = e.target.value

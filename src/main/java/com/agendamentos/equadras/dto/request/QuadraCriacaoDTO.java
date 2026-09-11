@@ -43,6 +43,8 @@ public record QuadraCriacaoDTO(
         @Pattern(regexp = "^[^<>]*$", message = "Caracteres HTML não são permitidos na descrição")
         String descricao,
         java.time.LocalDate dataLimiteAgendamento,
-        java.util.List<String> fotos,
-        java.util.List<DisponibilidadeDiaDTO> disponibilidades
+        @Size(max = 5, message = "Uma quadra pode ter no máximo 5 fotos")
+        java.util.List<@Size(max = 500, message = "URL da foto inválida") String> fotos,
+        @Size(max = 7, message = "Uma quadra pode ter no máximo 7 regras de disponibilidade semanal")
+        java.util.List<@jakarta.validation.Valid DisponibilidadeDiaDTO> disponibilidades
 ) {}

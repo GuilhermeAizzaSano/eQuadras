@@ -104,6 +104,25 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     java.util.Optional<Agendamento> findById(Long id);
 
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("SELECT a FROM Agendamento a WHERE a.id_agendamento = :id AND (a.usuario.id_usuario = :userId OR a.quadra.admin.id_usuario = :userId)")
+    java.util.Optional<Agendamento> buscarPorIdEEscopo(@Param("id") Long id, @Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("""
+        SELECT a FROM Agendamento a
+        WHERE a.quadra.id_quadra IN :quadraIds
+        AND a.status <> :statusCancelado
+        AND (a.dataHoraInicio < :fimDoDia AND a.dataHoraFim > :inicioDoDia)
+        ORDER BY a.dataHoraInicio ASC
+    """)
+    List<Agendamento> buscarPorQuadrasEDataLote(
+            @Param("quadraIds") List<Long> quadraIds,
+            @Param("statusCancelado") StatusAgendamento statusCancelado,
+            @Param("inicioDoDia") LocalDateTime inicioDoDia,
+            @Param("fimDoDia") LocalDateTime fimDoDia
+    );
+
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE Agendamento a SET a.status = :statusCancelado WHERE a.status = :statusPendente AND a.criadoEm < :limite")
     int cancelarPendentesExpirados(
