@@ -80,11 +80,8 @@ public class NotificacaoService {
         return notificacaoRepository.findByAdminIdOrderByDataCriacaoDesc(adminId);
     }
 
-    public void marcarComoLida(Long idNotificacao) {
-        Notificacao notif = notificacaoRepository.findById(idNotificacao)
-            .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada"));
-        notif.setLida(true);
-        notificacaoRepository.save(notif);
+    public void marcarComoLida(Long idNotificacao, Long usuarioId) {
+        marcarComoLidaSeDoUsuario(idNotificacao, usuarioId);
     }
 
     public void marcarComoLidaSeDoUsuario(Long idNotificacao, Long usuarioId) {

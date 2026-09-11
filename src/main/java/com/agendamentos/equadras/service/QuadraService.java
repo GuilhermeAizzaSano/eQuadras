@@ -99,12 +99,7 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        // Se a quadra não tiver admin vinculado (legado), vincula ao admin atual
-        if (quadra.getAdmin() == null) {
-            Usuario admin = usuarioRepository.findById(adminId)
-                    .orElseThrow(() -> new IllegalArgumentException("Administrador não encontrado."));
-            quadra.setAdmin(admin);
-        } else if (!podeGerenciarQuadra(quadra, adminId)) {
+        if (quadra.getAdmin() == null || !podeGerenciarQuadra(quadra, adminId)) {
             throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 

@@ -5,6 +5,7 @@ import com.agendamentos.equadras.dto.response.BloqueioHorarioResponseDTO;
 import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -20,13 +23,16 @@ public class BloqueioHorarioService {
     private final BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraRepository quadraRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AgendamentoRepository agendamentoRepository;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
-                                  UsuarioRepository usuarioRepository) {
+                                  UsuarioRepository usuarioRepository,
+                                  AgendamentoRepository agendamentoRepository) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioRepository = usuarioRepository;
+        this.agendamentoRepository = agendamentoRepository;
     }
 
     private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
@@ -39,7 +45,8 @@ public class BloqueioHorarioService {
 
     @Transactional
     public BloqueioHorarioResponseDTO criarBloqueio(Long quadraId, BloqueioHorarioCriacaoDTO dto, Long adminId) {
-        Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
+        Quadra quadra = quadraRepository.buscarComLockParaAgendamento(quadraId)
+                .or(() -> quadraRepository.findByIdWithAdmin(quadraId))
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         if (!podeGerenciarBloqueio(quadra, adminId)) {
@@ -48,6 +55,19 @@ public class BloqueioHorarioService {
 
         if (dto.data().isBefore(LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL))) {
             throw new IllegalArgumentException("A data do bloqueio não pode ser no passado.");
+        }
+
+        LocalDateTime inicioBloqueio = dto.horaInicio() != null ? dto.data().atTime(dto.horaInicio()) : dto.data().atStartOfDay();
+        LocalDateTime fimBloqueio = dto.horaFim() != null ? dto.data().atTime(dto.horaFim()) : dto.data().atTime(LocalTime.MAX);
+
+        boolean conflitoComReserva = agendamentoRepository.existeConflitoHorario(
+                quadraId,
+                inicioBloqueio,
+                fimBloqueio,
+                com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
+        );
+        if (conflitoComReserva) {
+            throw new IllegalArgumentException("Não é possível bloquear este horário pois já existem reservas ativas no período.");
         }
 
         if (dto.horaInicio() != null && dto.horaFim() != null) {

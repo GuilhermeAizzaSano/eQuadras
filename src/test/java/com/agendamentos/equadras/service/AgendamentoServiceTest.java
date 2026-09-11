@@ -440,7 +440,7 @@ class AgendamentoServiceTest {
                 .status(StatusAgendamento.PENDENTE)
                 .build();
 
-        when(agendamentoRepository.findById(50L)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.buscarPorIdEEscopo(50L, 1L)).thenReturn(Optional.of(agendamento));
 
         AgendamentoResponseDTO dto = agendamentoService.buscarPorId(50L, 1L);
 

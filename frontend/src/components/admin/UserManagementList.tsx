@@ -52,7 +52,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
 
           <select
             value={roleFiltro}
-            onChange={(e) => setRoleFiltro(e.target.value as any)}
+            onChange={(e) => setRoleFiltro(e.target.value as Role | 'TODOS')}
             className="bg-surface-950 border border-surface-750 rounded-xl px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:border-brand-400 transition cursor-pointer font-mono"
           >
             <option value="TODOS">Todos os Perfis</option>

@@ -22,6 +22,7 @@ public record UsuarioCriacaoDTO(
         String senha_usuario,
 
         @NotBlank(message = "O telefone é obrigatório")
+        @Size(min = 8, max = 20, message = "O telefone deve ter entre 8 e 20 caracteres")
         String phone_usuario,
 
         Role role

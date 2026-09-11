@@ -1042,15 +1042,17 @@ paths:
                 valorTotal: 140.0
                 status: CONFIRMADO
                 transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
+                pixCopiaECola: 00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...
+                qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAA...
                 criadoEm: 2026-09-09T00:30:00
     post:
       tags:
       - Agendamentos - API
       summary: Criar novo agendamento com Lock e Pix
-      description: Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes
-        e gera a cobrança Pix.
+      description: "Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes\
+        \ e gera a cobrança Pix. Requisitos: horários em horas cheias (minutos zerados)\
+        \ e duração mínima de 1 hora (múltipla de 60 min). Agendamentos pendentes\
+        \ sem pagamento expiram e são cancelados automaticamente após 15 minutos."
       operationId: agendar
       requestBody:
         content:
@@ -1189,8 +1191,8 @@ paths:
                 valorTotal: 140.0
                 status: CANCELADO
                 transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
+                pixCopiaECola: 00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...
+                qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAA...
                 criadoEm: 2026-09-09T00:30:00
   /api/quadras/fotos:
     get:
@@ -1382,8 +1384,8 @@ paths:
                 valorTotal: 140.0
                 status: CONFIRMADO
                 transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
+                pixCopiaECola: 00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...
+                qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAA...
                 criadoEm: 2026-09-09T00:30:00
         "404":
           description: Agendamento Não Encontrado
@@ -1447,6 +1449,26 @@ paths:
                 status: DISPONIVEL
                 disponivel: true
                 motivo: null
+        "400":
+          description: Data Inválida
+          content:
+            application/json:
+              example:
+                type: https://api.equadras.com/erros/bad-request
+                title: Data Inválida
+                status: 400
+                detail: A data informada é inválida ou não segue o formato YYYY-MM-DD.
+                instance: "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
+        "404":
+          description: Quadra Não Encontrada
+          content:
+            application/json:
+              example:
+                type: https://api.equadras.com/erros/not-found
+                title: Quadra Não Encontrada
+                status: 404
+                detail: A quadra informada não foi localizada.
+                instance: "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
   /api/agendamentos/quadra/{quadraId}/data:
     get:
       tags:
@@ -1560,6 +1582,26 @@ paths:
                 status: DISPONIVEL
                 disponivel: true
                 motivo: null
+        "400":
+          description: Data Inválida
+          content:
+            application/json:
+              example:
+                type: https://api.equadras.com/erros/bad-request
+                title: Data Inválida
+                status: 400
+                detail: A data informada é inválida ou não segue o formato YYYY-MM-DD.
+                instance: /api/agendamentos/horarios-disponiveis
+        "404":
+          description: Quadra Não Encontrada
+          content:
+            application/json:
+              example:
+                type: https://api.equadras.com/erros/not-found
+                title: Quadra Não Encontrada
+                status: 404
+                detail: A quadra informada não foi localizada.
+                instance: /api/agendamentos/horarios-disponiveis
   /api/agendamentos/dia:
     get:
       tags:
@@ -1771,10 +1813,16 @@ components:
           type: array
           items:
             type: string
+            maxLength: 500
+            minLength: 0
+          maxItems: 5
+          minItems: 0
         disponibilidades:
           type: array
           items:
             $ref: "#/components/schemas/DisponibilidadeDiaDTO"
+          maxItems: 7
+          minItems: 0
       required:
       - nome
       - tipoEsporte
@@ -1900,6 +1948,8 @@ components:
           minLength: 6
         phone_usuario:
           type: string
+          maxLength: 20
+          minLength: 8
         role:
           type: string
           enum:
@@ -1946,6 +1996,8 @@ components:
           $ref: "#/components/schemas/LocalTime"
         motivo:
           type: string
+          maxLength: 255
+          minLength: 0
           pattern: "^[^<>]*$"
         substituirDiaInteiro:
           type: boolean
@@ -2091,15 +2143,25 @@ components:
         usuarioId:
           type: integer
           format: int64
+          description: ID do usuário (opcional para usuários autenticados via JWT)
+          example: 10
         quadraId:
           type: integer
           format: int64
+          description: Identificador único da quadra esportiva
+          example: 1
         dataHoraInicio:
           type: string
           format: date-time
+          description: "Data e hora de início. Deve ser hora cheia (minutos zerados:\
+            \ HH:00:00)."
+          example: 2026-09-12T19:00:00
         dataHoraFim:
           type: string
           format: date-time
+          description: "Data e hora de término. Deve ser hora cheia (minutos zerados:\
+            \ HH:00:00). A duração mínima é de 1 hora e múltipla de 60 minutos."
+          example: 2026-09-12T20:00:00
       required:
       - dataHoraFim
       - dataHoraInicio

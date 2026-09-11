@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -113,18 +114,28 @@ public class PagamentoController {
                     if (mpStatus.externalReference() != null && !mpStatus.externalReference().isBlank()) {
                         try {
                             agendamentoId = Long.parseLong(mpStatus.externalReference().trim());
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException e) {
+                            log.warn("Formato numérico inválido de externalReference [{}] no pagamento {}", mpStatus.externalReference(), paymentId);
+                        }
                     }
 
-                    agendamentoService.confirmarPagamentoPorWebhook(agendamentoId, paymentId);
-                    log.info("Agendamento associado ao pagamento {} confirmado com sucesso via Webhook!", paymentId);
-                    return ResponseEntity.ok(Map.of("status", "processed", "payment_status", "approved"));
+                    try {
+                        agendamentoService.confirmarPagamentoPorWebhook(agendamentoId, paymentId);
+                        log.info("Agendamento associado ao pagamento {} confirmado com sucesso via Webhook!", paymentId);
+                        return ResponseEntity.ok(Map.of("status", "processed", "payment_status", "approved"));
+                    } catch (Exception e) {
+                        log.error("Falha ao confirmar pagamento via webhook para agendamento {} (paymentId {}): {}", agendamentoId, paymentId, e.getMessage(), e);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(Map.of("status", "error", "message", "Falha ao processar confirmação de pagamento. Solicitando retentativa."));
+                    }
                 }
             } else {
                 log.warn("Não foi possível consultar os detalhes do pagamento {} junto ao Mercado Pago.", paymentId);
             }
         } catch (Exception e) {
-            log.error("Erro ao processar webhook do Mercado Pago para paymentId {}", paymentId, e);
+            log.error("Erro inesperado ao processar webhook do Mercado Pago para paymentId {}", paymentId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("status", "error", "message", "Erro interno ao processar webhook"));
         }
 
         return ResponseEntity.ok(Map.of("status", "received"));

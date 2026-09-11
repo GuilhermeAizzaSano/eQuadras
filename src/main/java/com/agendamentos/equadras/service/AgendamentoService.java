@@ -11,6 +11,8 @@ import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.util.DataFlexivelUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,8 @@ import java.util.List;
 
 @Service
 public class AgendamentoService {
+
+    private static final Logger log = LoggerFactory.getLogger(AgendamentoService.class);
 
     private static final LocalTime HORARIO_ABERTURA = LocalTime.of(6, 0);
     private static final LocalTime HORARIO_FECHAMENTO = LocalTime.of(23, 0);
@@ -160,22 +164,22 @@ public class AgendamentoService {
                 notificacaoService.enviarNotificacao(salvo.getQuadra().getAdmin().getId_usuario(), msg);
             }
         } catch (Exception e) {
-            System.err.println("Falha ao enviar notificação: " + e.getMessage());
+            log.error("Falha ao enviar notificação de pagamento para admin do agendamento {}: {}", salvo.getId_agendamento(), e.getMessage(), e);
         }
     }
 
     @Transactional(readOnly = true)
     public AgendamentoResponseDTO buscarPorId(Long idAgendamento, Long usuarioIdAutenticado) {
-        Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
-                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
-
         Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
         boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
-        boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
-        boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
-                && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
-        if (!ehDono && !ehAdminDaQuadra && !ehMasterAdmin) {
-            throw new IllegalArgumentException("Você não tem permissão para visualizar este agendamento.");
+
+        Agendamento agendamento;
+        if (ehMasterAdmin) {
+            agendamento = agendamentoRepository.findById(idAgendamento)
+                    .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+        } else {
+            agendamento = agendamentoRepository.buscarPorIdEEscopo(idAgendamento, usuarioIdAutenticado)
+                    .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamento);
@@ -259,11 +263,89 @@ public class AgendamentoService {
                 fimDoDia
         );
 
+        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
+        return montarSlotsHorarios(quadra, data, agendamentosDoDia, bloqueios);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarTodos(Long usuarioId) {
+        return listarTodos(usuarioId, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarTodos(Long usuarioId, boolean historico) {
+        List<Agendamento> agendamentos;
+        
+        if (usuarioId != null) {
+            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+            if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
+                if (usuario.isMasterAdmin()) {
+                    // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
+                    if (historico) {
+                        agendamentos = agendamentoRepository.findAll();
+                    } else {
+                        agendamentos = agendamentoRepository.findAtivosAll(
+                                StatusAgendamento.CANCELADO,
+                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                        );
+                    }
+                } else {
+                    // Admin comum vê os agendamentos das suas quadras (histórico completo ou apenas ativos)
+                    if (historico) {
+                        agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                    } else {
+                        agendamentos = agendamentoRepository.findAtivosByAdminId(
+                                usuarioId,
+                                StatusAgendamento.CANCELADO,
+                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                        );
+                    }
+                }
+            } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
+                if (historico) {
+                    agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+                } else {
+                    agendamentos = agendamentoRepository.findAtivosByUsuarioId(
+                            usuarioId,
+                            StatusAgendamento.CANCELADO,
+                            LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                    );
+                }
+            } else {
+                agendamentos = agendamentoRepository.findAll();
+            }
+        } else {
+            agendamentos = agendamentoRepository.findAll();
+        }
+
+        return agendamentos.stream()
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
+                .toList();
+    }
+
+    private List<HorarioDisponivelDTO> montarSlotsHorarios(
+            Quadra quadra,
+            LocalDate data,
+            List<Agendamento> agendamentosDoDia,
+            List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios) {
+
+        java.time.DayOfWeek diaSemana = data.getDayOfWeek();
+        com.agendamentos.equadras.model.entity.DisponibilidadeDia disp = null;
+        if (quadra.getDisponibilidades() != null) {
+            disp = quadra.getDisponibilidades().stream()
+                    .filter(d -> d.getDiaSemana() == diaSemana)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (disp == null) {
+            return List.of();
+        }
+
         LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
         List<HorarioDisponivelDTO> slots = new ArrayList<>();
 
         boolean dataLimiteExcedida = quadra.getDataLimiteAgendamento() != null && data.isAfter(quadra.getDataLimiteAgendamento());
-        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
         com.agendamentos.equadras.model.entity.BloqueioHorario bloqueioDiaInteiro = bloqueios.stream()
                 .filter(b -> b.getHoraInicio() == null || b.getHoraFim() == null)
                 .findFirst()
@@ -332,62 +414,6 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<AgendamentoResponseDTO> listarTodos(Long usuarioId) {
-        return listarTodos(usuarioId, false);
-    }
-
-    @Transactional(readOnly = true)
-    public List<AgendamentoResponseDTO> listarTodos(Long usuarioId, boolean historico) {
-        List<Agendamento> agendamentos;
-        
-        if (usuarioId != null) {
-            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
-            if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
-                if (usuario.isMasterAdmin()) {
-                    // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
-                    if (historico) {
-                        agendamentos = agendamentoRepository.findAll();
-                    } else {
-                        agendamentos = agendamentoRepository.findAtivosAll(
-                                StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
-                        );
-                    }
-                } else {
-                    // Admin comum vê os agendamentos das suas quadras (histórico completo ou apenas ativos)
-                    if (historico) {
-                        agendamentos = agendamentoRepository.findByAdminId(usuarioId);
-                    } else {
-                        agendamentos = agendamentoRepository.findAtivosByAdminId(
-                                usuarioId,
-                                StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
-                        );
-                    }
-                }
-            } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
-                if (historico) {
-                    agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
-                } else {
-                    agendamentos = agendamentoRepository.findAtivosByUsuarioId(
-                            usuarioId,
-                            StatusAgendamento.CANCELADO,
-                            LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
-                    );
-                }
-            } else {
-                agendamentos = agendamentoRepository.findAll();
-            }
-        } else {
-            agendamentos = agendamentoRepository.findAll();
-        }
-
-        return agendamentos.stream()
-                .map(AgendamentoResponseDTO::fromEntitySemPix)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public java.util.Map<Long, List<HorarioDisponivelDTO>> listarHorariosDoDiaParaAdmin(LocalDate data, Long adminId) {
         Usuario admin = usuarioRepository.findById(adminId).orElse(null);
         List<Quadra> quadrasDoAdmin;
@@ -398,10 +424,40 @@ public class AgendamentoService {
         }
 
         java.util.Map<Long, List<HorarioDisponivelDTO>> mapaResultado = new java.util.LinkedHashMap<>();
+        List<Quadra> quadrasAtivas = quadrasDoAdmin.stream().filter(Quadra::isAtiva).toList();
+
+        if (quadrasAtivas.isEmpty()) {
+            for (Quadra quadra : quadrasDoAdmin) {
+                mapaResultado.put(quadra.getId_quadra(), List.of());
+            }
+            return mapaResultado;
+        }
+
+        List<Long> quadraIdsAtivas = quadrasAtivas.stream().map(Quadra::getId_quadra).toList();
+        LocalDateTime inicioDoDia = data.atStartOfDay();
+        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
+
+        List<Agendamento> agendamentosEmLote = agendamentoRepository.buscarPorQuadrasEDataLote(
+                quadraIdsAtivas,
+                StatusAgendamento.CANCELADO,
+                inicioDoDia,
+                fimDoDia
+        );
+
+        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueiosEmLote =
+                bloqueioHorarioRepository.findByQuadraIdsAndData(quadraIdsAtivas, data);
+
+        java.util.Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosEmLote.stream()
+                .collect(java.util.stream.Collectors.groupingBy(a -> a.getQuadra().getId_quadra()));
+
+        java.util.Map<Long, List<com.agendamentos.equadras.model.entity.BloqueioHorario>> bloqueiosPorQuadra = bloqueiosEmLote.stream()
+                .collect(java.util.stream.Collectors.groupingBy(b -> b.getQuadra().getId_quadra()));
 
         for (Quadra quadra : quadrasDoAdmin) {
             if (quadra.isAtiva()) {
-                List<HorarioDisponivelDTO> slots = listarHorariosDisponiveis(quadra.getId_quadra(), data);
+                List<Agendamento> agendamentosQuadra = agendamentosPorQuadra.getOrDefault(quadra.getId_quadra(), List.of());
+                List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueiosQuadra = bloqueiosPorQuadra.getOrDefault(quadra.getId_quadra(), List.of());
+                List<HorarioDisponivelDTO> slots = montarSlotsHorarios(quadra, data, agendamentosQuadra, bloqueiosQuadra);
                 mapaResultado.put(quadra.getId_quadra(), slots);
             } else {
                 mapaResultado.put(quadra.getId_quadra(), List.of());
@@ -469,7 +525,6 @@ public class AgendamentoService {
         return resultadoFinal;
     }
 
-    @Transactional
     public AgendamentoResponseDTO agendarViaBot(com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
         Long quadraId = dto.quadraId();
         if (quadraId == null) {
@@ -533,7 +588,7 @@ public class AgendamentoService {
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     @Transactional
     public void expirarAgendamentosPendentes() {
-        LocalDateTime limite = LocalDateTime.now().minusMinutes(15);
+        LocalDateTime limite = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL).minusMinutes(15);
         agendamentoRepository.cancelarPendentesExpirados(
                 StatusAgendamento.PENDENTE,
                 StatusAgendamento.CANCELADO,
