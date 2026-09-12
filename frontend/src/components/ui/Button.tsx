@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Loader2 } from 'lucide-react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'subtle';
@@ -29,27 +29,27 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer';
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer tracking-tight';
 
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        'bg-white text-surface-950 hover:bg-zinc-200 font-bold shadow-md shadow-white/5',
+        'bg-white text-black hover:bg-white/90 font-semibold shadow-sm active:bg-white/80',
       secondary:
-        'bg-brand-500 hover:bg-brand-400 text-surface-950 font-bold shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30',
+        'bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] text-white border border-white/[0.12] shadow-sm backdrop-blur-md',
       destructive:
-        'bg-red-600 hover:bg-red-500 text-white font-semibold shadow-md shadow-red-950/40',
+        'bg-[#FF453A] hover:bg-[#FF453A]/90 active:bg-[#FF453A]/80 text-white font-semibold shadow-sm',
       outline:
-        'bg-transparent border border-surface-800 hover:border-surface-700 text-surface-200 hover:text-white hover:bg-surface-900/60',
+        'bg-transparent border border-white/[0.12] hover:border-white/[0.2] hover:bg-white/[0.06] text-white/90 hover:text-white',
       ghost:
-        'bg-transparent text-surface-400 hover:text-white hover:bg-surface-900/80',
+        'bg-transparent text-white/70 hover:text-white hover:bg-white/[0.06]',
       subtle:
-        'bg-surface-850/80 hover:bg-surface-800 text-surface-200 hover:text-white border border-surface-800/80',
+        'bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white border border-white/[0.08]',
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
-      sm: 'text-xs px-3 py-1.5 gap-1.5',
-      md: 'text-xs sm:text-sm px-4 py-2.5 gap-2',
-      lg: 'text-sm sm:text-base px-5 py-3 gap-2.5 font-semibold',
+      sm: 'text-xs px-3 py-1.5 gap-1.5 rounded-lg',
+      md: 'text-xs sm:text-sm px-4 py-2 gap-2 rounded-xl',
+      lg: 'text-sm sm:text-base px-5 py-2.5 gap-2.5 font-semibold rounded-xl',
       icon: 'p-2 rounded-xl',
     };
 

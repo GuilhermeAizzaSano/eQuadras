@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'subtle' | 'elevated' | 'glass';
@@ -8,20 +8,20 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ children, className = '', variant = 'default', interactive = false, ...props }, ref) => {
     const variantStyles = {
-      default: 'bg-surface-900/80 border border-surface-800/90 shadow-xl',
-      subtle: 'bg-surface-950/60 border border-surface-850/80 shadow-md',
-      elevated: 'bg-surface-850/90 border border-surface-750/90 shadow-2xl shadow-black/40',
-      glass: 'bg-surface-900/60 backdrop-blur-xl border border-white/10 shadow-2xl',
+      default: 'bg-[#121214] border border-white/[0.08] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
+      subtle: 'bg-white/[0.03] border border-white/[0.06] shadow-sm',
+      elevated: 'bg-[#1c1c1e] border border-white/[0.10] shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]',
+      glass: 'bg-white/[0.04] backdrop-blur-2xl border border-white/[0.10] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]',
     };
 
     const interactiveStyles = interactive
-      ? 'transition-all duration-300 hover:border-surface-700 hover:bg-surface-900 cursor-pointer active:scale-[0.99]'
+      ? 'transition-all duration-200 hover:border-white/[0.18] hover:bg-white/[0.06] cursor-pointer active:scale-[0.99]'
       : '';
 
     return (
       <div
         ref={ref}
-        className={`rounded-2xl ${variantStyles[variant]} ${interactiveStyles} ${className}`}
+        className={`rounded-2xl sm:rounded-3xl ${variantStyles[variant]} ${interactiveStyles} ${className}`}
         {...props}
       >
         {children}

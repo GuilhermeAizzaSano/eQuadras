@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { X, MapPin, Activity, Calendar, ShieldCheck, Info, ExternalLink } from 'lucide-react';
 import { Quadra } from '../../types';
 import { CourtCarousel } from './CourtCarousel';
@@ -52,17 +52,17 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-2xl transition-opacity animate-in fade-in duration-200"
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-2xl bg-surface-900 border border-surface-800 rounded-3xl shadow-2xl shadow-black/90 overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-[#121214] border border-white/[0.1] rounded-3xl shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         {/* Header com botão fechar */}
         <div className="absolute top-4 right-4 z-20">
           <button
             onClick={onClose}
             aria-label="Fechar modal de detalhes"
-            className="p-2 rounded-full bg-surface-950/80 hover:bg-surface-900 text-surface-400 hover:text-white border border-surface-750 backdrop-blur-md transition active:scale-95 shadow-lg cursor-pointer"
+            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white/70 hover:text-white border border-white/[0.15] backdrop-blur-xl transition active:scale-95 shadow-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -78,7 +78,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
           />
 
           {/* Cabeçalho de Detalhes da Quadra */}
-          <div className="space-y-3.5 border-b border-surface-800/80 pb-5">
+          <div className="space-y-3.5 border-b border-white/[0.08] pb-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <Badge variant="neutral" className="text-xs">
@@ -90,11 +90,11 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
               </div>
 
               <div className="flex items-baseline gap-1.5 font-mono">
-                <span className="text-xs text-surface-400 font-semibold uppercase">Valor:</span>
+                <span className="text-xs text-white/50 font-medium uppercase">Valor:</span>
                 <span className="text-2xl font-bold text-white tracking-tight">
                   R$ {quadra.valorHora.toFixed(2)}
                 </span>
-                <span className="text-xs text-surface-400">/ hora</span>
+                <span className="text-xs text-white/50">/ hora</span>
               </div>
             </div>
 
@@ -104,9 +104,9 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
             {/* Endereço & Mapa */}
             {enderecoCompleto && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-surface-950/70 border border-surface-800">
-                <div className="flex items-start gap-2.5 text-xs text-surface-300">
-                  <MapPin className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+                <div className="flex items-start gap-2.5 text-xs text-white/70">
+                  <MapPin className="w-4 h-4 text-white/60 shrink-0 mt-0.5" />
                   <span>{enderecoCompleto}</span>
                 </div>
                 {googleMapsUrl && (
@@ -114,7 +114,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
                     href={googleMapsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-brand-400 hover:text-brand-300 font-semibold transition"
+                    className="inline-flex items-center gap-1.5 text-xs text-[#0A84FF] hover:underline font-medium transition"
                   >
                     <span>Ver no Maps</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -126,16 +126,16 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
           {/* Descrição e Especificações */}
           <div className="space-y-2.5">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Info className="w-4 h-4 text-brand-400" />
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Info className="w-4 h-4 text-white/70" />
               <span>Sobre o Espaço Esportivo</span>
             </h3>
 
-            <div className="p-4 rounded-2xl bg-surface-950/60 border border-surface-800/80 text-xs sm:text-sm text-surface-300 leading-relaxed whitespace-pre-line">
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-xs sm:text-sm text-white/70 leading-relaxed whitespace-pre-line tracking-tight">
               {quadra.descricao ? (
                 quadra.descricao
               ) : (
-                <span className="text-surface-500 italic">
+                <span className="text-white/40 italic">
                   Esta quadra possui infraestrutura completa para a prática esportiva, iluminação esportiva e ambiente preparado para atletas e visitantes.
                 </span>
               )}
@@ -144,26 +144,26 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
           {/* Destaques da Estrutura */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-            <div className="p-3.5 rounded-2xl bg-surface-950/60 border border-surface-800 flex items-center gap-3">
-              <Activity className="w-5 h-5 text-brand-400 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3">
+              <Activity className="w-5 h-5 text-white/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-surface-500 block uppercase font-semibold">Piso</span>
+                <span className="text-[10px] text-white/40 block uppercase font-medium">Piso</span>
                 <span className="text-xs text-white font-medium">Oficial / Padrão</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-surface-950/60 border border-surface-800 flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-brand-400 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-white/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-surface-500 block uppercase font-semibold">Segurança</span>
+                <span className="text-[10px] text-white/40 block uppercase font-medium">Segurança</span>
                 <span className="text-xs text-white font-medium">Ambiente Monitorado</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-surface-950/60 border border-surface-800 flex items-center gap-3 col-span-2 sm:col-span-1">
-              <Calendar className="w-5 h-5 text-brand-400 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3 col-span-2 sm:col-span-1">
+              <Calendar className="w-5 h-5 text-white/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-surface-500 block uppercase font-semibold">Agendamento</span>
+                <span className="text-[10px] text-white/40 block uppercase font-medium">Agendamento</span>
                 <span className="text-xs text-white font-medium">Instantâneo via Pix</span>
               </div>
             </div>
@@ -172,7 +172,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
         {/* Rodapé / Botão de Ação */}
         {onSelectForBooking && (
-          <div className="p-4 sm:p-5 bg-surface-950 border-t border-surface-800 flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 bg-[#0c0c0e] border-t border-white/[0.08] flex items-center justify-between gap-4">
             <Button
               type="button"
               variant="outline"
@@ -184,7 +184,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
             <Button
               type="button"
-              variant="secondary"
+              variant="primary"
               size="md"
               onClick={handleBookingClick}
               leftIcon={<Calendar className="w-4 h-4" />}

@@ -37,7 +37,7 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden bg-zinc-950 select-none">
+    <div className="relative min-h-screen w-full flex flex-col md:flex-row overflow-x-hidden bg-black select-none">
       {/* Imagem de Fundo Panorâmica */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
@@ -47,28 +47,35 @@ export const AuthPage: React.FC = () => {
           loading="eager"
           className="w-full h-full object-cover object-center pointer-events-none select-none"
         />
-        {/* Contraste suave e natural */}
+        {/* Contraste suave e natural - Apple Dark Vignette */}
         <div className="absolute inset-0 bg-black/60 md:hidden pointer-events-none" />
-        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/20 via-black/40 to-black/90 pointer-events-none" />
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/20 via-black/50 to-black pointer-events-none" />
       </div>
 
-      {/* Lado Esquerdo: Espaço livre para a foto das quadras respirar */}
-      <div className="flex-1 hidden md:block" />
+      {/* Lado Esquerdo: Espaço livre para a foto respirar */}
+      <div className="flex-1 hidden md:flex flex-col justify-end p-12 relative z-10">
+        <div className="max-w-md space-y-2">
+          <span className="text-xs font-semibold tracking-wider text-white/50 uppercase">Plataforma de Reservas</span>
+          <h2 className="text-3xl font-bold text-white tracking-[-0.03em]">
+            Agilidade e precisão em cada partida.
+          </h2>
+        </div>
+      </div>
 
-      {/* Lado Direito: Formulário Direto de Login */}
-      <div className="relative z-20 w-full md:w-[440px] lg:w-[480px] min-h-screen flex flex-col justify-between bg-zinc-950/95 md:bg-zinc-950/90 md:backdrop-blur-xl border-t md:border-t-0 md:border-l border-zinc-800 p-8 sm:p-12">
+      {/* Lado Direito: Painel Frosted Glass Apple */}
+      <div className="relative z-20 w-full md:w-[460px] lg:w-[480px] min-h-screen flex flex-col justify-between bg-black/85 md:backdrop-blur-2xl border-t md:border-t-0 md:border-l border-white/[0.08] p-8 sm:p-12 shadow-2xl">
         <FeedbackBanner
           feedback={error ? { type: 'error', message: error } : null}
           onClose={() => setError(null)}
         />
 
-        <div className="my-auto w-full max-w-sm mx-auto space-y-6">
-          <div className="space-y-1 text-left">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+        <div className="my-auto w-full max-w-sm mx-auto space-y-7">
+          <div className="space-y-1.5 text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-[-0.03em]">
               Entrar
             </h1>
-            <p className="text-sm text-zinc-400">
-              Informe seu e-mail e senha para acessar a plataforma
+            <p className="text-sm text-white/50 tracking-tight">
+              Informe suas credenciais para acessar sua conta
             </p>
           </div>
 
@@ -97,7 +104,7 @@ export const AuthPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="p-1 text-zinc-400 hover:text-white transition-colors focus:outline-none"
+                  className="p-1 text-white/40 hover:text-white transition-colors focus:outline-none cursor-pointer"
                   title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
                   tabIndex={-1}
                 >
@@ -114,13 +121,14 @@ export const AuthPage: React.FC = () => {
               className="w-full mt-2"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              Entrar
+              Continuar
             </Button>
           </form>
         </div>
 
-        <div className="pt-4 text-xs text-zinc-500">
-          eQuadras
+        <div className="pt-4 text-xs text-white/30 tracking-tight flex items-center justify-between">
+          <span>eQuadras</span>
+          <span>Ambiente seguro</span>
         </div>
       </div>
     </div>

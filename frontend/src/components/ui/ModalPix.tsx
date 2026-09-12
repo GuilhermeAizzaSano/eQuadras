@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Agendamento } from '../../types';
 import { pagamentoApi } from '../../api/apiClient';
 import { Check, Copy, QrCode, X, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from './Button';
 
 interface ModalPixProps {
@@ -110,13 +111,13 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200"
     >
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative animate-in zoom-in-95 duration-200">
+      <div className="bg-[#121214] border border-white/[0.1] rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] relative animate-in zoom-in-95 duration-200">
         {/* Botão Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-surface-400 hover:text-white hover:bg-surface-800 transition cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/60 hover:text-white border border-white/[0.08] transition cursor-pointer"
           title="Fechar"
           aria-label="Fechar modal Pix"
         >
@@ -125,47 +126,56 @@ export const ModalPix: React.FC<ModalPixProps> = ({
 
         {/* Cabeçalho */}
         <div className="space-y-2 text-center flex flex-col items-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-surface-850 border border-surface-750 text-brand-400 shadow-md">
-            <QrCode className="w-6 h-6 text-brand-400" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white mb-0.5 shadow-sm">
+            <QrCode className="w-6 h-6 text-white/80" />
           </div>
-          <h3 className="text-xl font-bold text-white tracking-tight">Pagamento com Pix</h3>
+          <h3 className="text-xl font-semibold text-white tracking-tight">Pagamento via Pix</h3>
 
           {/* Contador de 15 Minutos */}
           <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-semibold ${
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono font-medium ${
               expirado
-                ? 'bg-red-950/40 border-red-500/30 text-red-400'
-                : 'bg-amber-950/40 border-amber-500/30 text-amber-300'
+                ? 'bg-[#FF453A]/10 border-[#FF453A]/25 text-[#FF453A]'
+                : 'bg-[#FF9F0A]/10 border-[#FF9F0A]/25 text-[#FF9F0A]'
             }`}
           >
-            <Clock className={`w-3.5 h-3.5 ${expirado ? 'text-red-400' : 'text-amber-400 animate-pulse'}`} />
+            <Clock className={`w-3.5 h-3.5 ${expirado ? 'text-[#FF453A]' : 'text-[#FF9F0A]'}`} />
             <span>{expirado ? 'Tempo limite expirado' : `Expira em: ${tempoFormatado}`}</span>
           </div>
         </div>
 
         {/* Detalhes da Reserva */}
-        <div className="p-4 rounded-2xl bg-surface-950/80 border border-surface-800 flex items-center justify-between text-xs">
+        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs">
           <div>
-            <div className="font-bold text-white text-sm">{agendamento.nomeQuadra}</div>
-            <div className="text-surface-400 mt-0.5">
+            <div className="font-semibold text-white text-sm tracking-tight">{agendamento.nomeQuadra}</div>
+            <div className="text-white/50 mt-0.5 tracking-tight">
               {data.split('-').reverse().join('/')} • {horaInicio} às {horaFim}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-surface-500 uppercase tracking-wider text-[10px] font-semibold">Total</div>
-            <div className="text-lg font-extrabold text-brand-400 font-mono">
+            <div className="text-white/40 uppercase tracking-wider text-[10px] font-semibold">Total</div>
+            <div className="text-lg font-bold text-white font-mono tracking-tight">
               R$ {agendamento.valorTotal.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* QR Code Container */}
-        <div className="flex flex-col items-center justify-center p-5 bg-white rounded-2xl border border-zinc-200 shadow-inner">
+        <div className="flex flex-col items-center justify-center p-5 bg-white rounded-2xl border border-white/20 shadow-sm">
           {expirado ? (
             <div className="w-44 h-44 flex flex-col items-center justify-center bg-zinc-100 rounded-xl text-center p-4 text-zinc-600 gap-2">
-              <AlertTriangle className="w-8 h-8 text-amber-600" />
+              <AlertTriangle className="w-8 h-8 text-[#FF9F0A]" />
               <span className="text-xs font-semibold">Código Pix expirado</span>
               <span className="text-[10px] text-zinc-500">Gere uma nova reserva para pagar.</span>
+            </div>
+          ) : agendamento.pixCopiaECola ? (
+            <div className="w-44 h-44 flex items-center justify-center bg-white rounded-xl select-none p-1">
+              <QRCodeSVG
+                value={agendamento.pixCopiaECola}
+                size={168}
+                level="M"
+                includeMargin={false}
+              />
             </div>
           ) : agendamento.qrCodeBase64 ? (
             agendamento.qrCodeBase64.startsWith('data:') ? (
@@ -187,7 +197,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
             </div>
           )}
           {!expirado && (
-            <span className="text-[11px] text-zinc-600 font-mono mt-2.5 font-semibold">
+            <span className="text-[11px] text-zinc-600 font-sans mt-2.5 font-medium tracking-tight">
               Abra o app do seu banco e aponte a câmera
             </span>
           )}
@@ -196,7 +206,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         {/* Pix Copia e Cola */}
         {!expirado && agendamento.pixCopiaECola && (
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-surface-400 uppercase tracking-wider">
+            <label className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">
               Chave Pix Copia e Cola
             </label>
             <div className="flex items-center gap-2">
@@ -204,7 +214,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
                 type="text"
                 readOnly
                 value={agendamento.pixCopiaECola}
-                className="w-full bg-surface-950 border border-surface-800 rounded-xl px-3 py-2 text-xs text-surface-200 font-mono focus:outline-none"
+                className="w-full bg-black/70 border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white/80 font-mono focus:outline-none"
               />
               <Button
                 type="button"
@@ -221,17 +231,17 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         )}
 
         {erro && (
-          <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-[#FF453A]/10 border border-[#FF453A]/25 text-[#FF453A] text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-[#FF453A] shrink-0" />
             <span>{erro}</span>
           </div>
         )}
 
         {/* Ações / Simulador de Aprovação */}
-        <div className="pt-2 border-t border-surface-800/80 flex flex-col gap-2.5">
+        <div className="pt-2 border-t border-white/[0.08] flex flex-col gap-2.5">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             size="md"
             onClick={handleSimularPagamento}
             isLoading={simulando}
@@ -246,7 +256,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="w-full"
+            className="w-full text-white/50 hover:text-white"
           >
             Fechar janela
           </Button>

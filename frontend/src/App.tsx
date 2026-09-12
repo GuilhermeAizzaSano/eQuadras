@@ -9,8 +9,8 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then((m) => (
 
 const FallbackSpinner: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
-    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-    <span className="text-xs text-zinc-400 font-medium">Carregando...</span>
+    <Loader2 className="w-7 h-7 text-white/70 animate-spin" />
+    <span className="text-xs text-white/50 font-medium tracking-tight">Carregando...</span>
   </div>
 );
 
@@ -26,7 +26,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col selection:bg-emerald-500/20 selection:text-emerald-300">
+    <div className="min-h-screen bg-black text-white flex flex-col selection:bg-white/20 selection:text-white">
       <Navbar />
       <main className="flex-1">
         <Suspense fallback={<FallbackSpinner />}>
