@@ -911,17 +911,17 @@ export const AdminDashboard: React.FC = () => {
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Header & Navegação por Abas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3">
             <span>Painel Administrativo</span>
             {isMasterAdmin && (
-              <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400">
+              <span className="text-[10px] uppercase font-mono font-medium tracking-wider px-2.5 py-0.5 rounded-full bg-[#0A84FF]/15 border border-[#0A84FF]/30 text-[#0A84FF]">
                 Master Admin
               </span>
             )}
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-white/50 mt-1">
             Gestão operacional em tempo real de quadras, reservas e agenda.
           </p>
         </div>
@@ -933,26 +933,26 @@ export const AdminDashboard: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-zinc-400 hover:text-white transition rounded-xl bg-surface-900 border border-surface-800 hover:border-surface-700 hover:bg-surface-850 cursor-pointer"
+              className="relative p-2.5 text-white/60 hover:text-white transition rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.08] cursor-pointer"
               aria-label="Notificações"
             >
               <Bell className="w-4 h-4" />
               {notificacoes.filter(n => !n.lida).length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-400 rounded-full ring-2 ring-surface-950 animate-pulse" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#FF453A] rounded-full ring-2 ring-black" />
               )}
             </button>
 
             {/* Popover de Notificações */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-900 border border-surface-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col backdrop-blur-xl">
-                <div className="p-4 border-b border-surface-800 flex justify-between items-center bg-surface-950/80">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#121214]/90 border border-white/[0.1] rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/80 z-50 overflow-hidden flex flex-col backdrop-blur-2xl">
+                <div className="p-4 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.02]">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
-                      <Bell className="w-3.5 h-3.5 text-brand-400" />
+                    <div className="w-6 h-6 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
+                      <Bell className="w-3.5 h-3.5 text-white/80" />
                     </div>
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">Notificações</h3>
+                    <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">Notificações</h3>
                     {notificacoes.filter((n) => !n.lida).length > 0 && (
-                      <span className="text-[10px] bg-brand-500/20 text-brand-300 border border-brand-500/30 font-bold px-1.5 py-0.2 rounded-full font-mono">
+                      <span className="text-[10px] bg-white/10 text-white border border-white/20 font-medium px-1.5 py-0.5 rounded-full font-mono">
                         {notificacoes.filter((n) => !n.lida).length}
                       </span>
                     )}
@@ -962,23 +962,23 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={marcarTodasComoLidas}
-                        className="text-[11px] font-semibold text-brand-400 hover:text-brand-300 transition hover:underline active:scale-95 cursor-pointer"
+                        className="text-[11px] font-medium text-[#0A84FF] hover:underline transition active:scale-95 cursor-pointer"
                       >
                         Marcar tudo lido
                       </button>
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
-                      className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-surface-800 transition cursor-pointer"
+                      className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
                       title="Fechar"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="max-h-88 overflow-y-auto divide-y divide-surface-800/80 scrollbar-thin">
+                <div className="max-h-88 overflow-y-auto divide-y divide-white/[0.06] scrollbar-thin">
                   {notificacoes.length === 0 ? (
-                    <div className="p-8 text-center text-zinc-500 text-xs">
+                    <div className="p-8 text-center text-white/40 text-xs">
                       Nenhuma notificação por enquanto.
                     </div>
                   ) : (
@@ -986,14 +986,14 @@ export const AdminDashboard: React.FC = () => {
                       <div 
                         key={notif.id} 
                         className={`p-4 flex flex-col gap-2 transition ${
-                          notif.lida ? 'bg-surface-950/40 opacity-60' : 'bg-surface-900/60 hover:bg-surface-850'
+                          notif.lida ? 'bg-white/[0.01] opacity-50' : 'bg-white/[0.03] hover:bg-white/[0.06]'
                         }`}
                       >
-                        <p className="text-xs text-zinc-200 leading-relaxed whitespace-normal break-words">
+                        <p className="text-xs text-white/80 leading-relaxed whitespace-normal break-words">
                           {notif.mensagem}
                         </p>
                         <div className="flex justify-between items-center pt-1">
-                          <span className="text-[10px] text-zinc-500 font-mono">
+                          <span className="text-[10px] text-white/40 font-mono">
                             {formatarDataHora(notif.dataCriacao)}
                           </span>
                           {!notif.lida && (
@@ -1003,7 +1003,7 @@ export const AdminDashboard: React.FC = () => {
                                 e.stopPropagation();
                                 lerNotificacao(notif.id);
                               }}
-                              className="text-[10px] font-semibold text-brand-400 hover:text-brand-300 underline underline-offset-2 transition active:scale-95 cursor-pointer"
+                              className="text-[10px] font-medium text-[#0A84FF] hover:underline transition active:scale-95 cursor-pointer"
                             >
                               Marcar como lida
                             </button>
@@ -1018,13 +1018,13 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Segmented Control de Abas */}
-          <div className="flex bg-surface-950 p-1 rounded-2xl border border-surface-800">
+          <div className="flex bg-white/[0.04] p-1 rounded-2xl border border-white/[0.08]">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -1032,10 +1032,10 @@ export const AdminDashboard: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('quadras')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
                 activeTab === 'quadras'
-                  ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <Settings2 className="w-3.5 h-3.5" />
@@ -1044,10 +1044,10 @@ export const AdminDashboard: React.FC = () => {
             {isMasterAdmin && (
               <button
                 onClick={() => setActiveTab('usuarios')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
                   activeTab === 'usuarios'
-                    ? 'bg-brand-400 text-surface-950 shadow-md font-bold'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />

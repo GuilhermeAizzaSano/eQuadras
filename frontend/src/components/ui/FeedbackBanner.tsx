@@ -28,31 +28,31 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClos
   return (
     <div className="fixed top-5 right-5 z-[9999] max-w-md w-[calc(100vw-2.5rem)] animate-in slide-in-from-top-4 fade-in duration-300 pointer-events-auto">
       <div
-        className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-start gap-3.5 transition-all ${
+        className={`p-4 rounded-2xl border shadow-apple-elevated backdrop-blur-2xl flex items-start gap-3.5 transition-all ${
           isSuccess
-            ? 'bg-surface-900/95 border-emerald-500/40 text-surface-100 shadow-emerald-950/40'
-            : 'bg-surface-900/95 border-red-500/40 text-surface-100 shadow-red-950/40'
+            ? 'bg-[#121214]/90 border-[#30D158]/30 text-white shadow-black/40'
+            : 'bg-[#121214]/90 border-[#FF453A]/30 text-white shadow-black/40'
         }`}
       >
         <div
           className={`p-2 rounded-xl shrink-0 border ${
             isSuccess
-              ? 'bg-emerald-950/60 border-emerald-500/30 text-emerald-400'
-              : 'bg-red-950/60 border-red-500/30 text-red-400'
+              ? 'bg-[#30D158]/10 border-[#30D158]/25 text-[#30D158]'
+              : 'bg-[#FF453A]/10 border-[#FF453A]/25 text-[#FF453A]'
           }`}
         >
           {isSuccess ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <CheckCircle2 className="w-5 h-5 text-[#30D158]" />
           ) : (
-            <AlertTriangle className="w-5 h-5 text-red-400" />
+            <AlertTriangle className="w-5 h-5 text-[#FF453A]" />
           )}
         </div>
 
         <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-xs font-bold uppercase tracking-wider text-surface-400 mb-0.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-0.5">
             {isSuccess ? 'Sucesso' : 'Atenção'}
           </p>
-          <p className="text-xs sm:text-sm text-surface-200 leading-snug whitespace-pre-line break-words">
+          <p className="text-xs sm:text-sm text-white/90 leading-snug whitespace-pre-line break-words tracking-tight">
             {feedback.message}
           </p>
         </div>
@@ -61,7 +61,7 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClos
           type="button"
           onClick={onClose}
           aria-label="Fechar notificação"
-          className="p-1 rounded-lg text-surface-400 hover:text-white hover:bg-surface-800 transition shrink-0"
+          className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.08] transition shrink-0"
         >
           <X className="w-4 h-4" />
         </button>

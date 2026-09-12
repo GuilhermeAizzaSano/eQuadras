@@ -109,21 +109,21 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
+      <div className="bg-[#121214] border border-white/[0.1] rounded-2xl sm:rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-surface-800 transition cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
           title="Fechar"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="space-y-1">
-          <h3 className="text-lg font-bold text-white tracking-tight">
+          <h3 className="text-lg font-semibold text-white tracking-tight">
             {usuarioParaEditar ? 'Editar Usuário' : 'Cadastrar Novo Usuário'}
           </h3>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-white/50">
             {usuarioParaEditar
               ? 'Atualize as informações do usuário no sistema'
               : 'Preencha os dados para criar uma conta de Atleta ou Administrador'}
@@ -131,7 +131,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         </div>
 
         {erro && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2 font-mono">
+          <div className="p-3 rounded-xl bg-[#FF453A]/10 border border-[#FF453A]/20 text-[#FF453A] text-xs flex items-center gap-2 font-mono">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{erro}</span>
           </div>
@@ -144,7 +144,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Nome do usuário"
-            leftIcon={<User className="w-4 h-4 text-zinc-500" />}
+            leftIcon={<User className="w-4 h-4 text-white/40" />}
           />
 
           <div>
@@ -156,10 +156,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@dominio.com"
-              leftIcon={<Mail className="w-4 h-4 text-zinc-500" />}
+              leftIcon={<Mail className="w-4 h-4 text-white/40" />}
             />
             {isMaster && (
-              <span className="text-[10px] text-zinc-500 mt-1 block font-mono">
+              <span className="text-[10px] text-white/40 mt-1 block font-mono">
                 O e-mail da conta Master não pode ser alterado.
               </span>
             )}
@@ -172,7 +172,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               value={phone}
               onChange={handlePhoneChange}
               placeholder="(11) 99999-9999"
-              leftIcon={<Phone className="w-4 h-4 text-zinc-500" />}
+              leftIcon={<Phone className="w-4 h-4 text-white/40" />}
             />
 
             <Select
@@ -193,10 +193,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             placeholder={usuarioParaEditar ? 'Deixe em branco para manter a atual' : 'Mínimo 6 caracteres'}
-            leftIcon={<Lock className="w-4 h-4 text-zinc-500" />}
+            leftIcon={<Lock className="w-4 h-4 text-white/40" />}
           />
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-surface-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.06]">
             <Button
               type="button"
               variant="outline"
@@ -209,7 +209,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               type="submit"
               variant="primary"
               disabled={loading}
-              className="cursor-pointer font-bold"
+              className="cursor-pointer font-medium"
             >
               {loading ? 'Salvando...' : usuarioParaEditar ? 'Salvar Alterações' : 'Criar Usuário'}
             </Button>

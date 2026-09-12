@@ -40,24 +40,24 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl overflow-y-auto animate-in fade-in duration-200"
     >
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+      <div className="bg-[#121214] border border-white/[0.1] rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-surface-400 hover:text-white hover:bg-surface-800 transition cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
           aria-label="Fechar"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="space-y-1">
-          <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-surface-850 border border-surface-750 text-white mb-1 shadow-md">
-            <KeyRound className="w-5 h-5 text-brand-400" />
+          <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white mb-1 shadow-sm">
+            <KeyRound className="w-5 h-5 text-white/80" />
           </div>
-          <h3 className="text-lg font-bold text-white tracking-tight">Sua Chave de API (Token JWT)</h3>
-          <p className="text-xs text-surface-400">
+          <h3 className="text-lg font-semibold text-white tracking-tight">Sua Chave de API (Token JWT)</h3>
+          <p className="text-xs text-white/50 tracking-tight">
             Token de autenticação vinculado à sua sessão ativa ({user?.email_usuario}).
           </p>
         </div>
@@ -66,27 +66,27 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         <div
           className={`p-4 rounded-2xl border ${
             isAdmin
-              ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
-              : 'bg-sky-950/30 border-sky-500/30 text-sky-300'
+              ? 'bg-[#30D158]/5 border-[#30D158]/20 text-[#30D158]'
+              : 'bg-[#0A84FF]/5 border-[#0A84FF]/20 text-[#0A84FF]'
           } flex items-start gap-3.5 text-xs`}
         >
           {isAdmin ? (
-            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-5 h-5 text-[#30D158] shrink-0 mt-0.5" />
           ) : (
-            <UserCheck className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+            <UserCheck className="w-5 h-5 text-[#0A84FF] shrink-0 mt-0.5" />
           )}
           <div className="space-y-1">
             <div className="font-semibold text-white flex items-center gap-2">
               <span>Nível de Acesso: {isAdmin ? 'ADMINISTRADOR' : 'USUÁRIO COMUM'}</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                  isAdmin ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400'
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium ${
+                  isAdmin ? 'bg-[#30D158]/15 text-[#30D158]' : 'bg-[#0A84FF]/15 text-[#0A84FF]'
                 }`}
               >
                 {isAdmin ? 'Leitura & Escrita' : 'Somente Leitura'}
               </span>
             </div>
-            <p className="text-[11px] text-surface-300 leading-relaxed">
+            <p className="text-[11px] text-white/60 leading-relaxed tracking-tight">
               {isAdmin
                 ? 'Esta chave possui privilégio total de gerenciamento: consultas, cadastros, alterações e exclusões nas rotas /api.'
                 : 'Esta chave possui permissão restrita para consultas e listagens de dados (GET) nas rotas /api.'}
@@ -97,12 +97,12 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         {/* Bloco de Token */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-surface-300">Token de Autenticação (Bearer)</span>
-            <span className="text-[11px] text-emerald-400 font-mono font-medium">Sessão JWT</span>
+            <span className="font-medium text-white/70 tracking-tight">Token de Autenticação (Bearer)</span>
+            <span className="text-[11px] text-white/40 font-mono">Sessão JWT</span>
           </div>
 
           <div className="relative">
-            <div className="w-full bg-surface-950 border border-surface-800 rounded-xl p-3.5 pr-28 font-mono text-[11px] text-surface-200 break-all select-all max-h-24 overflow-y-auto leading-relaxed">
+            <div className="w-full bg-black/70 border border-white/[0.08] rounded-xl p-3.5 pr-28 font-mono text-[11px] text-white/80 break-all select-all max-h-24 overflow-y-auto leading-relaxed">
               {token || 'Nenhum token encontrado. Efetue login novamente.'}
             </div>
             <Button
@@ -120,18 +120,18 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
 
         {/* Exemplo cURL */}
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs text-surface-400 font-medium">
-            <Terminal className="w-3.5 h-3.5 text-brand-400" />
+          <div className="flex items-center gap-1.5 text-xs text-white/50 font-medium tracking-tight">
+            <Terminal className="w-3.5 h-3.5 text-white/70" />
             <span>Como utilizar nas suas requisições HTTP:</span>
           </div>
-          <div className="bg-surface-950/80 border border-surface-800 rounded-xl p-3 font-mono text-[11px] text-surface-300 overflow-x-auto select-all">
+          <div className="bg-black/70 border border-white/[0.08] rounded-xl p-3 font-mono text-[11px] text-white/70 overflow-x-auto select-all">
             <pre className="whitespace-pre-wrap leading-relaxed">{curlExemplo}</pre>
           </div>
         </div>
 
-        <div className="pt-3 border-t border-surface-800/80 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] text-surface-500">
-            <Info className="w-3.5 h-3.5 text-surface-400" />
+        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] text-white/40 tracking-tight">
+            <Info className="w-3.5 h-3.5 text-white/40" />
             <span>Mantenha seu token em sigilo.</span>
           </div>
           <Button

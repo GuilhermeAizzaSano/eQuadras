@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Quadra, Agendamento, BloqueioHorario } from '../../types';
 import { Lock, Clock, Plus, AlertCircle, User, Phone, Ban } from 'lucide-react';
 import { parseDataHoraLocal, extrairDataIso, getHojeLocalIso } from '../../utils/dateUtils';
@@ -81,49 +81,49 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
 
   if (quadrasExibidas.length === 0) {
     return (
-      <div className="bg-surface-900 border border-surface-800 rounded-3xl p-12 text-center space-y-3 shadow-xl">
-        <AlertCircle className="w-10 h-10 text-surface-500 mx-auto" />
-        <h3 className="text-base font-bold text-white tracking-tight">Nenhuma quadra selecionada</h3>
-        <p className="text-sm text-surface-400">Selecione outra opção no filtro acima.</p>
+      <div className="bg-[#121214] border border-white/[0.08] rounded-2xl sm:rounded-3xl p-12 text-center space-y-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+        <AlertCircle className="w-10 h-10 text-white/30 mx-auto" />
+        <h3 className="text-base font-semibold text-white tracking-tight">Nenhuma quadra selecionada</h3>
+        <p className="text-sm text-white/50">Selecione outra opção no filtro acima.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-3xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col">
+    <div className="bg-[#121214] border border-white/[0.08] rounded-3xl shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden flex flex-col">
       {/* Header da Grade */}
-      <div className="p-4 sm:p-5 border-b border-surface-800 flex flex-wrap items-center justify-between gap-3 bg-surface-950/70">
+      <div className="p-4 sm:p-5 border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-3 bg-[#121214]">
         <div className="flex items-center gap-2.5">
-          <Clock className="w-4 h-4 text-brand-400" />
-          <span className="text-sm font-extrabold text-white tracking-tight">Linha do Tempo das Quadras</span>
-          <span className="text-xs font-mono font-bold text-brand-400 bg-brand-950/60 px-2.5 py-0.5 rounded-lg border border-brand-500/30">
+          <Clock className="w-4 h-4 text-white/70" />
+          <span className="text-sm font-semibold text-white tracking-tight">Linha do Tempo das Quadras</span>
+          <span className="text-xs font-mono font-medium text-white/80 bg-white/[0.06] px-2.5 py-0.5 rounded-full border border-white/[0.1]">
             {dataSelecionada.split('-').reverse().join('/')}
           </span>
-          <span className="text-xs text-surface-400 font-medium">
+          <span className="text-xs text-white/40 font-medium">
             ({quadrasExibidas.length} {quadrasExibidas.length === 1 ? 'quadra' : 'quadras'})
           </span>
         </div>
 
         {/* Legenda dos Status */}
-        <div className="flex flex-wrap items-center gap-3 text-xs text-surface-300 font-medium">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-white/60 font-medium">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+            <span className="w-2 h-2 rounded-full bg-[#30D158]" />
             <span>Livre</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]" />
+            <span className="w-2 h-2 rounded-full bg-[#0A84FF]" />
             <span>Confirmado</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-purple-400" />
+            <span className="w-2 h-2 rounded-full bg-[#BF5AF2]" />
             <span>Realizado</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]" />
+            <span className="w-2 h-2 rounded-full bg-[#FF9F0A]" />
             <span>Pendente Pix</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <span className="w-2 h-2 rounded-full bg-[#FF453A]" />
             <span>Bloqueado</span>
           </div>
         </div>
@@ -133,18 +133,18 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
       <div className="overflow-x-auto relative scrollbar-thin">
         <table className="w-full text-left border-collapse min-w-[720px]">
           <thead>
-            <tr className="border-b border-surface-800 bg-surface-950/90 text-xs font-semibold text-surface-400">
-              <th className="p-3.5 w-24 text-center sticky left-0 bg-surface-950/95 backdrop-blur z-20 border-r border-surface-800 font-mono">
+            <tr className="border-b border-white/[0.08] bg-[#0c0c0e] text-xs font-medium text-white/50">
+              <th className="p-3.5 w-24 text-center sticky left-0 bg-[#0c0c0e] backdrop-blur z-20 border-r border-white/[0.08] font-mono">
                 Horário
               </th>
               {quadrasExibidas.map((quadra) => (
                 <th
                   key={quadra.id_quadra}
-                  className="p-3.5 font-bold text-white border-r border-surface-800/80 min-w-[190px]"
+                  className="p-3.5 font-semibold text-white border-r border-white/[0.08] min-w-[190px]"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="truncate">{quadra.nome}</span>
-                    <span className="text-[10px] text-surface-400 font-mono bg-surface-850 px-2 py-0.5 rounded-md ml-1 border border-surface-750">
+                    <span className="truncate tracking-tight">{quadra.nome}</span>
+                    <span className="text-[10px] text-white/50 font-mono bg-white/[0.05] px-2 py-0.5 rounded-full ml-1 border border-white/[0.08]">
                       {quadra.tipoEsporte.replace('_', ' ')}
                     </span>
                   </div>
@@ -152,7 +152,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-surface-800/60 text-sm relative">
+          <tbody className="divide-y divide-white/[0.06] text-sm relative">
             {/* Linha Indicadora de Horário Atual */}
             {showCurrentTimeLine && (
               <tr
@@ -160,8 +160,8 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                 style={{ top: `${currentTimePercentage}%` }}
               >
                 <td colSpan={quadrasExibidas.length + 1} className="w-full p-0 relative">
-                  <div className="w-full border-t-2 border-brand-400 shadow-[0_0_10px_#34d399] relative">
-                    <span className="absolute -top-2.5 left-2 bg-brand-500 text-surface-950 text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-lg">
+                  <div className="w-full border-t-2 border-[#FF453A] relative">
+                    <span className="absolute -top-2.5 left-2 bg-[#FF453A] text-white text-[9px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
                       AGORA
                     </span>
                   </div>
@@ -174,9 +174,9 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
               const proximaHoraStr = `${String((horaNum + 1) % 24).padStart(2, '0')}:00`;
 
               return (
-                <tr key={horaStr} className="hover:bg-surface-850/20 transition-colors">
+                <tr key={horaStr} className="hover:bg-white/[0.02] transition-colors">
                   {/* Coluna de Horário Fixa */}
-                  <td className="p-3 text-center font-mono text-xs font-bold text-surface-400 bg-surface-950/90 sticky left-0 z-10 border-r border-surface-800 select-none">
+                  <td className="p-3 text-center font-mono text-xs font-semibold text-white/50 bg-[#121214] sticky left-0 z-10 border-r border-white/[0.08] select-none">
                     {horaStr}
                   </td>
 
@@ -198,7 +198,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       return (
                         <td
                           key={quadra.id_quadra}
-                          className="p-1.5 border-r border-surface-800/60 bg-surface-950/40 opacity-20"
+                          className="p-1.5 border-r border-white/[0.06] bg-black/40 opacity-20"
                         />
                       );
                     }
@@ -209,7 +209,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       return (
                         <td
                           key={quadra.id_quadra}
-                          className="p-1.5 border-r border-surface-800/60 bg-surface-950/40 opacity-20"
+                          className="p-1.5 border-r border-white/[0.06] bg-black/40 opacity-20"
                         />
                       );
                     }
@@ -220,7 +220,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       return (
                         <td
                           key={quadra.id_quadra}
-                          className="p-1.5 border-r border-surface-800/60 bg-surface-950/40 opacity-20"
+                          className="p-1.5 border-r border-white/[0.06] bg-black/40 opacity-20"
                         />
                       );
                     }
@@ -228,7 +228,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       return (
                         <td
                           key={quadra.id_quadra}
-                          className="p-1.5 border-r border-surface-800/60 bg-surface-950/40 opacity-20"
+                          className="p-1.5 border-r border-white/[0.06] bg-black/40 opacity-20"
                         />
                       );
                     }
@@ -236,7 +236,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       return (
                         <td
                           key={quadra.id_quadra}
-                          className="p-1.5 border-r border-surface-800/60 bg-surface-950/40 opacity-20"
+                          className="p-1.5 border-r border-white/[0.06] bg-black/40 opacity-20"
                         />
                       );
                     }
@@ -251,35 +251,35 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                     return (
                       <td
                         key={quadra.id_quadra}
-                        className="p-1.5 sm:p-2 border-r border-surface-800/60 align-top relative group min-h-[58px]"
+                        className="p-1.5 sm:p-2 border-r border-white/[0.06] align-top relative group min-h-[58px]"
                       >
                         {agendamento ? (
                           <div
                             onClick={() => onAbrirAgendamento(agendamento)}
                             className={`rounded-2xl p-2.5 cursor-pointer transition-all duration-150 flex flex-col justify-between shadow-sm relative overflow-hidden group/card ${
                               isAgPassado
-                                ? 'bg-purple-950/50 hover:bg-purple-900/60 border border-purple-800/80 text-purple-100'
+                                ? 'bg-[#BF5AF2]/10 hover:bg-[#BF5AF2]/15 border border-[#BF5AF2]/25 text-white'
                                 : agendamento.status === 'CONFIRMADO'
-                                ? 'bg-blue-950/60 hover:bg-blue-900/70 border border-blue-800/80 text-blue-100'
-                                : 'bg-amber-950/60 hover:bg-amber-900/70 border border-amber-800/80 text-amber-100'
+                                ? 'bg-[#0A84FF]/10 hover:bg-[#0A84FF]/15 border border-[#0A84FF]/25 text-white'
+                                : 'bg-[#FF9F0A]/10 hover:bg-[#FF9F0A]/15 border border-[#FF9F0A]/25 text-white'
                             } ${
-                              atendeBusca ? 'ring-2 ring-white shadow-xl scale-[1.02] z-10' : ''
+                              atendeBusca ? 'ring-2 ring-white shadow-lg scale-[1.02] z-10' : ''
                             }`}
                           >
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <User className="w-3.5 h-3.5 shrink-0 text-surface-300" />
-                                <span className="text-xs font-bold truncate text-white">
+                                <User className="w-3.5 h-3.5 shrink-0 text-white/50" />
+                                <span className="text-xs font-semibold truncate text-white tracking-tight">
                                   {agendamento.nomeUsuario}
                                 </span>
                               </div>
                               <span
-                                className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 ${
+                                className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                                   isAgPassado
-                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    ? 'bg-[#BF5AF2]/20 text-[#BF5AF2]'
                                     : agendamento.status === 'CONFIRMADO'
-                                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    ? 'bg-[#0A84FF]/20 text-[#0A84FF]'
+                                    : 'bg-[#FF9F0A]/20 text-[#FF9F0A]'
                                 }`}
                               >
                                 {isAgPassado
@@ -291,28 +291,28 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                             </div>
 
                             {agendamento.telefoneUsuario && (
-                              <div className="flex items-center gap-1 text-[11px] text-surface-400 mt-1">
-                                <Phone className="w-3 h-3 text-surface-500 shrink-0" />
+                              <div className="flex items-center gap-1 text-[11px] text-white/40 mt-1">
+                                <Phone className="w-3 h-3 text-white/40 shrink-0" />
                                 <span className="truncate">{agendamento.telefoneUsuario}</span>
                               </div>
                             )}
 
-                            <div className="flex items-center justify-between mt-1 text-[10px] text-surface-400 font-mono">
+                            <div className="flex items-center justify-between mt-1 text-[10px] text-white/50 font-mono">
                               <span className="font-semibold text-white">
                                 R$ {agendamento.valorTotal.toFixed(2)}
                               </span>
-                              <span className="text-surface-400 group-hover/card:text-white transition font-sans">
+                              <span className="text-white/40 group-hover/card:text-white transition font-sans text-[11px]">
                                 Detalhes →
                               </span>
                             </div>
                           </div>
                         ) : bloqueio ? (
                           /* CARD DE BLOQUEIO */
-                          <div className="rounded-2xl p-2.5 bg-rose-950/40 border border-rose-900/60 text-rose-200 flex flex-col justify-between group/block transition">
+                          <div className="rounded-2xl p-2.5 bg-[#FF453A]/10 border border-[#FF453A]/25 text-white flex flex-col justify-between group/block transition">
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                                <span className="text-xs font-semibold text-rose-300 truncate">
+                                <Lock className="w-3.5 h-3.5 text-[#FF453A] shrink-0" />
+                                <span className="text-xs font-semibold text-[#FF453A] truncate">
                                   {bloqueio.motivo || 'Bloqueado'}
                                 </span>
                               </div>
@@ -322,12 +322,12 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                                   onDesbloquear(bloqueio.id);
                                 }}
                                 title="Desbloquear este horário"
-                                className="opacity-0 group-hover/block:opacity-100 p-1 hover:bg-rose-900/40 text-rose-300 hover:text-white rounded-lg transition cursor-pointer"
+                                className="opacity-0 group-hover/block:opacity-100 p-1 hover:bg-[#FF453A]/20 text-[#FF453A] hover:text-white rounded-lg transition cursor-pointer"
                               >
                                 <Ban className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            <span className="text-[10px] text-rose-400/80 mt-1 font-mono">
+                            <span className="text-[10px] text-white/50 mt-1 font-mono">
                               {bloqueio.horaInicio
                                 ? `${bloqueio.horaInicio.slice(0, 5)} - ${bloqueio.horaFim?.slice(0, 5)}`
                                 : 'Dia todo'}
@@ -335,12 +335,12 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                           </div>
                         ) : (
                           /* SLOT LIVRE */
-                          <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-surface-800 hover:border-brand-500/50 hover:bg-brand-950/20 transition-all flex items-center justify-center group/slot">
+                          <div className="h-full min-h-[48px] rounded-2xl border border-dashed border-white/[0.08] hover:border-white/[0.2] hover:bg-white/[0.03] transition-all flex items-center justify-center group/slot">
                             <button
                               onClick={() =>
                                 onBloquearSlot(quadra.id_quadra, dataSelecionada, horaStr, proximaHoraStr)
                               }
-                              className="opacity-0 group-hover/slot:opacity-100 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-400 hover:text-brand-300 bg-brand-950/80 px-2.5 py-1 rounded-xl border border-brand-500/30 shadow transition transform scale-95 group-hover/slot:scale-100 cursor-pointer"
+                              className="opacity-0 group-hover/slot:opacity-100 inline-flex items-center gap-1 text-[11px] font-medium text-white/80 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] px-2.5 py-1 rounded-xl border border-white/[0.1] shadow-sm transition transform scale-95 group-hover/slot:scale-100 cursor-pointer tracking-tight"
                             >
                               <Plus className="w-3 h-3" />
                               <span>Bloquear</span>

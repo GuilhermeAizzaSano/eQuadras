@@ -16,36 +16,36 @@ export const Badge: React.FC<BadgeProps> = ({
   withDot = false,
 }) => {
   const baseClasses =
-    'inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-md border transition-all select-none font-semibold';
+    'inline-flex items-center gap-1.5 text-[11px] font-medium tracking-tight px-2.5 py-0.5 rounded-full border transition-all select-none';
 
   const variantClasses: Record<BadgeVariant, { container: string; dot: string }> = {
     neutral: {
-      container: 'bg-surface-900/90 border-surface-800 text-surface-300',
-      dot: 'bg-surface-400',
+      container: 'bg-white/[0.06] border-white/[0.08] text-white/70',
+      dot: 'bg-white/40',
     },
     outline: {
-      container: 'bg-transparent border-surface-800 text-surface-400',
-      dot: 'bg-surface-500',
+      container: 'bg-transparent border-white/[0.12] text-white/60',
+      dot: 'bg-white/40',
     },
     active: {
-      container: 'bg-white text-surface-950 font-bold border-white shadow-sm',
-      dot: 'bg-surface-950',
+      container: 'bg-white text-black font-semibold border-white shadow-sm',
+      dot: 'bg-black',
     },
     success: {
-      container: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-400',
-      dot: 'bg-emerald-400 shadow-[0_0_6px_#34d399]',
+      container: 'bg-[#30D158]/10 border-[#30D158]/25 text-[#30D158]',
+      dot: 'bg-[#30D158]',
     },
     warning: {
-      container: 'bg-amber-950/40 border-amber-500/40 text-amber-300',
-      dot: 'bg-amber-400 shadow-[0_0_6px_#fbbf24]',
+      container: 'bg-[#FF9F0A]/10 border-[#FF9F0A]/25 text-[#FF9F0A]',
+      dot: 'bg-[#FF9F0A]',
     },
     danger: {
-      container: 'bg-red-950/40 border-red-500/40 text-red-400',
-      dot: 'bg-red-400 shadow-[0_0_6px_#f87171]',
+      container: 'bg-[#FF453A]/10 border-[#FF453A]/25 text-[#FF453A]',
+      dot: 'bg-[#FF453A]',
     },
     info: {
-      container: 'bg-sky-950/40 border-sky-500/40 text-sky-400',
-      dot: 'bg-sky-400 shadow-[0_0_6px_#38bdf8]',
+      container: 'bg-[#0A84FF]/10 border-[#0A84FF]/25 text-[#0A84FF]',
+      dot: 'bg-[#0A84FF]',
     },
   };
 

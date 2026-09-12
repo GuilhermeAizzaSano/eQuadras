@@ -10,62 +10,62 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="border-b border-surface-800/80 bg-surface-950/80 backdrop-blur-xl sticky top-0 z-40 transition-all">
+      <header className="border-b border-white/[0.08] bg-black/75 backdrop-blur-2xl sticky top-0 z-40 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Logo size={36} />
           </div>
 
           {user && (
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               {/* Usuário logado e Badge de Role */}
-              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-surface-900/80 border border-surface-800/80">
+              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] backdrop-blur-md">
                 <div className="relative flex items-center justify-center">
                   {isAdmin ? (
-                    <Shield className="w-4 h-4 text-brand-400" />
+                    <Shield className="w-4 h-4 text-white/80" />
                   ) : (
-                    <UserCircle2 className="w-4 h-4 text-surface-400" />
+                    <UserCircle2 className="w-4 h-4 text-white/60" />
                   )}
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 absolute -bottom-0.5 -right-0.5 ring-2 ring-surface-950 shadow-[0_0_6px_#34d399]" />
+                  <span className="w-2 h-2 rounded-full bg-[#30D158] absolute -bottom-0.5 -right-0.5 ring-2 ring-black" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-semibold text-white max-w-[120px] sm:max-w-[180px] truncate">
+                  <span className="text-xs sm:text-sm font-medium text-white max-w-[120px] sm:max-w-[180px] truncate tracking-tight">
                     {user.nome_usuario}
                   </span>
-                  <Badge variant={isAdmin ? 'success' : 'neutral'} className="hidden sm:inline-flex text-[9px] py-0 px-1.5">
+                  <Badge variant={isAdmin ? 'success' : 'neutral'} className="hidden sm:inline-flex text-[10px] py-0.5 px-2">
                     {isAdmin ? 'ADMIN' : 'CLIENTE'}
                   </Badge>
                 </div>
               </div>
 
-              <div className="h-5 w-[1px] bg-surface-800 hidden sm:block" />
+              <div className="h-5 w-[1px] bg-white/[0.08] hidden sm:block mx-1" />
 
               {/* Botão de API-KEY */}
               <button
                 onClick={() => setModalApiKeyOpen(true)}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl text-brand-400 hover:text-brand-300 hover:bg-surface-900 border border-brand-500/20 hover:border-brand-500/40 transition-all flex items-center gap-1.5 text-xs font-semibold active:scale-95 shadow-sm cursor-pointer"
+                className="p-2 sm:px-3 sm:py-1.5 rounded-full text-white/80 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all flex items-center gap-1.5 text-xs font-medium active:scale-95 shadow-sm cursor-pointer tracking-tight"
                 title="Visualizar API-KEY"
                 aria-label="Visualizar chave de API"
               >
-                <Terminal className="w-3.5 h-3.5" />
+                <Terminal className="w-3.5 h-3.5 text-white/70" />
                 <span className="hidden md:inline">API-KEY</span>
               </button>
 
               {/* Botão de Alterar Senha */}
               <button
                 onClick={() => setModalSenhaOpen(true)}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl text-surface-300 hover:text-white hover:bg-surface-900 border border-transparent hover:border-surface-800 transition-all flex items-center gap-1.5 text-xs font-semibold active:scale-95 cursor-pointer"
+                className="p-2 sm:px-3 sm:py-1.5 rounded-full text-white/70 hover:text-white bg-transparent hover:bg-white/[0.06] border border-transparent hover:border-white/[0.08] transition-all flex items-center gap-1.5 text-xs font-medium active:scale-95 cursor-pointer tracking-tight"
                 title="Alterar Senha"
                 aria-label="Alterar Senha"
               >
-                <KeyRound className="w-3.5 h-3.5" />
+                <KeyRound className="w-3.5 h-3.5 text-white/60" />
                 <span className="hidden md:inline">Senha</span>
               </button>
 
               {/* Botão Sair */}
               <button
                 onClick={logout}
-                className="p-2 sm:px-3 sm:py-2 rounded-xl text-surface-400 hover:text-red-400 hover:bg-surface-900 border border-transparent hover:border-surface-800 transition-all flex items-center gap-1.5 text-xs font-semibold active:scale-95 cursor-pointer"
+                className="p-2 sm:px-3 sm:py-1.5 rounded-full text-white/50 hover:text-[#FF453A] bg-transparent hover:bg-[#FF453A]/10 border border-transparent hover:border-[#FF453A]/20 transition-all flex items-center gap-1.5 text-xs font-medium active:scale-95 cursor-pointer tracking-tight"
                 title="Sair da conta"
                 aria-label="Sair da conta"
               >

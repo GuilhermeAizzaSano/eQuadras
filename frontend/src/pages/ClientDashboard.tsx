@@ -476,35 +476,35 @@ export const ClientDashboard: React.FC = () => {
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Top Header com Abas Principais: Explorar Quadras vs Minhas Reservas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
             {abaPrincipal === 'QUADRAS' ? 'Encontre sua Quadra' : 'Minhas Reservas'}
           </h1>
-          <p className="text-xs sm:text-sm text-surface-400 mt-1">
+          <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
             {abaPrincipal === 'QUADRAS'
               ? 'Consulte disponibilidades em tempo real e garanta sua partida'
               : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
           </p>
         </div>
 
-        {/* Segmented Control / Botões de Abas */}
-        <div className="flex bg-surface-900/90 p-1.5 rounded-2xl border border-surface-800 w-full sm:w-auto shrink-0 shadow-xl">
+        {/* Segmented Control iOS / macOS Style */}
+        <div className="flex bg-white/[0.05] p-1 rounded-2xl border border-white/[0.08] backdrop-blur-md w-full sm:w-auto shrink-0 shadow-sm">
           <button
             onClick={() => setAbaPrincipal('QUADRAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer tracking-tight ${
               abaPrincipal === 'QUADRAS'
-                ? 'bg-white text-surface-950 shadow-md'
-                : 'text-surface-400 hover:text-white'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-white/60 hover:text-white'
             }`}
           >
-            <MapPin className="w-4 h-4 text-brand-500" />
+            <MapPin className="w-4 h-4 text-white/80" />
             <span>Explorar Quadras</span>
             <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${
                 abaPrincipal === 'QUADRAS'
-                  ? 'bg-surface-200 text-surface-950'
-                  : 'bg-surface-800 text-surface-300'
+                  ? 'bg-black/10 text-black'
+                  : 'bg-white/10 text-white/60'
               }`}
             >
               {quadrasFiltradas.length}
@@ -513,16 +513,16 @@ export const ClientDashboard: React.FC = () => {
 
           <button
             onClick={() => setAbaPrincipal('RESERVAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer tracking-tight ${
               abaPrincipal === 'RESERVAS'
-                ? 'bg-white text-surface-950 shadow-md'
-                : 'text-surface-400 hover:text-white'
+                ? 'bg-white text-black shadow-sm'
+                : 'text-white/60 hover:text-white'
             }`}
           >
-            <Clock className="w-4 h-4 text-sky-400" />
+            <Clock className="w-4 h-4 text-white/80" />
             <span>Minhas Reservas</span>
             {contadoresReservas.ativos > 0 && (
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-500 text-surface-950 animate-pulse">
+              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#30D158] text-black">
                 {contadoresReservas.ativos}
               </span>
             )}
@@ -533,21 +533,21 @@ export const ClientDashboard: React.FC = () => {
       {/* ABA 1: EXPLORAR QUADRAS */}
       <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
         {/* Barra de Filtros e Busca */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-900/60 p-3 sm:p-4 rounded-2xl border border-surface-800/80">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#121214] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.08] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
           {/* Dropdown de Esportes no Mobile */}
           <div className="relative block sm:hidden w-full">
             <select
               value={filtroEsporte}
               onChange={(e) => setFiltroEsporte(e.target.value)}
-              className="w-full bg-surface-950 border border-surface-800 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-white focus:outline-none focus:border-brand-400 transition appearance-none cursor-pointer pr-10 shadow-sm"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-medium text-white focus:outline-none focus:border-white/30 transition appearance-none cursor-pointer pr-10 shadow-sm"
             >
               {ESPORTES.map((esp) => (
-                <option key={esp} value={esp} className="bg-surface-950 text-white">
+                <option key={esp} value={esp} className="bg-[#1c1c1e] text-white">
                   {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-surface-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Filtro por Esporte (Pills no Desktop) */}
@@ -556,10 +556,10 @@ export const ClientDashboard: React.FC = () => {
               <button
                 key={esp}
                 onClick={() => setFiltroEsporte(esp)}
-                className={`text-xs px-3.5 py-2 rounded-xl border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer ${
+                className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer tracking-tight font-medium ${
                   filtroEsporte === esp
-                    ? 'bg-white text-surface-950 font-bold border-white shadow-sm'
-                    : 'bg-surface-950/80 text-surface-400 border-surface-800 hover:border-surface-700 hover:text-white'
+                    ? 'bg-white text-black font-semibold border-white shadow-sm'
+                    : 'bg-white/[0.04] text-white/60 border-white/[0.08] hover:border-white/[0.16] hover:text-white'
                 }`}
               >
                 {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
@@ -581,12 +581,12 @@ export const ClientDashboard: React.FC = () => {
                 setCepBusca(val);
               }}
               onKeyDown={(e) => e.key === 'Enter' && buscarQuadrasPorLocalizacao()}
-              className="bg-surface-950 border border-surface-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-surface-500 focus:outline-none focus:border-brand-400 transition w-full md:w-52 font-mono"
+              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition w-full md:w-52 font-mono"
             />
             <button
               onClick={buscarQuadrasPorLocalizacao}
               disabled={loading}
-              className="bg-surface-850 hover:bg-surface-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold transition border border-surface-750 disabled:opacity-50 shrink-0 active:scale-[0.98] cursor-pointer"
+              className="bg-white/[0.08] hover:bg-white/[0.12] text-white px-4 py-2 rounded-xl text-xs font-medium transition border border-white/[0.1] disabled:opacity-40 shrink-0 active:scale-[0.98] cursor-pointer tracking-tight"
             >
               Buscar
             </button>
@@ -613,53 +613,53 @@ export const ClientDashboard: React.FC = () => {
                 <div
                   key={q.id_quadra}
                   onClick={() => setQuadraDetalhes(q)}
-                  className="group relative rounded-2xl border border-surface-800 hover:border-surface-700 bg-surface-900/80 hover:bg-surface-900 overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-xl shadow-black/40 active:scale-[0.99]"
+                  className="group relative rounded-2xl sm:rounded-3xl border border-white/[0.08] hover:border-white/[0.2] bg-[#121214] hover:bg-[#161618] overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] active:scale-[0.99]"
                 >
                   {/* Foto de Capa da Quadra */}
-                  <div className="relative aspect-video w-full overflow-hidden bg-surface-950">
+                  <div className="relative aspect-video w-full overflow-hidden bg-black">
                     <img
                       src={primeiraFoto}
                       alt={q.nome}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                       onError={(e) => {
                         e.currentTarget.src =
                           'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-black/20 to-transparent" />
 
                     {/* Badge de Esporte e Status sobre a imagem */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
                       <Badge
                         variant="neutral"
-                        className="bg-surface-950/80 backdrop-blur-md border border-surface-800 text-white text-[10px]"
+                        className="bg-black/60 backdrop-blur-xl border border-white/[0.12] text-white text-[11px]"
                       >
                         {q.tipoEsporte.replace('_', ' ')}
                       </Badge>
 
-                      <span className="p-1.5 rounded-full bg-surface-950/80 backdrop-blur-md border border-surface-800 text-surface-300 group-hover:text-white transition shadow-sm">
-                        <Info className="w-3.5 h-3.5 text-surface-300" />
+                      <span className="p-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/[0.12] text-white/70 group-hover:text-white transition shadow-sm">
+                        <Info className="w-3.5 h-3.5" />
                       </span>
                     </div>
 
                     <div className="absolute bottom-2.5 left-3.5 right-3.5 flex items-end justify-between">
                       <div
-                        className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                        className="w-2 h-2 rounded-full bg-[#30D158]"
                         title="Quadra Ativa"
                       />
                     </div>
                   </div>
 
                   {/* Informações da Quadra */}
-                  <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
+                  <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="text-base font-bold text-white group-hover:text-brand-400 transition-colors">
+                      <div className="text-base font-semibold text-white tracking-tight">
                         {q.nome}
                       </div>
 
                       {q.cidade && q.estado && (
-                        <div className="text-xs text-surface-400 flex items-center gap-1.5 mt-1">
-                          <MapPin className="w-3.5 h-3.5 text-surface-500 shrink-0" />
+                        <div className="text-xs text-white/50 flex items-center gap-1.5 mt-1 tracking-tight">
+                          <MapPin className="w-3.5 h-3.5 text-white/40 shrink-0" />
                           <span className="truncate">
                             {q.bairro ? `${q.bairro}, ` : ''}
                             {q.cidade} - {q.estado}
@@ -668,9 +668,9 @@ export const ClientDashboard: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-surface-800 flex items-center justify-between gap-2 mt-auto">
+                    <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between gap-2 mt-auto">
                       <div>
-                        <span className="text-[10px] text-surface-500 uppercase tracking-wider font-semibold block">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium block">
                           Valor / hora
                         </span>
                         <span className="text-sm font-semibold text-white font-mono">
@@ -685,9 +685,9 @@ export const ClientDashboard: React.FC = () => {
                           setSelectedQuadra(q.id_quadra);
                           setIsBookingModalOpen(true);
                         }}
-                        className="text-xs px-3.5 py-2 rounded-xl transition-all font-semibold flex items-center gap-1.5 active:scale-95 text-surface-200 hover:text-white bg-surface-850 border border-surface-750 hover:border-surface-650 hover:bg-surface-800 shadow-sm cursor-pointer"
+                        className="text-xs px-3.5 py-2 rounded-xl transition-all font-medium flex items-center gap-1.5 active:scale-95 text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] shadow-sm cursor-pointer tracking-tight"
                       >
-                        <CalendarIcon className="w-3.5 h-3.5 text-brand-400" />
+                        <CalendarIcon className="w-3.5 h-3.5 text-white/70" />
                         <span>Ver Horários</span>
                       </button>
                     </div>
@@ -702,23 +702,23 @@ export const ClientDashboard: React.FC = () => {
 
       {/* ABA 2: MINHAS RESERVAS */}
       <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
-        <div className="bg-surface-900/90 border border-surface-800 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6">
+        <div className="bg-[#121214] border border-white/[0.08] rounded-3xl p-5 sm:p-7 shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-6">
           {/* Sub-abas de Filtro de Reservas */}
-          <div className="flex bg-surface-950 p-1.5 rounded-2xl border border-surface-800 text-xs">
+          <div className="flex bg-white/[0.04] p-1 rounded-2xl border border-white/[0.08] text-xs">
             <button
               onClick={() => setFiltroStatusReservas('ATIVOS')}
-              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
                 filtroStatusReservas === 'ATIVOS'
-                  ? 'bg-white text-surface-950 shadow-md font-bold'
-                  : 'text-surface-400 hover:text-white'
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <span>Ativos</span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
                   filtroStatusReservas === 'ATIVOS'
-                    ? 'bg-surface-200 text-surface-950'
-                    : 'bg-surface-800 text-surface-400'
+                    ? 'bg-black/10 text-black'
+                    : 'bg-white/10 text-white/50'
                 }`}
               >
                 {contadoresReservas.ativos}
@@ -727,18 +727,18 @@ export const ClientDashboard: React.FC = () => {
 
             <button
               onClick={() => setFiltroStatusReservas('REALIZADOS')}
-              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
                 filtroStatusReservas === 'REALIZADOS'
-                  ? 'bg-white text-surface-950 shadow-md font-bold'
-                  : 'text-surface-400 hover:text-white'
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <span>Realizados</span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
                   filtroStatusReservas === 'REALIZADOS'
-                    ? 'bg-surface-200 text-surface-950'
-                    : 'bg-surface-800 text-surface-400'
+                    ? 'bg-black/10 text-black'
+                    : 'bg-white/10 text-white/50'
                 }`}
               >
                 {historicoCarregado ? contadoresReservas.realizados : '—'}
@@ -747,18 +747,18 @@ export const ClientDashboard: React.FC = () => {
 
             <button
               onClick={() => setFiltroStatusReservas('CANCELADOS')}
-              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer ${
+              className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
                 filtroStatusReservas === 'CANCELADOS'
-                  ? 'bg-white text-surface-950 shadow-md font-bold'
-                  : 'text-surface-400 hover:text-white'
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               <span>Cancelados</span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
                   filtroStatusReservas === 'CANCELADOS'
-                    ? 'bg-surface-200 text-surface-950'
-                    : 'bg-surface-800 text-surface-400'
+                    ? 'bg-black/10 text-black'
+                    : 'bg-white/10 text-white/50'
                 }`}
               >
                 {historicoCarregado ? contadoresReservas.cancelados : '—'}
@@ -768,26 +768,26 @@ export const ClientDashboard: React.FC = () => {
 
           {/* Listagem de Reservas ou Botão de Carregar Histórico */}
           {filtroStatusReservas !== 'ATIVOS' && !historicoCarregado ? (
-            <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-surface-950/60 border border-surface-800/80 rounded-2xl space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-surface-850 border border-surface-750 flex items-center justify-center text-surface-400 shadow-md">
-                <History className="w-7 h-7 text-brand-400" />
+            <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-white/[0.02] border border-white/[0.06] rounded-2xl space-y-4">
+              <div className="w-13 h-13 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/60 shadow-sm">
+                <History className="w-6 h-6 text-white/80" />
               </div>
               <div className="space-y-1.5 max-w-md">
-                <h4 className="text-sm font-bold text-white tracking-tight">
+                <h4 className="text-sm font-semibold text-white tracking-tight">
                   Histórico não carregado
                 </h4>
-                <p className="text-xs text-surface-400">
+                <p className="text-xs text-white/50 leading-relaxed tracking-tight">
                   Por padrão carregamos apenas suas reservas ativas para maior rapidez. Clique abaixo para carregar todo o seu histórico.
                 </p>
               </div>
               <button
                 onClick={carregarHistorico}
                 disabled={carregandoHistorico}
-                className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 disabled:opacity-60 text-surface-950 font-bold text-xs shadow-lg transition active:scale-[0.98] cursor-pointer"
+                className="mt-2 inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-white hover:bg-white/90 disabled:opacity-40 text-black font-semibold text-xs shadow-sm transition active:scale-[0.98] cursor-pointer tracking-tight"
               >
                 {carregandoHistorico ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
                     <span>Carregando histórico...</span>
                   </>
                 ) : (
@@ -828,29 +828,29 @@ export const ClientDashboard: React.FC = () => {
                 return (
                   <div
                     key={ag.id_agendamento}
-                    className="p-4 sm:p-5 rounded-2xl bg-surface-950 border border-surface-800 space-y-3.5 transition hover:border-surface-700 shadow-lg shadow-black/40"
+                    className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3.5 transition hover:border-white/[0.16] shadow-sm"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div>
-                        <div className="text-base font-bold text-white tracking-tight">
+                        <div className="text-base font-semibold text-white tracking-tight">
                           {ag.nomeQuadra}
                         </div>
-                        <div className="text-xs text-surface-400 flex items-center gap-1.5 mt-1">
-                          <CalendarIcon className="w-3.5 h-3.5 text-surface-500" />
+                        <div className="text-xs text-white/50 flex items-center gap-1.5 mt-1 tracking-tight">
+                          <CalendarIcon className="w-3.5 h-3.5 text-white/40" />
                           <span>{data.split('-').reverse().join('/')}</span>
-                          <span className="text-surface-600">•</span>
+                          <span className="text-white/30">•</span>
                           <span>{horaInicio} às {horaFim}</span>
                         </div>
                         {ag.status === 'PENDENTE' && !isPassado && (() => {
                           const tempo = getTempoRestantePix(ag.criadoEm);
                           return tempo ? (
-                            <div className="text-xs text-amber-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-amber-950/30 border border-amber-500/20 px-2.5 py-1 rounded-lg w-fit">
-                              <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                            <div className="text-xs text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 px-2.5 py-1 rounded-full w-fit">
+                              <Clock className="w-3.5 h-3.5 animate-pulse text-[#FF9F0A]" />
                               <span>Pague via Pix em até {tempo}</span>
                             </div>
                           ) : (
-                            <div className="text-xs text-red-400 font-mono flex items-center gap-1.5 mt-2 font-semibold bg-red-950/30 border border-red-500/20 px-2.5 py-1 rounded-lg w-fit">
-                              <Clock className="w-3.5 h-3.5 text-red-400" />
+                            <div className="text-xs text-[#FF453A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF453A]/10 border border-[#FF453A]/20 px-2.5 py-1 rounded-full w-fit">
+                              <Clock className="w-3.5 h-3.5 text-[#FF453A]" />
                               <span>Tempo de pagamento expirado</span>
                             </div>
                           );
@@ -873,7 +873,7 @@ export const ClientDashboard: React.FC = () => {
                       </Badge>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-surface-800/80 text-xs">
+                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs">
                       <span className="text-white font-mono font-bold text-sm tracking-tight">
                         R$ {ag.valorTotal.toFixed(2)}
                       </span>
@@ -882,7 +882,7 @@ export const ClientDashboard: React.FC = () => {
                         {ag.status === 'PENDENTE' && (
                           <button
                             onClick={() => setAgendamentoPixModal(ag)}
-                            className="text-xs bg-brand-500 hover:bg-brand-400 text-surface-950 font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-brand-500/20 active:scale-[0.98] cursor-pointer"
+                            className="text-xs bg-white hover:bg-white/90 text-black font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer tracking-tight"
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             <span>Pagar com Pix</span>
@@ -892,7 +892,7 @@ export const ClientDashboard: React.FC = () => {
                         {!isCancelado && (
                           <button
                             onClick={() => cancelarAgendamento(ag.id_agendamento)}
-                            className="text-xs text-red-400 hover:text-red-300 font-semibold transition underline underline-offset-2 active:scale-95 cursor-pointer"
+                            className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
                           >
                             Cancelar
                           </button>
