@@ -1,6 +1,6 @@
 import React from 'react';
 import { Quadra, Agendamento, BloqueioHorario } from '../../types';
-import { Lock, Clock, Plus, AlertCircle, User, Phone, Ban } from 'lucide-react';
+import { Lock, Clock, Plus, AlertCircle, User, Phone, Ban, X } from 'lucide-react';
 import { parseDataHoraLocal, extrairDataIso, getAgoraBrasilia } from '../../utils/dateUtils';
 
 export interface AdminDailyTimelineGridProps {
@@ -14,6 +14,7 @@ export interface AdminDailyTimelineGridProps {
   onAbrirAgendamento: (ag: Agendamento) => void;
   onBloquearSlot: (quadraId: number, data: string, horaInicio: string, horaFim: string) => void;
   onDesbloquear: (bloqueioId: number) => void;
+  onQuadraFiltroChange?: (id: number | 'TODAS') => void;
 }
 
 const HORARIOS_DIA = Array.from({ length: 18 }, (_, i) => {
@@ -32,6 +33,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
   onAbrirAgendamento,
   onBloquearSlot,
   onDesbloquear,
+  onQuadraFiltroChange,
 }) => {
   const [brasiliaTime, setBrasiliaTime] = React.useState(() => getAgoraBrasilia());
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -144,6 +146,15 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
         <AlertCircle className="w-10 h-10 text-white/30 mx-auto" />
         <h3 className="text-base font-semibold text-white tracking-tight">Nenhuma quadra selecionada</h3>
         <p className="text-sm text-white/50">Selecione outra opção no filtro acima.</p>
+        {quadraFiltroId !== 'TODAS' && onQuadraFiltroChange && (
+          <button
+            type="button"
+            onClick={() => onQuadraFiltroChange('TODAS')}
+            className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono"
+          >
+            Ver todas as quadras
+          </button>
+        )}
       </div>
     );
   }
@@ -161,6 +172,17 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
           <span className="text-xs text-white/40 font-medium">
             ({quadrasExibidas.length} {quadrasExibidas.length === 1 ? 'quadra' : 'quadras'})
           </span>
+          {quadraFiltroId !== 'TODAS' && onQuadraFiltroChange && (
+            <button
+              type="button"
+              onClick={() => onQuadraFiltroChange('TODAS')}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#0A84FF] bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 border border-[#0A84FF]/30 rounded-xl transition cursor-pointer active:scale-95 ml-1 font-mono"
+              title="Remover filtro e ver todas as quadras"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Ver todas ({minhasQuadras.length})</span>
+            </button>
+          )}
         </div>
 
         {/* Legenda dos Status */}
@@ -221,19 +243,62 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
               <th className="p-3.5 w-24 text-center sticky left-0 bg-[#0c0c0e] backdrop-blur z-20 border-r border-white/[0.08] font-mono">
                 Horário
               </th>
-              {quadrasExibidas.map((quadra) => (
-                <th
-                  key={quadra.id_quadra}
-                  className="p-3.5 font-semibold text-white border-r border-white/[0.08] min-w-[190px]"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate tracking-tight">{quadra.nome}</span>
-                    <span className="text-[10px] text-white/50 font-mono bg-white/[0.05] px-2 py-0.5 rounded-full ml-1 border border-white/[0.08]">
-                      {quadra.tipoEsporte.replace('_', ' ')}
-                    </span>
-                  </div>
-                </th>
-              ))}
+              {quadrasExibidas.map((quadra) => {
+                const isFiltered = quadraFiltroId === quadra.id_quadra;
+                return (
+                  <th
+                    key={quadra.id_quadra}
+                    onClick={() => {
+                      if (!isFiltered && onQuadraFiltroChange) {
+                        onQuadraFiltroChange(quadra.id_quadra);
+                      }
+                    }}
+                    className={`p-3.5 font-semibold text-white border-r border-white/[0.08] min-w-[190px] transition-colors ${
+                      !isFiltered && onQuadraFiltroChange
+                        ? 'cursor-pointer hover:bg-white/[0.04] group/th'
+                        : 'bg-[#0A84FF]/[0.04]'
+                    }`}
+                    title={
+                      !isFiltered && onQuadraFiltroChange
+                        ? `Filtrar apenas por ${quadra.nome}`
+                        : undefined
+                    }
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`truncate tracking-tight transition-colors ${
+                            !isFiltered ? 'group-hover/th:text-[#0A84FF]' : 'text-[#0A84FF]'
+                          }`}
+                        >
+                          {quadra.nome}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] text-white/50 font-mono bg-white/[0.05] px-2 py-0.5 rounded-full border border-white/[0.08]">
+                          {quadra.tipoEsporte.replace('_', ' ')}
+                        </span>
+
+                        {isFiltered && onQuadraFiltroChange && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onQuadraFiltroChange('TODAS');
+                            }}
+                            className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-white/90 hover:text-white bg-white/[0.1] hover:bg-white/[0.2] border border-white/[0.15] rounded-lg transition active:scale-95 cursor-pointer font-mono"
+                            title="Remover filtro de quadra"
+                          >
+                            <X className="w-3 h-3 text-white/70" />
+                            <span>Remover</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.06] text-sm">
