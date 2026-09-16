@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/GuilhermeAizzaSano/eQuadras/actions/workflows/ci.yml"><img src="https://github.com/GuilhermeAizzaSano/eQuadras/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
   <a href="https://equadras.app"><img src="https://img.shields.io/badge/Produção-equadras.app-10b981?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Produção Online" /></a>
   <img src="https://img.shields.io/badge/Java-21_LTS-orange?style=for-the-badge&logo=openjdk" alt="Java 21" />
   <img src="https://img.shields.io/badge/Spring_Boot-3.4.x-brightgreen?style=for-the-badge&logo=springboot" alt="Spring Boot 3" />
