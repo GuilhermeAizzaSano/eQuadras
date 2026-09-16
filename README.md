@@ -17,6 +17,8 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwindcss" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Oracle_Cloud-OCI_Compute-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="Oracle Cloud" />
+  <img src="https://img.shields.io/badge/Cloudflare-DNS_&_Edge_Proxy-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare" />
   <img src="https://img.shields.io/badge/Nginx-SSL_Let's_Encrypt-009639?style=for-the-badge&logo=nginx&logoColor=white" alt="Nginx SSL" />
 </p>
 
@@ -178,8 +180,9 @@ equadras/
 | **Linguagem Frontend**| TypeScript | 5.x | Tipagem estrita de contratos DTOs e entidades |
 | **Estilização** | Tailwind CSS | 3.4.x | Design system Zinc-950 com alto contraste e acessibilidade WCAG |
 | **Build Tool** | Vite | 5.4.x | HMR ultrarrápido, minificação Terser e code-splitting |
-| **Servidor Web / Proxy**| Nginx | 1.24+ | Proxy reverso, gzip, suporte a SSE sem buffer e SSL Let's Encrypt |
-| **Hospedagem em Nuvem** | Oracle Cloud Infrastructure | Ubuntu 24.04 | VM Always Free com systemd gerenciando o serviço Java |
+| **Servidor Web / Proxy**| Nginx | 1.24+ | Proxy reverso local, gzip, suporte a SSE sem buffer e SSL Let's Encrypt |
+| **Edge / DNS / CDN**   | Cloudflare | Managed | Proxy reverso de borda, proteção DDoS, WAF, SSL/TLS e roteamento DNS |
+| **Hospedagem em Nuvem** | Oracle Cloud Infrastructure (OCI) | Ubuntu 24.04 | VM Compute Always Free com systemd gerenciando o serviço Java |
 
 ---
 
@@ -332,13 +335,41 @@ Para garantir tempos de resposta sub-milissegundo em consultas analíticas e tra
 
 ## Infraestrutura, Deploy e Automação
 
-### Arquitetura de Servidor (Nuvem Oracle Cloud)
-- **Instância:** Ubuntu Linux com systemd gerenciando o serviço `equadras-backend.service`.
-- **Reverse Proxy Nginx:**
-  - Serve os arquivos estáticos compilados do frontend em `/home/ubuntu/eQuadras/frontend/dist`.
-  - Encaminha requisições da API externa `/api/**` e rotas internas para `http://127.0.0.1:8080`.
-  - Configurado com `proxy_buffering off` e timeouts estendidos para suporte contínuo a Server-Sent Events (SSE).
-- **Certificados SSL:** Let's Encrypt gerenciados pelo Certbot com renovação automática.
+### Topologia de Rede e Borda (Cloudflare + Nuvem OCI)
+
+O tráfego de produção opera sob arquitetura de borda resiliente com segurança em camadas:
+
+```text
+[ Atleta / Navegador ]
+        │
+        ▼ (HTTPS / TLS 1.3)
+[ Cloudflare Edge Proxy ] ─── DNS Anycast, Proteção DDoS, WAF e Mitigação de Ameaças
+        │
+        ▼ (Proxy Reverso / Origem Segura)
+[ Oracle Cloud Infrastructure (OCI) - VM Ubuntu 24.04 ]
+        │
+        ├── [ Nginx Reverse Proxy ] (Compressão Gzip, SSL Let's Encrypt, SSE sem buffer)
+        │         │
+        │         ├──► [ Frontend SPA ] (/frontend/dist - Arquivos Estáticos)
+        │         └──► [ Backend API ]  (http://127.0.0.1:8080 - Spring Boot 3.4 / Java 21)
+        │
+        ▼ (SSL / Região sa-east-1 São Paulo)
+[ Supabase PostgreSQL 17 ]
+```
+
+- **Cloudflare Edge Proxy:**
+  - Gerenciamento de zona DNS com resolução Anycast de baixa latência.
+  - Proxy reverso de borda protegendo o IP de origem da instância em nuvem contra ataques volumétricos (DDoS).
+  - Criptografia SSL/TLS ponta a ponta e otimização de rotas globais.
+- **Instância em Nuvem (Oracle Cloud Infrastructure - OCI):**
+  - Hospedada em VM Compute Ubuntu Linux Always Free.
+  - Serviço gerenciado pelo `systemd` (`equadras-backend.service`) com reinício automático em caso de falhas.
+- **Reverse Proxy Nginx Local:**
+  - Serve a Single Page Application (SPA) React compilada em `/home/ubuntu/eQuadras/frontend/dist`.
+  - Encaminha chamadas `/api/**` para o Tomcat interno do Spring Boot em `127.0.0.1:8080`.
+  - Diretiva `proxy_buffering off` e timeouts estendidos configurados especificamente para manter fluxos contínuos de Server-Sent Events (SSE).
+- **Certificados SSL:**
+  - Let's Encrypt / Certbot configurados na origem para comunicação TLS estrita.
 
 ### Scripts de Automação de Deploy
 A raiz do repositório contém scripts prontos para sincronizar e reiniciar os serviços remotamente:
