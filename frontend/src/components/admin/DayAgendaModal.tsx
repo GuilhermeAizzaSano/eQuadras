@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Quadra, Agendamento, HorarioDisponivel, BloqueioHorario } from '../../types';
 import { Badge, EmptyState, Button } from '../ui';
 import {
@@ -70,6 +71,16 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   }, [dataSelecionada]);
 
   React.useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  React.useEffect(() => {
     if (highlightedAgendamentoId && isOpen) {
       const ag = agendamentosAdmin.find((a) => a.id_agendamento === highlightedAgendamentoId);
       if (ag) {
@@ -84,8 +95,11 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
 
       const timer = setTimeout(() => {
         const el = document.getElementById(`agendamento-card-${highlightedAgendamentoId}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const container = el?.closest('.overflow-y-auto');
+        if (el && container) {
+          const elTop = el.offsetTop;
+          const containerHeight = container.clientHeight;
+          container.scrollTo({ top: Math.max(0, elTop - containerHeight / 3), behavior: 'smooth' });
         }
       }, 200);
       return () => clearTimeout(timer);
@@ -127,8 +141,8 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
     else contadoresAtivos++;
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
+  return createPortal(
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-200">
       <div className="bg-[#121214] border border-white/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header do Modal */}
         <div className="p-5 sm:p-6 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
@@ -598,9 +612,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                       <div
                         key={ag.id_agendamento}
                         id={`agendamento-card-${ag.id_agendamento}`}
-                        className={`p-4 rounded-2xl border space-y-2.5 transition-all duration-300 ${
+                        className={`p-4 rounded-2xl border space-y-2.5 transition-colors duration-200 ${
                           isHighlighted
-                            ? 'bg-white/[0.08] border-white/40 ring-1 ring-white/40 shadow-xl scale-[1.01]'
+                            ? 'bg-white/[0.06] border-[#0A84FF]/60 shadow-lg shadow-[#0A84FF]/5'
                             : 'bg-white/[0.02] border-white/[0.06] hover:border-white/20'
                         }`}
                       >
@@ -695,6 +709,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
