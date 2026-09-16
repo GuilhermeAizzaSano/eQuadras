@@ -81,9 +81,3 @@ export const extrairDataIso = (dataHoraStr: string): string => {
   if (!dataHoraStr) return '';
   return dataHoraStr.includes('T') ? dataHoraStr.split('T')[0] : dataHoraStr.slice(0, 10);
 };
-
-export const extrairHoraMinuto = (dataHoraStr: string): string => {
-  if (!dataHoraStr) return '';
-  const parteHora = dataHoraStr.includes('T') ? dataHoraStr.split('T')[1] : dataHoraStr;
-  return parteHora.slice(0, 5);
-};
