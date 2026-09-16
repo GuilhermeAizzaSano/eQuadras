@@ -46,11 +46,23 @@ public class PagamentoService {
                 return gerarPixMercadoPagoApi(agendamento);
             } catch (HttpTimeoutException e) {
                 log.error("Timeout de 4s excedido ao chamar API do Mercado Pago para agendamento {}.", agendamento.getId_agendamento(), e);
+                if (mercadoPagoAccessToken.startsWith("TEST-")) {
+                    log.warn("Mercado Pago Sandbox indisponível (timeout). Acionando fallback resiliente para Pix mock.");
+                    return gerarPixMock(agendamento);
+                }
                 throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento (tempo limite excedido).", e);
             } catch (IllegalStateException e) {
+                if (mercadoPagoAccessToken.startsWith("TEST-")) {
+                    log.warn("Mercado Pago Sandbox indisponível ({}). Acionando fallback resiliente para Pix mock.", e.getMessage());
+                    return gerarPixMock(agendamento);
+                }
                 throw e;
             } catch (Exception e) {
                 log.error("Erro ao chamar API do Mercado Pago para agendamento {}.", agendamento.getId_agendamento(), e);
+                if (mercadoPagoAccessToken.startsWith("TEST-")) {
+                    log.warn("Mercado Pago Sandbox indisponível. Acionando fallback resiliente para Pix mock.");
+                    return gerarPixMock(agendamento);
+                }
                 throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento.", e);
             }
         }
