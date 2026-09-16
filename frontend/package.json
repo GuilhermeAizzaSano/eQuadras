@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "openapi-typescript ../openapi.json -o ./src/types/api-schema.d.ts"
+    "generate:api": "openapi-typescript ../docs/api/openapi.yaml -o ./src/types/api-schema.d.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

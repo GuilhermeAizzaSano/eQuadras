@@ -24,7 +24,10 @@ import {
   Settings2,
   Bell,
   X,
-  Users
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
@@ -38,6 +41,8 @@ export const AdminDashboard: React.FC = () => {
   
   // Notificações SSE
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [notificacoesPage, setNotificacoesPage] = useState(0);
+  const [notificacoesTotalPages, setNotificacoesTotalPages] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   
@@ -164,7 +169,7 @@ export const AdminDashboard: React.FC = () => {
       eventSourceRef.current.addEventListener('notificacao', (event) => {
         const novaNotificacao: Notificacao = JSON.parse(event.data);
         
-        setNotificacoes((prev) => [novaNotificacao, ...prev]);
+        setNotificacoes((prev) => [novaNotificacao, ...prev.slice(0, 4)]);
         setFeedback({ type: 'success', message: novaNotificacao.mensagem });
         
         // Recarregar os agendamentos para refletir no calendário instantaneamente
@@ -200,14 +205,38 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const carregarNotificacoes = async () => {
+  const carregarNotificacoes = async (page = 0) => {
     if (!user) return;
     try {
-      const data = await notificacaoApi.listarPorAdmin();
-      setNotificacoes(data);
+      const data = await notificacaoApi.listarPorAdmin(page, 5);
+      setNotificacoes(data.content);
+      setNotificacoesPage(data.number);
+      setNotificacoesTotalPages(data.totalPages);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const confirmarExcluirTodasNotificacoes = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Todas as Notificações',
+      description: 'Deseja realmente excluir todo o histórico de notificações? Esta ação não pode ser desfeita.',
+      isDestructive: true,
+      confirmLabel: 'Excluir Todas',
+      onConfirm: async () => {
+        try {
+          await notificacaoApi.excluirTodas();
+          setNotificacoes([]);
+          setNotificacoesPage(0);
+          setNotificacoesTotalPages(0);
+          setFeedback({ type: 'success', message: 'Notificações excluídas com sucesso.' });
+        } catch (err) {
+          console.error('Erro ao excluir notificações:', err);
+          setFeedback({ type: 'error', message: 'Erro ao excluir notificações.' });
+        }
+      },
+    });
   };
 
   const lerNotificacao = async (id: number) => {
@@ -967,6 +996,17 @@ export const AdminDashboard: React.FC = () => {
                         Marcar tudo lido
                       </button>
                     )}
+                    {notificacoes.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={confirmarExcluirTodasNotificacoes}
+                        className="flex items-center gap-1 text-[11px] font-medium text-[#FF453A] hover:underline transition active:scale-95 cursor-pointer"
+                        title="Excluir todas as notificações"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Excluir todas</span>
+                      </button>
+                    )}
                     <button 
                       onClick={() => setShowNotifications(false)}
                       className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
@@ -1013,6 +1053,31 @@ export const AdminDashboard: React.FC = () => {
                     ))
                   )}
                 </div>
+                {notificacoesTotalPages > 1 && (
+                  <div className="p-3 border-t border-white/[0.06] flex items-center justify-between bg-white/[0.02] text-xs">
+                    <button
+                      type="button"
+                      disabled={notificacoesPage === 0}
+                      onClick={() => carregarNotificacoes(notificacoesPage - 1)}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Anterior</span>
+                    </button>
+                    <span className="text-[10px] text-white/50 font-mono">
+                      Página {notificacoesPage + 1} de {notificacoesTotalPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={notificacoesPage >= notificacoesTotalPages - 1}
+                      onClick={() => carregarNotificacoes(notificacoesPage + 1)}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      <span>Próxima</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

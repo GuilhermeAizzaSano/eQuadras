@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @Tag(name = "Notificações", description = "Endpoints para consulta e marcação de notificações de administradores (Apenas Admin).")
 @RestController
@@ -30,10 +32,14 @@ public class NotificacaoController {
         return notificacaoService.assinar(usuarioLogado.id());
     }
 
-    @Operation(summary = "Listar notificações do administrador", description = "Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado.")
+    @Operation(summary = "Listar notificações do administrador", description = "Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado (paginado).")
     @GetMapping("/admin")
-    public ResponseEntity<List<Notificacao>> listarPorAdmin(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        return ResponseEntity.ok(notificacaoService.listarPorAdmin(usuarioLogado.id()));
+    public ResponseEntity<Page<Notificacao>> listarPorAdmin(
+            @UsuarioLogado UsuarioAutenticado usuarioLogado,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(notificacaoService.listarPorAdmin(usuarioLogado.id(), pageable));
     }
 
     @Operation(summary = "Marcar notificação como lida", description = "Atualiza o estado de leitura da notificação.")
@@ -47,6 +53,13 @@ public class NotificacaoController {
     @PutMapping("/ler-todas")
     public ResponseEntity<Void> marcarTodasComoLidas(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
         notificacaoService.marcarTodasComoLidas(usuarioLogado.id());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Excluir todas as notificações", description = "Realiza o soft delete de todas as notificações do administrador autenticado.")
+    @DeleteMapping("/todas")
+    public ResponseEntity<Void> excluirTodas(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        notificacaoService.excluirTodas(usuarioLogado.id());
         return ResponseEntity.noContent().build();
     }
 }

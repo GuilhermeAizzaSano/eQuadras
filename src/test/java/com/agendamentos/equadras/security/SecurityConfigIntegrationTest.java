@@ -14,6 +14,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -134,6 +135,38 @@ public class SecurityConfigIntegrationTest {
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
                         .header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("DELETE /notificacoes/todas com token ADMIN deve retornar 204 No Content")
+    void deleteNotificacoesTodasComAdminDeveRetornar204() throws Exception {
+        Usuario admin = Usuario.builder()
+                .id_usuario(1L)
+                .email_usuario("admin@teste.com")
+                .role(Role.ADMIN)
+                .build();
+        String tokenAdmin = jwtService.gerarToken(admin);
+
+        mockMvc.perform(delete("/notificacoes/todas")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
+                        .header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("DELETE /notificacoes/todas com token CLIENT deve retornar 403 Forbidden")
+    void deleteNotificacoesTodasComClientDeveRetornar403() throws Exception {
+        Usuario cliente = Usuario.builder()
+                .id_usuario(999L)
+                .email_usuario("cliente_api@teste.com")
+                .role(Role.CLIENT)
+                .build();
+        String tokenCliente = jwtService.gerarToken(cliente);
+
+        mockMvc.perform(delete("/notificacoes/todas")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
+                        .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isForbidden());
     }
 
     @Test

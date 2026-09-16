@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class NotificacaoService {
@@ -76,8 +78,8 @@ public class NotificacaoService {
         }
     }
 
-    public List<Notificacao> listarPorAdmin(Long adminId) {
-        return notificacaoRepository.findByAdminIdOrderByDataCriacaoDesc(adminId);
+    public Page<Notificacao> listarPorAdmin(Long adminId, Pageable pageable) {
+        return notificacaoRepository.findByAdminIdAndExcluidaFalseOrderByDataCriacaoDesc(adminId, pageable);
     }
 
     public void marcarComoLida(Long idNotificacao, Long usuarioId) {
@@ -97,5 +99,10 @@ public class NotificacaoService {
     @org.springframework.transaction.annotation.Transactional
     public void marcarTodasComoLidas(Long adminId) {
         notificacaoRepository.marcarTodasComoLidas(adminId);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void excluirTodas(Long adminId) {
+        notificacaoRepository.marcarTodasComoExcluidas(adminId);
     }
 }

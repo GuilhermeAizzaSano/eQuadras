@@ -11,9 +11,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.agendamentos.equadras.model.entity.Notificacao;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificacaoServiceTest {
@@ -67,5 +75,35 @@ class NotificacaoServiceTest {
         // Removendo emitter2 com a instância correta
         emitters.remove(usuarioId, emitter2);
         assertNull(emitters.get(usuarioId));
+    }
+
+    @Test
+    @DisplayName("Deve listar notificações paginadas não excluídas do administrador")
+    void deveListarNotificacoesPaginadasDoAdmin() {
+        Long adminId = 1L;
+        Pageable pageable = PageRequest.of(0, 5);
+        Notificacao notif = new Notificacao();
+        notif.setMensagem("Reserva confirmada");
+        Page<Notificacao> paginaEsperada = new PageImpl<>(List.of(notif));
+
+        when(notificacaoRepository.findByAdminIdAndExcluidaFalseOrderByDataCriacaoDesc(adminId, pageable))
+                .thenReturn(paginaEsperada);
+
+        Page<Notificacao> resultado = notificacaoService.listarPorAdmin(adminId, pageable);
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.getContent().size());
+        assertEquals("Reserva confirmada", resultado.getContent().get(0).getMensagem());
+        verify(notificacaoRepository, times(1)).findByAdminIdAndExcluidaFalseOrderByDataCriacaoDesc(adminId, pageable);
+    }
+
+    @Test
+    @DisplayName("Deve marcar todas as notificações do administrador como excluídas")
+    void deveExcluirTodasNotificacoesDoAdmin() {
+        Long adminId = 1L;
+
+        notificacaoService.excluirTodas(adminId);
+
+        verify(notificacaoRepository, times(1)).marcarTodasComoExcluidas(adminId);
     }
 }
