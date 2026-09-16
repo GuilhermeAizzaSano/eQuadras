@@ -85,6 +85,19 @@ export interface Notificacao {
   dataCriacao: string;
 }
 
+export interface Page<T> {
+  content: T[];
+  pageable: any;
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
 // DTOs de Entrada e Operações derivados do Schema OpenAPI
 export type UsuarioCriacaoInput = Schemas['UsuarioCriacaoDTO'];
 export type UsuarioEdicaoInput = Schemas['UsuarioEdicaoDTO'];

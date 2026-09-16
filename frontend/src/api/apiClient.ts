@@ -212,9 +212,10 @@ export const agendamentoApi = {
 
 // --- Notificações ---
 export const notificacaoApi = {
-  listarPorAdmin: () => apiFetch<import('../types').Notificacao[]>('/notificacoes/admin'),
+  listarPorAdmin: (page = 0, size = 5) => apiFetch<import('../types').Page<import('../types').Notificacao>>(`/notificacoes/admin?page=${page}&size=${size}`),
   marcarComoLida: (id: number) => apiFetch<void>(`/notificacoes/${id}/ler`, { method: 'PUT' }),
   marcarTodasComoLidas: () => apiFetch<void>('/notificacoes/ler-todas', { method: 'PUT' }),
+  excluirTodas: () => apiFetch<void>('/notificacoes/todas', { method: 'DELETE' }),
 };
 
 // --- Pagamentos ---

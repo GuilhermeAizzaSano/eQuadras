@@ -493,7 +493,7 @@ export interface paths {
         };
         /**
          * Listar notificações do administrador
-         * @description Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado.
+         * @description Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado (paginado).
          */
         get: operations["listarPorAdmin"];
         put?: never;
@@ -619,6 +619,26 @@ export interface paths {
          * @description Remove um bloqueio existente pelo seu ID. Requer ROLE_ADMIN e ser dono da quadra.
          */
         delete: operations["removerBloqueio"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notificacoes/todas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir todas as notificações
+         * @description Realiza o soft delete de todas as notificações do administrador autenticado.
+         */
+        delete: operations["excluirTodas"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1016,8 +1036,43 @@ export interface components {
             id?: number;
             mensagem?: string;
             lida?: boolean;
+            excluida?: boolean;
             /** Format: date-time */
             dataCriacao?: string;
+        };
+        PageNotificacao: {
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            size?: number;
+            content?: components["schemas"]["Notificacao"][];
+            /** Format: int32 */
+            number?: number;
+            first?: boolean;
+            last?: boolean;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            empty?: boolean;
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            sort?: components["schemas"]["SortObject"];
+            unpaged?: boolean;
+            /** Format: int32 */
+            pageSize?: number;
+            /** Format: int32 */
+            pageNumber?: number;
+            paged?: boolean;
+        };
+        SortObject: {
+            empty?: boolean;
+            sorted?: boolean;
+            unsorted?: boolean;
         };
         /** @description Representação detalhada de cada slot de horário de uma quadra no dia */
         HorarioDisponivelDTO: {
@@ -2578,7 +2633,10 @@ export interface operations {
     };
     listarPorAdmin: {
         parameters: {
-            query?: never;
+            query?: {
+                page?: number;
+                size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2601,7 +2659,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["Notificacao"][];
+                    "application/json": components["schemas"]["PageNotificacao"];
                 };
             };
         };
@@ -2967,6 +3025,24 @@ export interface operations {
                 content?: never;
             };
             /** @description Bloqueio removido com sucesso */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    excluirTodas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notificações excluídas com sucesso (No Content) */
             204: {
                 headers: {
                     [name: string]: unknown;

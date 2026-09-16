@@ -1333,17 +1333,30 @@ paths:
       - Notificações - API
       summary: Listar notificações do administrador
       description: Retorna o histórico de notificações de reservas e pagamentos do
-        administrador autenticado.
+        administrador autenticado (paginado).
       operationId: listarPorAdmin
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 5
       responses:
         "200":
           description: Lista de alertas e notificações da arena
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Notificacao"
+                $ref: "#/components/schemas/PageNotificacao"
               example:
               - id: 1
                 mensagem: "Nova reserva confirmada: Arthur Prado em Arena Gol Society\
@@ -1673,6 +1686,17 @@ paths:
           description: OK
         "204":
           description: Bloqueio removido com sucesso
+  /api/notificacoes/todas:
+    delete:
+      tags:
+      - Notificações - API
+      summary: Excluir todas as notificações
+      description: Realiza o soft delete de todas as notificações do administrador
+        autenticado.
+      operationId: excluirTodas
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     LocalTime:
@@ -2193,9 +2217,70 @@ components:
           type: string
         lida:
           type: boolean
+        excluida:
+          type: boolean
         dataCriacao:
           type: string
           format: date-time
+    PageNotificacao:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notificacao"
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        pageSize:
+          type: integer
+          format: int32
+        pageNumber:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
     HorarioDisponivelDTO:
       type: object
       description: Representação detalhada de cada slot de horário de uma quadra no

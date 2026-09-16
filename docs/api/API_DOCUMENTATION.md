@@ -83,9 +83,10 @@ As consultas realizadas pela aplicação web frontend utilizam sessão protegida
 | **Pagamentos** | `POST` | `/api/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
 | **Pagamentos** | `POST` | `/api/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
 | **Notificações** | `GET` | `/api/notificacoes/stream` | `ROLE_ADMIN` | Iniciar stream SSE em tempo real de novos pagamentos |
-| **Notificações** | `GET` | `/api/notificacoes/admin` | `ROLE_ADMIN` | Histórico de notificações do administrador |
+| **Notificações** | `GET` | `/api/notificacoes/admin` | `ROLE_ADMIN` | Histórico paginado de notificações (`?page=0&size=5`) |
 | **Notificações** | `PUT` | `/api/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
 | **Notificações** | `PUT` | `/api/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações do administrador como lidas |
+| **Notificações** | `DELETE`| `/api/notificacoes/todas` | `ROLE_ADMIN` | Excluir todas as notificações (soft delete) |
 
 ---
 
@@ -1261,25 +1262,47 @@ data: {"id":1,"mensagem":"Novo pagamento aprovado para a quadra Arena Central Pr
 ### 8.2 Listar Notificações do Administrador
 - **Método:** `GET`
 - **URL:** `/api/notificacoes/admin`
+- **Parâmetros de Query:**
+  - `page` *(opcional, padrão `0`)*: Índice da página (base 0).
+  - `size` *(opcional, padrão `5`)*: Quantidade de notificações por página.
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
-GET /api/notificacoes/admin HTTP/1.1
+GET /api/notificacoes/admin?page=0&size=5 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <TOKEN>
 ```
 
 #### Resposta de Sucesso (200 OK):
 ```json
-[
-  {
-    "id": 1,
-    "mensagem": "Novo pagamento aprovado para a quadra Arena Central Premium no valor de R$ 240,00 por Carlos Silva.",
-    "lida": false,
-    "dataCriacao":"2026-09-02T16:51:30"
-  }
-]
+{
+  "content": [
+    {
+      "id": 1,
+      "mensagem": "Novo pagamento aprovado para a quadra Arena Central Premium no valor de R$ 240,00 por Carlos Silva.",
+      "lida": false,
+      "excluida": false,
+      "dataCriacao": "2026-09-02T16:51:30"
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 5,
+    "sort": { "empty": false, "sorted": true, "unsorted": false },
+    "offset": 0,
+    "paged": true,
+    "unpaged": false
+  },
+  "totalElements": 1,
+  "totalPages": 1,
+  "last": true,
+  "size": 5,
+  "number": 0,
+  "numberOfElements": 1,
+  "first": true,
+  "empty": false
+}
 ```
 
 ---
@@ -1313,6 +1336,27 @@ Marca todas as notificações recebidas pelo administrador autenticado como lida
 #### Requisição:
 ```http
 PUT /api/notificacoes/ler-todas HTTP/1.1
+Host: equadras.app
+Authorization: Bearer <TOKEN>
+```
+
+#### Resposta de Sucesso:
+```http
+HTTP/1.1 204 No Content
+```
+
+---
+
+### 8.5 Excluir Todas as Notificações (Soft Delete)
+Realiza a remoção lógica (*soft delete*) de todo o histórico de notificações do administrador autenticado, ocultando-as de listagens e contadores.
+
+- **Método:** `DELETE`
+- **URL:** `/api/notificacoes/todas`
+- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+
+#### Requisição:
+```http
+DELETE /api/notificacoes/todas HTTP/1.1
 Host: equadras.app
 Authorization: Bearer <TOKEN>
 ```

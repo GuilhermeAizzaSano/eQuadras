@@ -24,6 +24,9 @@ public class Notificacao {
     @Column(nullable = false)
     private boolean lida = false;
 
+    @Column(nullable = false)
+    private boolean excluida = false;
+
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao;
 
@@ -51,6 +54,9 @@ public class Notificacao {
     
     public boolean isLida() { return lida; }
     public void setLida(boolean lida) { this.lida = lida; }
+    
+    public boolean isExcluida() { return excluida; }
+    public void setExcluida(boolean excluida) { this.excluida = excluida; }
     
     public LocalDateTime getDataCriacao() { return dataCriacao; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
