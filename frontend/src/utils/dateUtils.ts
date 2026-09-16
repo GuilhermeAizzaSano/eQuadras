@@ -1,7 +1,61 @@
-﻿/**
+/**
  * Utilitários para parsing e manipulação de datas no fuso horário local,
  * prevenindo distorções causadas por conversões automáticas para UTC.
  */
+
+export interface HorarioBrasilia {
+  agora: Date;
+  ano: number;
+  mes: string;
+  dia: string;
+  hora: number;
+  minuto: number;
+  segundo: number;
+  hojeIso: string;
+  horaMinutoAtual: number;
+}
+
+export const getAgoraBrasilia = (): HorarioBrasilia => {
+  const agoraUtc = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const parts = formatter.formatToParts(agoraUtc);
+  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || '';
+
+  const ano = parseInt(getPart('year'), 10) || agoraUtc.getFullYear();
+  const mes = getPart('month') || String(agoraUtc.getMonth() + 1).padStart(2, '0');
+  const dia = getPart('day') || String(agoraUtc.getDate()).padStart(2, '0');
+  let hora = parseInt(getPart('hour'), 10);
+  if (isNaN(hora)) hora = agoraUtc.getHours();
+  if (hora === 24) hora = 0;
+  const minuto = parseInt(getPart('minute'), 10) || 0;
+  const segundo = parseInt(getPart('second'), 10) || 0;
+
+  const hojeIso = `${ano}-${mes}-${dia}`;
+  const horaMinutoAtual = hora + minuto / 60;
+  const agora = new Date(ano, parseInt(mes, 10) - 1, parseInt(dia, 10), hora, minuto, segundo);
+
+  return {
+    agora,
+    ano,
+    mes,
+    dia,
+    hora,
+    minuto,
+    segundo,
+    hojeIso,
+    horaMinutoAtual,
+  };
+};
 
 export const parseDataHoraLocal = (dataHoraStr: string): Date => {
   if (!dataHoraStr) return new Date();
@@ -20,11 +74,7 @@ export const parseDataHoraLocal = (dataHoraStr: string): Date => {
 };
 
 export const getHojeLocalIso = (): string => {
-  const agora = new Date();
-  const ano = agora.getFullYear();
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const dia = String(agora.getDate()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}`;
+  return getAgoraBrasilia().hojeIso;
 };
 
 export const extrairDataIso = (dataHoraStr: string): string => {

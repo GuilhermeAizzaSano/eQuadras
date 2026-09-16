@@ -3,6 +3,8 @@ import { Agendamento, Quadra } from '../../types';
 import { Clock, Phone, ChevronRight } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 
+import { parseDataHoraLocal, getAgoraBrasilia } from '../../utils/dateUtils';
+
 export interface UpcomingMatchesBarProps {
   agendamentosAdmin: Agendamento[];
   minhasQuadras: Quadra[];
@@ -14,11 +16,7 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
   minhasQuadras,
   onAbrirAgendamento,
 }) => {
-  const agora = new Date();
-  const hojeIso = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(
-    agora.getDate()
-  ).padStart(2, '0')}`;
-
+  const { agora, hojeIso } = getAgoraBrasilia();
   const proximas4Horas = new Date(agora.getTime() + 4 * 60 * 60 * 1000);
 
   const proximosJogos = agendamentosAdmin
@@ -27,8 +25,8 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
       const [data] = ag.dataHoraInicio.split('T');
       if (data !== hojeIso) return false;
 
-      const dataFim = new Date(ag.dataHoraFim);
-      const dataInicio = new Date(ag.dataHoraInicio);
+      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
+      const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
 
       // Partida em andamento ou que começa nas próximas 4 horas
       const emAndamento = dataInicio <= agora && dataFim > agora;
@@ -36,7 +34,7 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
 
       return emAndamento || emBreve;
     })
-    .sort((a, b) => new Date(a.dataHoraInicio).getTime() - new Date(b.dataHoraInicio).getTime());
+    .sort((a, b) => parseDataHoraLocal(a.dataHoraInicio).getTime() - parseDataHoraLocal(b.dataHoraInicio).getTime());
 
   if (proximosJogos.length === 0) return null;
 
@@ -60,8 +58,8 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {proximosJogos.map((ag) => {
           const quadra = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
-          const dataInicio = new Date(ag.dataHoraInicio);
-          const dataFim = new Date(ag.dataHoraFim);
+          const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
+          const dataFim = parseDataHoraLocal(ag.dataHoraFim);
           const emAndamento = dataInicio <= agora && dataFim > agora;
           const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5) || '';
           const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5) || '';
