@@ -551,10 +551,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setRealizadosCarregados(true)}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer font-mono"
+                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono"
                     >
-                      <History className="w-4 h-4 text-black" />
-                      <span>Carregar Realizados ({contadoresRealizados})</span>
+                      Carregar Realizados ({contadoresRealizados})
                     </button>
                   </div>
                 )
@@ -578,10 +577,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setCanceladosCarregados(true)}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer font-mono"
+                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono"
                     >
-                      <Ban className="w-4 h-4 text-[#FF453A]" />
-                      <span>Carregar Cancelados ({contadoresCancelados})</span>
+                      Carregar Cancelados ({contadoresCancelados})
                     </button>
                   </div>
                 )
