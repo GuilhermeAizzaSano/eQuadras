@@ -1,7 +1,7 @@
 import React from 'react';
 import { Quadra, Agendamento, BloqueioHorario } from '../../types';
 import { Lock, Clock, Plus, AlertCircle, User, Phone, Ban } from 'lucide-react';
-import { parseDataHoraLocal, extrairDataIso, getHojeLocalIso } from '../../utils/dateUtils';
+import { parseDataHoraLocal, extrairDataIso, getAgoraBrasilia } from '../../utils/dateUtils';
 
 export interface AdminDailyTimelineGridProps {
   dataSelecionada: string;
@@ -33,15 +33,75 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
   onBloquearSlot,
   onDesbloquear,
 }) => {
-  const agora = new Date();
-  const hojeIso = getHojeLocalIso();
+  const [brasiliaTime, setBrasiliaTime] = React.useState(() => getAgoraBrasilia());
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const tableRef = React.useRef<HTMLTableElement>(null);
+  const [lineTop, setLineTop] = React.useState<number | null>(null);
+  const [tableWidth, setTableWidth] = React.useState<number>(0);
+  const [scrollLeft, setScrollLeft] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setBrasiliaTime(getAgoraBrasilia());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { hojeIso, horaMinutoAtual, agora } = brasiliaTime;
   const isHoje = dataSelecionada === hojeIso;
-  const horaMinutoAtual = agora.getHours() + agora.getMinutes() / 60;
+  const horaInteira = Math.floor(horaMinutoAtual);
+  const showCurrentTimeLine = isHoje && horaInteira >= 6 && horaInteira <= 23;
 
   const quadrasExibidas =
     quadraFiltroId === 'TODAS'
       ? minhasQuadras
       : minhasQuadras.filter((q) => q.id_quadra === quadraFiltroId);
+
+  const calcularPosicaoLinha = React.useCallback(() => {
+    if (!containerRef.current || !showCurrentTimeLine) {
+      setLineTop(null);
+      return;
+    }
+
+    const minutoFracao = horaMinutoAtual - horaInteira;
+    const rowEl = document.getElementById(`timeline-row-${horaInteira}`);
+
+    if (rowEl && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const rowRect = rowEl.getBoundingClientRect();
+      const topOffset =
+        rowRect.top -
+        containerRect.top +
+        containerRef.current.scrollTop +
+        minutoFracao * rowRect.height;
+      setLineTop(topOffset);
+
+      if (tableRef.current) {
+        setTableWidth(tableRef.current.scrollWidth);
+      }
+    }
+  }, [showCurrentTimeLine, horaMinutoAtual, horaInteira]);
+
+  React.useLayoutEffect(() => {
+    calcularPosicaoLinha();
+  }, [calcularPosicaoLinha, agendamentosAdmin, quadrasExibidas.length]);
+
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      calcularPosicaoLinha();
+    });
+    ro.observe(containerRef.current);
+    if (tableRef.current) {
+      ro.observe(tableRef.current);
+    }
+    return () => ro.disconnect();
+  }, [calcularPosicaoLinha]);
+
+  React.useEffect(() => {
+    window.addEventListener('resize', calcularPosicaoLinha);
+    return () => window.removeEventListener('resize', calcularPosicaoLinha);
+  }, [calcularPosicaoLinha]);
 
   const encontrarAgendamentoNoSlot = (quadraId: number, horaStr: string) => {
     const horaNum = parseInt(horaStr.split(':')[0], 10);
@@ -76,8 +136,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
     });
   };
 
-  const showCurrentTimeLine = isHoje && horaMinutoAtual >= 6 && horaMinutoAtual <= 24;
-  const currentTimePercentage = ((horaMinutoAtual - 6) / 18) * 100;
+
 
   if (quadrasExibidas.length === 0) {
     return (
@@ -130,8 +189,33 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
       </div>
 
       {/* Tabela de Horários */}
-      <div className="overflow-x-auto relative scrollbar-thin">
-        <table className="w-full text-left border-collapse min-w-[720px]">
+      <div
+        ref={containerRef}
+        onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
+        className="overflow-x-auto relative scrollbar-thin"
+      >
+        {/* Linha Indicadora de Horário Atual (Fuso de Brasília) */}
+        {showCurrentTimeLine && (
+          <div
+            className="pointer-events-none absolute left-0 z-30 flex items-center"
+            style={{
+              top: `${lineTop !== null ? lineTop : 45 + (horaMinutoAtual - 6) * 55}px`,
+              width: tableWidth > 0 ? `${tableWidth}px` : '100%',
+              minWidth: '100%',
+            }}
+          >
+            <div className="w-full border-t-2 border-[#FF453A] relative">
+              <span
+                className="absolute -top-2.5 bg-[#FF453A] text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md font-mono"
+                style={{ left: `${scrollLeft + 8}px` }}
+              >
+                AGORA
+              </span>
+            </div>
+          </div>
+        )}
+
+        <table ref={tableRef} className="w-full text-left border-collapse min-w-[720px]">
           <thead>
             <tr className="border-b border-white/[0.08] bg-[#0c0c0e] text-xs font-medium text-white/50">
               <th className="p-3.5 w-24 text-center sticky left-0 bg-[#0c0c0e] backdrop-blur z-20 border-r border-white/[0.08] font-mono">
@@ -152,29 +236,17 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.06] text-sm relative">
-            {/* Linha Indicadora de Horário Atual */}
-            {showCurrentTimeLine && (
-              <tr
-                className="pointer-events-none absolute w-full left-0 z-20 flex"
-                style={{ top: `${currentTimePercentage}%` }}
-              >
-                <td colSpan={quadrasExibidas.length + 1} className="w-full p-0 relative">
-                  <div className="w-full border-t-2 border-[#FF453A] relative">
-                    <span className="absolute -top-2.5 left-2 bg-[#FF453A] text-white text-[9px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
-                      AGORA
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            )}
-
+          <tbody className="divide-y divide-white/[0.06] text-sm">
             {HORARIOS_DIA.map((horaStr) => {
               const horaNum = parseInt(horaStr.split(':')[0], 10);
               const proximaHoraStr = `${String((horaNum + 1) % 24).padStart(2, '0')}:00`;
 
               return (
-                <tr key={horaStr} className="hover:bg-white/[0.02] transition-colors">
+                <tr
+                  key={horaStr}
+                  id={`timeline-row-${horaNum}`}
+                  className="hover:bg-white/[0.02] transition-colors"
+                >
                   {/* Coluna de Horário Fixa */}
                   <td className="p-3 text-center font-mono text-xs font-semibold text-white/50 bg-[#121214] sticky left-0 z-10 border-r border-white/[0.08] select-none">
                     {horaStr}
