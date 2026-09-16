@@ -1176,6 +1176,7 @@ export const AdminDashboard: React.FC = () => {
               onAbrirAgendamento={handleAbrirAgendamentoDetalhe}
               onBloquearSlot={handleBloquearSlot}
               onDesbloquear={handleDesbloquearSlot}
+              onQuadraFiltroChange={setQuadraFiltroCalendarId}
             />
           ) : (
             <CalendarOccupancy
