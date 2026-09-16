@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Ban
 } from 'lucide-react';
-import { parseDataHoraLocal, getHojeLocalIso } from '../../utils/dateUtils';
+import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../../utils/dateUtils';
 
 interface CalendarOccupancyProps {
   currentMonthDate: Date;
@@ -43,7 +43,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
   const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthTotalDays = new Date(year, month, 0).getDate();
 
-  const agoraMomento = new Date();
+  const agoraMomento = getAgoraBrasilia().agora;
 
   const days: {
     dayNum: number;

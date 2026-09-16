@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
-import { getHojeLocalIso } from '../utils/dateUtils';
+import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../utils/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
   const { user, token, isMasterAdmin } = useAuth();
@@ -596,8 +596,8 @@ export const AdminDashboard: React.FC = () => {
     setStatusFiltroModal('TODOS');
     setVisualizacaoAgendaAba('LISTA_RESERVAS');
 
-    const agoraLocal = new Date();
-    const dataFim = new Date(ag.dataHoraFim);
+    const agoraLocal = getAgoraBrasilia().agora;
+    const dataFim = parseDataHoraLocal(ag.dataHoraFim);
     if (ag.status === 'CANCELADO') {
       setFiltroAgendaAdmin('CANCELADOS');
     } else if (dataFim < agoraLocal) {
