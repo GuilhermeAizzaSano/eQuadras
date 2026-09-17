@@ -218,6 +218,7 @@ public class AgendamentoService {
         }
 
         agendamento.setStatus(StatusAgendamento.CANCELADO);
+        agendamento.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
         String tipoExecutor = usuario.isMasterAdmin() ? "MASTER_ADMIN" : (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN ? "ADMIN_QUADRA" : "CLIENTE");
@@ -624,11 +625,13 @@ public class AgendamentoService {
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     @Transactional
     public void expirarAgendamentosPendentes() {
-        LocalDateTime limite = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL).minusMinutes(15);
+        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        LocalDateTime limite = agora.minusMinutes(15);
         int cancelados = agendamentoRepository.cancelarPendentesExpirados(
                 StatusAgendamento.PENDENTE,
                 StatusAgendamento.CANCELADO,
-                limite
+                limite,
+                agora
         );
         if (cancelados > 0 && auditoriaService != null) {
             auditoriaService.registrarAcaoSistema(

@@ -510,6 +510,8 @@ class AgendamentoServiceTest {
 
         assertNotNull(response);
         assertEquals(StatusAgendamento.CANCELADO, response.status());
+        assertNotNull(response.canceladoEm());
+        assertNotNull(agendamento.getCanceladoEm());
         verify(agendamentoRepository, times(1)).save(agendamento);
     }
 

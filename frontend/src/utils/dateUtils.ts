@@ -81,3 +81,17 @@ export const extrairDataIso = (dataHoraStr: string): string => {
   if (!dataHoraStr) return '';
   return dataHoraStr.includes('T') ? dataHoraStr.split('T')[0] : dataHoraStr.slice(0, 10);
 };
+
+export const formatarDataHoraBr = (dataHoraStr?: string | null): string => {
+  if (!dataHoraStr) return '';
+  const cleanStr = dataHoraStr.replace(' ', 'T');
+  const [dataPart, horaPart] = cleanStr.split('T');
+  if (!dataPart) return '';
+  const partesData = dataPart.split('-');
+  if (partesData.length !== 3) return dataHoraStr;
+  const [ano, mes, dia] = partesData;
+  const dataFmt = `${dia}/${mes}/${ano}`;
+  if (!horaPart) return dataFmt;
+  const horaFmt = horaPart.substring(0, 5);
+  return `${dataFmt} às ${horaFmt}`;
+};
