@@ -325,4 +325,40 @@ class BloqueioHorarioServiceTest {
         assertTrue(ex.getMessage().contains("já existem reservas ativas"));
         verify(bloqueioHorarioRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Deve falhar ao criar bloqueio de dia inteiro se já existir um bloqueio de dia inteiro")
+    void deveFalharAoCriarBloqueioDiaInteiroSeJaExistir() {
+        LocalDate dataBloqueio = LocalDate.now().plusDays(2);
+        BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(dataBloqueio, null, null, "Torneio");
+
+        when(quadraRepository.buscarComLockParaAgendamento(10L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.existeConflitoHorario(eq(10L), any(), any(), any())).thenReturn(false);
+
+        BloqueioHorario existente = new BloqueioHorario(201L, quadra, dataBloqueio, null, null, "Já bloqueado", null);
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, dataBloqueio)).thenReturn(List.of(existente));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                bloqueioHorarioService.criarBloqueio(10L, dto, 1L));
+
+        assertTrue(ex.getMessage().contains("já possui um bloqueio cadastrado para o dia todo"));
+        verify(bloqueioHorarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve remover todos os bloqueios duplicados de dia inteiro na mesma data")
+    void deveRemoverTodosOsBloqueiosDuplicadosDeDiaInteiro() {
+        LocalDate data = LocalDate.now().plusDays(2);
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+
+        BloqueioHorario b1 = new BloqueioHorario(301L, quadra, data, null, null, "Duplicado 1", null);
+        BloqueioHorario b2 = new BloqueioHorario(302L, quadra, data, null, null, "Duplicado 2", null);
+
+        when(bloqueioHorarioRepository.findById(301L)).thenReturn(Optional.of(b1));
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, data)).thenReturn(List.of(b1, b2));
+
+        bloqueioHorarioService.removerBloqueio(10L, 301L, 1L);
+
+        verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(b1, b2));
+    }
 }

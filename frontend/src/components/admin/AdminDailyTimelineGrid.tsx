@@ -458,7 +458,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                                   e.stopPropagation();
                                   onDesbloquear(bloqueio.id);
                                 }}
-                                title="Desbloquear este horário"
+                                title={bloqueio.horaInicio ? "Desbloquear este horário" : "Desbloquear dia todo"}
                                 className="opacity-0 group-hover/block:opacity-100 p-1 hover:bg-[#FF453A]/20 text-[#FF453A] hover:text-white rounded-lg transition cursor-pointer"
                               >
                                 <Ban className="w-3.5 h-3.5" />

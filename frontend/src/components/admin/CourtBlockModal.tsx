@@ -1,7 +1,7 @@
 import React from 'react';
 import { Quadra, BloqueioHorario } from '../../types';
 import { Button, Input } from '../ui';
-import { PlusCircle, Ban, X } from 'lucide-react';
+import { PlusCircle, Ban, X, Loader2 } from 'lucide-react';
 
 interface CourtBlockModalProps {
   quadra: Quadra | null;
@@ -11,6 +11,7 @@ interface CourtBlockModalProps {
   bloqueioHoraInicio: string;
   bloqueioHoraFim: string;
   bloqueioMotivo: string;
+  isSubmitting?: boolean;
   onClose: () => void;
   onDataChange: (val: string) => void;
   onHoraInicioChange: (val: string) => void;
@@ -28,6 +29,7 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
   bloqueioHoraInicio,
   bloqueioHoraFim,
   bloqueioMotivo,
+  isSubmitting = false,
   onClose,
   onDataChange,
   onHoraInicioChange,
@@ -135,10 +137,20 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
               <Button
                 type="submit"
                 variant="primary"
+                disabled={isSubmitting}
                 className="cursor-pointer"
               >
-                <Ban className="w-3.5 h-3.5" />
-                <span>Adicionar Bloqueio</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Adicionando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-3.5 h-3.5" />
+                    <span>Adicionar Bloqueio</span>
+                  </>
+                )}
               </Button>
             </div>
           </form>

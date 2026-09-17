@@ -84,6 +84,7 @@ export const AdminDashboard: React.FC = () => {
   const [bloqueioHoraInicio, setBloqueioHoraInicio] = useState('');
   const [bloqueioHoraFim, setBloqueioHoraFim] = useState('');
   const [bloqueioMotivo, setBloqueioMotivo] = useState('');
+  const [submittingBloqueio, setSubmittingBloqueio] = useState(false);
 
   // Revogar ObjectURLs criadas para previews ao desmontar o componente
   useEffect(() => {
@@ -589,25 +590,41 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleDesbloquearSlot = async (bloqueioId: number) => {
+    let bloqueioEncontrado: BloqueioHorario | null = null;
+    let quadraIdEncontrada: number | null = null;
+    for (const [qIdStr, bList] of Object.entries(mapaBloqueiosPorQuadra)) {
+      const b = bList.find((item) => item.id === bloqueioId);
+      if (b) {
+        bloqueioEncontrado = b;
+        quadraIdEncontrada = Number(qIdStr);
+        break;
+      }
+    }
+
+    const isDiaInteiro = bloqueioEncontrado && (!bloqueioEncontrado.horaInicio || !bloqueioEncontrado.horaFim);
+    const dataFormatada = bloqueioEncontrado?.data ? bloqueioEncontrado.data.split('-').reverse().join('/') : '';
+    const quadraNome = quadraIdEncontrada ? minhasQuadras.find((q) => q.id_quadra === quadraIdEncontrada)?.nome : '';
+
+    const title = isDiaInteiro ? 'Desbloquear Dia Todo' : 'Desbloquear Horário';
+    const description = isDiaInteiro
+      ? `A quadra "${quadraNome || 'selecionada'}" está bloqueada o dia todo em ${dataFormatada}. Deseja remover o bloqueio e liberar todos os horários da quadra neste dia?`
+      : 'Deseja realmente remover este bloqueio de horário?';
+
     setConfirmModal({
       isOpen: true,
-      title: 'Desbloquear Horário',
-      description: 'Deseja realmente remover este bloqueio de horário?',
+      title,
+      description,
       isDestructive: true,
-      confirmLabel: 'Sim, desbloquear',
+      confirmLabel: isDiaInteiro ? 'Sim, desbloquear dia todo' : 'Sim, desbloquear',
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         try {
-          let quadraIdEncontrada: number | null = null;
-          for (const [qIdStr, bList] of Object.entries(mapaBloqueiosPorQuadra)) {
-            if (bList.some((b) => b.id === bloqueioId)) {
-              quadraIdEncontrada = Number(qIdStr);
-              break;
-            }
-          }
           if (!quadraIdEncontrada) return;
           await bloqueioApi.remover(quadraIdEncontrada, bloqueioId);
-          setFeedback({ type: 'success', message: 'Horário desbloqueado com sucesso!' });
+          setFeedback({
+            type: 'success',
+            message: isDiaInteiro ? 'Dia todo desbloqueado com sucesso!' : 'Horário desbloqueado com sucesso!'
+          });
           await carregarDados();
         } catch (err: any) {
           setFeedback({ type: 'error', message: err.message || 'Erro ao remover bloqueio.' });
@@ -668,8 +685,9 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const executarCriacaoBloqueio = async (substituirDiaInteiro: boolean = false) => {
-    if (!bloqueioModalQuadra) return;
+    if (!bloqueioModalQuadra || submittingBloqueio) return;
 
+    setSubmittingBloqueio(true);
     try {
       await bloqueioApi.criar(bloqueioModalQuadra.id_quadra, {
         data: bloqueioData,
@@ -707,6 +725,8 @@ export const AdminDashboard: React.FC = () => {
         return;
       }
       setFeedback({ type: 'error', message: err.message || 'Erro ao adicionar bloqueio.' });
+    } finally {
+      setSubmittingBloqueio(false);
     }
   };
 
@@ -1321,6 +1341,7 @@ export const AdminDashboard: React.FC = () => {
         bloqueioHoraInicio={bloqueioHoraInicio}
         bloqueioHoraFim={bloqueioHoraFim}
         bloqueioMotivo={bloqueioMotivo}
+        isSubmitting={submittingBloqueio}
         onClose={() => setBloqueioModalQuadra(null)}
         onDataChange={setBloqueioData}
         onHoraInicioChange={setBloqueioHoraInicio}
