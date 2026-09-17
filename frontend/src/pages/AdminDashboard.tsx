@@ -589,45 +589,39 @@ export const AdminDashboard: React.FC = () => {
     carregarBloqueios(quadraId);
   };
 
-  const handleDesbloquearSlot = async (bloqueioId: number) => {
-    let bloqueioEncontrado: BloqueioHorario | null = null;
-    let quadraIdEncontrada: number | null = null;
-    for (const [qIdStr, bList] of Object.entries(mapaBloqueiosPorQuadra)) {
-      const b = bList.find((item) => item.id === bloqueioId);
-      if (b) {
-        bloqueioEncontrado = b;
-        quadraIdEncontrada = Number(qIdStr);
-        break;
-      }
-    }
-
-    const isDiaInteiro = bloqueioEncontrado && (!bloqueioEncontrado.horaInicio || !bloqueioEncontrado.horaFim);
-    const dataFormatada = bloqueioEncontrado?.data ? bloqueioEncontrado.data.split('-').reverse().join('/') : '';
-    const quadraNome = quadraIdEncontrada ? minhasQuadras.find((q) => q.id_quadra === quadraIdEncontrada)?.nome : '';
-
-    const title = isDiaInteiro ? 'Desbloquear Dia Todo' : 'Desbloquear Horário';
-    const description = isDiaInteiro
-      ? `A quadra "${quadraNome || 'selecionada'}" está bloqueada o dia todo em ${dataFormatada}. Deseja remover o bloqueio e liberar todos os horários da quadra neste dia?`
-      : 'Deseja realmente remover este bloqueio de horário?';
+  const handleDesbloquearSlot = (
+    quadraId: number,
+    data: string,
+    horaInicio: string,
+    horaFim: string,
+    bloqueio: BloqueioHorario
+  ) => {
+    const quadra = minhasQuadras.find((q) => q.id_quadra === quadraId);
+    const quadraNome = quadra ? quadra.nome : 'Quadra';
+    const dataFormatada = data.split('-').reverse().join('/');
 
     setConfirmModal({
       isOpen: true,
-      title,
-      description,
+      title: 'Desbloquear Horário',
+      description: `Deseja realmente desbloquear o horário das ${horaInicio} às ${horaFim} na quadra "${quadraNome}" em ${dataFormatada}? O restante dos horários permanecerá bloqueado.`,
       isDestructive: true,
-      confirmLabel: isDiaInteiro ? 'Sim, desbloquear dia todo' : 'Sim, desbloquear',
+      confirmLabel: 'Sim, desbloquear este horário',
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         try {
-          if (!quadraIdEncontrada) return;
-          await bloqueioApi.remover(quadraIdEncontrada, bloqueioId);
+          await bloqueioApi.desbloquear(quadraId, {
+            bloqueioId: bloqueio.id,
+            data,
+            horaInicio: `${horaInicio}:00`,
+            horaFim: `${horaFim}:00`,
+          });
           setFeedback({
             type: 'success',
-            message: isDiaInteiro ? 'Dia todo desbloqueado com sucesso!' : 'Horário desbloqueado com sucesso!'
+            message: `Horário das ${horaInicio} às ${horaFim} desbloqueado com sucesso!`,
           });
           await carregarDados();
         } catch (err: any) {
-          setFeedback({ type: 'error', message: err.message || 'Erro ao remover bloqueio.' });
+          setFeedback({ type: 'error', message: err.message || 'Erro ao desbloquear horário.' });
         }
       },
     });

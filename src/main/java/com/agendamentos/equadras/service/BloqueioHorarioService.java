@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -210,33 +211,126 @@ public class BloqueioHorarioService {
             throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
-        if (dto.bloqueioId() != null) {
-            removerBloqueio(quadraId, dto.bloqueioId(), adminId);
-            return 1;
+        LocalDate data = dto.data();
+        if (data == null && dto.bloqueioId() != null) {
+            BloqueioHorario b = bloqueioHorarioRepository.findById(dto.bloqueioId()).orElse(null);
+            if (b != null) {
+                data = b.getData();
+            }
         }
 
-        if (dto.data() == null) {
-            throw new IllegalArgumentException("Informe o ID do bloqueio ou a data a ser desbloqueada.");
+        // Se NÃO informou horários específicos (desbloqueio geral do dia ou por ID do bloqueio):
+        if (dto.horaInicio() == null || dto.horaFim() == null) {
+            if (dto.bloqueioId() != null) {
+                removerBloqueio(quadraId, dto.bloqueioId(), adminId);
+                return 1;
+            }
+            if (data == null) {
+                throw new IllegalArgumentException("Informe o ID do bloqueio ou a data a ser desbloqueada.");
+            }
+            List<BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
+            if (bloqueios.isEmpty()) {
+                return 0;
+            }
+            bloqueioHorarioRepository.deleteAll(bloqueios);
+            if (auditoriaService != null) {
+                auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+                        quadraId.toString(),
+                        "Todos os bloqueios removidos da quadra " + quadra.getNome() + " referente à data " + data);
+            }
+            return bloqueios.size();
         }
 
-        List<BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, dto.data());
-        if (bloqueios.isEmpty()) {
+        // Se informou horários específicos (desbloquear slot pontual):
+        if (data == null) {
+            throw new IllegalArgumentException("Informe a data a ser desbloqueada.");
+        }
+
+        LocalTime slotInicio = dto.horaInicio();
+        LocalTime slotFim = dto.horaFim();
+        if (slotFim.equals(LocalTime.MIDNIGHT)) {
+            slotFim = LocalTime.of(23, 59, 59);
+        }
+        if (!slotInicio.isBefore(slotFim)) {
+            throw new IllegalArgumentException("A hora de início deve ser anterior à hora de término.");
+        }
+
+        List<BloqueioHorario> existentes = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
+        if (existentes.isEmpty()) {
             return 0;
         }
 
-        List<BloqueioHorario> paraRemover;
-        if (dto.horaInicio() != null && dto.horaFim() != null) {
-            // Remove apenas bloqueios que casem exatamente com o intervalo solicitado
-            paraRemover = bloqueios.stream()
-                    .filter(b -> b.getHoraInicio() != null && b.getHoraFim() != null &&
-                            b.getHoraInicio().equals(dto.horaInicio()) && b.getHoraFim().equals(dto.horaFim()))
-                    .toList();
-        } else {
-            // Se não especificou horários, remove todos os bloqueios da data (dia inteiro e pontuais)
-            paraRemover = bloqueios;
+        // Identifica os limites de funcionamento da quadra no dia da semana para o caso de bloqueio de dia inteiro
+        java.time.DayOfWeek diaSemana = data.getDayOfWeek();
+        LocalTime quadraAbertura = LocalTime.of(6, 0);
+        LocalTime quadraFechamento = LocalTime.of(23, 0);
+        if (quadra.getDisponibilidades() != null && !quadra.getDisponibilidades().isEmpty()) {
+            for (com.agendamentos.equadras.model.entity.DisponibilidadeDia d : quadra.getDisponibilidades()) {
+                if (d.getDiaSemana() == diaSemana) {
+                    if (d.getHoraInicio() != null) quadraAbertura = d.getHoraInicio();
+                    if (d.getHoraFim() != null) quadraFechamento = d.getHoraFim();
+                    break;
+                }
+            }
         }
 
-        bloqueioHorarioRepository.deleteAll(paraRemover);
-        return paraRemover.size();
+        // Filtra todos os bloqueios que colidem com [slotInicio, slotFim]
+        final LocalTime sIni = slotInicio;
+        final LocalTime sFim = slotFim;
+        List<BloqueioHorario> sobrepostos = existentes.stream().filter(b -> {
+            if (b.getHoraInicio() == null || b.getHoraFim() == null) {
+                return true; // dia inteiro engloba o slot
+            }
+            return b.getHoraInicio().isBefore(sFim) && b.getHoraFim().isAfter(sIni);
+        }).toList();
+
+        if (sobrepostos.isEmpty()) {
+            return 0;
+        }
+
+        boolean jaProcessouDiaInteiro = false;
+        List<BloqueioHorario> novosBloqueios = new ArrayList<>();
+        for (BloqueioHorario b : sobrepostos) {
+            boolean isDiaInteiro = (b.getHoraInicio() == null || b.getHoraFim() == null);
+            if (isDiaInteiro) {
+                if (jaProcessouDiaInteiro) {
+                    continue; // previne duplicatas residuais
+                }
+                jaProcessouDiaInteiro = true;
+            }
+
+            LocalTime bInicio;
+            LocalTime bFim;
+            if (isDiaInteiro) {
+                bInicio = slotInicio.isBefore(quadraAbertura) ? slotInicio : quadraAbertura;
+                bFim = (slotFim.isAfter(quadraFechamento) && !slotFim.equals(LocalTime.of(23, 59, 59))) ? slotFim : quadraFechamento;
+            } else {
+                bInicio = b.getHoraInicio();
+                bFim = b.getHoraFim();
+            }
+
+            // Intervalo residual anterior ao slot
+            if (bInicio.isBefore(slotInicio)) {
+                novosBloqueios.add(new BloqueioHorario(quadra, data, bInicio, slotInicio, b.getMotivo()));
+            }
+
+            // Intervalo residual posterior ao slot
+            if (slotFim.isBefore(bFim)) {
+                novosBloqueios.add(new BloqueioHorario(quadra, data, slotFim, bFim, b.getMotivo()));
+            }
+        }
+
+        bloqueioHorarioRepository.deleteAll(sobrepostos);
+        if (!novosBloqueios.isEmpty()) {
+            bloqueioHorarioRepository.saveAll(novosBloqueios);
+        }
+
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+                    quadraId.toString(),
+                    "Horário das " + slotInicio + " às " + slotFim + " desbloqueado na quadra " + quadra.getNome() + " em " + data);
+        }
+
+        return sobrepostos.size();
     }
 }
