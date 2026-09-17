@@ -11,7 +11,10 @@ import {
   ShieldCheck,
   Phone,
   Info,
-  History
+  History,
+  ChevronLeft,
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { parseDataHoraLocal } from '../../utils/dateUtils';
 
@@ -28,6 +31,9 @@ interface DayAgendaModalProps {
   visualizacaoAgendaAba: 'GRADE_HORARIOS' | 'LISTA_RESERVAS';
   filtroAgendaAdmin: 'ATIVOS' | 'REALIZADOS' | 'CANCELADOS';
   highlightedAgendamentoId: number | null;
+  historicoCarregado?: boolean;
+  carregandoHistorico?: boolean;
+  onCarregarHistorico?: () => Promise<void> | void;
   onClose: () => void;
   onQuadraChange: (id: number | 'TODAS') => void;
   onStatusFiltroChange: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS') => void;
@@ -52,6 +58,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   visualizacaoAgendaAba,
   filtroAgendaAdmin,
   highlightedAgendamentoId,
+  historicoCarregado = false,
+  carregandoHistorico = false,
+  onCarregarHistorico,
   onClose,
   onQuadraChange,
   onStatusFiltroChange,
@@ -62,6 +71,8 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   onVerQuadra,
   getTempoRestantePix,
 }) => {
+  const ITENS_POR_PAGINA = 5;
+  const [paginaAtual, setPaginaAtual] = React.useState(1);
   const [realizadosCarregados, setRealizadosCarregados] = React.useState(false);
   const [canceladosCarregados, setCanceladosCarregados] = React.useState(false);
 
@@ -69,6 +80,10 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
     setRealizadosCarregados(false);
     setCanceladosCarregados(false);
   }, [dataSelecionada]);
+
+  React.useEffect(() => {
+    setPaginaAtual(1);
+  }, [dataSelecionada, quadraSelecionadaAgendaId, filtroAgendaAdmin, isOpen]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -79,6 +94,39 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
       };
     }
   }, [isOpen]);
+
+  const agoraLocal = new Date();
+
+  const agendamentosDoDia = React.useMemo(() => {
+    return agendamentosAdmin
+      .filter((a) => {
+        const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
+        const matchQuadra = quadraSelecionadaAgendaId === 'TODAS' || a.quadraId === quadraSelecionadaAgendaId;
+        return matchData && matchQuadra;
+      })
+      .sort((a, b) => a.dataHoraInicio.localeCompare(b.dataHoraInicio));
+  }, [agendamentosAdmin, dataSelecionada, quadraSelecionadaAgendaId]);
+
+  const agendamentosDoDiaFiltrados = React.useMemo(() => {
+    return agendamentosDoDia.filter((ag) => {
+      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
+      const isCancelado = ag.status === 'CANCELADO';
+      const isPassado = dataFim < agoraLocal;
+
+      if (filtroAgendaAdmin === 'CANCELADOS') return isCancelado;
+      if (filtroAgendaAdmin === 'REALIZADOS') return !isCancelado && isPassado;
+      return !isCancelado && !isPassado;
+    });
+  }, [agendamentosDoDia, filtroAgendaAdmin, agoraLocal]);
+
+  const totalItens = agendamentosDoDiaFiltrados.length;
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / ITENS_POR_PAGINA));
+  const paginaValida = Math.min(Math.max(1, paginaAtual), totalPaginas);
+  const indiceInicio = (paginaValida - 1) * ITENS_POR_PAGINA;
+  const agendamentosPaginados = agendamentosDoDiaFiltrados.slice(
+    indiceInicio,
+    indiceInicio + ITENS_POR_PAGINA
+  );
 
   React.useEffect(() => {
     if (highlightedAgendamentoId && isOpen) {
@@ -93,6 +141,12 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
         }
       }
 
+      const index = agendamentosDoDiaFiltrados.findIndex((a) => a.id_agendamento === highlightedAgendamentoId);
+      if (index !== -1) {
+        const targetPage = Math.floor(index / ITENS_POR_PAGINA) + 1;
+        setPaginaAtual(targetPage);
+      }
+
       const timer = setTimeout(() => {
         const el = document.getElementById(`agendamento-card-${highlightedAgendamentoId}`);
         const container = el?.closest('.overflow-y-auto');
@@ -104,29 +158,23 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin, agendamentosAdmin]);
+  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin, agendamentosAdmin, agendamentosDoDiaFiltrados]);
+
+  const handleCarregarRealizados = async () => {
+    if (!historicoCarregado && onCarregarHistorico) {
+      await onCarregarHistorico();
+    }
+    setRealizadosCarregados(true);
+  };
+
+  const handleCarregarCancelados = async () => {
+    if (!historicoCarregado && onCarregarHistorico) {
+      await onCarregarHistorico();
+    }
+    setCanceladosCarregados(true);
+  };
 
   if (!isOpen) return null;
-
-  const agendamentosDoDia = agendamentosAdmin
-    .filter((a) => {
-      const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
-      const matchQuadra = quadraSelecionadaAgendaId === 'TODAS' || a.quadraId === quadraSelecionadaAgendaId;
-      return matchData && matchQuadra;
-    })
-    .sort((a, b) => a.dataHoraInicio.localeCompare(b.dataHoraInicio));
-
-  const agoraLocal = new Date();
-
-  const agendamentosDoDiaFiltrados = agendamentosDoDia.filter((ag) => {
-    const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-    const isCancelado = ag.status === 'CANCELADO';
-    const isPassado = dataFim < agoraLocal;
-
-    if (filtroAgendaAdmin === 'CANCELADOS') return isCancelado;
-    if (filtroAgendaAdmin === 'REALIZADOS') return !isCancelado && isPassado;
-    return !isCancelado && !isPassado;
-  });
 
   let contadoresAtivos = 0;
   let contadoresCancelados = 0;
@@ -509,7 +557,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'REALIZADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
                   }`}>
-                    {contadoresRealizados}
+                    {historicoCarregado ? contadoresRealizados : '—'}
                   </span>
                 </button>
 
@@ -526,13 +574,13 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'CANCELADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
                   }`}>
-                    {contadoresCancelados}
+                    {historicoCarregado ? contadoresCancelados : '—'}
                   </span>
                 </button>
               </div>
 
-              {filtroAgendaAdmin === 'REALIZADOS' && !realizadosCarregados ? (
-                contadoresRealizados === 0 ? (
+              {filtroAgendaAdmin === 'REALIZADOS' && (!realizadosCarregados || !historicoCarregado) ? (
+                historicoCarregado && contadoresRealizados === 0 ? (
                   <EmptyState
                     icon={CalendarIcon}
                     title="Nenhum jogo finalizado para este dia"
@@ -546,19 +594,29 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     </div>
                     <h4 className="text-sm font-semibold text-white">Jogos Finalizados</h4>
                     <p className="text-xs text-white/50 max-w-sm mt-1 mb-4">
-                      Existem {contadoresRealizados} {contadoresRealizados === 1 ? 'reserva concluída' : 'reservas concluídas'} neste dia. Clique abaixo para visualizar os detalhes.
+                      {historicoCarregado
+                        ? `Existem ${contadoresRealizados} ${contadoresRealizados === 1 ? 'reserva concluída' : 'reservas concluídas'} neste dia. Clique abaixo para visualizar os detalhes.`
+                        : 'O histórico de reservas concluídas é carregado sob demanda. Clique abaixo para buscar os dados.'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => setRealizadosCarregados(true)}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono"
+                      disabled={carregandoHistorico}
+                      onClick={handleCarregarRealizados}
+                      className="px-4 py-2 bg-white text-black hover:bg-white/90 disabled:opacity-50 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono inline-flex items-center gap-2"
                     >
-                      Carregar Realizados ({contadoresRealizados})
+                      {carregandoHistorico ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Carregando...</span>
+                        </>
+                      ) : (
+                        <span>Carregar Realizados {historicoCarregado ? `(${contadoresRealizados})` : ''}</span>
+                      )}
                     </button>
                   </div>
                 )
-              ) : filtroAgendaAdmin === 'CANCELADOS' && !canceladosCarregados ? (
-                contadoresCancelados === 0 ? (
+              ) : filtroAgendaAdmin === 'CANCELADOS' && (!canceladosCarregados || !historicoCarregado) ? (
+                historicoCarregado && contadoresCancelados === 0 ? (
                   <EmptyState
                     icon={CalendarIcon}
                     title="Nenhum jogo cancelado para este dia"
@@ -572,14 +630,24 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     </div>
                     <h4 className="text-sm font-semibold text-white">Reservas Canceladas</h4>
                     <p className="text-xs text-white/50 max-w-sm mt-1 mb-4">
-                      Existem {contadoresCancelados} {contadoresCancelados === 1 ? 'reserva cancelada' : 'reservas canceladas'} neste dia. Clique abaixo para visualizar os detalhes.
+                      {historicoCarregado
+                        ? `Existem ${contadoresCancelados} ${contadoresCancelados === 1 ? 'reserva cancelada' : 'reservas canceladas'} neste dia. Clique abaixo para visualizar os detalhes.`
+                        : 'O histórico de reservas canceladas é carregado sob demanda. Clique abaixo para buscar os dados.'}
                     </p>
                     <button
                       type="button"
-                      onClick={() => setCanceladosCarregados(true)}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono"
+                      disabled={carregandoHistorico}
+                      onClick={handleCarregarCancelados}
+                      className="px-4 py-2 bg-white text-black hover:bg-white/90 disabled:opacity-50 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono inline-flex items-center gap-2"
                     >
-                      Carregar Cancelados ({contadoresCancelados})
+                      {carregandoHistorico ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Carregando...</span>
+                        </>
+                      ) : (
+                        <span>Carregar Cancelados {historicoCarregado ? `(${contadoresCancelados})` : ''}</span>
+                      )}
                     </button>
                   </div>
                 )
@@ -597,98 +665,126 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   className="py-12"
                 />
               ) : (
-                <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
-                  {agendamentosDoDiaFiltrados.map((ag) => {
-                    const isCancelado = ag.status === 'CANCELADO';
-                    const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
-                    const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
-                    const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
-                    const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
-                    const isHighlighted = ag.id_agendamento === highlightedAgendamentoId;
+                <div className="space-y-3">
+                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
+                    {agendamentosPaginados.map((ag) => {
+                      const isCancelado = ag.status === 'CANCELADO';
+                      const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
+                      const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
+                      const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
+                      const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
+                      const isHighlighted = ag.id_agendamento === highlightedAgendamentoId;
 
-                    return (
-                      <div
-                        key={ag.id_agendamento}
-                        id={`agendamento-card-${ag.id_agendamento}`}
-                        className={`p-4 rounded-2xl border space-y-2.5 transition-colors duration-200 ${
-                          isHighlighted
-                            ? 'bg-white/[0.06] border-[#0A84FF]/60 shadow-lg shadow-[#0A84FF]/5'
-                            : 'bg-white/[0.02] border-white/[0.06] hover:border-white/20'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
-                              <ShieldCheck className="w-3.5 h-3.5 text-white/70" />
-                              {ag.nomeQuadra}
-                            </div>
-
-                            <div className="text-xs text-white/50">
-                              Atleta: <strong className="text-white/80">{ag.nomeUsuario}</strong>
-                            </div>
-
-                            {ag.telefoneUsuario && (
-                              <div className="text-xs text-white/40 flex items-center gap-1.5 font-mono">
-                                <Phone className="w-3 h-3 text-white/40" />
-                                <span>{ag.telefoneUsuario}</span>
+                      return (
+                        <div
+                          key={ag.id_agendamento}
+                          id={`agendamento-card-${ag.id_agendamento}`}
+                          className={`p-4 rounded-2xl border space-y-2.5 transition-colors duration-200 ${
+                            isHighlighted
+                              ? 'bg-white/[0.06] border-[#0A84FF]/60 shadow-lg shadow-[#0A84FF]/5'
+                              : 'bg-white/[0.02] border-white/[0.06] hover:border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-white/70" />
+                                {ag.nomeQuadra}
                               </div>
-                            )}
 
-                            {ag.status === 'PENDENTE' && !isPassado && (() => {
-                              const tempo = getTempoRestantePix(ag.criadoEm);
-                              return tempo ? (
-                                <div className="text-[11px] text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-1 font-medium">
-                                  <Clock className="w-3 h-3 animate-pulse text-[#FF9F0A]" />
-                                  <span>Aguardando Pix ({tempo})</span>
+                              <div className="text-xs text-white/50">
+                                Atleta: <strong className="text-white/80">{ag.nomeUsuario}</strong>
+                              </div>
+
+                              {ag.telefoneUsuario && (
+                                <div className="text-xs text-white/40 flex items-center gap-1.5 font-mono">
+                                  <Phone className="w-3 h-3 text-white/40" />
+                                  <span>{ag.telefoneUsuario}</span>
                                 </div>
-                              ) : (
-                                <div className="text-[11px] text-[#FF453A] font-mono flex items-center gap-1.5 mt-1 font-medium">
-                                  <Clock className="w-3 h-3 text-[#FF453A]" />
-                                  <span>Pix expirado</span>
-                                </div>
-                              );
-                            })()}
+                              )}
+
+                              {ag.status === 'PENDENTE' && !isPassado && (() => {
+                                const tempo = getTempoRestantePix(ag.criadoEm);
+                                return tempo ? (
+                                  <div className="text-[11px] text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-1 font-medium">
+                                    <Clock className="w-3 h-3 animate-pulse text-[#FF9F0A]" />
+                                    <span>Aguardando Pix ({tempo})</span>
+                                  </div>
+                                ) : (
+                                  <div className="text-[11px] text-[#FF453A] font-mono flex items-center gap-1.5 mt-1 font-medium">
+                                    <Clock className="w-3 h-3 text-[#FF453A]" />
+                                    <span>Pix expirado</span>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {quadraCorrespondente && (
+                                <button
+                                  type="button"
+                                  onClick={() => onVerQuadra(quadraCorrespondente)}
+                                  title="Ver fotos e informações completas desta quadra"
+                                  className="p-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/[0.08] transition active:scale-95 flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 cursor-pointer font-mono"
+                                >
+                                  <Info className="w-3.5 h-3.5 text-white/50" />
+                                  <span>Ver Quadra</span>
+                                </button>
+                              )}
+
+                              <Badge variant={isCancelado ? 'outline' : isPassado ? 'neutral' : ag.status === 'PENDENTE' ? 'warning' : 'success'} withDot>
+                                {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
+                              </Badge>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {quadraCorrespondente && (
+                          <div className="flex items-center gap-2 text-xs text-white/60 font-mono">
+                            <Clock className="w-3.5 h-3.5 text-white/40" />
+                            <span>{horaInicio} às {horaFim}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                            <span className="text-white font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
+                            {!isCancelado && !isPassado && (
                               <button
                                 type="button"
-                                onClick={() => onVerQuadra(quadraCorrespondente)}
-                                title="Ver fotos e informações completas desta quadra"
-                                className="p-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/70 hover:text-white border border-white/[0.08] transition active:scale-95 flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 cursor-pointer font-mono"
+                                onClick={() => onCancelarAgendamento(ag.id_agendamento)}
+                                className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
                               >
-                                <Info className="w-3.5 h-3.5 text-white/50" />
-                                <span>Ver Quadra</span>
+                                Cancelar Agendamento
                               </button>
                             )}
-
-                            <Badge variant={isCancelado ? 'outline' : isPassado ? 'neutral' : ag.status === 'PENDENTE' ? 'warning' : 'success'} withDot>
-                              {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
-                            </Badge>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        <div className="flex items-center gap-2 text-xs text-white/60 font-mono">
-                          <Clock className="w-3.5 h-3.5 text-white/40" />
-                          <span>{horaInicio} às {horaFim}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
-                          <span className="text-white font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
-                          {!isCancelado && !isPassado && (
-                            <button
-                              type="button"
-                              onClick={() => onCancelarAgendamento(ag.id_agendamento)}
-                              className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
-                            >
-                              Cancelar Agendamento
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {totalPaginas > 1 && (
+                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs bg-white/[0.01] px-1 rounded-xl">
+                      <button
+                        type="button"
+                        disabled={paginaValida <= 1}
+                        onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Anterior</span>
+                      </button>
+                      <span className="text-[11px] text-white/50 font-mono">
+                        Página {paginaValida} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'reserva' : 'reservas'})
+                      </span>
+                      <button
+                        type="button"
+                        disabled={paginaValida >= totalPaginas}
+                        onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
+                      >
+                        <span>Próxima</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
