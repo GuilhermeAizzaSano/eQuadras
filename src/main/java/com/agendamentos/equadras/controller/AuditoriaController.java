@@ -33,7 +33,7 @@ public class AuditoriaController {
         this.usuarioService = usuarioService;
     }
 
-    @Operation(summary = "Listar logs de auditoria com filtros", description = "Retorna logs paginados e filtráveis. Apenas o Administrador Geral (gui@gmail.com) tem acesso.")
+    @Operation(summary = "Listar logs de auditoria com filtros", description = "Retorna logs paginados e filtráveis. Apenas o Administrador Geral (Master Admin) tem acesso.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<LogAuditoriaResponseDTO>> listarLogs(
