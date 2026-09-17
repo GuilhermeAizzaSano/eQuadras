@@ -11,6 +11,7 @@ import {
   AdminDailyTimelineGrid,
   DayAgendaModal,
   CourtBlockModal,
+  CourtHistoryModal,
   CourtFormModal,
   CourtManagementList,
   UserManagementList,
@@ -33,7 +34,7 @@ import { Usuario, Role } from '../types';
 import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../utils/dateUtils';
 
 export const AdminDashboard: React.FC = () => {
-  const { user, token, isMasterAdmin } = useAuth();
+  const { user, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
   const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
@@ -71,8 +72,9 @@ export const AdminDashboard: React.FC = () => {
   const previewsRef = useRef<string[]>([]);
   previewsRef.current = novasFotosPreviews;
 
-  // Gerenciamento de Bloqueios
+  // Gerenciamento de Bloqueios e Histórico por Quadra
   const [bloqueioModalQuadra, setBloqueioModalQuadra] = useState<Quadra | null>(null);
+  const [quadraHistoricoModal, setQuadraHistoricoModal] = useState<Quadra | null>(null);
   const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
   const [loadingBloqueios, setLoadingBloqueios] = useState(false);
   const [mapaBloqueiosPorQuadra, setMapaBloqueiosPorQuadra] = useState<Record<number, BloqueioHorario[]>>({});
@@ -161,11 +163,9 @@ export const AdminDashboard: React.FC = () => {
     carregarNotificacoes();
 
     if (user) {
-      // Setup SSE for real-time notifications
-      const streamUrl = token
-        ? `${getBaseUrl()}/notificacoes/stream?token=${token}`
-        : `${getBaseUrl()}/notificacoes/stream`;
-      eventSourceRef.current = new EventSource(streamUrl);
+      // Setup SSE for real-time notifications via HttpOnly cookie
+      const streamUrl = `${getBaseUrl()}/notificacoes/stream`;
+      eventSourceRef.current = new EventSource(streamUrl, { withCredentials: true });
       
       eventSourceRef.current.addEventListener('notificacao', (event) => {
         const novaNotificacao: Notificacao = JSON.parse(event.data);
@@ -183,7 +183,7 @@ export const AdminDashboard: React.FC = () => {
         }
       };
     }
-  }, [user, token]);
+  }, [user]);
 
   const formatarDataHora = (dataIso?: string) => {
     if (!dataIso) return '';
@@ -1229,6 +1229,7 @@ export const AdminDashboard: React.FC = () => {
           onAbrirBloqueios={abrirGerenciamentoBloqueios}
           onAbrirEdicao={abrirModalEdicao}
           onExcluirQuadra={handleExcluirQuadra}
+          onAbrirHistorico={setQuadraHistoricoModal}
           getAssetUrl={getAssetUrl}
         />
       ) : (
@@ -1309,6 +1310,13 @@ export const AdminDashboard: React.FC = () => {
         onMotivoChange={setBloqueioMotivo}
         onSubmit={handleCriarBloqueio}
         onRemoverBloqueio={handleRemoverBloqueio}
+      />
+
+      {/* Modal de Histórico de Agendas da Quadra */}
+      <CourtHistoryModal
+        isOpen={!!quadraHistoricoModal}
+        quadra={quadraHistoricoModal}
+        onClose={() => setQuadraHistoricoModal(null)}
       />
 
       {/* Modal de Agenda do Dia */}

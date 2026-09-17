@@ -29,7 +29,14 @@ public class SecurityConfigIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private com.agendamentos.equadras.repository.UsuarioRepository usuarioRepository;
+
     private MockMvc mockMvc;
+    private Usuario admin;
+    private Usuario cliente;
+    private String tokenAdmin;
+    private String tokenCliente;
 
     @BeforeEach
     void setUp() {
@@ -37,6 +44,33 @@ public class SecurityConfigIntegrationTest {
                 .webAppContextSetup(context)
                 .apply(springSecurity())
                 .build();
+
+        admin = usuarioRepository.findByEmail_usuario("admin_sec@equadras.com")
+                .orElseGet(() -> usuarioRepository.save(
+                        Usuario.builder()
+                                .nome_usuario("Admin Sec")
+                                .email_usuario("admin_sec@equadras.com")
+                                .senha_usuario("senha123")
+                                .phone_usuario("11999990001")
+                                .role(Role.ADMIN)
+                                .ativo(true)
+                                .build()
+                ));
+
+        cliente = usuarioRepository.findByEmail_usuario("cliente_sec@equadras.com")
+                .orElseGet(() -> usuarioRepository.save(
+                        Usuario.builder()
+                                .nome_usuario("Cliente Sec")
+                                .email_usuario("cliente_sec@equadras.com")
+                                .senha_usuario("senha123")
+                                .phone_usuario("11999990002")
+                                .role(Role.CLIENT)
+                                .ativo(true)
+                                .build()
+                ));
+
+        tokenAdmin = jwtService.gerarToken(admin);
+        tokenCliente = jwtService.gerarToken(cliente);
     }
 
     @Test
@@ -49,22 +83,16 @@ public class SecurityConfigIntegrationTest {
     @Test
     @DisplayName("GET /quadras com cookie de sessão válido deve retornar 200 OK")
     void getQuadrasComCookieDeveRetornar200() throws Exception {
-        Usuario cliente = Usuario.builder()
-                .id_usuario(888L)
-                .email_usuario("cliente_cookie@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String token = jwtService.gerarToken(cliente);
-
         mockMvc.perform(get("/quadras")
-                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", token)))
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("POST /usuarios/logout deve limpar o cookie de sessão com maxAge 0")
+    @DisplayName("POST /usuarios/logout com X-Client deve limpar o cookie de sessão com maxAge 0")
     void postLogoutDeveLimparCookie() throws Exception {
-        mockMvc.perform(post("/usuarios/logout"))
+        mockMvc.perform(post("/usuarios/logout")
+                        .header("X-Client", "frontend"))
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().exists("equadras_session"))
                 .andExpect(cookie().maxAge("equadras_session", 0));
@@ -87,133 +115,77 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /usuarios com token ADMIN deve criar usuário com sucesso (201 Created)")
+    @DisplayName("POST /usuarios com cookie de sessão ADMIN e X-Client deve criar usuário com sucesso (201 Created)")
     void postUsuariosComTokenAdminDeveCriar() throws Exception {
-        Usuario admin = Usuario.builder()
-                .id_usuario(1L)
-                .email_usuario("admin_sec@equadras.com")
-                .role(Role.ADMIN)
-                .build();
-        String tokenAdmin = jwtService.gerarToken(admin);
-
         mockMvc.perform(post("/usuarios")
-                        .header("Authorization", "Bearer " + tokenAdmin)
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
+                        .header("X-Client", "frontend")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome_usuario\":\"Novo Atleta\",\"email_usuario\":\"atleta_" + System.currentTimeMillis() + "@t.com\",\"senha_usuario\":\"SenhaForte123!\",\"phone_usuario\":\"11999999999\",\"role\":\"CLIENT\"}"))
                 .andExpect(status().isCreated());
     }
 
     @Test
-    @DisplayName("POST /quadras com token CLIENT deve retornar 403 Forbidden")
+    @DisplayName("POST /quadras com cookie CLIENT deve retornar 403 Forbidden")
     void postQuadrasComClienteDeveRetornar403() throws Exception {
-        Usuario cliente = Usuario.builder()
-                .id_usuario(999L)
-                .email_usuario("cliente@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String tokenCliente = jwtService.gerarToken(cliente);
-
         mockMvc.perform(post("/quadras")
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
-                        .header("Authorization", "Bearer " + tokenCliente)
+                        .header("X-Client", "frontend")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("GET /notificacoes/admin com token ADMIN deve ser permitido")
+    @DisplayName("GET /notificacoes/admin com cookie ADMIN deve ser permitido")
     void getNotificacoesComAdminDeveSerPermitido() throws Exception {
-        Usuario admin = Usuario.builder()
-                .id_usuario(1L)
-                .email_usuario("admin@teste.com")
-                .role(Role.ADMIN)
-                .build();
-        String tokenAdmin = jwtService.gerarToken(admin);
-
         mockMvc.perform(get("/notificacoes/admin")
-                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
-                        .header("Authorization", "Bearer " + tokenAdmin))
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("DELETE /notificacoes/todas com token ADMIN deve retornar 204 No Content")
+    @DisplayName("DELETE /notificacoes/todas com cookie ADMIN deve retornar 204 No Content")
     void deleteNotificacoesTodasComAdminDeveRetornar204() throws Exception {
-        Usuario admin = Usuario.builder()
-                .id_usuario(1L)
-                .email_usuario("admin@teste.com")
-                .role(Role.ADMIN)
-                .build();
-        String tokenAdmin = jwtService.gerarToken(admin);
-
         mockMvc.perform(delete("/notificacoes/todas")
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
-                        .header("Authorization", "Bearer " + tokenAdmin))
+                        .header("X-Client", "frontend"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    @DisplayName("DELETE /notificacoes/todas com token CLIENT deve retornar 403 Forbidden")
+    @DisplayName("DELETE /notificacoes/todas com cookie CLIENT deve retornar 403 Forbidden")
     void deleteNotificacoesTodasComClientDeveRetornar403() throws Exception {
-        Usuario cliente = Usuario.builder()
-                .id_usuario(999L)
-                .email_usuario("cliente_api@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String tokenCliente = jwtService.gerarToken(cliente);
-
         mockMvc.perform(delete("/notificacoes/todas")
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
-                        .header("Authorization", "Bearer " + tokenCliente))
+                        .header("X-Client", "frontend"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("GET /api/quadras com token CLIENT deve retornar 200 OK (somente leitura permitido)")
+    @DisplayName("GET /api/quadras com cookie CLIENT deve retornar 200 OK (somente leitura permitido)")
     void getApiQuadrasComClienteDeveRetornar200() throws Exception {
-        Usuario cliente = Usuario.builder()
-                .id_usuario(999L)
-                .email_usuario("cliente_api@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String tokenCliente = jwtService.gerarToken(cliente);
-
         mockMvc.perform(get("/api/quadras")
-                        .header("Authorization", "Bearer " + tokenCliente))
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("POST /api/quadras com token CLIENT deve retornar 403 Forbidden (mutação na API bloqueada para cliente)")
+    @DisplayName("POST /api/quadras com cookie CLIENT deve retornar 403 Forbidden (mutação na API bloqueada para cliente)")
     void postApiQuadrasComClienteDeveRetornar403() throws Exception {
-        Usuario cliente = Usuario.builder()
-                .id_usuario(999L)
-                .email_usuario("cliente_api2@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String tokenCliente = jwtService.gerarToken(cliente);
-
         mockMvc.perform(post("/api/quadras")
-                        .header("Authorization", "Bearer " + tokenCliente)
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
+                        .header("X-Client", "frontend")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("GET /usuarios/{outroId} com token CLIENT deve retornar 403 Forbidden (mitigação de IDOR)")
+    @DisplayName("GET /usuarios/{outroId} com cookie CLIENT deve retornar 403 Forbidden (mitigação de IDOR)")
     void getUsuariosOutroIdComClienteDeveRetornar403() throws Exception {
-        Usuario clienteLogado = Usuario.builder()
-                .id_usuario(555L)
-                .email_usuario("meu_usuario@teste.com")
-                .role(Role.CLIENT)
-                .build();
-        String tokenCliente = jwtService.gerarToken(clienteLogado);
-
-        mockMvc.perform(get("/usuarios/999")
-                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente))
-                        .header("Authorization", "Bearer " + tokenCliente))
+        mockMvc.perform(get("/usuarios/" + admin.getId_usuario())
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
                 .andExpect(status().isForbidden());
     }
 

@@ -31,6 +31,9 @@ public class QueryCountSafetyNetIntegrationTest {
     private QuadraRepository quadraRepository;
 
     @Autowired
+    private com.agendamentos.equadras.repository.UsuarioRepository usuarioRepository;
+
+    @Autowired
     private com.agendamentos.equadras.security.JwtService jwtService;
 
     private MockMvc mockMvc;
@@ -48,11 +51,17 @@ public class QueryCountSafetyNetIntegrationTest {
         statistics = sessionFactory.getStatistics();
         statistics.setStatisticsEnabled(true);
 
-        com.agendamentos.equadras.model.entity.Usuario user = com.agendamentos.equadras.model.entity.Usuario.builder()
-                .id_usuario(9999L)
-                .email_usuario("perf_query@teste.com")
-                .role(com.agendamentos.equadras.model.enums.Role.CLIENT)
-                .build();
+        com.agendamentos.equadras.model.entity.Usuario user = usuarioRepository.findByEmail_usuario("perf_query@teste.com")
+                .orElseGet(() -> usuarioRepository.save(
+                        com.agendamentos.equadras.model.entity.Usuario.builder()
+                                .nome_usuario("Perf Query User")
+                                .email_usuario("perf_query@teste.com")
+                                .senha_usuario("senha123")
+                                .phone_usuario("11999990099")
+                                .role(com.agendamentos.equadras.model.enums.Role.CLIENT)
+                                .ativo(true)
+                                .build()
+                ));
         token = jwtService.gerarToken(user);
     }
 

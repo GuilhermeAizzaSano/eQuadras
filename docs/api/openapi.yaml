@@ -335,8 +335,8 @@ paths:
       tags:
       - Usuários - API
       summary: Realizar login
-      description: Autentica via e-mail e senha e retorna o token JWT assinado para
-        autenticação nas demais rotas.
+      description: "Autentica via e-mail e senha, define o cookie HttpOnly de sessã\
+        o e retorna o perfil do usuário."
       operationId: login
       requestBody:
         content:
@@ -353,7 +353,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LoginResponseDTO"
+                $ref: "#/components/schemas/UsuarioResponseDTO"
               example:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJDTElFTlQiLCJpYXQiOjE3MjU4NTAwMDB9...
                 usuario:
@@ -373,6 +373,22 @@ paths:
                 status: 400
                 detail: Credenciais de e-mail ou senha inválidas.
                 instance: /api/usuarios/login
+  /api/usuarios/api-key/regenerar:
+    post:
+      tags:
+      - Usuários - API
+      summary: Gerar ou regenerar API-KEY
+      description: Emite uma nova chave de API opaca (eq_...) de alta entropia. O
+        token anterior é invalidado de imediato. A chave em texto plano é devolvida
+        exclusivamente nesta resposta.
+      operationId: regenerarApiKey
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
   /api/usuarios:
     get:
       tags:
@@ -408,7 +424,7 @@ paths:
       - Usuários - API
       summary: Cadastrar novo usuário (Apenas Administrador)
       description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer\
-        \ token de autenticação com privilégios de Administrador."
+        \ sessão com privilégios de Administrador."
       operationId: cadastrar
       requestBody:
         content:
@@ -1107,9 +1123,8 @@ paths:
       tags:
       - Usuários - API
       summary: Alterar minha senha
-      description: "Permite que o próprio usuário autenticado altere sua senha informando\
-        \ a atual e a nova (mínimo 6 chars, 1 maiúscula, 1 minúscula, 1 número e 1\
-        \ símbolo)."
+      description: Permite que o próprio usuário autenticado por sessão altere sua
+        senha informando a atual e a nova.
       operationId: alterarMinhaSenha
       requestBody:
         content:
@@ -1194,6 +1209,46 @@ paths:
                 pixCopiaECola: 00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...
                 qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAA...
                 criadoEm: 2026-09-09T00:30:00
+  /api/usuarios/me:
+    get:
+      tags:
+      - Usuários - API
+      summary: Dados da minha sessão
+      description: Retorna os dados do usuário autenticado pela sessão ativa (cookie
+        HttpOnly).
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioResponseDTO"
+  /api/usuarios/api-key:
+    get:
+      tags:
+      - Usuários - API
+      summary: Consultar metadados da minha API-KEY
+      description: "Retorna informações sobre a existência, prefixo e datas de criaç\
+        ão/último uso da chave de API da conta."
+      operationId: obterApiKeyInfo
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyInfoDTO"
+    delete:
+      tags:
+      - Usuários - API
+      summary: Revogar API-KEY
+      description: Invalida imediatamente a chave de API da conta sem gerar uma substituta.
+        É uma operação idempotente.
+      operationId: revogarApiKey
+      responses:
+        "200":
+          description: OK
   /api/quadras/fotos:
     get:
       tags:
@@ -1527,6 +1582,30 @@ paths:
                 pixCopiaECola: null
                 qrCodeBase64: null
                 criadoEm: 2026-09-09T00:30:00
+  /api/agendamentos/quadra/{quadraId}:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Listar histórico de agendamentos de uma quadra específica
+      description: Retorna todas as reservas da quadra para o administrador proprietário
+        ou Master Admin.
+      operationId: listarPorQuadra
+      parameters:
+      - name: quadraId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/agendamentos/horarios-disponiveis:
     get:
       tags:
@@ -1943,17 +2022,6 @@ components:
       required:
       - email_usuario
       - senha_usuario
-    LoginResponseDTO:
-      type: object
-      description: Dados de autenticação bem-sucedida e token JWT
-      properties:
-        token:
-          type: string
-          description: Token JWT assinado para autenticação Bearer
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        usuario:
-          $ref: "#/components/schemas/UsuarioResponseDTO"
-          description: Perfil cadastral do usuário autenticado
     UsuarioCriacaoDTO:
       type: object
       properties:
@@ -2201,6 +2269,19 @@ components:
       required:
       - novaSenha
       - senhaAtual
+    ApiKeyInfoDTO:
+      type: object
+      properties:
+        possuiChave:
+          type: boolean
+        last4:
+          type: string
+        criadaEm:
+          type: string
+          format: date-time
+        ultimoUsoEm:
+          type: string
+          format: date-time
     SseEmitter:
       type: object
       properties:
@@ -2225,12 +2306,12 @@ components:
     PageNotificacao:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         size:
           type: integer
           format: int32
@@ -2260,18 +2341,18 @@ components:
         offset:
           type: integer
           format: int64
-        unpaged:
-          type: boolean
-        paged:
-          type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
         pageSize:
           type: integer
           format: int32
         pageNumber:
           type: integer
           format: int32
+        unpaged:
+          type: boolean
+        paged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
