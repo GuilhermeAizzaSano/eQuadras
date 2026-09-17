@@ -45,30 +45,36 @@ public class AuditoriaService {
         return TipoExecutor.CLIENTE;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLoginSucesso(Usuario usuario) {
         registrarLoginSucesso(usuario, HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLoginFalha(String emailInformado, String motivo) {
         registrarLoginFalha(emailInformado, motivo, HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarLogout(Usuario usuario) {
         registrarLogout(usuario, HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarAlteracaoSenha(Usuario usuario) {
         registrarAlteracaoSenha(usuario, HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarAcao(Usuario usuario, CategoriaAuditoria categoria, String acao,
                               String entidade, String recursoId, String detalhes) {
         registrarAcao(usuario, categoria, acao, entidade, recursoId, detalhes,
                 HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void registrarAcaoPorUsuarioId(Long usuarioId, CategoriaAuditoria categoria, String acao,
-                                         String entidade, String recursoId, String detalhes) {
+                                          String entidade, String recursoId, String detalhes) {
         registrarAcaoPorUsuarioId(usuarioId, categoria, acao, entidade, recursoId, detalhes,
                 HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }

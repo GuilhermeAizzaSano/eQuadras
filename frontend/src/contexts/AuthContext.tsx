@@ -30,6 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('equadras_auth_user');
     });
 
+    // Se não há usuário previamente autenticado salvo, não dispara chamada desnecessária que geraria 401
+    const savedUser = localStorage.getItem('equadras_auth_user');
+    if (!savedUser) {
+      setLoadingAuth(false);
+      return;
+    }
+
     const controller = new AbortController();
 
     // Valida sessão ativa com o backend via cookie HttpOnly

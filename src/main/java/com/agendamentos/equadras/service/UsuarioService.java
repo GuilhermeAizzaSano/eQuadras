@@ -157,7 +157,7 @@ public class UsuarioService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponseDTO login(UsuarioLoginDTO dto) {
         Usuario usuario = usuarioRepository.findByEmail_usuario(dto.email_usuario())
                 .orElse(null);
