@@ -385,7 +385,7 @@ class BloqueioHorarioServiceTest {
         List<BloqueioHorario> novos = captor.getValue();
         assertEquals(1, novos.size());
         assertEquals(LocalTime.of(7, 0), novos.get(0).getHoraInicio());
-        assertEquals(LocalTime.of(23, 0), novos.get(0).getHoraFim());
+        assertEquals(LocalTime.of(23, 59, 59), novos.get(0).getHoraFim());
     }
 
     @Test
@@ -413,6 +413,6 @@ class BloqueioHorarioServiceTest {
         assertEquals(LocalTime.of(6, 0), novos.get(0).getHoraInicio());
         assertEquals(LocalTime.of(12, 0), novos.get(0).getHoraFim());
         assertEquals(LocalTime.of(13, 0), novos.get(1).getHoraInicio());
-        assertEquals(LocalTime.of(23, 0), novos.get(1).getHoraFim());
+        assertEquals(LocalTime.of(23, 59, 59), novos.get(1).getHoraFim());
     }
 }
