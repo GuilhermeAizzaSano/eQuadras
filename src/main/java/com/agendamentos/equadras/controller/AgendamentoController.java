@@ -62,6 +62,15 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.cancelar(id, usuarioLogado.id()));
     }
 
+    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.")
+    @GetMapping("/quadra/{quadraId}")
+    public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadra(
+            @PathVariable Long quadraId,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarPorQuadra(quadraId, usuarioLogado.id()));
+    }
+
     @Operation(summary = "Listar agendamentos por quadra e data", description = "Retorna as reservas cadastradas para uma quadra em um determinado dia.")
     @GetMapping("/quadra/{quadraId}/data")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadraEData(

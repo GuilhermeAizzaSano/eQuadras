@@ -9,7 +9,8 @@ import {
   Edit2,
   Trash2,
   PlusCircle,
-  MapPin
+  MapPin,
+  History
 } from 'lucide-react';
 
 interface CourtManagementListProps {
@@ -20,6 +21,7 @@ interface CourtManagementListProps {
   onAbrirBloqueios: (quadra: Quadra) => void;
   onAbrirEdicao: (quadra: Quadra) => void;
   onExcluirQuadra: (quadra: Quadra) => void;
+  onAbrirHistorico: (quadra: Quadra) => void;
   getAssetUrl: (path: string) => string;
 }
 
@@ -31,6 +33,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
   onAbrirBloqueios,
   onAbrirEdicao,
   onExcluirQuadra,
+  onAbrirHistorico,
   getAssetUrl,
 }) => {
   return (
@@ -177,6 +180,17 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  {/* Botão de Histórico de Agendas */}
+                  <button
+                    type="button"
+                    onClick={() => onAbrirHistorico(q)}
+                    className="w-full mt-2.5 py-2 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-white/70 hover:text-white text-xs font-medium transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                    title="Consultar histórico de agendamentos desta quadra"
+                  >
+                    <History className="w-3.5 h-3.5 text-white/60" />
+                    <span>Histórico de agendas</span>
+                  </button>
                 </div>
               </div>
             );
