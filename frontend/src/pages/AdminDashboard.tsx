@@ -36,6 +36,8 @@ export const AdminDashboard: React.FC = () => {
   const { user, token, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
+  const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
+  const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
   
   // Notificações SSE
@@ -195,12 +197,31 @@ export const AdminDashboard: React.FC = () => {
     return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
   };
 
-  const carregarAgendamentos = async (buscarHistorico: boolean = true) => {
+  const carregarAgendamentos = async (buscarHistorico?: boolean) => {
+    const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
-      const agendamentos = await agendamentoApi.listar(buscarHistorico);
+      const agendamentos = await agendamentoApi.listar(deveBuscarHistorico);
       setAgendamentosAdmin(agendamentos);
+      if (deveBuscarHistorico) {
+        setHistoricoAdminCarregado(true);
+      }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const carregarHistoricoAdmin = async () => {
+    if (carregandoHistoricoAdmin) return;
+    setCarregandoHistoricoAdmin(true);
+    try {
+      const agendamentos = await agendamentoApi.listar(true);
+      setAgendamentosAdmin(agendamentos);
+      setHistoricoAdminCarregado(true);
+    } catch (err: any) {
+      console.error(err);
+      setFeedback({ type: 'error', message: 'Falha ao carregar o histórico de agendamentos.' });
+    } finally {
+      setCarregandoHistoricoAdmin(false);
     }
   };
 
@@ -258,15 +279,19 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const carregarDados = async () => {
+  const carregarDados = async (buscarHistorico?: boolean) => {
     if (!user) return;
+    const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
       const [quadras, agendamentos] = await Promise.all([
         quadraApi.listar(),
-        agendamentoApi.listar(true), // Carrega agendamentos para calendário e grade
+        agendamentoApi.listar(deveBuscarHistorico),
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
+      if (deveBuscarHistorico) {
+        setHistoricoAdminCarregado(true);
+      }
 
       // Carregar todos os bloqueios do admin em uma única requisição HTTP consolidada
       try {
@@ -1300,6 +1325,9 @@ export const AdminDashboard: React.FC = () => {
         visualizacaoAgendaAba={visualizacaoAgendaAba}
         filtroAgendaAdmin={filtroAgendaAdmin}
         highlightedAgendamentoId={highlightedAgendamentoId}
+        historicoCarregado={historicoAdminCarregado}
+        carregandoHistorico={carregandoHistoricoAdmin}
+        onCarregarHistorico={carregarHistoricoAdmin}
         onClose={() => setModalAgendaDiaOpen(false)}
         onQuadraChange={setQuadraSelecionadaAgendaId}
         onStatusFiltroChange={setStatusFiltroModal}
