@@ -34,19 +34,25 @@ class JwtServiceTest {
     }
 
     @Test
-    void deveGerarTokenDeterministicoENaoExpiravel() {
+    void deveGerarTokenComExpiracaoEIssuedAt() {
         Usuario usuario = Usuario.builder()
                 .id_usuario(100L)
                 .role(Role.CLIENT)
                 .build();
 
-        String token1 = jwtService.gerarToken(usuario);
-        String token2 = jwtService.gerarToken(usuario);
+        String token = jwtService.gerarToken(usuario);
 
-        assertEquals(token1, token2, "O token deve ser estático e imutável para o mesmo usuário");
-        Claims claims = jwtService.validarEExtrairClaims(token1);
-        assertNull(claims.getExpiration(), "O token não deve ter data de expiração");
+        Claims claims = jwtService.validarEExtrairClaims(token);
+        assertNotNull(claims.getExpiration(), "O token de sessão deve ter data de expiração");
+        assertNotNull(claims.getIssuedAt(), "O token de sessão deve ter data de emissão");
+        assertTrue(claims.getExpiration().after(claims.getIssuedAt()), "Expiração deve ser posterior à emissão");
         assertEquals("read", claims.get("scope", String.class));
+    }
+
+    @Test
+    void deveRejeitarSegredoComMenosDe32Bytes() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new JwtService("segredo-curto", 3600000L));
     }
 
     @Test

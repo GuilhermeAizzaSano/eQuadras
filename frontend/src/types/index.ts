@@ -23,9 +23,22 @@ export type Usuario = Omit<Schemas['UsuarioResponseDTO'], 'id_usuario' | 'nome_u
 };
 
 export type LoginResponse = {
-  token: string;
-  usuario: Usuario;
-};
+  token?: string;
+  usuario?: Usuario;
+} & Partial<Usuario>;
+
+export interface ApiKeyInfo {
+  possuiChave: boolean;
+  last4: string | null;
+  criadaEm: string | null;
+  ultimoUsoEm: string | null;
+}
+
+export interface ApiKeyCriada {
+  apiKey: string;
+  last4: string;
+  criadaEm: string;
+}
 
 export type DisponibilidadeDia = Omit<Schemas['DisponibilidadeDiaDTO'], 'diaSemana' | 'horaInicio' | 'horaFim'> & {
   diaSemana: DiaSemana;

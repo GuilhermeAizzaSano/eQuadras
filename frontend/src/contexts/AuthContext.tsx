@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Usuario } from '../types';
-import { usuarioApi } from '../api/apiClient';
+import { usuarioApi, setUnauthorizedCallback } from '../api/apiClient';
 
 interface AuthContextType {
   user: Usuario | null;
-  token: string | null;
-  login: (user: Usuario, token: string) => void;
-  logout: () => void;
+  loadingAuth: boolean;
+  login: (user: Usuario) => void;
+  logout: () => Promise<void>;
   isAdmin: boolean;
   isMasterAdmin: boolean;
 }
@@ -18,30 +18,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('equadras_auth_user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem('equadras_auth_token')
-  );
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  const login = (newUser: Usuario, newToken: string) => {
+  useEffect(() => {
+    // Limpeza obrigatória de resíduos de tokens legados no localStorage
+    localStorage.removeItem('equadras_auth_token');
+
+    // Callback invocado automaticamente quando qualquer requisição receber 401
+    setUnauthorizedCallback(() => {
+      setUser(null);
+      localStorage.removeItem('equadras_auth_user');
+    });
+
+    const controller = new AbortController();
+
+    // Valida sessão ativa com o backend via cookie HttpOnly
+    usuarioApi
+      .me(controller.signal)
+      .then((usuarioAtual) => {
+        setUser(usuarioAtual);
+        localStorage.setItem('equadras_auth_user', JSON.stringify(usuarioAtual));
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          setUser(null);
+          localStorage.removeItem('equadras_auth_user');
+        }
+      })
+      .finally(() => {
+        setLoadingAuth(false);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const login = (newUser: Usuario) => {
     setUser(newUser);
-    setToken(newToken);
     localStorage.setItem('equadras_auth_user', JSON.stringify(newUser));
-    localStorage.setItem('equadras_auth_token', newToken);
   };
 
-  const logout = () => {
-    usuarioApi.logout().catch(() => {});
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('equadras_auth_user');
-    localStorage.removeItem('equadras_auth_token');
+  const logout = async () => {
+    try {
+      await usuarioApi.logout();
+    } catch {
+      // Ignora erro de rede no logout
+    } finally {
+      setUser(null);
+      localStorage.removeItem('equadras_auth_user');
+      localStorage.removeItem('equadras_auth_token');
+    }
   };
 
   const isAdmin = user?.role === 'ADMIN';
   const isMasterAdmin = user?.email_usuario?.toLowerCase() === 'gui@gmail.com';
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAdmin, isMasterAdmin }}>
+    <AuthContext.Provider value={{ user, loadingAuth, login, logout, isAdmin, isMasterAdmin }}>
       {children}
     </AuthContext.Provider>
   );

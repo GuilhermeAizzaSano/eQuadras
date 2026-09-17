@@ -15,7 +15,11 @@ const FallbackSpinner: React.FC = () => (
 );
 
 export const App: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loadingAuth } = useAuth();
+
+  if (loadingAuth) {
+    return <FallbackSpinner />;
+  }
 
   if (!user) {
     return (

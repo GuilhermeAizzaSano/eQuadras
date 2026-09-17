@@ -1,4 +1,4 @@
-import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, LoginResponse, DisponibilidadeDia } from '../types';
+import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, DisponibilidadeDia } from '../types';
 
 export const getBaseUrl = (): string => {
   const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
@@ -25,6 +25,12 @@ export interface ApiFetchOptions extends RequestInit {
   timeoutMs?: number;
 }
 
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const setUnauthorizedCallback = (cb: () => void) => {
+  onUnauthorizedCallback = cb;
+};
+
 export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {}
@@ -34,11 +40,6 @@ export async function apiFetch<T>(
 
   if (!headers.has('Content-Type') && !(fetchOptions.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
-  }
-
-  const token = localStorage.getItem('equadras_auth_token');
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
   }
 
   headers.set('X-Client', 'frontend');
@@ -63,6 +64,20 @@ export async function apiFetch<T>(
 
   const data = await response.json().catch(() => null);
 
+  if (response.status === 401) {
+    const isBootstrapOuLogin = endpoint.includes('/usuarios/me') || endpoint.includes('/usuarios/login');
+    if (!isBootstrapOuLogin && onUnauthorizedCallback) {
+      onUnauthorizedCallback();
+    }
+    const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Sessão expirada. Faça login novamente.';
+    throw new Error(errorMsg);
+  }
+
+  if (response.status === 403) {
+    const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Acesso negado para esta operação.';
+    throw new Error(errorMsg);
+  }
+
   if (!response.ok) {
     const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Erro na requisição';
     throw new Error(errorMsg);
@@ -73,15 +88,35 @@ export async function apiFetch<T>(
 
 // --- Usuários ---
 export const usuarioApi = {
-  login: (email_usuario: string, senha_usuario: string) =>
-    apiFetch<LoginResponse>('/usuarios/login', {
+  me: (signal?: AbortSignal) =>
+    apiFetch<Usuario>('/usuarios/me', { signal }),
+
+  login: (email_usuario: string, senha_usuario: string, signal?: AbortSignal) =>
+    apiFetch<Usuario>('/usuarios/login', {
       method: 'POST',
       body: JSON.stringify({ email_usuario, senha_usuario }),
+      signal,
     }),
 
-  logout: () =>
+  logout: (signal?: AbortSignal) =>
     apiFetch<void>('/usuarios/logout', {
       method: 'POST',
+      signal,
+    }),
+
+  obterApiKeyInfo: (signal?: AbortSignal) =>
+    apiFetch<import('../types').ApiKeyInfo>('/usuarios/api-key', { signal }),
+
+  regenerarApiKey: (signal?: AbortSignal) =>
+    apiFetch<import('../types').ApiKeyCriada>('/usuarios/api-key/regenerar', {
+      method: 'POST',
+      signal,
+    }),
+
+  revogarApiKey: (signal?: AbortSignal) =>
+    apiFetch<void>('/usuarios/api-key', {
+      method: 'DELETE',
+      signal,
     }),
 
   cadastrar: (dados: {
@@ -90,10 +125,11 @@ export const usuarioApi = {
     senha_usuario: string;
     phone_usuario: string;
     role?: Role;
-  }) =>
+  }, signal?: AbortSignal) =>
     apiFetch<Usuario>('/usuarios', {
       method: 'POST',
       body: JSON.stringify(dados),
+      signal,
     }),
 
   editar: (
@@ -104,25 +140,29 @@ export const usuarioApi = {
       phone_usuario: string;
       role?: Role;
       nova_senha?: string;
-    }
+    },
+    signal?: AbortSignal
   ) =>
     apiFetch<Usuario>(`/usuarios/${id}`, {
       method: 'PUT',
       body: JSON.stringify(dados),
+      signal,
     }),
 
-  excluir: (id: number) =>
+  excluir: (id: number, signal?: AbortSignal) =>
     apiFetch<void>(`/usuarios/${id}`, {
       method: 'DELETE',
+      signal,
     }),
 
-  alterarMinhaSenha: (dados: { senhaAtual: string; novaSenha: string }) =>
+  alterarMinhaSenha: (dados: { senhaAtual: string; novaSenha: string }, signal?: AbortSignal) =>
     apiFetch<void>('/usuarios/minha-senha', {
       method: 'PATCH',
       body: JSON.stringify(dados),
+      signal,
     }),
 
-  listar: () => apiFetch<Usuario[]>('/usuarios'),
+  listar: (signal?: AbortSignal) => apiFetch<Usuario[]>('/usuarios', { signal }),
 };
 
 // --- Quadras ---
@@ -194,6 +234,9 @@ export const bloqueioApi = {
 export const agendamentoApi = {
   listar: (historico = false) =>
     apiFetch<Agendamento[]>(historico ? '/agendamentos?historico=true' : '/agendamentos'),
+
+  listarPorQuadra: (quadraId: number) =>
+    apiFetch<Agendamento[]>(`/agendamentos/quadra/${quadraId}`),
 
   buscarPorId: (id: number) => apiFetch<Agendamento>(`/agendamentos/${id}`),
 

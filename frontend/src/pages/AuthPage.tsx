@@ -28,7 +28,7 @@ export const AuthPage: React.FC = () => {
 
     try {
       const resposta = await usuarioApi.login(loginEmail, loginSenha);
-      login(resposta.usuario, resposta.token);
+      login(resposta);
     } catch (err: any) {
       setError(err.message || 'Falha ao autenticar');
     } finally {

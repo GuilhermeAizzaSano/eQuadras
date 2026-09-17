@@ -116,7 +116,6 @@ public class ContractSafetyNetIntegrationTest {
     void devePreservarContratoGetAgendamentos() throws Exception {
         mockMvc.perform(get("/agendamentos")
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
-                        .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
