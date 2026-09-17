@@ -1,6 +1,7 @@
 package com.agendamentos.equadras.security;
 
-import com.agendamentos.equadras.model.enums.Role;
+import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.repository.UsuarioRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -8,30 +9,139 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    private final JwtService jwtService;
+    private final ApiKeyService apiKeyService;
+    private final ApiKeyRateLimiter rateLimiter;
+    private final UsuarioRepository usuarioRepository;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
+
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            ApiKeyService apiKeyService,
+            ApiKeyRateLimiter rateLimiter,
+            UsuarioRepository usuarioRepository,
+            AuthenticationEntryPoint authenticationEntryPoint) {
         this.jwtService = jwtService;
+        this.apiKeyService = apiKeyService;
+        this.rateLimiter = rateLimiter;
+        this.usuarioRepository = usuarioRepository;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String uri = request.getRequestURI();
-        String method = request.getMethod();
+        String apiKeyHeader = request.getHeader("X-API-KEY");
+        String authHeader = request.getHeader("Authorization");
 
-        // 1. Extrai token do cookie de sessão HttpOnly
+        // 1. Processamento prioritário de API-KEY
+        boolean hasApiKeyHeader = apiKeyHeader != null && !apiKeyHeader.isBlank();
+        boolean hasAuthHeader = authHeader != null && !authHeader.isBlank();
+
+        boolean rotaIsenta = SecurityRoutes.isRotaIsenta(request.getRequestURI());
+
+        if (hasApiKeyHeader || hasAuthHeader) {
+            // Se houver Authorization, deve ser Bearer eq_... (exceto em rotas isentas, ex: bot/webhook)
+            if (hasAuthHeader && !authHeader.startsWith("Bearer eq_") && !rotaIsenta) {
+                authenticationEntryPoint.commence(request, response,
+                        new InsufficientAuthenticationException("Formato de token inválido ou legado. Para integrações, utilize o cabeçalho X-API-KEY com chave válida (eq_...)."));
+                return;
+            }
+
+            String valorAuth = (hasAuthHeader && authHeader.startsWith("Bearer eq_")) ? authHeader.substring(7).trim() : null;
+            String valorApiKey = hasApiKeyHeader ? apiKeyHeader.trim() : null;
+            String ip = request.getRemoteAddr();
+
+            // Se ambos os cabeçalhos estiverem presentes, seus valores devem ser idênticos
+            if (valorAuth != null && valorApiKey != null && !valorAuth.equals(valorApiKey)) {
+                rateLimiter.registrarFalha(ip);
+                authenticationEntryPoint.commence(request, response,
+                        new BadCredentialsException("Conflito de credenciais: cabeçalhos X-API-KEY e Authorization divergentes."));
+                return;
+            }
+
+            String rawKey = (valorApiKey != null) ? valorApiKey : valorAuth;
+
+            if (rawKey == null) {
+                // Authorization presente porém sem prefixo válido, em rota isenta: segue para tentativa de cookie
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // Verificação de Rate Limit por IP para falhas de API-KEY
+            if (rateLimiter.isIpBloqueado(ip)) {
+                long retryAfter = rateLimiter.getRetryAfterSegundos(ip);
+                response.setStatus(429);
+                response.setHeader("Retry-After", String.valueOf(retryAfter));
+                response.setContentType("application/problem+json;charset=UTF-8");
+                response.getWriter().write(String.format("""
+                    {
+                        "status": 429,
+                        "title": "Too Many Requests",
+                        "detail": "Limite de tentativas incorretas de API-KEY excedido para este IP. Tente novamente em %d segundos."
+                    }
+                    """, retryAfter));
+                return;
+            }
+
+            Optional<Usuario> usuarioOpt = apiKeyService.autenticar(rawKey);
+            if (usuarioOpt.isEmpty()) {
+                rateLimiter.registrarFalha(ip);
+                // Não tenta o cookie como fallback
+                authenticationEntryPoint.commence(request, response,
+                        new BadCredentialsException("Chave de API inválida, revogada ou usuário inativo."));
+                return;
+            }
+
+            Usuario usuario = usuarioOpt.get();
+            UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(
+                    usuario.getId_usuario(),
+                    usuario.getRole(),
+                    TipoAutenticacao.API_KEY
+            );
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    usuarioAutenticado,
+                    null,
+                    List.of(
+                            new SimpleGrantedAuthority("ROLE_" + usuario.getRole().name()),
+                            new SimpleGrantedAuthority("SCOPE_API_KEY")
+                    )
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Registro de último uso com throttling: falha aqui NÃO pode derrubar a requisição principal
+            try {
+                apiKeyService.registrarUso(usuario.getId_usuario());
+            } catch (RuntimeException e) {
+                log.warn("Falha não-bloqueante ao registrar último uso de API-KEY para usuarioId={}: {}",
+                        usuario.getId_usuario(), e.getMessage());
+            }
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2. Processamento de Sessão Web via Cookie HttpOnly
         String cookieToken = null;
         if (request.getCookies() != null) {
             for (Cookie c : request.getCookies()) {
@@ -42,88 +152,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. Extrai token do cabeçalho Authorization
-        String headerToken = null;
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            headerToken = header.substring(7);
-        }
-
-        // 3. Suporte a SSE (/notificacoes/stream) via query parameter
-        String sseToken = null;
-        if (uri != null && uri.contains("/notificacoes/stream") && request.getParameter("token") != null) {
-            sseToken = request.getParameter("token");
-        }
-
-        // Determina o token a ser validado
-        String token = (headerToken != null) ? headerToken : ((cookieToken != null) ? cookieToken : sseToken);
-
-        if (token != null) {
+        if (cookieToken != null) {
             try {
-                Claims claims = jwtService.validarEExtrairClaims(token);
+                Claims claims = jwtService.validarEExtrairClaims(cookieToken);
                 Long usuarioId = Long.valueOf(claims.getSubject());
-                Role role = Role.valueOf(claims.get("role", String.class));
-                UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(usuarioId, role);
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        usuarioAutenticado,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
-                );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
+                if (usuarioOpt.isPresent() && usuarioOpt.get().isAtivo()) {
+                    Usuario usuario = usuarioOpt.get();
+                    UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(
+                            usuario.getId_usuario(),
+                            usuario.getRole(),
+                            TipoAutenticacao.SESSAO_WEB
+                    );
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            usuarioAutenticado,
+                            null,
+                            List.of(
+                                    new SimpleGrantedAuthority("ROLE_" + usuario.getRole().name()),
+                                    new SimpleGrantedAuthority("SCOPE_SESSION")
+                            )
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    SecurityContextHolder.clearContext();
+                }
             } catch (JwtException | IllegalArgumentException e) {
                 SecurityContextHolder.clearContext();
             }
         }
 
-        // 4. Verificação de segurança para rotas internas consultadas pelo Frontend (rotas não /api)
-        // Permite requisições que possuam sessão válida (cookie ou token Bearer)
-        boolean isApiRoute = uri != null && (uri.startsWith("/api/") || uri.equals("/api"));
-        if (!isApiRoute && !isPublicFrontendRoute(uri, method)) {
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/problem+json;charset=UTF-8");
-                response.getWriter().write("""
-                    {
-                        "status": 401,
-                        "title": "Acesso não autorizado",
-                        "detail": "Acesso restrito: para consultar recursos do sistema é obrigatório possuir uma autenticação válida (sessão ativa com cookie de login ou token de autorização). Requisições não autenticadas foram recusadas."
-                    }
-                    """);
-                return;
-            }
-        }
-
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isPublicFrontendRoute(String uri, String method) {
-        if (uri == null) return true;
-        if ("OPTIONS".equalsIgnoreCase(method)) return true;
-
-        // Login, auto-cadastro e logout
-        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios") || uri.equals("/usuarios/"))) return true;
-        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios/login") || uri.equals("/usuarios/login/"))) return true;
-        if ("POST".equalsIgnoreCase(method) && (uri.equals("/usuarios/logout") || uri.equals("/usuarios/logout/"))) return true;
-
-        // Webhook Mercado Pago e Bot
-        if ("POST".equalsIgnoreCase(method) && uri.contains("/pagamentos/webhook")) return true;
-        if ("POST".equalsIgnoreCase(method) && uri.contains("/agendamentos/bot")) return true;
-
-        // Uploads de arquivos e fotos
-        if (uri.startsWith("/uploads/")) return true;
-
-        // Documentação OpenAPI e Swagger UI
-        if (uri.startsWith("/v3/api-docs") || uri.startsWith("/swagger-ui") || uri.contains("swagger")) return true;
-        if (uri.startsWith("/h2-console")) return true;
-        if (uri.startsWith("/error")) return true;
-
-        // Recursos estáticos
-        if (uri.startsWith("/assets/") || uri.endsWith(".ico") || uri.endsWith(".png") || uri.endsWith(".jpg")
-                || uri.endsWith(".svg") || uri.endsWith(".js") || uri.endsWith(".css") || uri.endsWith(".html")) {
-            return true;
-        }
-
-        return false;
     }
 }

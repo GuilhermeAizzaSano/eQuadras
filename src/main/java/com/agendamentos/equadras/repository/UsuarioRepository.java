@@ -19,4 +19,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @Query("SELECT u FROM Usuario u WHERE u.phone_usuario = :phone")
     Optional<Usuario> findByPhone_usuario(@Param("phone") String phone);
+
+    Optional<Usuario> findByApiKeyHash(String apiKeyHash);
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Usuario u SET u.apiKeyUltimoUsoEm = :agora WHERE u.id_usuario = :id AND (u.apiKeyUltimoUsoEm IS NULL OR u.apiKeyUltimoUsoEm < :limite)")
+    int atualizarUltimoUsoComThrottling(@Param("id") Long id, @Param("agora") java.time.Instant agora, @Param("limite") java.time.Instant limite);
 }
