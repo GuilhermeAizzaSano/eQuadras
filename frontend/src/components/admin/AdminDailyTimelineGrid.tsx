@@ -133,7 +133,15 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
       if (!b.horaInicio || !b.horaFim) return true;
 
       const bIni = parseInt(b.horaInicio.slice(0, 2), 10);
-      const bFim = parseInt(b.horaFim.slice(0, 2), 10);
+      let bFim = parseInt(b.horaFim.slice(0, 2), 10);
+      const bFimMin = parseInt(b.horaFim.slice(3, 5) || '0', 10);
+      const bFimSec = parseInt(b.horaFim.slice(6, 8) || '0', 10);
+
+      // Se o bloqueio termina às 23:59, 23:59:59 ou 00:00, cobre até a meia-noite (hora 24), cobrindo o slot das 23h
+      if (bFim === 0 || (bFim === 23 && (bFimMin > 0 || bFimSec > 0))) {
+        bFim = 24;
+      }
+
       return horaNum >= bIni && horaNum < bFim;
     });
   };
@@ -466,7 +474,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                             </div>
                             <span className="text-[10px] text-white/50 mt-1 font-mono">
                               {bloqueio.horaInicio
-                                ? `${bloqueio.horaInicio.slice(0, 5)} - ${bloqueio.horaFim?.slice(0, 5)}`
+                                ? `${bloqueio.horaInicio.slice(0, 5)} - ${bloqueio.horaFim?.slice(0, 2) === '23' && bloqueio.horaFim?.slice(3, 5) === '59' ? '00:00' : bloqueio.horaFim?.slice(0, 5)}`
                                 : 'Dia todo'}
                             </span>
                           </div>

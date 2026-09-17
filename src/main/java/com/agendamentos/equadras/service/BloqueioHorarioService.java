@@ -263,12 +263,11 @@ public class BloqueioHorarioService {
         // Identifica os limites de funcionamento da quadra no dia da semana para o caso de bloqueio de dia inteiro
         java.time.DayOfWeek diaSemana = data.getDayOfWeek();
         LocalTime quadraAbertura = LocalTime.of(6, 0);
-        LocalTime quadraFechamento = LocalTime.of(23, 0);
+        LocalTime quadraFechamento = LocalTime.of(23, 59, 59);
         if (quadra.getDisponibilidades() != null && !quadra.getDisponibilidades().isEmpty()) {
             for (com.agendamentos.equadras.model.entity.DisponibilidadeDia d : quadra.getDisponibilidades()) {
                 if (d.getDiaSemana() == diaSemana) {
                     if (d.getHoraInicio() != null) quadraAbertura = d.getHoraInicio();
-                    if (d.getHoraFim() != null) quadraFechamento = d.getHoraFim();
                     break;
                 }
             }
