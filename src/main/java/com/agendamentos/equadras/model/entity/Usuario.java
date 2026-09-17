@@ -103,11 +103,21 @@ public class Usuario {
     public Instant getApiKeyUltimoUsoEm() { return apiKeyUltimoUsoEm; }
     public void setApiKeyUltimoUsoEm(Instant apiKeyUltimoUsoEm) { this.apiKeyUltimoUsoEm = apiKeyUltimoUsoEm; }
 
+    public static volatile String MASTER_EMAIL_CONFIGURADO = "gui@gmail.com";
+
     public boolean isAtivo() { return ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }
 
     public boolean isMasterAdmin() {
-        return this.role == Role.ADMIN && "gui@gmail.com".equalsIgnoreCase(this.email_usuario);
+        return isMasterAdmin(MASTER_EMAIL_CONFIGURADO);
+    }
+
+    public boolean isMasterAdmin(String masterEmail) {
+        if (this.role != Role.ADMIN || this.email_usuario == null) {
+            return false;
+        }
+        String alvo = masterEmail != null ? masterEmail.trim() : MASTER_EMAIL_CONFIGURADO;
+        return this.email_usuario.equalsIgnoreCase(alvo);
     }
 
     @Override

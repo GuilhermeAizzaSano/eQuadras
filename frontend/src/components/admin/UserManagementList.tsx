@@ -110,7 +110,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                 </tr>
               ) : (
                 usuariosFiltrados.map((u) => {
-                  const isMaster = u.email_usuario.toLowerCase() === 'gui@gmail.com';
+                  const isMaster = u.masterAdmin === true || u.email_usuario.toLowerCase() === 'gui@gmail.com';
                   return (
                     <tr key={u.id_usuario} className="hover:bg-white/[0.02] transition">
                       <td className="py-3.5 px-5 font-medium text-white flex items-center gap-3">

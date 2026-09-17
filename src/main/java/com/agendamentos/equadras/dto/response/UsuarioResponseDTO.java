@@ -24,16 +24,24 @@ public record UsuarioResponseDTO(
         Role role,
 
         @Schema(description = "Data e hora de criação da conta", example = "2026-09-04T10:00:00")
-        LocalDateTime criadoEm
+        LocalDateTime criadoEm,
+
+        @Schema(description = "Indica se o usuário possui privilégios de Master Admin", example = "false")
+        boolean masterAdmin
 ) {
     public static UsuarioResponseDTO fromEntity(Usuario usuario) {
+        return fromEntity(usuario, usuario != null && usuario.isMasterAdmin());
+    }
+
+    public static UsuarioResponseDTO fromEntity(Usuario usuario, boolean ehMasterAdmin) {
         return new UsuarioResponseDTO(
                 usuario.getId_usuario(),
                 usuario.getNome_usuario(),
                 usuario.getEmail_usuario(),
                 usuario.getPhone_usuario(),
                 usuario.getRole(),
-                usuario.getCriadoEm()
+                usuario.getCriadoEm(),
+                ehMasterAdmin
         );
     }
 }

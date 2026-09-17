@@ -20,6 +20,7 @@ export type Usuario = Omit<Schemas['UsuarioResponseDTO'], 'id_usuario' | 'nome_u
   phone_usuario: string;
   role: Role;
   criadoEm?: string;
+  masterAdmin?: boolean;
 };
 
 export type LoginResponse = {

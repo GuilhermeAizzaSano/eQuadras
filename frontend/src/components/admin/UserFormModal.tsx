@@ -31,7 +31,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const isMaster = usuarioParaEditar?.email_usuario?.toLowerCase() === 'gui@gmail.com';
+  const isMaster = usuarioParaEditar?.masterAdmin === true || usuarioParaEditar?.email_usuario?.toLowerCase() === 'gui@gmail.com';
 
   useEffect(() => {
     if (usuarioParaEditar) {

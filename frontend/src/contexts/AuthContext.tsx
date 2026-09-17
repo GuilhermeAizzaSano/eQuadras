@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = user?.role === 'ADMIN';
-  const isMasterAdmin = user?.email_usuario?.toLowerCase() === 'gui@gmail.com';
+  const isMasterAdmin = user?.role === 'ADMIN' && (user?.masterAdmin === true || user?.email_usuario?.toLowerCase() === 'gui@gmail.com');
 
   return (
     <AuthContext.Provider value={{ user, loadingAuth, login, logout, isAdmin, isMasterAdmin }}>

@@ -20,25 +20,39 @@ import java.util.List;
 @Service
 public class UsuarioService {
 
-    public static final String MASTER_ADMIN_EMAIL = "gui@gmail.com";
-
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditoriaService auditoriaService;
+    private final String masterAdminEmail;
+    private final String botDefaultPassword;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
-                           JwtService jwtService, AuditoriaService auditoriaService) {
+    public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService,
+            AuditoriaService auditoriaService,
+            @org.springframework.beans.factory.annotation.Value("${admin.master.email:gui@gmail.com}") String masterAdminEmail,
+            @org.springframework.beans.factory.annotation.Value("${equadras.bot.default-password:}") String botDefaultPassword) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditoriaService = auditoriaService;
+        this.masterAdminEmail = masterAdminEmail != null ? masterAdminEmail.trim().toLowerCase() : "gui@gmail.com";
+        this.botDefaultPassword = botDefaultPassword != null ? botDefaultPassword.trim() : "";
+
+        // Sincroniza a propriedade estática de fallback na entidade
+        Usuario.MASTER_EMAIL_CONFIGURADO = this.masterAdminEmail;
+    }
+
+    public String getMasterAdminEmail() {
+        return masterAdminEmail;
     }
 
     public boolean isMasterAdmin(Long usuarioId) {
         if (usuarioId == null) return false;
         return usuarioRepository.findById(usuarioId)
-                .map(Usuario::isMasterAdmin)
+                .map(u -> u.isMasterAdmin(this.masterAdminEmail))
                 .orElse(false);
     }
 
@@ -109,7 +123,7 @@ public class UsuarioService {
                 throw new IllegalArgumentException("E-mail já cadastrado por outro usuário.");
             }
             // Não permitir alterar o e-mail do Admin Geral
-            if (MASTER_ADMIN_EMAIL.equalsIgnoreCase(usuario.getEmail_usuario())) {
+            if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
                 throw new IllegalArgumentException("O e-mail do Administrador Geral não pode ser modificado.");
             }
             usuario.setEmail_usuario(dto.email_usuario());
@@ -119,7 +133,7 @@ public class UsuarioService {
         usuario.setPhone_usuario(dto.phone_usuario());
 
         // Se for o Admin Geral, manter sempre como ADMIN
-        if (MASTER_ADMIN_EMAIL.equalsIgnoreCase(usuario.getEmail_usuario())) {
+        if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
             usuario.setRole(Role.ADMIN);
         } else if (dto.role() != null) {
             usuario.setRole(dto.role());
@@ -145,7 +159,7 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));
 
-        if (MASTER_ADMIN_EMAIL.equalsIgnoreCase(usuario.getEmail_usuario())) {
+        if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
             throw new IllegalArgumentException("A conta do Administrador Geral não pode ser excluída.");
         }
 
@@ -180,14 +194,15 @@ public class UsuarioService {
         if (auditoriaService != null) {
             auditoriaService.registrarLoginSucesso(usuario);
         }
-        return new LoginResponseDTO(token, UsuarioResponseDTO.fromEntity(usuario));
+        boolean ehMaster = usuario.isMasterAdmin(this.masterAdminEmail);
+        return new LoginResponseDTO(token, UsuarioResponseDTO.fromEntity(usuario, ehMaster));
     }
 
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
         return usuarioRepository.findAll()
                 .stream()
-                .map(UsuarioResponseDTO::fromEntity)
+                .map(u -> UsuarioResponseDTO.fromEntity(u, u.isMasterAdmin(this.masterAdminEmail)))
                 .toList();
     }
 
@@ -203,19 +218,19 @@ public class UsuarioService {
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));
-        return UsuarioResponseDTO.fromEntity(usuario);
+        return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
     }
 
     @Transactional
     public void alterarMinhaSenha(Long usuarioId, com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + usuarioId));
 
         if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha_usuario())) {
             throw new IllegalArgumentException("A senha atual informada está incorreta.");
         }
 
-        if (dto.senhaAtual().equals(dto.novaSenha())) {
+        if (passwordEncoder.matches(dto.novaSenha(), usuario.getSenha_usuario())) {
             throw new IllegalArgumentException("A nova senha deve ser diferente da senha atual.");
         }
 
@@ -233,11 +248,15 @@ public class UsuarioService {
         return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
                 .orElseGet(() -> {
                     try {
+                        String senhaBot = !botDefaultPassword.isBlank()
+                                ? botDefaultPassword
+                                : java.util.UUID.randomUUID().toString();
+
                         Usuario novoUsuario = Usuario.builder()
                                 .nome_usuario(nome != null ? nome : "Usuário Bot")
                                 .phone_usuario(telefoneSanitizado)
                                 .email_usuario("bot_" + telefoneSanitizado + "@equadras.com")
-                                .senha_usuario(passwordEncoder.encode("senhaBot123!"))
+                                .senha_usuario(passwordEncoder.encode(senhaBot))
                                 .role(Role.CLIENT)
                                 .build();
                         return usuarioRepository.saveAndFlush(novoUsuario);
