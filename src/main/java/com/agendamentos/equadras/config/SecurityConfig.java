@@ -1,9 +1,13 @@
 package com.agendamentos.equadras.config;
 
-import com.agendamentos.equadras.security.JwtAuthenticationFilter;
-import com.agendamentos.equadras.security.JwtService;
+import com.agendamentos.equadras.repository.UsuarioRepository;
+import com.agendamentos.equadras.security.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -12,12 +16,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
-    @org.springframework.beans.factory.annotation.Value("${equadras.cors.origens-permitidas:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,https://equadras.app,https://www.equadras.app}")
+    @Value("${equadras.cors.origens-permitidas:http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,https://equadras.app,https://www.equadras.app}")
     private String[] origensPermitidas;
 
     @Bean
@@ -26,67 +37,83 @@ public class SecurityConfig {
     }
 
     @Bean
-    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
-        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOriginPatterns(java.util.Arrays.asList(origensPermitidas));
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"));
-        configuration.setAllowedHeaders(java.util.List.of("*"));
-        configuration.setExposedHeaders(java.util.List.of("Authorization", "Set-Cookie", "Content-Disposition", "X-Total-Count", "X-Correlation-Id"));
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(Arrays.asList(origensPermitidas));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        // Permite headers legítimos de navegação da SPA. X-API-KEY e Authorization ficam fora da allowlist CORS do browser.
+        configuration.setAllowedHeaders(List.of("Content-Type", "X-Client", "X-Correlation-Id"));
+        configuration.setExposedHeaders(List.of("Set-Cookie", "Content-Disposition", "X-Total-Count", "X-Correlation-Id", "Retry-After"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            JwtService jwtService,
+            ApiKeyService apiKeyService,
+            ApiKeyRateLimiter apiKeyRateLimiter,
+            UsuarioRepository usuarioRepository,
+            JsonAuthenticationEntryPoint jsonAuthenticationEntryPoint,
+            JsonAccessDeniedHandler jsonAccessDeniedHandler) throws Exception {
+
+        RateLimitFilter rateLimitFilter = new RateLimitFilter();
+        ClientHeaderFilter clientHeaderFilter = new ClientHeaderFilter(jsonAccessDeniedHandler);
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(
+                jwtService,
+                apiKeyService,
+                apiKeyRateLimiter,
+                usuarioRepository,
+                jsonAuthenticationEntryPoint
+        );
+
         http
+                // Proteção CSRF: ClientHeaderFilter (exigência estrita de X-Client) + CORS restrito para métodos mutantes
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Públicos
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios/logout", "/api/usuarios/logout").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
+                        // 1. Endpoints Públicos
+                        .requestMatchers(HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/logout", "/api/usuarios/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
-                        // Restrição específica da API (/api/**):
-                        // Permite que usuários com ROLE_CLIENT ou ROLE_ADMIN criem agendamentos via API externa
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/agendamentos", "/api/agendamentos/").hasAnyRole("CLIENT", "ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/usuarios/minha-senha", "/usuarios/minha-senha").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/**").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
+                        // 2. Rotas de Negócio Explícitas: aceitam tanto Sessão Web quanto API-KEY,
+                        // preservando as restrições estritas de ROLE
+                        .requestMatchers(HttpMethod.POST, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
+                        .requestMatchers("/notificacoes", "/notificacoes/**", "/api/notificacoes", "/api/notificacoes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao", "/api/pagamentos/*/simular-aprovacao").hasRole("ADMIN")
 
-                        // Endpoints Web restritos a ADMIN
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/usuarios", "/usuarios/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/usuarios", "/usuarios/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/usuarios", "/usuarios/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/quadras", "/quadras/**").hasRole("ADMIN")
-                        .requestMatchers("/notificacoes", "/notificacoes/**").hasRole("ADMIN")
+                        .requestMatchers("/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**")
+                            .hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**")
+                            .hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**")
+                            .hasAnyRole("ADMIN", "CLIENT")
 
-                        // Demais rotas web autenticadas (CLIENT ou ADMIN via cookie de sessão ou Bearer token)
-                        .requestMatchers("/quadras", "/quadras/**").authenticated()
-                        .requestMatchers("/agendamentos", "/agendamentos/**").authenticated()
-                        .requestMatchers("/pagamentos", "/pagamentos/**").authenticated()
-                        .requestMatchers("/usuarios", "/usuarios/**").authenticated()
-
-                        // Qualquer outra requer autenticação
-                        .anyRequest().authenticated()
+                        // 3. Qualquer outra rota (incluindo todas as rotas /usuarios/**, /usuarios/api-key/**, /usuarios/minha-senha, /usuarios/me):
+                        // Negação por padrão: EXIGE estritamente SCOPE_SESSION (API-KEY recebe 403 Forbidden automaticamente)
+                        .anyRequest().hasAuthority("SCOPE_SESSION")
+                )
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(jsonAuthenticationEntryPoint)
+                        .accessDeniedHandler(jsonAccessDeniedHandler)
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new com.agendamentos.equadras.security.RateLimitFilter(), JwtAuthenticationFilter.class);
+                .addFilterBefore(rateLimitFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
+                .addFilterBefore(clientHeaderFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
