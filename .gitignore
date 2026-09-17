@@ -84,5 +84,6 @@ docs/
 .mvn/wrapper/maven-wrapper.jar
 *.sqlite
 *.sql
+!src/main/resources/db/migration/*.sql
 restart.ps1
 restart.sh
