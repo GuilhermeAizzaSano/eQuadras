@@ -111,6 +111,33 @@ export interface Page<T> {
   empty: boolean;
 }
 
+// Auditoria de Logs
+export type CategoriaAuditoria = 'AUTENTICACAO' | 'AGENDAMENTO' | 'QUADRA' | 'USUARIO' | 'BLOQUEIO' | 'API_KEY';
+export type TipoExecutor = 'MASTER_ADMIN' | 'ADMIN_QUADRA' | 'CLIENTE' | 'SISTEMA';
+
+export interface LogAuditoria {
+  id: number;
+  usuarioId: number | null;
+  usuarioEmail: string | null;
+  usuarioNome: string | null;
+  categoria: CategoriaAuditoria;
+  acao: string;
+  entidade: string | null;
+  recursoId: string | null;
+  tipoExecutor: TipoExecutor;
+  detalhes: string | null;
+  ip: string | null;
+  userAgent: string | null;
+  criadoEm: string;
+}
+
+export interface EstatisticasAuditoria {
+  totalLoginsHoje: number;
+  totalFalhasLoginHoje: number;
+  totalAcoesHoje: number;
+  totalCancelamentosHoje: number;
+}
+
 // DTOs de Entrada e Operações derivados do Schema OpenAPI
 export type UsuarioCriacaoInput = Schemas['UsuarioCriacaoDTO'];
 export type UsuarioEdicaoInput = Schemas['UsuarioEdicaoDTO'];

@@ -44,6 +44,9 @@ class BloqueioHorarioServiceTest {
     @Mock
     private AgendamentoRepository agendamentoRepository;
 
+    @Mock
+    private AuditoriaService auditoriaService;
+
     @InjectMocks
     private BloqueioHorarioService bloqueioHorarioService;
 

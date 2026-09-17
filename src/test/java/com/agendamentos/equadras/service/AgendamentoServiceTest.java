@@ -56,6 +56,9 @@ class AgendamentoServiceTest {
     @Mock
     private com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
 
+    @Mock
+    private AuditoriaService auditoriaService;
+
     @InjectMocks
     private AgendamentoService agendamentoService;
 

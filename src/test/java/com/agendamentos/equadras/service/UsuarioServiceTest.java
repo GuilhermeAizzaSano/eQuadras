@@ -33,6 +33,9 @@ class UsuarioServiceTest {
     @Mock
     private com.agendamentos.equadras.security.JwtService jwtService;
 
+    @Mock
+    private AuditoriaService auditoriaService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
