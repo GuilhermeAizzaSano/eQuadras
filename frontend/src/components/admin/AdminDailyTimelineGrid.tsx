@@ -13,7 +13,7 @@ export interface AdminDailyTimelineGridProps {
   buscaTermo: string;
   onAbrirAgendamento: (ag: Agendamento) => void;
   onBloquearSlot: (quadraId: number, data: string, horaInicio: string, horaFim: string) => void;
-  onDesbloquear: (bloqueioId: number) => void;
+  onDesbloquear: (quadraId: number, data: string, horaInicio: string, horaFim: string, bloqueio: BloqueioHorario) => void;
   onQuadraFiltroChange?: (id: number | 'TODAS') => void;
 }
 
@@ -456,9 +456,9 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onDesbloquear(bloqueio.id);
+                                  onDesbloquear(quadra.id_quadra, dataSelecionada, horaStr, proximaHoraStr, bloqueio);
                                 }}
-                                title={bloqueio.horaInicio ? "Desbloquear este horário" : "Desbloquear dia todo"}
+                                title={`Desbloquear horário das ${horaStr} às ${proximaHoraStr}`}
                                 className="opacity-0 group-hover/block:opacity-100 p-1 hover:bg-[#FF453A]/20 text-[#FF453A] hover:text-white rounded-lg transition cursor-pointer"
                               >
                                 <Ban className="w-3.5 h-3.5" />

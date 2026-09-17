@@ -361,4 +361,58 @@ class BloqueioHorarioServiceTest {
 
         verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(b1, b2));
     }
+
+    @Test
+    @DisplayName("Deve desbloquear slot inicial (06:00 às 07:00) de bloqueio de dia todo mantendo o restante (07:00 às 23:00) bloqueado")
+    void deveDesbloquearSlotInicialDeBloqueioDiaTodo() {
+        LocalDate data = LocalDate.now().plusDays(2);
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+
+        BloqueioHorario diaTodo = new BloqueioHorario(500L, quadra, data, null, null, "Manutenção", null);
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, data)).thenReturn(List.of(diaTodo));
+
+        com.agendamentos.equadras.dto.request.DesbloqueioHorarioDTO dto =
+                new com.agendamentos.equadras.dto.request.DesbloqueioHorarioDTO(null, data, LocalTime.of(6, 0), LocalTime.of(7, 0));
+
+        int total = bloqueioHorarioService.desbloquearHorarios(10L, dto, 1L);
+
+        assertEquals(1, total);
+        verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(diaTodo));
+
+        org.mockito.ArgumentCaptor<List<BloqueioHorario>> captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(bloqueioHorarioRepository, times(1)).saveAll(captor.capture());
+
+        List<BloqueioHorario> novos = captor.getValue();
+        assertEquals(1, novos.size());
+        assertEquals(LocalTime.of(7, 0), novos.get(0).getHoraInicio());
+        assertEquals(LocalTime.of(23, 0), novos.get(0).getHoraFim());
+    }
+
+    @Test
+    @DisplayName("Deve desbloquear slot intermediário (12:00 às 13:00) de bloqueio de dia todo gerando dois blocos residuais")
+    void deveDesbloquearSlotIntermediarioDeBloqueioDiaTodo() {
+        LocalDate data = LocalDate.now().plusDays(2);
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+
+        BloqueioHorario diaTodo = new BloqueioHorario(501L, quadra, data, null, null, "Torneio", null);
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, data)).thenReturn(List.of(diaTodo));
+
+        com.agendamentos.equadras.dto.request.DesbloqueioHorarioDTO dto =
+                new com.agendamentos.equadras.dto.request.DesbloqueioHorarioDTO(null, data, LocalTime.of(12, 0), LocalTime.of(13, 0));
+
+        int total = bloqueioHorarioService.desbloquearHorarios(10L, dto, 1L);
+
+        assertEquals(1, total);
+        verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(diaTodo));
+
+        org.mockito.ArgumentCaptor<List<BloqueioHorario>> captor = org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(bloqueioHorarioRepository, times(1)).saveAll(captor.capture());
+
+        List<BloqueioHorario> novos = captor.getValue();
+        assertEquals(2, novos.size());
+        assertEquals(LocalTime.of(6, 0), novos.get(0).getHoraInicio());
+        assertEquals(LocalTime.of(12, 0), novos.get(0).getHoraFim());
+        assertEquals(LocalTime.of(13, 0), novos.get(1).getHoraInicio());
+        assertEquals(LocalTime.of(23, 0), novos.get(1).getHoraFim());
+    }
 }
