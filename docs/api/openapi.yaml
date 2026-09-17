@@ -1760,7 +1760,7 @@ paths:
       - Auditoria & Logs - API
       summary: Listar logs de auditoria com filtros
       description: Retorna logs paginados e filtráveis. Apenas o Administrador Geral
-        (gui@gmail.com) tem acesso.
+        (Master Admin) tem acesso.
       operationId: listarLogs
       parameters:
       - name: page
@@ -1776,7 +1776,7 @@ paths:
         schema:
           type: integer
           format: int32
-          default: 20
+          default: 10
       - name: usuarioId
         in: query
         required: false
@@ -1927,6 +1927,10 @@ components:
           format: date-time
           description: Data e hora de criação da conta
           example: 2026-09-04T10:00:00
+        masterAdmin:
+          type: boolean
+          description: Indica se o usuário possui privilégios de Master Admin
+          example: false
     DisponibilidadeDiaDTO:
       type: object
       properties:
@@ -2271,6 +2275,11 @@ components:
           format: date-time
           description: Data e hora de criação do agendamento
           example: 2026-09-04T15:30:00
+        canceladoEm:
+          type: string
+          format: date-time
+          description: "Data e hora de cancelamento do agendamento, se cancelado"
+          example: 2026-09-04T16:00:00
     AgendamentoBotRequestDTO:
       type: object
       description: Dados para criação simplificada de reserva via Bot / WhatsApp
@@ -2409,15 +2418,15 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
         first:
           type: boolean
         last:
           type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -2426,18 +2435,18 @@ components:
         offset:
           type: integer
           format: int64
-        pageSize:
-          type: integer
-          format: int32
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
         pageNumber:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        unpaged:
-          type: boolean
-        paged:
-          type: boolean
+        pageSize:
+          type: integer
+          format: int32
     SortObject:
       type: object
       properties:
@@ -2598,15 +2607,15 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        numberOfElements:
+          type: integer
+          format: int32
         first:
           type: boolean
         last:
           type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     QuadraResumoResponseDTO:

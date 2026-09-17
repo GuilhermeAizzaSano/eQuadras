@@ -51,9 +51,16 @@ public class Agendamento {
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
+    @Column(name = "cancelado_em")
+    private LocalDateTime canceladoEm;
+
     public Agendamento() {}
 
     public Agendamento(Long id_agendamento, Usuario usuario, Quadra quadra, LocalDateTime dataHoraInicio, LocalDateTime dataHoraFim, BigDecimal valorTotal, StatusAgendamento status, String transacaoPagamentoId, String pixCopiaECola, String qrCodeBase64, LocalDateTime criadoEm) {
+        this(id_agendamento, usuario, quadra, dataHoraInicio, dataHoraFim, valorTotal, status, transacaoPagamentoId, pixCopiaECola, qrCodeBase64, criadoEm, null);
+    }
+
+    public Agendamento(Long id_agendamento, Usuario usuario, Quadra quadra, LocalDateTime dataHoraInicio, LocalDateTime dataHoraFim, BigDecimal valorTotal, StatusAgendamento status, String transacaoPagamentoId, String pixCopiaECola, String qrCodeBase64, LocalDateTime criadoEm, LocalDateTime canceladoEm) {
         this.id_agendamento = id_agendamento;
         this.usuario = usuario;
         this.quadra = quadra;
@@ -65,11 +72,14 @@ public class Agendamento {
         this.pixCopiaECola = pixCopiaECola;
         this.qrCodeBase64 = qrCodeBase64;
         this.criadoEm = criadoEm;
+        this.canceladoEm = canceladoEm;
     }
 
     @PrePersist
     protected void onCreate() {
-        this.criadoEm = LocalDateTime.now();
+        if (this.criadoEm == null) {
+            this.criadoEm = LocalDateTime.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+        }
         if (this.status == null) {
             this.status = StatusAgendamento.PENDENTE;
         }
@@ -108,6 +118,9 @@ public class Agendamento {
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
 
+    public LocalDateTime getCanceladoEm() { return canceladoEm; }
+    public void setCanceladoEm(LocalDateTime canceladoEm) { this.canceladoEm = canceladoEm; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -137,6 +150,7 @@ public class Agendamento {
         private String pixCopiaECola;
         private String qrCodeBase64;
         private LocalDateTime criadoEm;
+        private LocalDateTime canceladoEm;
 
         public AgendamentoBuilder id_agendamento(Long id_agendamento) { this.id_agendamento = id_agendamento; return this; }
         public AgendamentoBuilder usuario(Usuario usuario) { this.usuario = usuario; return this; }
@@ -149,9 +163,10 @@ public class Agendamento {
         public AgendamentoBuilder pixCopiaECola(String pixCopiaECola) { this.pixCopiaECola = pixCopiaECola; return this; }
         public AgendamentoBuilder qrCodeBase64(String qrCodeBase64) { this.qrCodeBase64 = qrCodeBase64; return this; }
         public AgendamentoBuilder criadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; return this; }
+        public AgendamentoBuilder canceladoEm(LocalDateTime canceladoEm) { this.canceladoEm = canceladoEm; return this; }
 
         public Agendamento build() {
-            return new Agendamento(id_agendamento, usuario, quadra, dataHoraInicio, dataHoraFim, valorTotal, status, transacaoPagamentoId, pixCopiaECola, qrCodeBase64, criadoEm);
+            return new Agendamento(id_agendamento, usuario, quadra, dataHoraInicio, dataHoraFim, valorTotal, status, transacaoPagamentoId, pixCopiaECola, qrCodeBase64, criadoEm, canceladoEm);
         }
     }
 }

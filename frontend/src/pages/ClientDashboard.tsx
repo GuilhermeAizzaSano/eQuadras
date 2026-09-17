@@ -4,6 +4,7 @@ import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiC
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
 import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatarDataHoraBr } from '../utils/dateUtils';
 
 const ESPORTES = ['TODOS', 'FUTEBOL', 'BEACH_TENNIS', 'TENIS', 'FUTSAL', 'VOLEI', 'BASQUETE'] as const;
 
@@ -857,6 +858,17 @@ export const ClientDashboard: React.FC = () => {
                             <span>{data.split('-').reverse().join('/')}</span>
                             <span className="text-white/30">•</span>
                             <span>{horaInicio} às {horaFim}</span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-white/40 font-mono">
+                            {ag.criadoEm && (
+                              <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
+                            )}
+                            {isCancelado && ag.canceladoEm && (
+                              <span className="text-[#FF453A]">
+                                Cancelado em: <strong className="text-[#FF453A] font-medium">{formatarDataHoraBr(ag.canceladoEm)}</strong>
+                              </span>
+                            )}
                           </div>
                           {ag.status === 'PENDENTE' && !isPassado && (() => {
                             const tempo = getTempoRestantePix(ag.criadoEm);

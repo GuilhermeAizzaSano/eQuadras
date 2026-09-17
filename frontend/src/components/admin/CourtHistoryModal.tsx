@@ -14,7 +14,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { parseDataHoraLocal } from '../../utils/dateUtils';
+import { parseDataHoraLocal, formatarDataHoraBr } from '../../utils/dateUtils';
 import { agendamentoApi } from '../../api/apiClient';
 
 interface CourtHistoryModalProps {
@@ -353,6 +353,17 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                         <Clock className="w-3.5 h-3.5 text-white/40" />
                         <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
                       </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/40 font-mono">
+                      {ag.criadoEm && (
+                        <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
+                      )}
+                      {isCancelado && ag.canceladoEm && (
+                        <span className="text-[#FF453A]">
+                          Cancelado em: <strong className="text-[#FF453A] font-medium">{formatarDataHoraBr(ag.canceladoEm)}</strong>
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">

@@ -49,7 +49,10 @@ public record AgendamentoResponseDTO(
         String qrCodeBase64,
 
         @Schema(description = "Data e hora de criação do agendamento", example = "2026-09-04T15:30:00")
-        LocalDateTime criadoEm
+        LocalDateTime criadoEm,
+
+        @Schema(description = "Data e hora de cancelamento do agendamento, se cancelado", example = "2026-09-04T16:00:00")
+        LocalDateTime canceladoEm
 ) {
     public static AgendamentoResponseDTO fromEntity(Agendamento agendamento) {
         return new AgendamentoResponseDTO(
@@ -66,7 +69,8 @@ public record AgendamentoResponseDTO(
                 agendamento.getTransacaoPagamentoId(),
                 agendamento.getPixCopiaECola(),
                 agendamento.getQrCodeBase64(),
-                agendamento.getCriadoEm()
+                agendamento.getCriadoEm(),
+                agendamento.getCanceladoEm()
         );
     }
 
@@ -85,7 +89,8 @@ public record AgendamentoResponseDTO(
                 agendamento.getTransacaoPagamentoId(),
                 null,
                 null,
-                agendamento.getCriadoEm()
+                agendamento.getCriadoEm(),
+                agendamento.getCanceladoEm()
         );
     }
 }

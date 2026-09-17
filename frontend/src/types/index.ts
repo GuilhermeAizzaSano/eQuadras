@@ -75,7 +75,7 @@ export type HorarioDisponivel = Omit<Schemas['HorarioDisponivelDTO'], 'inicio' |
   motivo: string;
 };
 
-export type Agendamento = Omit<Schemas['AgendamentoResponseDTO'], 'id_agendamento' | 'usuarioId' | 'nomeUsuario' | 'quadraId' | 'nomeQuadra' | 'dataHoraInicio' | 'dataHoraFim' | 'valorTotal' | 'status' | 'criadoEm'> & {
+export type Agendamento = Omit<Schemas['AgendamentoResponseDTO'], 'id_agendamento' | 'usuarioId' | 'nomeUsuario' | 'quadraId' | 'nomeQuadra' | 'dataHoraInicio' | 'dataHoraFim' | 'valorTotal' | 'status' | 'criadoEm' | 'canceladoEm'> & {
   id_agendamento: number;
   usuarioId: number;
   nomeUsuario: string;
@@ -90,6 +90,7 @@ export type Agendamento = Omit<Schemas['AgendamentoResponseDTO'], 'id_agendament
   pixCopiaECola?: string;
   qrCodeBase64?: string;
   criadoEm: string;
+  canceladoEm?: string;
 };
 
 export interface Notificacao {

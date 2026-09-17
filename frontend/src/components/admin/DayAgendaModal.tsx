@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import { parseDataHoraLocal } from '../../utils/dateUtils';
+import { parseDataHoraLocal, formatarDataHoraBr } from '../../utils/dateUtils';
 
 interface DayAgendaModalProps {
   isOpen: boolean;
@@ -741,6 +741,17 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                           <div className="flex items-center gap-2 text-xs text-white/60 font-mono">
                             <Clock className="w-3.5 h-3.5 text-white/40" />
                             <span>{horaInicio} às {horaFim}</span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/40 font-mono">
+                            {ag.criadoEm && (
+                              <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
+                            )}
+                            {isCancelado && ag.canceladoEm && (
+                              <span className="text-[#FF453A]">
+                                Cancelado em: <strong className="text-[#FF453A] font-medium">{formatarDataHoraBr(ag.canceladoEm)}</strong>
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">

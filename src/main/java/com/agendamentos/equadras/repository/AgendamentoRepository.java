@@ -128,10 +128,11 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     );
 
     @org.springframework.data.jpa.repository.Modifying
-    @Query("UPDATE Agendamento a SET a.status = :statusCancelado WHERE a.status = :statusPendente AND a.criadoEm < :limite")
+    @Query("UPDATE Agendamento a SET a.status = :statusCancelado, a.canceladoEm = :agora WHERE a.status = :statusPendente AND a.criadoEm < :limite")
     int cancelarPendentesExpirados(
             @Param("statusPendente") StatusAgendamento statusPendente,
             @Param("statusCancelado") StatusAgendamento statusCancelado,
-            @Param("limite") LocalDateTime limite
+            @Param("limite") LocalDateTime limite,
+            @Param("agora") LocalDateTime agora
     );
 }
