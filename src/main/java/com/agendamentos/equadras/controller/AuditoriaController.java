@@ -39,7 +39,7 @@ public class AuditoriaController {
     public ResponseEntity<Page<LogAuditoriaResponseDTO>> listarLogs(
             @UsuarioLogado UsuarioAutenticado usuarioLogado,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long usuarioId,
             @RequestParam(required = false) CategoriaAuditoria categoria,
             @RequestParam(required = false) String acao,

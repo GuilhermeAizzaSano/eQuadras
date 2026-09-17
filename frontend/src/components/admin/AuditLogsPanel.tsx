@@ -62,7 +62,7 @@ export const AuditLogsPanel: React.FC = () => {
     try {
       const filtros: FiltrosAuditoria = {
         page: paginaAlvo,
-        size: 20,
+        size: 10,
       };
 
       if (categoria !== 'TODAS') filtros.categoria = categoria;
