@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
-import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ESPORTES = ['TODOS', 'FUTEBOL', 'BEACH_TENNIS', 'TENIS', 'FUTSAL', 'VOLEI', 'BASQUETE'] as const;
 
@@ -44,6 +44,13 @@ export const ClientDashboard: React.FC = () => {
   const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
   // Aba de filtro de status das reservas
   const [filtroStatusReservas, setFiltroStatusReservas] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
+  const ITENS_POR_PAGINA_RESERVAS = 5;
+  const [paginaAtualReservas, setPaginaAtualReservas] = useState(1);
+
+  // Resetar página ao mudar filtro de status ou alternar aba principal
+  useEffect(() => {
+    setPaginaAtualReservas(1);
+  }, [filtroStatusReservas, abaPrincipal]);
 
   const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
 
@@ -75,6 +82,15 @@ export const ClientDashboard: React.FC = () => {
       return !isCancelado && !isPassado;
     });
   }, [meusAgendamentos, filtroStatusReservas]);
+
+  const totalItensReservas = agendamentosFiltrados.length;
+  const totalPaginasReservas = Math.max(1, Math.ceil(totalItensReservas / ITENS_POR_PAGINA_RESERVAS));
+  const paginaValidaReservas = Math.min(Math.max(1, paginaAtualReservas), totalPaginasReservas);
+  const indiceInicioReservas = (paginaValidaReservas - 1) * ITENS_POR_PAGINA_RESERVAS;
+  const agendamentosPaginados = agendamentosFiltrados.slice(
+    indiceInicioReservas,
+    indiceInicioReservas + ITENS_POR_PAGINA_RESERVAS
+  );
 
   // Contadores para as abas
   const contadoresReservas = useMemo(() => {
@@ -816,92 +832,120 @@ export const ClientDashboard: React.FC = () => {
               className="py-14"
             />
           ) : (
-            <div className="space-y-3.5">
-              {agendamentosFiltrados.map((ag) => {
-                const isCancelado = ag.status === 'CANCELADO';
-                const isPassado = new Date(ag.dataHoraFim) < new Date();
-                const [data, tempoInicio] = ag.dataHoraInicio.split('T');
-                const [, tempoFim] = ag.dataHoraFim.split('T');
-                const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
-                const horaFim = tempoFim ? tempoFim.substring(0, 5) : '';
+            <div className="space-y-4">
+              <div className="space-y-3.5">
+                {agendamentosPaginados.map((ag) => {
+                  const isCancelado = ag.status === 'CANCELADO';
+                  const isPassado = new Date(ag.dataHoraFim) < new Date();
+                  const [data, tempoInicio] = ag.dataHoraInicio.split('T');
+                  const [, tempoFim] = ag.dataHoraFim.split('T');
+                  const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
+                  const horaFim = tempoFim ? tempoFim.substring(0, 5) : '';
 
-                return (
-                  <div
-                    key={ag.id_agendamento}
-                    className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3.5 transition hover:border-white/[0.16] shadow-sm"
+                  return (
+                    <div
+                      key={ag.id_agendamento}
+                      className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3.5 transition hover:border-white/[0.16] shadow-sm"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div>
+                          <div className="text-base font-semibold text-white tracking-tight">
+                            {ag.nomeQuadra}
+                          </div>
+                          <div className="text-xs text-white/50 flex items-center gap-1.5 mt-1 tracking-tight">
+                            <CalendarIcon className="w-3.5 h-3.5 text-white/40" />
+                            <span>{data.split('-').reverse().join('/')}</span>
+                            <span className="text-white/30">•</span>
+                            <span>{horaInicio} às {horaFim}</span>
+                          </div>
+                          {ag.status === 'PENDENTE' && !isPassado && (() => {
+                            const tempo = getTempoRestantePix(ag.criadoEm);
+                            return tempo ? (
+                              <div className="text-xs text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 px-2.5 py-1 rounded-full w-fit">
+                                <Clock className="w-3.5 h-3.5 animate-pulse text-[#FF9F0A]" />
+                                <span>Pague via Pix em até {tempo}</span>
+                              </div>
+                            ) : (
+                              <div className="text-xs text-[#FF453A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF453A]/10 border border-[#FF453A]/20 px-2.5 py-1 rounded-full w-fit">
+                                <Clock className="w-3.5 h-3.5 text-[#FF453A]" />
+                                <span>Tempo de pagamento expirado</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        <Badge
+                          variant={
+                            isCancelado
+                              ? 'outline'
+                              : isPassado
+                              ? 'neutral'
+                              : ag.status === 'PENDENTE'
+                              ? 'warning'
+                              : 'success'
+                          }
+                          withDot
+                        >
+                          {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs">
+                        <span className="text-white font-mono font-bold text-sm tracking-tight">
+                          R$ {ag.valorTotal.toFixed(2)}
+                        </span>
+
+                        <div className="flex items-center gap-3">
+                          {ag.status === 'PENDENTE' && (
+                            <button
+                              onClick={() => setAgendamentoPixModal(ag)}
+                              className="text-xs bg-white hover:bg-white/90 text-black font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer tracking-tight"
+                            >
+                              <QrCode className="w-3.5 h-3.5" />
+                              <span>Pagar com Pix</span>
+                            </button>
+                          )}
+
+                          {!isCancelado && (
+                            <button
+                              onClick={() => cancelarAgendamento(ag.id_agendamento)}
+                              className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {totalPaginasReservas > 1 && (
+                <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">
+                  <button
+                    type="button"
+                    disabled={paginaValidaReservas <= 1}
+                    onClick={() => setPaginaAtualReservas((p) => Math.max(1, p - 1))}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                      <div>
-                        <div className="text-base font-semibold text-white tracking-tight">
-                          {ag.nomeQuadra}
-                        </div>
-                        <div className="text-xs text-white/50 flex items-center gap-1.5 mt-1 tracking-tight">
-                          <CalendarIcon className="w-3.5 h-3.5 text-white/40" />
-                          <span>{data.split('-').reverse().join('/')}</span>
-                          <span className="text-white/30">•</span>
-                          <span>{horaInicio} às {horaFim}</span>
-                        </div>
-                        {ag.status === 'PENDENTE' && !isPassado && (() => {
-                          const tempo = getTempoRestantePix(ag.criadoEm);
-                          return tempo ? (
-                            <div className="text-xs text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 px-2.5 py-1 rounded-full w-fit">
-                              <Clock className="w-3.5 h-3.5 animate-pulse text-[#FF9F0A]" />
-                              <span>Pague via Pix em até {tempo}</span>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-[#FF453A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF453A]/10 border border-[#FF453A]/20 px-2.5 py-1 rounded-full w-fit">
-                              <Clock className="w-3.5 h-3.5 text-[#FF453A]" />
-                              <span>Tempo de pagamento expirado</span>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      <Badge
-                        variant={
-                          isCancelado
-                            ? 'outline'
-                            : isPassado
-                            ? 'neutral'
-                            : ag.status === 'PENDENTE'
-                            ? 'warning'
-                            : 'success'
-                        }
-                        withDot
-                      >
-                        {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs">
-                      <span className="text-white font-mono font-bold text-sm tracking-tight">
-                        R$ {ag.valorTotal.toFixed(2)}
-                      </span>
-
-                      <div className="flex items-center gap-3">
-                        {ag.status === 'PENDENTE' && (
-                          <button
-                            onClick={() => setAgendamentoPixModal(ag)}
-                            className="text-xs bg-white hover:bg-white/90 text-black font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer tracking-tight"
-                          >
-                            <QrCode className="w-3.5 h-3.5" />
-                            <span>Pagar com Pix</span>
-                          </button>
-                        )}
-
-                        {!isCancelado && (
-                          <button
-                            onClick={() => cancelarAgendamento(ag.id_agendamento)}
-                            className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
-                          >
-                            Cancelar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Anterior</span>
+                  </button>
+                  <span className="text-[11px] text-white/50 font-mono">
+                    Página {paginaValidaReservas} de {totalPaginasReservas} ({totalItensReservas} {totalItensReservas === 1 ? 'reserva' : 'reservas'})
+                  </span>
+                  <button
+                    type="button"
+                    disabled={paginaValidaReservas >= totalPaginasReservas}
+                    onClick={() => setPaginaAtualReservas((p) => Math.min(totalPaginasReservas, p + 1))}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+                  >
+                    <span>Próxima</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
