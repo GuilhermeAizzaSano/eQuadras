@@ -74,7 +74,19 @@ public class BloqueioHorarioService {
             throw new IllegalArgumentException("Não é possível bloquear este horário pois já existem reservas ativas no período.");
         }
 
-        if (dto.horaInicio() != null && dto.horaFim() != null) {
+        if (dto.horaInicio() == null && dto.horaFim() == null) {
+            // Bloqueio do dia todo: verificar se já existe bloqueio de dia inteiro
+            List<BloqueioHorario> existentes = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, dto.data());
+            boolean jaExisteDiaInteiro = existentes.stream()
+                    .anyMatch(b -> b.getHoraInicio() == null || b.getHoraFim() == null);
+            if (jaExisteDiaInteiro) {
+                throw new IllegalArgumentException("A quadra já possui um bloqueio cadastrado para o dia todo nesta data.");
+            }
+            // Remove eventuais bloqueios pontuais existentes nesta data para que o dia todo englobe a data
+            if (!existentes.isEmpty()) {
+                bloqueioHorarioRepository.deleteAll(existentes);
+            }
+        } else if (dto.horaInicio() != null && dto.horaFim() != null) {
             if (!dto.horaInicio().isBefore(dto.horaFim())) {
                 throw new IllegalArgumentException("A hora de início deve ser anterior à hora de término.");
             }
@@ -92,8 +104,16 @@ public class BloqueioHorarioService {
                 }
                 // Se confirmou a substituição, remove o bloqueio de dia inteiro
                 bloqueioHorarioRepository.deleteAll(bloqueiosDiaInteiro);
+            } else {
+                boolean conflitoExistente = existentes.stream().anyMatch(b ->
+                        b.getHoraInicio() != null && b.getHoraFim() != null &&
+                        dto.horaInicio().isBefore(b.getHoraFim()) && dto.horaFim().isAfter(b.getHoraInicio())
+                );
+                if (conflitoExistente) {
+                    throw new IllegalArgumentException("Já existe um bloqueio cadastrado que coincide com este horário nesta data.");
+                }
             }
-        } else if (dto.horaInicio() != null || dto.horaFim() != null) {
+        } else {
             throw new IllegalArgumentException("Para bloqueios com horário, ambos os horários (início e fim) devem ser fornecidos.");
         }
 
@@ -149,7 +169,31 @@ public class BloqueioHorarioService {
             throw new IllegalArgumentException("O bloqueio informado não pertence a esta quadra.");
         }
 
-        bloqueioHorarioRepository.delete(bloqueio);
+        List<BloqueioHorario> paraRemover;
+        if (bloqueio.getHoraInicio() == null || bloqueio.getHoraFim() == null) {
+            paraRemover = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, bloqueio.getData())
+                    .stream()
+                    .filter(b -> b.getHoraInicio() == null || b.getHoraFim() == null)
+                    .toList();
+            if (paraRemover.isEmpty()) {
+                paraRemover = List.of(bloqueio);
+            }
+        } else {
+            paraRemover = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, bloqueio.getData())
+                    .stream()
+                    .filter(b -> java.util.Objects.equals(b.getHoraInicio(), bloqueio.getHoraInicio()) && java.util.Objects.equals(b.getHoraFim(), bloqueio.getHoraFim()))
+                    .toList();
+            if (paraRemover.isEmpty()) {
+                paraRemover = List.of(bloqueio);
+            }
+        }
+
+        if (paraRemover.size() == 1 && paraRemover.contains(bloqueio)) {
+            bloqueioHorarioRepository.delete(bloqueio);
+        } else {
+            bloqueioHorarioRepository.deleteAll(paraRemover);
+        }
+
         if (auditoriaService != null) {
             auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
                     bloqueioId.toString(),
