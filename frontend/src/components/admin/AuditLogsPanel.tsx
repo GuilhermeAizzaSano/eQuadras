@@ -48,6 +48,7 @@ export const AuditLogsPanel: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [estatisticas, setEstatisticas] = useState<EstatisticasAuditoria | null>(null);
 
   // Filtros
@@ -57,6 +58,7 @@ export const AuditLogsPanel: React.FC = () => {
 
   const carregarDados = useCallback(async (paginaAlvo = page) => {
     setLoading(true);
+    setErroCarregamento(null);
     try {
       const filtros: FiltrosAuditoria = {
         page: paginaAlvo,
@@ -80,8 +82,10 @@ export const AuditLogsPanel: React.FC = () => {
       if (resStats) {
         setEstatisticas(resStats);
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao carregar registros de auditoria';
       console.error('Falha ao carregar trilha de auditoria:', err);
+      setErroCarregamento(msg);
     } finally {
       setLoading(false);
     }
@@ -349,6 +353,20 @@ export const AuditLogsPanel: React.FC = () => {
                   <td colSpan={6} className="px-5 py-16 text-center text-white/40">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-white/20" />
                     Carregando trilha de auditoria...
+                  </td>
+                </tr>
+              ) : erroCarregamento ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-16 text-center text-rose-400">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-400/80" />
+                    <p className="font-medium text-sm text-white">Não foi possível carregar os logs</p>
+                    <p className="text-xs text-rose-400/80 mt-1 max-w-md mx-auto">{erroCarregamento}</p>
+                    <button
+                      onClick={() => carregarDados(page)}
+                      className="mt-4 px-4 py-1.5 text-xs font-medium rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-white transition cursor-pointer"
+                    >
+                      Tentar Novamente
+                    </button>
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
