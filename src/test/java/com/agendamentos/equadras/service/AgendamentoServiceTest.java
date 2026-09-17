@@ -509,4 +509,99 @@ class AgendamentoServiceTest {
         assertEquals(StatusAgendamento.CANCELADO, response.status());
         verify(agendamentoRepository, times(1)).save(agendamento);
     }
+
+    @Test
+    @DisplayName("Deve listar agendamentos por quadra quando o usuário for o dono da quadra")
+    void deveListarPorQuadraQuandoForDono() {
+        Usuario admin = Usuario.builder()
+                .id_usuario(2L)
+                .nome_usuario("Admin")
+                .role(Role.ADMIN)
+                .build();
+        quadra.setAdmin(admin);
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(admin));
+
+        Agendamento ag = Agendamento.builder()
+                .id_agendamento(100L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1).withHour(10).withMinute(0))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).withHour(11).withMinute(0))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+
+        when(agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(1L)).thenReturn(List.of(ag));
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarPorQuadra(1L, 2L);
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+        assertEquals(100L, resultado.get(0).id_agendamento());
+        verify(agendamentoRepository, times(1)).findByQuadraIdOrderByDataHoraInicioDesc(1L);
+    }
+
+    @Test
+    @DisplayName("Deve listar agendamentos por quadra quando o usuário for Master Admin")
+    void deveListarPorQuadraQuandoForMasterAdmin() {
+        Usuario masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Master")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(1L)).thenReturn(List.of());
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarPorQuadra(1L, 99L);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+        verify(agendamentoRepository, times(1)).findByQuadraIdOrderByDataHoraInicioDesc(1L);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao listar por quadra se usuário não for dono nem Master Admin")
+    void deveLancarExcecaoAoListarPorQuadraSeNaoAutorizado() {
+        Usuario outroAdmin = Usuario.builder()
+                .id_usuario(3L)
+                .nome_usuario("Outro Admin")
+                .email_usuario("outro@email.com")
+                .role(Role.ADMIN)
+                .build();
+
+        Usuario adminDono = Usuario.builder()
+                .id_usuario(2L)
+                .nome_usuario("Dono")
+                .email_usuario("dono@email.com")
+                .role(Role.ADMIN)
+                .build();
+        quadra.setAdmin(adminDono);
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(usuarioRepository.findById(3L)).thenReturn(Optional.of(outroAdmin));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                agendamentoService.listarPorQuadra(1L, 3L)
+        );
+
+        assertEquals("Você não tem permissão para visualizar o histórico desta quadra.", ex.getMessage());
+        verify(agendamentoRepository, never()).findByQuadraIdOrderByDataHoraInicioDesc(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção quando a quadra não for encontrada ao listar por quadra")
+    void deveLancarExcecaoQuandoQuadraNaoEncontradaAoListarPorQuadra() {
+        when(quadraRepository.findById(999L)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                agendamentoService.listarPorQuadra(999L, 1L)
+        );
+
+        assertEquals("Quadra não encontrada para o ID: 999", ex.getMessage());
+    }
 }

@@ -95,6 +95,10 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     boolean existsByQuadraId(@Param("quadraId") Long quadraId);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("SELECT a FROM Agendamento a WHERE a.quadra.id_quadra = :quadraId ORDER BY a.dataHoraInicio DESC")
+    List<Agendamento> findByQuadraIdOrderByDataHoraInicioDesc(@Param("quadraId") Long quadraId);
+
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
     List<Agendamento> findAll();
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})

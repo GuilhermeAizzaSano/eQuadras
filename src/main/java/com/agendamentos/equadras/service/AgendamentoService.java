@@ -236,6 +236,27 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarPorQuadra(Long quadraId, Long usuarioId) {
+        Quadra quadra = quadraRepository.findById(quadraId)
+                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        boolean ehMasterAdmin = usuario.isMasterAdmin();
+        boolean ehDonoQuadra = quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(usuarioId);
+
+        if (!ehMasterAdmin && !ehDonoQuadra) {
+            throw new IllegalArgumentException("Você não tem permissão para visualizar o histórico desta quadra.");
+        }
+
+        return agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(quadraId)
+                .stream()
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<HorarioDisponivelDTO> listarHorariosDisponiveis(Long quadraId, LocalDate data) {
         Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));

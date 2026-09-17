@@ -1,5 +1,6 @@
 export * from './AdminMetricsGrid';
 export * from './CourtBlockModal';
+export * from './CourtHistoryModal';
 export * from './DayAgendaModal';
 export * from './CourtFormModal';
 export * from './CourtManagementList';
