@@ -743,13 +743,13 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                             <span>{horaInicio} às {horaFim}</span>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/40 font-mono">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/40 font-mono">
                             {ag.criadoEm && (
                               <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
                             )}
-                            {isCancelado && ag.canceladoEm && (
-                              <span className="text-[#FF453A]">
-                                Cancelado em: <strong className="text-[#FF453A] font-medium">{formatarDataHoraBr(ag.canceladoEm)}</strong>
+                            {isCancelado && (
+                              <span className="text-[#FF453A]/90">
+                                Cancelado em: <strong className="text-[#FF453A] font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
                               </span>
                             )}
                           </div>
