@@ -295,9 +295,9 @@ export const auditoriaApi = {
     if (filtros.busca) params.append('busca', filtros.busca);
 
     const queryString = params.toString() ? `?${params.toString()}` : '';
-    return apiFetch<import('../types').Page<import('../types').LogAuditoria>>(`/admin/auditoria${queryString}`, { signal });
+    return apiFetch<import('../types').Page<import('../types').LogAuditoria>>(`/api/admin/auditoria${queryString}`, { signal });
   },
 
   obterEstatisticas: (signal?: AbortSignal) =>
-    apiFetch<import('../types').EstatisticasAuditoria>('/admin/auditoria/estatisticas', { signal }),
+    apiFetch<import('../types').EstatisticasAuditoria>('/api/admin/auditoria/estatisticas', { signal }),
 };
