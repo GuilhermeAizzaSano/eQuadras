@@ -16,6 +16,7 @@ import {
   CourtManagementList,
   UserManagementList,
   UserFormModal,
+  AuditLogsPanel,
   HorariosPorDia,
   DEFAULT_HORARIOS,
   DIAS_SEMANA
@@ -26,6 +27,7 @@ import {
   Bell,
   X,
   Users,
+  ShieldAlert,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -49,7 +51,7 @@ export const AdminDashboard: React.FC = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   
   // Controle de Abas
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quadras' | 'usuarios'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'quadras' | 'usuarios' | 'auditoria'>('dashboard');
 
   // Gestão de Usuários (Exclusivo Master Admin)
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -1136,17 +1138,30 @@ export const AdminDashboard: React.FC = () => {
               <span>Gestão de Quadras</span>
             </button>
             {isMasterAdmin && (
-              <button
-                onClick={() => setActiveTab('usuarios')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'usuarios'
-                    ? 'bg-white text-black font-semibold shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Gestão de Usuários</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('usuarios')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
+                    activeTab === 'usuarios'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Gestão de Usuários</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('auditoria')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
+                    activeTab === 'auditoria'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Auditoria & Logs</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -1232,7 +1247,7 @@ export const AdminDashboard: React.FC = () => {
           onAbrirHistorico={setQuadraHistoricoModal}
           getAssetUrl={getAssetUrl}
         />
-      ) : (
+      ) : activeTab === 'usuarios' ? (
         /* Gestão de Usuários (Apenas Master Admin) */
         <UserManagementList
           usuarios={usuarios}
@@ -1248,6 +1263,9 @@ export const AdminDashboard: React.FC = () => {
           }}
           onExcluirUsuario={handleExcluirUsuario}
         />
+      ) : (
+        /* Trilha de Auditoria (Exclusivo Master Admin) */
+        <AuditLogsPanel />
       )}
 
       {/* Modal de Criação / Edição de Quadra */}

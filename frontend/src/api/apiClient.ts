@@ -269,3 +269,35 @@ export const pagamentoApi = {
   simularAprovacao: (agendamentoId: number) =>
     apiFetch<Agendamento>(`/pagamentos/${agendamentoId}/simular-aprovacao`, { method: 'POST' }),
 };
+
+// --- Auditoria & Logs (Exclusivo Master Admin) ---
+export interface FiltrosAuditoria {
+  page?: number;
+  size?: number;
+  usuarioId?: number;
+  categoria?: import('../types').CategoriaAuditoria;
+  acao?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  busca?: string;
+}
+
+export const auditoriaApi = {
+  listarLogs: (filtros: FiltrosAuditoria = {}, signal?: AbortSignal) => {
+    const params = new URLSearchParams();
+    if (filtros.page !== undefined) params.append('page', filtros.page.toString());
+    if (filtros.size !== undefined) params.append('size', filtros.size.toString());
+    if (filtros.usuarioId) params.append('usuarioId', filtros.usuarioId.toString());
+    if (filtros.categoria) params.append('categoria', filtros.categoria);
+    if (filtros.acao) params.append('acao', filtros.acao);
+    if (filtros.dataInicio) params.append('dataInicio', filtros.dataInicio);
+    if (filtros.dataFim) params.append('dataFim', filtros.dataFim);
+    if (filtros.busca) params.append('busca', filtros.busca);
+
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<import('../types').Page<import('../types').LogAuditoria>>(`/admin/auditoria${queryString}`, { signal });
+  },
+
+  obterEstatisticas: (signal?: AbortSignal) =>
+    apiFetch<import('../types').EstatisticasAuditoria>('/admin/auditoria/estatisticas', { signal }),
+};

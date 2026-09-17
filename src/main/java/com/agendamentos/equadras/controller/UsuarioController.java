@@ -10,6 +10,9 @@ import com.agendamentos.equadras.security.ApiKeyRateLimiter;
 import com.agendamentos.equadras.security.ApiKeyService;
 import com.agendamentos.equadras.security.JwtService;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
+import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
+import com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver;
+import com.agendamentos.equadras.service.AuditoriaService;
 import com.agendamentos.equadras.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +38,7 @@ public class UsuarioController {
     private final JwtService jwtService;
     private final ApiKeyService apiKeyService;
     private final ApiKeyRateLimiter apiKeyRateLimiter;
+    private final AuditoriaService auditoriaService;
 
     @Value("${equadras.cookie.secure:true}")
     private boolean cookieSecure;
@@ -43,11 +47,13 @@ public class UsuarioController {
             UsuarioService usuarioService,
             JwtService jwtService,
             ApiKeyService apiKeyService,
-            ApiKeyRateLimiter apiKeyRateLimiter) {
+            ApiKeyRateLimiter apiKeyRateLimiter,
+            AuditoriaService auditoriaService) {
         this.usuarioService = usuarioService;
         this.jwtService = jwtService;
         this.apiKeyService = apiKeyService;
         this.apiKeyRateLimiter = apiKeyRateLimiter;
+        this.auditoriaService = auditoriaService;
     }
 
     private ResponseCookie criarCookieSessao(String token) {
@@ -83,6 +89,11 @@ public class UsuarioController {
     @Operation(summary = "Realizar logout", description = "Encerra a sessão do usuário limpando o cookie HttpOnly.")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
+        UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
+        if (usuarioLogado != null && usuarioLogado.id() != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(usuarioLogado.id(), CategoriaAuditoria.AUTENTICACAO,
+                    "LOGOUT", "USUARIO", usuarioLogado.id().toString(), "Logout efetuado com sucesso.");
+        }
         ResponseCookie cookie = limparCookieSessao();
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())

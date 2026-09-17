@@ -5,6 +5,7 @@ import com.agendamentos.equadras.dto.response.BloqueioHorarioResponseDTO;
 import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
@@ -24,15 +25,18 @@ public class BloqueioHorarioService {
     private final QuadraRepository quadraRepository;
     private final UsuarioRepository usuarioRepository;
     private final AgendamentoRepository agendamentoRepository;
+    private final AuditoriaService auditoriaService;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
                                   UsuarioRepository usuarioRepository,
-                                  AgendamentoRepository agendamentoRepository) {
+                                  AgendamentoRepository agendamentoRepository,
+                                  AuditoriaService auditoriaService) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioRepository = usuarioRepository;
         this.agendamentoRepository = agendamentoRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
@@ -95,6 +99,13 @@ public class BloqueioHorarioService {
 
         BloqueioHorario bloqueio = new BloqueioHorario(quadra, dto.data(), dto.horaInicio(), dto.horaFim(), dto.motivo());
         BloqueioHorario salvo = bloqueioHorarioRepository.save(bloqueio);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "CRIAR", "BLOQUEIO",
+                    salvo.getId().toString(),
+                    "Bloqueio criado na quadra " + quadra.getNome() + " em " + dto.data()
+                            + (dto.horaInicio() != null ? " (" + dto.horaInicio() + " - " + dto.horaFim() + ")" : " (Dia inteiro)")
+                            + (dto.motivo() != null && !dto.motivo().isBlank() ? ". Motivo: " + dto.motivo() : ""));
+        }
         return BloqueioHorarioResponseDTO.fromEntity(salvo);
     }
 
@@ -139,6 +150,11 @@ public class BloqueioHorarioService {
         }
 
         bloqueioHorarioRepository.delete(bloqueio);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+                    bloqueioId.toString(),
+                    "Bloqueio removido da quadra " + quadra.getNome() + " referente à data " + bloqueio.getData());
+        }
     }
 
     @Transactional

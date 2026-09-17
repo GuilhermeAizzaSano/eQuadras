@@ -6,6 +6,7 @@ import com.agendamentos.equadras.dto.request.UsuarioLoginDTO;
 import com.agendamentos.equadras.dto.response.LoginResponseDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.security.JwtService;
@@ -24,12 +25,14 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditoriaService auditoriaService;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
-                           JwtService jwtService) {
+                           JwtService jwtService, AuditoriaService auditoriaService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.auditoriaService = auditoriaService;
     }
 
     public boolean isMasterAdmin(Long usuarioId) {
@@ -64,6 +67,11 @@ public class UsuarioService {
                 .build();
 
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(usuarioLogadoId, CategoriaAuditoria.USUARIO, "CRIAR",
+                    "USUARIO", usuarioSalvo.getId_usuario().toString(),
+                    "Usuário cadastrado pelo admin: " + usuarioSalvo.getEmail_usuario() + " (" + usuarioSalvo.getRole() + ")");
+        }
         return UsuarioResponseDTO.fromEntity(usuarioSalvo);
     }
 
@@ -122,6 +130,11 @@ public class UsuarioService {
         }
 
         Usuario atualizado = usuarioRepository.save(usuario);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(usuarioLogadoId, CategoriaAuditoria.USUARIO, "EDITAR",
+                    "USUARIO", atualizado.getId_usuario().toString(),
+                    "Usuário editado pelo admin: " + atualizado.getEmail_usuario() + " (" + atualizado.getRole() + ")");
+        }
         return UsuarioResponseDTO.fromEntity(atualizado);
     }
 
@@ -137,18 +150,36 @@ public class UsuarioService {
         }
 
         usuarioRepository.delete(usuario);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcaoPorUsuarioId(usuarioLogadoId, CategoriaAuditoria.USUARIO, "EXCLUIR",
+                    "USUARIO", id.toString(),
+                    "Usuário excluído pelo admin: " + usuario.getEmail_usuario() + " (" + usuario.getRole() + ")");
+        }
     }
 
     @Transactional(readOnly = true)
     public LoginResponseDTO login(UsuarioLoginDTO dto) {
         Usuario usuario = usuarioRepository.findByEmail_usuario(dto.email_usuario())
-                .orElseThrow(() -> new IllegalArgumentException("E-mail ou senha incorretos."));
+                .orElse(null);
+
+        if (usuario == null) {
+            if (auditoriaService != null) {
+                auditoriaService.registrarLoginFalha(dto.email_usuario(), "E-mail não cadastrado.");
+            }
+            throw new IllegalArgumentException("E-mail ou senha incorretos.");
+        }
 
         if (!passwordEncoder.matches(dto.senha_usuario(), usuario.getSenha_usuario())) {
+            if (auditoriaService != null) {
+                auditoriaService.registrarLoginFalha(dto.email_usuario(), "Senha incorreta.");
+            }
             throw new IllegalArgumentException("E-mail ou senha incorretos.");
         }
 
         String token = jwtService.gerarToken(usuario);
+        if (auditoriaService != null) {
+            auditoriaService.registrarLoginSucesso(usuario);
+        }
         return new LoginResponseDTO(token, UsuarioResponseDTO.fromEntity(usuario));
     }
 
@@ -190,6 +221,9 @@ public class UsuarioService {
 
         usuario.setSenha_usuario(passwordEncoder.encode(dto.novaSenha()));
         usuarioRepository.save(usuario);
+        if (auditoriaService != null) {
+            auditoriaService.registrarAlteracaoSenha(usuario);
+        }
     }
 
     @Transactional

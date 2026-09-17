@@ -6,6 +6,7 @@ import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.model.entity.Agendamento;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
@@ -42,6 +43,7 @@ public class AgendamentoService {
     private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraService quadraService;
     private final UsuarioService usuarioService;
+    private final AuditoriaService auditoriaService;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
@@ -51,7 +53,8 @@ public class AgendamentoService {
                               AgendamentoLockService agendamentoLockService,
                               com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
                               @org.springframework.context.annotation.Lazy QuadraService quadraService,
-                              UsuarioService usuarioService) {
+                              UsuarioService usuarioService,
+                              AuditoriaService auditoriaService) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
@@ -61,6 +64,7 @@ public class AgendamentoService {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraService = quadraService;
         this.usuarioService = usuarioService;
+        this.auditoriaService = auditoriaService;
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
@@ -215,6 +219,17 @@ public class AgendamentoService {
 
         agendamento.setStatus(StatusAgendamento.CANCELADO);
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
+
+        String tipoExecutor = usuario.isMasterAdmin() ? "MASTER_ADMIN" : (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN ? "ADMIN_QUADRA" : "CLIENTE");
+        String nomeQuadra = agendamento.getQuadra() != null ? agendamento.getQuadra().getNome() : "N/A";
+        if (auditoriaService != null) {
+            auditoriaService.registrarAcao(usuario, CategoriaAuditoria.AGENDAMENTO, "CANCELAR", "AGENDAMENTO",
+                    agendamento.getId_agendamento().toString(),
+                    String.format("Agendamento #%d cancelado por %s (%s). Quadra: %s. Horário: %s até %s",
+                            agendamento.getId_agendamento(), usuario.getNome_usuario(), tipoExecutor, nomeQuadra,
+                            agendamento.getDataHoraInicio(), agendamento.getDataHoraFim()));
+        }
+
         return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
     }
 
@@ -610,10 +625,19 @@ public class AgendamentoService {
     @Transactional
     public void expirarAgendamentosPendentes() {
         LocalDateTime limite = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL).minusMinutes(15);
-        agendamentoRepository.cancelarPendentesExpirados(
+        int cancelados = agendamentoRepository.cancelarPendentesExpirados(
                 StatusAgendamento.PENDENTE,
                 StatusAgendamento.CANCELADO,
                 limite
         );
+        if (cancelados > 0 && auditoriaService != null) {
+            auditoriaService.registrarAcaoSistema(
+                    CategoriaAuditoria.AGENDAMENTO,
+                    "CANCELAR",
+                    "AGENDAMENTO",
+                    "BATCH",
+                    "Cancelamento automático de " + cancelados + " agendamento(s) pendente(s) expirado(s) por timeout de pagamento Pix (15 min)."
+            );
+        }
     }
 }
