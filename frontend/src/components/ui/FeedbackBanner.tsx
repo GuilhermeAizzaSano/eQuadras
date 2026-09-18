@@ -49,10 +49,10 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClos
         </div>
 
         <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-0.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/50 mb-1 font-mono">
             {isSuccess ? 'Sucesso' : 'Atenção'}
           </p>
-          <p className="text-xs sm:text-sm text-white/90 leading-snug whitespace-pre-line break-words tracking-tight">
+          <p className="text-xs sm:text-sm text-white/95 leading-relaxed whitespace-pre-line break-words font-sans">
             {feedback.message}
           </p>
         </div>

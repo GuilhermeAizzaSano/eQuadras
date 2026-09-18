@@ -603,7 +603,10 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
         onClose={() => setAgendamentoPixModal(null)}
         onSuccess={() => {
           setAgendamentoPixModal(null);
-          setFeedback({ type: 'success', message: 'Pagamento Pix aprovado com sucesso! Sua reserva está confirmada.' });
+          setFeedback({
+            type: 'success',
+            message: 'Pagamento Pix aprovado com sucesso!\nSua reserva está confirmada.',
+          });
           carregarMeusAgendamentos();
           if (selectedQuadra && dataSelecionada) {
             carregarHorarios(selectedQuadra, dataSelecionada);

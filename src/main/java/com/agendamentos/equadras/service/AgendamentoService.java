@@ -162,8 +162,19 @@ public class AgendamentoService {
                 String dataFormatada = salvo.getDataHoraInicio().format(formatadorData);
                 String horaInicio = salvo.getDataHoraInicio().format(formatadorHora);
                 String horaFim = salvo.getDataHoraFim().format(formatadorHora);
-                String msg = String.format("Pagamento Pix confirmado!\n%s agendou %s\nData: %s (%s às %s)",
-                        salvo.getUsuario().getNome_usuario(), salvo.getQuadra().getNome(), dataFormatada, horaInicio, horaFim);
+                String telefone = salvo.getUsuario().getPhone_usuario() != null && !salvo.getUsuario().getPhone_usuario().isBlank()
+                        ? salvo.getUsuario().getPhone_usuario()
+                        : "Não informado";
+
+                String msg = String.format(
+                        "Pagamento Pix confirmado!\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s",
+                        salvo.getUsuario().getNome_usuario(),
+                        telefone,
+                        salvo.getQuadra().getNome(),
+                        dataFormatada,
+                        horaInicio,
+                        horaFim
+                );
 
                 notificacaoService.enviarNotificacao(salvo.getQuadra().getAdmin().getId_usuario(), msg);
             }
