@@ -239,7 +239,14 @@ public class QuadraService {
     public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                           String tipoEsporte,
                                           String nome, String cidade, String bairro, String cep) {
-        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep)
+        return listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, null, cidade, bairro, cep);
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                          String tipoEsporte,
+                                          String nome, String endereco, String cidade, String bairro, String cep) {
+        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
                 .stream()
                 .map(QuadraResponseDTO::fromEntity)
                 .toList();
@@ -249,7 +256,14 @@ public class QuadraService {
     public List<com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                         String tipoEsporte,
                                                         String nome, String cidade, String bairro, String cep) {
-        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep)
+        return listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, null, cidade, bairro, cep);
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                                        String tipoEsporte,
+                                                        String nome, String endereco, String cidade, String bairro, String cep) {
+        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
                 .stream()
                 .map(com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO::fromEntity)
                 .toList();
@@ -258,6 +272,12 @@ public class QuadraService {
     public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                 String tipoEsporte,
                                                 String nome, String cidade, String bairro, String cep) {
+        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, null, cidade, bairro, cep);
+    }
+
+    public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                                String tipoEsporte,
+                                                String nome, String endereco, String cidade, String bairro, String cep) {
         List<Quadra> quadras;
         double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
 
@@ -322,6 +342,14 @@ public class QuadraService {
         if (nome != null && !nome.isBlank()) {
             String nomeNorm = normalizarTexto(nome);
             stream = stream.filter(q -> q.getNome() != null && normalizarTexto(q.getNome()).contains(nomeNorm));
+        }
+
+        if (endereco != null && !endereco.isBlank()) {
+            String enderecoNorm = normalizarTexto(endereco);
+            stream = stream.filter(q -> 
+                (q.getLogradouro() != null && normalizarTexto(q.getLogradouro()).contains(enderecoNorm)) ||
+                (q.getBairro() != null && normalizarTexto(q.getBairro()).contains(enderecoNorm))
+            );
         }
 
         if (cidade != null && !cidade.isBlank()) {

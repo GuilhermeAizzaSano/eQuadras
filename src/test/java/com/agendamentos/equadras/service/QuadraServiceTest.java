@@ -191,4 +191,50 @@ class QuadraServiceTest {
                 anyDouble(), anyDouble(), anyDouble(), anyDouble()
         );
     }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por nome ignorando maiúsculas e acentos")
+    void deveFiltrarQuadrasPorNome() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Sunset Vôlei").logradouro("Rua 13").bairro("Samambaia").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Complexo Esportivo do Bosque").logradouro("Av Brasil").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null, null);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Arena Sunset Vôlei", resultado.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por endereço casando com logradouro ou bairro")
+    void deveFiltrarQuadrasPorEndereco() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra A").logradouro("Rua dos Aviadores, 120").bairro("Jardim Municipal").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra B").logradouro("Av. Brasília, 934").bairro("JACB II").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        // Busca por logradouro
+        List<Quadra> resLogradouro = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, null, "aviadores", null, null, null);
+        assertEquals(1, resLogradouro.size());
+        assertEquals("Quadra A", resLogradouro.get(0).getNome());
+
+        // Busca por bairro
+        List<Quadra> resBairro = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, null, "jacb", null, null, null);
+        assertEquals(1, resBairro.size());
+        assertEquals("Quadra B", resBairro.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve combinar filtros de nome e endereço simultaneamente")
+    void deveCombinarFiltroNomeEEndereco() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Beach").logradouro("Rua das Rosas").bairro("Jardim Oiti").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Arena Gol").logradouro("Rua das Rosas").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "Beach", "oiti", null, null, null);
+        assertEquals(1, resultado.size());
+        assertEquals("Arena Beach", resultado.get(0).getNome());
+    }
 }
