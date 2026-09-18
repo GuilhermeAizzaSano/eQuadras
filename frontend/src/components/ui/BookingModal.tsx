@@ -67,9 +67,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-3xl bg-[#121214] border border-white/[0.1] rounded-3xl shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-3xl bg-[#09090b] border border-white/[0.08] rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-white/[0.08] flex items-center justify-between gap-4 bg-[#121214]/80 backdrop-blur-xl">
+        <div className="p-5 sm:p-6 border-b border-white/[0.06] flex items-center justify-between gap-4 bg-[#09090b]/80 backdrop-blur-xl">
           <div>
             <div className="flex items-center gap-2.5">
               <Badge variant="neutral" className="text-[10px]">
