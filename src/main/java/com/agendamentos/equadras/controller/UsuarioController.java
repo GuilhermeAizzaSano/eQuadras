@@ -9,6 +9,7 @@ import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.security.ApiKeyRateLimiter;
 import com.agendamentos.equadras.security.ApiKeyService;
 import com.agendamentos.equadras.security.JwtService;
+import com.agendamentos.equadras.security.LoginRateLimiter;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver;
@@ -38,6 +39,7 @@ public class UsuarioController {
     private final JwtService jwtService;
     private final ApiKeyService apiKeyService;
     private final ApiKeyRateLimiter apiKeyRateLimiter;
+    private final LoginRateLimiter loginRateLimiter;
     private final AuditoriaService auditoriaService;
 
     @Value("${equadras.cookie.secure:true}")
@@ -48,11 +50,13 @@ public class UsuarioController {
             JwtService jwtService,
             ApiKeyService apiKeyService,
             ApiKeyRateLimiter apiKeyRateLimiter,
+            LoginRateLimiter loginRateLimiter,
             AuditoriaService auditoriaService) {
         this.usuarioService = usuarioService;
         this.jwtService = jwtService;
         this.apiKeyService = apiKeyService;
         this.apiKeyRateLimiter = apiKeyRateLimiter;
+        this.loginRateLimiter = loginRateLimiter;
         this.auditoriaService = auditoriaService;
     }
 
@@ -78,19 +82,37 @@ public class UsuarioController {
 
     @Operation(summary = "Realizar login", description = "Autentica via e-mail e senha, define o cookie HttpOnly de sessão e retorna o perfil do usuário.")
     @PostMapping("/login")
-    public ResponseEntity<UsuarioResponseDTO> login(@RequestBody @Valid UsuarioLoginDTO dto) {
-        var resposta = usuarioService.login(dto);
-        ResponseCookie cookie = criarCookieSessao(resposta.token());
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(resposta.usuario());
+    public ResponseEntity<?> login(@RequestBody @Valid UsuarioLoginDTO dto) {
+        String email = dto.email_usuario();
+        if (loginRateLimiter.isEmailBloqueado(email)) {
+            long retryAfter = loginRateLimiter.getRetryAfterSegundos(email);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", String.valueOf(retryAfter))
+                    .body(org.springframework.http.ProblemDetail.forStatusAndDetail(
+                            HttpStatus.TOO_MANY_REQUESTS,
+                            "Muitas tentativas falhas de login para esta conta. Tente novamente em " + retryAfter + " segundos."
+                    ));
+        }
+
+        try {
+            var resposta = usuarioService.login(dto);
+            loginRateLimiter.registrarSucesso(email);
+            ResponseCookie cookie = criarCookieSessao(resposta.token());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .body(resposta.usuario());
+        } catch (IllegalArgumentException e) {
+            loginRateLimiter.registrarFalha(email);
+            throw e;
+        }
     }
 
-    @Operation(summary = "Realizar logout", description = "Encerra a sessão do usuário limpando o cookie HttpOnly.")
+    @Operation(summary = "Realizar logout", description = "Encerra a sessão do usuário limpando o cookie HttpOnly e invalidando tokens ativos.")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
         if (usuarioLogado != null && usuarioLogado.id() != null) {
+            usuarioService.revogarSessao(usuarioLogado.id());
             auditoriaService.registrarAcaoPorUsuarioId(usuarioLogado.id(), CategoriaAuditoria.AUTENTICACAO,
                     "LOGOUT", "USUARIO", usuarioLogado.id().toString(), "Logout efetuado com sucesso.");
         }

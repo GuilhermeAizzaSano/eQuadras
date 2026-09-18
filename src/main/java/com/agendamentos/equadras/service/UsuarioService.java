@@ -141,6 +141,7 @@ public class UsuarioService {
 
         if (dto.nova_senha() != null && !dto.nova_senha().isBlank()) {
             usuario.setSenha_usuario(passwordEncoder.encode(dto.nova_senha()));
+            usuario.incrementarTokenVersion();
         }
 
         Usuario atualizado = usuarioRepository.save(usuario);
@@ -171,12 +172,15 @@ public class UsuarioService {
         }
     }
 
+    private static final String DUMMY_BCRYPT_HASH = "$2a$10$abcdefghijklmnopqrstuvABCDEFGHIJKLMNOPQRSTUVWXYZ012345";
+
     @Transactional
     public LoginResponseDTO login(UsuarioLoginDTO dto) {
         Usuario usuario = usuarioRepository.findByEmail_usuario(dto.email_usuario())
                 .orElse(null);
 
         if (usuario == null) {
+            passwordEncoder.matches(dto.senha_usuario(), DUMMY_BCRYPT_HASH);
             if (auditoriaService != null) {
                 auditoriaService.registrarLoginFalha(dto.email_usuario(), "E-mail não cadastrado.");
             }
@@ -222,6 +226,15 @@ public class UsuarioService {
     }
 
     @Transactional
+    public void revogarSessao(Long usuarioId) {
+        if (usuarioId == null) return;
+        usuarioRepository.findById(usuarioId).ifPresent(usuario -> {
+            usuario.incrementarTokenVersion();
+            usuarioRepository.save(usuario);
+        });
+    }
+
+    @Transactional
     public void alterarMinhaSenha(Long usuarioId, com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + usuarioId));
@@ -235,6 +248,7 @@ public class UsuarioService {
         }
 
         usuario.setSenha_usuario(passwordEncoder.encode(dto.novaSenha()));
+        usuario.incrementarTokenVersion();
         usuarioRepository.save(usuario);
         if (auditoriaService != null) {
             auditoriaService.registrarAlteracaoSenha(usuario);

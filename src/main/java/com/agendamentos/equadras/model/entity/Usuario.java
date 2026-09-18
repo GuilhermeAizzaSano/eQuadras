@@ -49,6 +49,9 @@ public class Usuario {
     @Column(nullable = false)
     private boolean ativo = true;
 
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion = 1;
+
     public Usuario() {}
 
     public Usuario(Long id_usuario, String nome_usuario, String email_usuario, String senha_usuario, String phone_usuario, Role role, LocalDateTime criadoEm) {
@@ -60,6 +63,7 @@ public class Usuario {
         this.role = role;
         this.criadoEm = criadoEm;
         this.ativo = true;
+        this.tokenVersion = 1;
     }
 
     @PrePersist
@@ -108,6 +112,10 @@ public class Usuario {
     public boolean isAtivo() { return ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }
 
+    public int getTokenVersion() { return tokenVersion; }
+    public void setTokenVersion(int tokenVersion) { this.tokenVersion = tokenVersion; }
+    public void incrementarTokenVersion() { this.tokenVersion++; }
+
     public boolean isMasterAdmin() {
         return isMasterAdmin(MASTER_EMAIL_CONFIGURADO);
     }
@@ -150,6 +158,7 @@ public class Usuario {
         private Instant apiKeyCriadaEm;
         private Instant apiKeyUltimoUsoEm;
         private boolean ativo = true;
+        private int tokenVersion = 1;
 
         public UsuarioBuilder id_usuario(Long id_usuario) { this.id_usuario = id_usuario; return this; }
         public UsuarioBuilder nome_usuario(String nome_usuario) { this.nome_usuario = nome_usuario; return this; }
@@ -163,6 +172,7 @@ public class Usuario {
         public UsuarioBuilder apiKeyCriadaEm(Instant apiKeyCriadaEm) { this.apiKeyCriadaEm = apiKeyCriadaEm; return this; }
         public UsuarioBuilder apiKeyUltimoUsoEm(Instant apiKeyUltimoUsoEm) { this.apiKeyUltimoUsoEm = apiKeyUltimoUsoEm; return this; }
         public UsuarioBuilder ativo(boolean ativo) { this.ativo = ativo; return this; }
+        public UsuarioBuilder tokenVersion(int tokenVersion) { this.tokenVersion = tokenVersion; return this; }
 
         public Usuario build() {
             Usuario u = new Usuario(id_usuario, nome_usuario, email_usuario, senha_usuario, phone_usuario, role, criadoEm);
@@ -171,6 +181,7 @@ public class Usuario {
             u.setApiKeyCriadaEm(this.apiKeyCriadaEm);
             u.setApiKeyUltimoUsoEm(this.apiKeyUltimoUsoEm);
             u.setAtivo(this.ativo);
+            u.setTokenVersion(this.tokenVersion);
             return u;
         }
     }

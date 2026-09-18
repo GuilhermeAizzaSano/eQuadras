@@ -158,8 +158,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long usuarioId = Long.valueOf(claims.getSubject());
 
                 Optional<Usuario> usuarioOpt = usuarioRepository.findById(usuarioId);
+                Integer claimVer = claims.get("ver", Integer.class);
+
                 if (usuarioOpt.isPresent() && usuarioOpt.get().isAtivo()) {
                     Usuario usuario = usuarioOpt.get();
+
+                    // Se a versão do token for divergente da versão ativa do usuário, invalida a sessão
+                    if (claimVer == null || claimVer != usuario.getTokenVersion()) {
+                        SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
                     UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(
                             usuario.getId_usuario(),
                             usuario.getRole(),
