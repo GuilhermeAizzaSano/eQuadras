@@ -642,8 +642,8 @@ export const ClientDashboard: React.FC = () => {
 
       {/* ABA 1: EXPLORAR QUADRAS */}
       <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
-        {/* Barra de Filtros e Busca */}
-        <div className="flex flex-col gap-3.5 bg-[#121214] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.08] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+        {/* Barra de Filtros e Busca Clean Apple */}
+        <div className="flex flex-col gap-3.5 bg-white/[0.02] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.06]">
           {/* Linha Superior: Esportes + Chave Seletora de Modo de Busca */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             {/* Dropdown de Esportes no Mobile */}
@@ -813,7 +813,7 @@ export const ClientDashboard: React.FC = () => {
                 <div
                   key={q.id_quadra}
                   onClick={() => setQuadraDetalhes(q)}
-                  className="group relative rounded-2xl sm:rounded-3xl border border-white/[0.08] hover:border-white/[0.2] bg-[#121214] hover:bg-[#161618] overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] active:scale-[0.99]"
+                  className="group relative rounded-2xl sm:rounded-3xl border border-white/[0.06] hover:border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.04] overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between active:scale-[0.99]"
                 >
                   {/* Foto de Capa da Quadra */}
                   <div className="relative aspect-video w-full overflow-hidden bg-black">
@@ -826,13 +826,13 @@ export const ClientDashboard: React.FC = () => {
                           'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80';
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
                     {/* Badge de Esporte e Status sobre a imagem */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
                       <Badge
                         variant="neutral"
-                        className="bg-black/60 backdrop-blur-xl border border-white/[0.12] text-white text-[11px]"
+                        className="bg-black/60 backdrop-blur-md border border-white/[0.1] text-white text-[11px]"
                       >
                         {q.tipoEsporte.replace('_', ' ')}
                       </Badge>
