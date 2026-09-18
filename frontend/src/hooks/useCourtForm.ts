@@ -286,7 +286,7 @@ export const useCourtForm = ({
     setConfirmModal({
       isOpen: true,
       title: acaoTitulo,
-      description: `Deseja realmente ${acaoTexto} "${nome}" com valor de R$ ${parseFloat(valorHora || '0').toFixed(2)}/hora?`,
+      description: `Quadra: ${nome}\nValor: R$ ${parseFloat(valorHora || '0').toFixed(2)}/hora\n\nDeseja realmente ${acaoTexto}?`,
       isDestructive: false,
       onConfirm: async () => {
         setConfirmModal({
