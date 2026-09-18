@@ -74,6 +74,17 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     };
   }, [isOpen, agendamento, onSuccess]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !simulando) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, simulando, onClose]);
+
   if (!isOpen || !agendamento) return null;
 
   const minutos = Math.floor(segundosRestantes / 60);
@@ -88,17 +99,6 @@ export const ModalPix: React.FC<ModalPixProps> = ({
       setTimeout(() => setCopiado(false), 3000);
     }
   };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !simulando) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, simulando, onClose]);
 
   const handleSimularPagamento = async () => {
     setSimulando(true);
