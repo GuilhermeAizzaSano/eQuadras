@@ -218,7 +218,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         />
       ) : (
         <div className="space-y-4">
-          <div className="space-y-3.5">
+          <div className="space-y-3.5 min-h-[580px]">
             {agendamentosPaginados.map((ag) => {
               const isCancelado = ag.status === 'CANCELADO';
               const isPassado = new Date(ag.dataHoraFim) < new Date();
