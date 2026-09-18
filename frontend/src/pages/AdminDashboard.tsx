@@ -239,7 +239,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setConfirmModal({
       isOpen: true,
       title: 'Excluir Todas as Notificações',
-      description: 'Deseja realmente excluir todo o histórico de notificações? Esta ação não pode ser desfeita.',
+      description: 'Deseja realmente excluir todo o histórico de notificações?\n\nEsta ação não poderá ser desfeita.',
       isDestructive: true,
       confirmLabel: 'Excluir Todas',
       onConfirm: async () => {

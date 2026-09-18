@@ -71,9 +71,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
 
-        <p className="text-xs sm:text-sm text-white/60 leading-relaxed whitespace-pre-line break-words tracking-tight">
+        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs sm:text-sm text-white/80 leading-relaxed whitespace-pre-line break-words font-sans">
           {description}
-        </p>
+        </div>
 
         <div className="flex items-center gap-3 pt-2">
           <Button

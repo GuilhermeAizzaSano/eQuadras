@@ -415,7 +415,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     setConfirmModal({
       isOpen: true,
       title: 'Confirmar Agendamento',
-      description: `Deseja reservar a quadra "${quadraAtual.nome}" no dia ${dataFormatada}, das ${inicioStr} às ${fimStr} (${ordenados.length}h) pelo valor total de R$ ${totalPagar.toFixed(2)}?`,
+      description: `Quadra: ${quadraAtual.nome}\nData: ${dataFormatada}\nHorário: das ${inicioStr} às ${fimStr} (${ordenados.length}h)\nValor Total: R$ ${totalPagar.toFixed(2)}\n\nDeseja confirmar a reserva e gerar o pagamento Pix?`,
       isDestructive: false,
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -437,7 +437,10 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
 
           // Abre modal do Pix para pagamento
           setAgendamentoPixModal(novoAgendamento);
-          setFeedback({ type: 'success', message: 'Reserva pré-agendada com sucesso! Conclua o pagamento Pix para confirmar seu jogo.' });
+          setFeedback({
+            type: 'success',
+            message: 'Reserva pré-agendada com sucesso!\nConclua o pagamento Pix para confirmar seu jogo.',
+          });
         } catch (err: any) {
           setFeedback({ type: 'error', message: err.message || 'Falha ao agendar.' });
         } finally {
@@ -453,7 +456,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     setConfirmModal({
       isOpen: true,
       title: 'Cancelar Agendamento',
-      description: 'Deseja realmente cancelar esta reserva? O horário voltará a ficar disponível para outros praticantes.',
+      description: 'Deseja realmente cancelar esta reserva?\n\nO horário voltará a ficar disponível para outros praticantes no sistema.',
       isDestructive: true,
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
