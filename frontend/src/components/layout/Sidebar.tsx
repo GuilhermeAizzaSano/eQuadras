@@ -17,10 +17,11 @@ import {
 
 export type ClientTab = 'QUADRAS' | 'AGENDAS';
 export type AdminTab = 'RELATORIOS' | 'GESTAO_QUADRAS' | 'USUARIOS' | 'AUDITORIA';
+export type NavigationTab = ClientTab | AdminTab;
 
 interface SidebarProps {
-  currentTab: string;
-  onSelectTab: (tab: any) => void;
+  currentTab: NavigationTab;
+  onSelectTab: (tab: NavigationTab) => void;
   onOpenApiKey: () => void;
   onOpenTrocarSenha: () => void;
 }

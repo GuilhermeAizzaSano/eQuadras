@@ -102,7 +102,7 @@ export interface Notificacao {
 
 export interface Page<T> {
   content: T[];
-  pageable: any;
+  pageable?: unknown;
   last: boolean;
   totalPages: number;
   totalElements: number;

@@ -50,9 +50,10 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         .then((dados) => {
           setAgendamentos(dados || []);
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           console.error('Erro ao buscar histórico da quadra:', err);
-          setErro(err.message || 'Falha ao carregar o histórico de agendamentos da quadra.');
+          const msg = err instanceof Error ? err.message : 'Falha ao carregar o histórico de agendamentos da quadra.';
+          setErro(msg);
           setAgendamentos([]);
         })
         .finally(() => {
@@ -64,16 +65,25 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
     }
   }, [isOpen, quadra]);
 
-  // Bloqueio de rolagem do body enquanto o modal estiver aberto
+  // Bloqueio de rolagem do body enquanto o modal estiver aberto e fechar com Escape
   useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && !loading) {
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
       return () => {
         document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, loading, onClose]);
 
   // Resetar página atual ao alterar filtro
   const handleFiltroChange = (novoFiltro: StatusFiltro) => {

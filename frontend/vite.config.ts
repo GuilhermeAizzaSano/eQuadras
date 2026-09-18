@@ -15,5 +15,24 @@ export default defineConfig({
       '/uploads': 'http://localhost:8080',
       '/api': 'http://localhost:8080',
     }
-  }
+  },
+  build: {
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
+  esbuild: {
+    drop: ['debugger'],
+  },
+  // @ts-ignore
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
 });

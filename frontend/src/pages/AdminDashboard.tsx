@@ -173,18 +173,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       eventSourceRef.current = new EventSource(streamUrl, { withCredentials: true });
       
       eventSourceRef.current.addEventListener('notificacao', (event) => {
-        const novaNotificacao: Notificacao = JSON.parse(event.data);
-        
-        setNotificacoes((prev) => [novaNotificacao, ...prev.slice(0, 4)]);
-        setFeedback({ type: 'success', message: novaNotificacao.mensagem });
-        
-        // Recarregar os agendamentos para refletir no calendário instantaneamente
-        carregarAgendamentos();
+        try {
+          const novaNotificacao: Notificacao = JSON.parse(event.data);
+          setNotificacoes((prev) => [novaNotificacao, ...prev.slice(0, 4)]);
+          setFeedback({ type: 'success', message: novaNotificacao.mensagem });
+          carregarAgendamentos();
+        } catch {
+          // Payload parsing guard
+        }
       });
+
+      eventSourceRef.current.onerror = () => {
+        // Se a conexão cair ou falhar temporariamente, fecha o socket para evitar tempestade de reconexões imediatas
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+      };
 
       return () => {
         if (eventSourceRef.current) {
           eventSourceRef.current.close();
+          eventSourceRef.current = null;
         }
       };
     }
