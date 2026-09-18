@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, EmptyState, Badge, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
-import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, MapPin, QrCode, Info, ChevronDown, History, Loader2, ChevronLeft, ChevronRight, Search, SlidersHorizontal, Navigation, X } from 'lucide-react';
 import { formatarDataHoraBr } from '../utils/dateUtils';
 
 const ESPORTES = ['TODOS', 'FUTEBOL', 'BEACH_TENNIS', 'TENIS', 'FUTSAL', 'VOLEI', 'BASQUETE'] as const;
@@ -158,7 +158,36 @@ export const ClientDashboard: React.FC = () => {
     onConfirm: () => {},
   });
 
+  type ModoBusca = 'ATRIBUTOS' | 'CEP';
+  const [modoBusca, setModoBusca] = useState<ModoBusca>('ATRIBUTOS');
+  const [buscaNome, setBuscaNome] = useState('');
+  const [buscaEndereco, setBuscaEndereco] = useState('');
   const [cepBusca, setCepBusca] = useState('');
+
+  const alternarModoBusca = (novoModo: ModoBusca) => {
+    setModoBusca(novoModo);
+    if (novoModo === 'ATRIBUTOS') {
+      if (cepBusca) {
+        setCepBusca('');
+        carregarQuadras();
+        setFeedback(null);
+      }
+    } else {
+      setBuscaNome('');
+      setBuscaEndereco('');
+    }
+  };
+
+  const limparFiltrosAtributos = () => {
+    setBuscaNome('');
+    setBuscaEndereco('');
+  };
+
+  const limparFiltroCep = () => {
+    setCepBusca('');
+    carregarQuadras();
+    setFeedback(null);
+  };
 
   // Gera os próximos 14 dias para o seletor visual considerando as disponibilidades da quadra selecionada
   const diasDisponiveis = useMemo(() => {
@@ -521,9 +550,35 @@ export const ClientDashboard: React.FC = () => {
     });
   };
 
-  const quadrasFiltradas = quadras.filter(
-    (q) => filtroEsporte === 'TODOS' || q.tipoEsporte === filtroEsporte
-  );
+  const normalizarBusca = (txt?: string) =>
+    (txt || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
+  const quadrasFiltradas = quadras.filter((q) => {
+    if (filtroEsporte !== 'TODOS' && q.tipoEsporte !== filtroEsporte) {
+      return false;
+    }
+    if (modoBusca === 'ATRIBUTOS') {
+      if (buscaNome.trim()) {
+        const nomeNorm = normalizarBusca(buscaNome);
+        if (!normalizarBusca(q.nome).includes(nomeNorm)) {
+          return false;
+        }
+      }
+      if (buscaEndereco.trim()) {
+        const endNorm = normalizarBusca(buscaEndereco);
+        const matchLogradouro = normalizarBusca(q.logradouro).includes(endNorm);
+        const matchBairro = normalizarBusca(q.bairro).includes(endNorm);
+        if (!matchLogradouro && !matchBairro) {
+          return false;
+        }
+      }
+    }
+    return true;
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-7">
@@ -588,63 +643,149 @@ export const ClientDashboard: React.FC = () => {
       {/* ABA 1: EXPLORAR QUADRAS */}
       <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
         {/* Barra de Filtros e Busca */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#121214] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.08] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
-          {/* Dropdown de Esportes no Mobile */}
-          <div className="relative block sm:hidden w-full">
-            <select
-              value={filtroEsporte}
-              onChange={(e) => setFiltroEsporte(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-medium text-white focus:outline-none focus:border-white/30 transition appearance-none cursor-pointer pr-10 shadow-sm"
-            >
-              {ESPORTES.map((esp) => (
-                <option key={esp} value={esp} className="bg-[#1c1c1e] text-white">
-                  {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+        <div className="flex flex-col gap-3.5 bg-[#121214] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.08] shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+          {/* Linha Superior: Esportes + Chave Seletora de Modo de Busca */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Dropdown de Esportes no Mobile */}
+            <div className="relative block sm:hidden w-full">
+              <select
+                value={filtroEsporte}
+                onChange={(e) => setFiltroEsporte(e.target.value)}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-xs font-medium text-white focus:outline-none focus:border-white/30 transition appearance-none cursor-pointer pr-10 shadow-sm"
+              >
+                {ESPORTES.map((esp) => (
+                  <option key={esp} value={esp} className="bg-[#1c1c1e] text-white">
+                    {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
 
-          {/* Filtro por Esporte (Pills no Desktop) */}
-          <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
-            {ESPORTES.map((esp) => (
+            {/* Filtro por Esporte (Pills no Desktop) */}
+            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
+              {ESPORTES.map((esp) => (
+                <button
+                  key={esp}
+                  onClick={() => setFiltroEsporte(esp)}
+                  className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer tracking-tight font-medium ${
+                    filtroEsporte === esp
+                      ? 'bg-white text-black font-semibold border-white shadow-sm'
+                      : 'bg-white/[0.04] text-white/60 border-white/[0.08] hover:border-white/[0.16] hover:text-white'
+                  }`}
+                >
+                  {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            {/* Chave Seletora de Modo: Atributos vs CEP / Proximidade */}
+            <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] shrink-0 self-start sm:self-auto">
               <button
-                key={esp}
-                onClick={() => setFiltroEsporte(esp)}
-                className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer tracking-tight font-medium ${
-                  filtroEsporte === esp
-                    ? 'bg-white text-black font-semibold border-white shadow-sm'
-                    : 'bg-white/[0.04] text-white/60 border-white/[0.08] hover:border-white/[0.16] hover:text-white'
+                type="button"
+                onClick={() => alternarModoBusca('ATRIBUTOS')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  modoBusca === 'ATRIBUTOS'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
-                {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Por Atributos</span>
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => alternarModoBusca('CEP')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  modoBusca === 'CEP'
+                    ? 'bg-white text-black font-semibold shadow-sm'
+                    : 'text-white/60 hover:text-white'
+                }`}
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Por CEP (2 km)</span>
+              </button>
+            </div>
           </div>
 
-          {/* Filtro por CEP */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <input
-              type="text"
-              placeholder="Filtrar por CEP até 2 km"
-              value={cepBusca}
-              onChange={(e) => {
-                const val = e.target.value
-                  .replace(/\D/g, '')
-                  .replace(/(\d{5})(\d)/, '$1-$2')
-                  .substring(0, 9);
-                setCepBusca(val);
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && buscarQuadrasPorLocalizacao()}
-              className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition w-full md:w-52 font-mono"
-            />
-            <button
-              onClick={buscarQuadrasPorLocalizacao}
-              disabled={loading}
-              className="bg-white/[0.08] hover:bg-white/[0.12] text-white px-4 py-2 rounded-xl text-xs font-medium transition border border-white/[0.1] disabled:opacity-40 shrink-0 active:scale-[0.98] cursor-pointer tracking-tight"
-            >
-              Buscar
-            </button>
+          {/* Linha Inferior: Controles Específicos do Modo Ativo */}
+          <div className="pt-2 border-t border-white/[0.06]">
+            {modoBusca === 'ATRIBUTOS' ? (
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
+                {/* Campo 1: Nome da Quadra */}
+                <div className="relative w-full sm:flex-1">
+                  <Search className="w-3.5 h-3.5 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome da quadra..."
+                    value={buscaNome}
+                    onChange={(e) => setBuscaNome(e.target.value)}
+                    className="bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition w-full"
+                  />
+                </div>
+
+                {/* Campo 2: Endereço (Bairro ou Rua) */}
+                <div className="relative w-full sm:flex-1">
+                  <MapPin className="w-3.5 h-3.5 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por bairro ou rua..."
+                    value={buscaEndereco}
+                    onChange={(e) => setBuscaEndereco(e.target.value)}
+                    className="bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition w-full"
+                  />
+                </div>
+
+                {/* Botão de Limpar Filtros */}
+                {(buscaNome || buscaEndereco) && (
+                  <button
+                    type="button"
+                    onClick={limparFiltrosAtributos}
+                    className="flex items-center gap-1 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-white/[0.08] shrink-0 active:scale-95 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Limpar</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Navigation className="w-3.5 h-3.5 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Digite o CEP (ex: 15707-585)"
+                    value={cepBusca}
+                    onChange={(e) => {
+                      const val = e.target.value
+                        .replace(/\D/g, '')
+                        .replace(/(\d{5})(\d)/, '$1-$2')
+                        .substring(0, 9);
+                      setCepBusca(val);
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && buscarQuadrasPorLocalizacao()}
+                    className="bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition w-full font-mono"
+                  />
+                </div>
+                <button
+                  onClick={buscarQuadrasPorLocalizacao}
+                  disabled={loading}
+                  className="bg-white/[0.08] hover:bg-white/[0.12] text-white px-4 py-2 rounded-xl text-xs font-medium transition border border-white/[0.1] disabled:opacity-40 shrink-0 active:scale-[0.98] cursor-pointer tracking-tight"
+                >
+                  Buscar no Raio
+                </button>
+                {cepBusca && (
+                  <button
+                    type="button"
+                    onClick={limparFiltroCep}
+                    className="flex items-center gap-1 bg-white/[0.06] hover:bg-white/[0.1] text-white/70 hover:text-white px-3 py-2 rounded-xl text-xs font-medium transition border border-white/[0.08] shrink-0 active:scale-95 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Limpar</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -653,7 +794,11 @@ export const ClientDashboard: React.FC = () => {
           <EmptyState
             icon={MapPin}
             title="Nenhuma quadra encontrada"
-            description="Tente alternar a categoria esportiva ou buscar sem restrição de CEP."
+            description={
+              modoBusca === 'ATRIBUTOS'
+                ? 'Nenhuma quadra corresponde aos filtros de nome ou endereço informados.'
+                : 'Tente alternar a categoria esportiva ou buscar sem restrição de CEP.'
+            }
             className="py-14"
           />
         ) : (

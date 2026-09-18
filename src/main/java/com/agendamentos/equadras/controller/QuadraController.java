@@ -49,6 +49,7 @@ public class QuadraController {
             @RequestParam(required = false, defaultValue = "2.0") Double raioKm,
             @RequestParam(required = false) String tipoEsporte,
             @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String endereco,
             @RequestParam(required = false) String cidade,
             @RequestParam(required = false) String bairro,
             @RequestParam(required = false) String cep,
@@ -76,10 +77,10 @@ public class QuadraController {
         }
 
         if (querResumido) {
-            return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep));
+            return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
         }
 
-        return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep));
+        return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
     }
 
     @Operation(summary = "Buscar quadra por ID", description = "Retorna os detalhes completos, fotos e horários de funcionamento de uma quadra específica.")

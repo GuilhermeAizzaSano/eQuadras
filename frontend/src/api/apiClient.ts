@@ -165,13 +165,39 @@ export const usuarioApi = {
   listar: (signal?: AbortSignal) => apiFetch<Usuario[]>('/usuarios', { signal }),
 };
 
+export interface QuadraFiltroParams {
+  latitude?: number;
+  longitude?: number;
+  raioKm?: number;
+  nome?: string;
+  endereco?: string;
+  tipoEsporte?: string;
+  cidade?: string;
+  bairro?: string;
+  cep?: string;
+}
+
 // --- Quadras ---
 export const quadraApi = {
-  listar: (lat?: number, lon?: number, raioKm?: number) => {
+  listar: (paramsOrLat?: number | QuadraFiltroParams, lon?: number, raioKm?: number) => {
     let url = '/quadras';
     const params = new URLSearchParams();
-    if (lat !== undefined && lon !== undefined) {
-      params.append('latitude', lat.toString());
+    if (typeof paramsOrLat === 'object' && paramsOrLat !== null) {
+      if (paramsOrLat.latitude !== undefined && paramsOrLat.longitude !== undefined) {
+        params.append('latitude', paramsOrLat.latitude.toString());
+        params.append('longitude', paramsOrLat.longitude.toString());
+        if (paramsOrLat.raioKm !== undefined) {
+          params.append('raioKm', paramsOrLat.raioKm.toString());
+        }
+      }
+      if (paramsOrLat.nome) params.append('nome', paramsOrLat.nome);
+      if (paramsOrLat.endereco) params.append('endereco', paramsOrLat.endereco);
+      if (paramsOrLat.tipoEsporte) params.append('tipoEsporte', paramsOrLat.tipoEsporte);
+      if (paramsOrLat.cidade) params.append('cidade', paramsOrLat.cidade);
+      if (paramsOrLat.bairro) params.append('bairro', paramsOrLat.bairro);
+      if (paramsOrLat.cep) params.append('cep', paramsOrLat.cep);
+    } else if (paramsOrLat !== undefined && lon !== undefined) {
+      params.append('latitude', paramsOrLat.toString());
       params.append('longitude', lon.toString());
       if (raioKm !== undefined) {
         params.append('raioKm', raioKm.toString());
