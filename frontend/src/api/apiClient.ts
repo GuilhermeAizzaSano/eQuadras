@@ -64,23 +64,71 @@ export async function apiFetch<T>(
 
   const data = await response.json().catch(() => null);
 
+  const extrairMensagemAmigavel = (dados: any, status: number): string => {
+    if (dados?.camposIncorretos && Array.isArray(dados.camposIncorretos) && dados.camposIncorretos.length > 0) {
+      return dados.camposIncorretos.map((c: any) => `${c.campo || 'Campo'}: ${c.mensagem || 'inválido'}`).join(' | ');
+    }
+    if (dados?.detail && typeof dados.detail === 'string' && dados.detail.trim().length > 0) {
+      return dados.detail;
+    }
+    if (dados?.mensagem && typeof dados.mensagem === 'string') {
+      return dados.mensagem;
+    }
+    if (dados?.message && typeof dados.message === 'string') {
+      const msg = dados.message;
+      if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror')) {
+        return 'Não foi possível conectar ao servidor. Verifique sua conexão com a internet.';
+      }
+      if (msg.toLowerCase().includes('bad credentials')) {
+        return 'E-mail ou senha incorretos. Verifique suas credenciais.';
+      }
+      if (msg.toLowerCase().includes('access is denied')) {
+        return 'Você não possui permissão para executar esta ação.';
+      }
+      return msg;
+    }
+    if (dados?.title && typeof dados.title === 'string') {
+      return dados.title;
+    }
+
+    switch (status) {
+      case 400:
+        return 'Dados da requisição inválidos. Por favor, verifique os campos informados.';
+      case 401:
+        return 'Sessão expirada ou credenciais inválidas. Faça login novamente.';
+      case 403:
+        return 'Você não possui permissão para realizar esta operação.';
+      case 404:
+        return 'O item ou serviço solicitado não foi encontrado.';
+      case 409:
+        return 'Conflito de dados. O registro ou horário já existe no sistema.';
+      case 422:
+        return 'Os dados informados não puderam ser processados. Verifique os campos.';
+      case 429:
+        return 'Muitas tentativas em pouco tempo. Aguarde alguns segundos e tente novamente.';
+      case 500:
+      case 502:
+      case 503:
+        return 'O servidor está temporariamente indisponível. Tente novamente em instantes.';
+      default:
+        return 'Ocorreu um erro ao processar sua solicitação. Tente novamente.';
+    }
+  };
+
   if (response.status === 401) {
     const isBootstrapOuLogin = endpoint.includes('/usuarios/me') || endpoint.includes('/usuarios/login');
     if (!isBootstrapOuLogin && onUnauthorizedCallback) {
       onUnauthorizedCallback();
     }
-    const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Sessão expirada. Faça login novamente.';
-    throw new Error(errorMsg);
+    throw new Error(extrairMensagemAmigavel(data, 401));
   }
 
   if (response.status === 403) {
-    const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Acesso negado para esta operação.';
-    throw new Error(errorMsg);
+    throw new Error(extrairMensagemAmigavel(data, 403));
   }
 
   if (!response.ok) {
-    const errorMsg = data?.detail || data?.mensagem || data?.message || data?.title || 'Erro na requisição';
-    throw new Error(errorMsg);
+    throw new Error(extrairMensagemAmigavel(data, response.status));
   }
 
   return data as T;
