@@ -321,7 +321,8 @@ paths:
       tags:
       - Usuários - API
       summary: Realizar logout
-      description: Encerra a sessão do usuário limpando o cookie HttpOnly.
+      description: Encerra a sessão do usuário limpando o cookie HttpOnly e invalidando
+        tokens ativos.
       operationId: logout
       responses:
         "200":
@@ -353,7 +354,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsuarioResponseDTO"
+                type: object
               example:
                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJDTElFTlQiLCJpYXQiOjE3MjU4NTAwMDB9...
                 usuario:
@@ -2400,12 +2401,12 @@ components:
     PageNotificacao:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         size:
           type: integer
           format: int32
@@ -2418,15 +2419,15 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        numberOfElements:
-          type: integer
-          format: int32
         first:
           type: boolean
         last:
           type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -2435,16 +2436,16 @@ components:
         offset:
           type: integer
           format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
         paged:
           type: boolean
         unpaged:
           type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageNumber:
+        pageSize:
           type: integer
           format: int32
-        pageSize:
+        pageNumber:
           type: integer
           format: int32
     SortObject:
@@ -2589,12 +2590,12 @@ components:
     PageLogAuditoriaResponseDTO:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         size:
           type: integer
           format: int32
@@ -2607,15 +2608,15 @@ components:
           format: int32
         sort:
           $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        numberOfElements:
-          type: integer
-          format: int32
         first:
           type: boolean
         last:
           type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     QuadraResumoResponseDTO:
