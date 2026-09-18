@@ -35,6 +35,8 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
     Optional<Quadra> findById(Long id);
 
     @Query(value = "SELECT q.* FROM quadras q WHERE q.ativa = true AND q.latitude IS NOT NULL AND q.longitude IS NOT NULL " +
+           "AND q.latitude BETWEEN :minLat AND :maxLat " +
+           "AND q.longitude BETWEEN :minLng AND :maxLng " +
            "AND (6371 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(:latitude)) * cos(radians(q.latitude)) * " +
            "cos(radians(q.longitude) - radians(:longitude)) + sin(radians(:latitude)) * " +
            "sin(radians(q.latitude)))))) <= :raioKm " +
@@ -44,5 +46,9 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
     List<Quadra> findByAtivaTrueAndProximidadeMenorQue(
             @Param("latitude") Double latitude, 
             @Param("longitude") Double longitude, 
-            @Param("raioKm") Double raioKm);
+            @Param("raioKm") Double raioKm,
+            @Param("minLat") Double minLat,
+            @Param("maxLat") Double maxLat,
+            @Param("minLng") Double minLng,
+            @Param("maxLng") Double maxLng);
 }
