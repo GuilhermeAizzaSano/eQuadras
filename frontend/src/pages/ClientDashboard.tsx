@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, bloqueioApi } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
 import { FeedbackBanner, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
-import { ClientBookingsList, CourtSearchBar, CourtCardGrid, ModoBusca } from '../components/client';
+import { ClientBookingsList, CourtSearchBar, CourtCardGrid, ModoBusca, PendingPaymentAlert } from '../components/client';
 
 const DIA_SEMANA_MAP: DiaSemana[] = [
   'SUNDAY',
@@ -515,15 +515,22 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Top Header */}
-      <div className="border-b border-white/[0.08] pb-5">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
-          {activeTab === 'QUADRAS' ? 'Quadras' : 'Minhas Agendas'}
-        </h1>
-        <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
-          {activeTab === 'QUADRAS'
-            ? 'Consulte disponibilidades em tempo real e garanta sua partida'
-            : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
-        </p>
+      <div className="border-b border-white/[0.08] pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
+            {activeTab === 'QUADRAS' ? 'Quadras' : 'Minhas Agendas'}
+          </h1>
+          <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
+            {activeTab === 'QUADRAS'
+              ? 'Consulte disponibilidades em tempo real e garanta sua partida'
+              : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
+          </p>
+        </div>
+
+        <PendingPaymentAlert
+          agendamentos={meusAgendamentos}
+          onPayPix={(ag) => setAgendamentoPixModal(ag)}
+        />
       </div>
 
       {/* ABA 1: EXPLORAR QUADRAS */}
