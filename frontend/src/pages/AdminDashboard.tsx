@@ -22,12 +22,8 @@ import {
   DIAS_SEMANA
 } from '../components/admin';
 import {
-  LayoutDashboard,
-  Settings2,
   Bell,
   X,
-  Users,
-  ShieldAlert,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -35,7 +31,13 @@ import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
 import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../utils/dateUtils';
 
-export const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  activeTab?: 'dashboard' | 'quadras' | 'usuarios' | 'auditoria';
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  activeTab: controlledActiveTab,
+}) => {
   const { user, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
@@ -51,7 +53,7 @@ export const AdminDashboard: React.FC = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   
   // Controle de Abas
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'quadras' | 'usuarios' | 'auditoria'>('dashboard');
+  const activeTab = controlledActiveTab || 'dashboard';
 
   // Gestão de Usuários (Exclusivo Master Admin)
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -1140,58 +1142,6 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Segmented Control de Abas */}
-          <div className="flex bg-white/[0.04] p-1 rounded-2xl border border-white/[0.08]">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
-              }`}
-            >
-              <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Agenda & Métricas</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('quadras')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
-                activeTab === 'quadras'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
-              }`}
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              <span>Gestão de Quadras</span>
-            </button>
-            {isMasterAdmin && (
-              <>
-                <button
-                  onClick={() => setActiveTab('usuarios')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
-                    activeTab === 'usuarios'
-                      ? 'bg-white text-black font-semibold shadow-sm'
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Gestão de Usuários</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('auditoria')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-xl transition-all cursor-pointer ${
-                    activeTab === 'auditoria'
-                      ? 'bg-white text-black font-semibold shadow-sm'
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Auditoria & Logs</span>
-                </button>
-              </>
             )}
           </div>
         </div>

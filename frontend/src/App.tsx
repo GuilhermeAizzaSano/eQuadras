@@ -1,6 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { Navbar } from './components/Navbar';
+import { DashboardLayout } from './components/layout/DashboardLayout';
 import { Loader2 } from 'lucide-react';
 
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })));
@@ -16,6 +16,11 @@ const FallbackSpinner: React.FC = () => (
 
 export const App: React.FC = () => {
   const { user, isAdmin, loadingAuth } = useAuth();
+  
+  // Abas do Cliente: 'QUADRAS' | 'AGENDAS'
+  // Abas do Admin: 'RELATORIOS' | 'GESTAO_QUADRAS' | 'USUARIOS' | 'AUDITORIA'
+  const [clientTab, setClientTab] = useState<'QUADRAS' | 'AGENDAS'>('QUADRAS');
+  const [adminTab, setAdminTab] = useState<'RELATORIOS' | 'GESTAO_QUADRAS' | 'USUARIOS' | 'AUDITORIA'>('RELATORIOS');
 
   if (loadingAuth) {
     return <FallbackSpinner />;
@@ -29,14 +34,34 @@ export const App: React.FC = () => {
     );
   }
 
+  // Mapeamento de abas para o AdminDashboard interno
+  const adminTabMapping: Record<string, 'dashboard' | 'quadras' | 'usuarios' | 'auditoria'> = {
+    RELATORIOS: 'dashboard',
+    GESTAO_QUADRAS: 'quadras',
+    USUARIOS: 'usuarios',
+    AUDITORIA: 'auditoria',
+  };
+
+  const currentTab = isAdmin ? adminTab : clientTab;
+  const handleSelectTab = (tab: any) => {
+    if (isAdmin) {
+      setAdminTab(tab);
+    } else {
+      setClientTab(tab);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col selection:bg-white/20 selection:text-white">
-      <Navbar />
-      <main className="flex-1">
-        <Suspense fallback={<FallbackSpinner />}>
-          {isAdmin ? <AdminDashboard /> : <ClientDashboard />}
-        </Suspense>
-      </main>
-    </div>
+    <DashboardLayout currentTab={currentTab} onSelectTab={handleSelectTab}>
+      <Suspense fallback={<FallbackSpinner />}>
+        {isAdmin ? (
+          <AdminDashboard
+            activeTab={adminTabMapping[adminTab] || 'dashboard'}
+          />
+        ) : (
+          <ClientDashboard activeTab={clientTab} />
+        )}
+      </Suspense>
+    </DashboardLayout>
   );
 };
