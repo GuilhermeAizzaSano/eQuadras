@@ -400,7 +400,13 @@ public class AgendamentoService {
         }
 
         return agendamentos.stream()
-                .map(AgendamentoResponseDTO::fromEntitySemPix)
+                .map(a -> {
+                    // Mantém dados Pix para agendamentos pendentes do próprio cliente para pagamento imediato
+                    if (a.getStatus() == StatusAgendamento.PENDENTE && usuario != null && usuario.getId_usuario().equals(a.getUsuario().getId_usuario())) {
+                        return AgendamentoResponseDTO.fromEntity(a);
+                    }
+                    return AgendamentoResponseDTO.fromEntitySemPix(a);
+                })
                 .toList();
     }
 

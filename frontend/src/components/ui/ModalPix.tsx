@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Agendamento } from '../../types';
-import { pagamentoApi } from '../../api/apiClient';
-import { Check, Copy, QrCode, X, Clock, AlertTriangle, AlertCircle } from 'lucide-react';
+import { pagamentoApi, agendamentoApi } from '../../api/apiClient';
+import { Check, Copy, QrCode, X, Clock, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from './Button';
 
@@ -20,10 +20,40 @@ export const ModalPix: React.FC<ModalPixProps> = ({
   onSuccess,
   onExpired,
 }) => {
+  const [dadosLocais, setDadosLocais] = useState<Agendamento | null>(agendamento);
+  const [carregandoDados, setCarregandoDados] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [simulando, setSimulando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [segundosRestantes, setSegundosRestantes] = useState<number>(900);
+
+  // Sincroniza estado local e busca dados detalhados se vier sem Pix
+  useEffect(() => {
+    if (!isOpen || !agendamento) {
+      setDadosLocais(null);
+      return;
+    }
+
+    setDadosLocais(agendamento);
+
+    // Se o agendamento fornecido não tem os dados de Pix, busca do backend
+    if (!agendamento.pixCopiaECola && !agendamento.qrCodeBase64) {
+      setCarregandoDados(true);
+      agendamentoApi
+        .buscarPorId(agendamento.id_agendamento)
+        .then((completo) => {
+          if (completo) {
+            setDadosLocais(completo);
+          }
+        })
+        .catch(() => {
+          // Mantém o atual em caso de falha
+        })
+        .finally(() => {
+          setCarregandoDados(false);
+        });
+    }
+  }, [isOpen, agendamento]);
 
   useEffect(() => {
     if (!isOpen || !agendamento) return;
@@ -92,9 +122,11 @@ export const ModalPix: React.FC<ModalPixProps> = ({
   const tempoFormatado = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
   const expirado = segundosRestantes <= 0;
 
+  const agendamentoAtivo = dadosLocais || agendamento;
+
   const copiarPix = () => {
-    if (agendamento.pixCopiaECola) {
-      navigator.clipboard.writeText(agendamento.pixCopiaECola);
+    if (agendamentoAtivo.pixCopiaECola) {
+      navigator.clipboard.writeText(agendamentoAtivo.pixCopiaECola);
       setCopiado(true);
       setTimeout(() => setCopiado(false), 3000);
     }
@@ -104,7 +136,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     setSimulando(true);
     setErro(null);
     try {
-      const atualizado = await pagamentoApi.simularAprovacao(agendamento.id_agendamento);
+      const atualizado = await pagamentoApi.simularAprovacao(agendamentoAtivo.id_agendamento);
       onSuccess(atualizado);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao confirmar pagamento.';
@@ -114,8 +146,8 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     }
   };
 
-  const [data, tempoInicio] = agendamento.dataHoraInicio.split('T');
-  const [, tempoFim] = agendamento.dataHoraFim.split('T');
+  const [data, tempoInicio] = agendamentoAtivo.dataHoraInicio.split('T');
+  const [, tempoFim] = agendamentoAtivo.dataHoraFim.split('T');
   const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
   const horaFim = tempoFim ? tempoFim.substring(0, 5) : '';
 
@@ -159,7 +191,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         {/* Detalhes da Reserva */}
         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs">
           <div>
-            <div className="font-semibold text-white text-sm tracking-tight">{agendamento.nomeQuadra}</div>
+            <div className="font-semibold text-white text-sm tracking-tight">{agendamentoAtivo.nomeQuadra}</div>
             <div className="text-white/50 mt-0.5 tracking-tight">
               {data.split('-').reverse().join('/')} • {horaInicio} às {horaFim}
             </div>
@@ -167,38 +199,43 @@ export const ModalPix: React.FC<ModalPixProps> = ({
           <div className="text-right">
             <div className="text-white/40 uppercase tracking-wider text-[10px] font-semibold">Total</div>
             <div className="text-lg font-bold text-white font-mono tracking-tight">
-              R$ {agendamento.valorTotal.toFixed(2)}
+              R$ {agendamentoAtivo.valorTotal.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* QR Code Container */}
-        <div className="flex flex-col items-center justify-center p-5 bg-white rounded-2xl border border-white/20 shadow-sm">
-          {expirado ? (
+        <div className="flex flex-col items-center justify-center p-5 bg-white rounded-2xl border border-white/20 shadow-sm min-h-[220px]">
+          {carregandoDados ? (
+            <div className="w-44 h-44 flex flex-col items-center justify-center bg-zinc-100 rounded-xl text-zinc-600 gap-2">
+              <Loader2 className="w-6 h-6 text-[#FF9F0A] animate-spin" />
+              <span className="text-xs font-medium">Carregando Pix...</span>
+            </div>
+          ) : expirado ? (
             <div className="w-44 h-44 flex flex-col items-center justify-center bg-zinc-100 rounded-xl text-center p-4 text-zinc-600 gap-2">
               <AlertTriangle className="w-8 h-8 text-[#FF9F0A]" />
               <span className="text-xs font-semibold">Código Pix expirado</span>
               <span className="text-[10px] text-zinc-500">Gere uma nova reserva para pagar.</span>
             </div>
-          ) : agendamento.pixCopiaECola ? (
+          ) : agendamentoAtivo.pixCopiaECola ? (
             <div className="w-44 h-44 flex items-center justify-center bg-white rounded-xl select-none p-1">
               <QRCodeSVG
-                value={agendamento.pixCopiaECola}
+                value={agendamentoAtivo.pixCopiaECola}
                 size={168}
                 level="M"
                 includeMargin={false}
               />
             </div>
-          ) : agendamento.qrCodeBase64 ? (
-            agendamento.qrCodeBase64.startsWith('data:') ? (
+          ) : agendamentoAtivo.qrCodeBase64 ? (
+            agendamentoAtivo.qrCodeBase64.startsWith('data:') ? (
               <img
-                src={agendamento.qrCodeBase64}
+                src={agendamentoAtivo.qrCodeBase64}
                 alt="QR Code Pix"
                 className="w-44 h-44 object-contain rounded-xl select-none"
               />
             ) : (
               <img
-                src={`data:image/png;base64,${agendamento.qrCodeBase64}`}
+                src={`data:image/png;base64,${agendamentoAtivo.qrCodeBase64}`}
                 alt="QR Code Pix"
                 className="w-44 h-44 object-contain rounded-xl select-none"
               />
@@ -208,7 +245,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
               QR Code indisponível
             </div>
           )}
-          {!expirado && (
+          {!expirado && !carregandoDados && (
             <span className="text-[11px] text-zinc-600 font-sans mt-2.5 font-medium tracking-tight">
               Abra o app do seu banco e aponte a câmera
             </span>
@@ -216,7 +253,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         </div>
 
         {/* Pix Copia e Cola */}
-        {!expirado && agendamento.pixCopiaECola && (
+        {!expirado && agendamentoAtivo.pixCopiaECola && (
           <div className="space-y-1.5">
             <label className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">
               Chave Pix Copia e Cola
@@ -225,7 +262,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
               <input
                 type="text"
                 readOnly
-                value={agendamento.pixCopiaECola}
+                value={agendamentoAtivo.pixCopiaECola}
                 className="w-full bg-black/70 border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white/80 font-mono focus:outline-none"
               />
               <Button
