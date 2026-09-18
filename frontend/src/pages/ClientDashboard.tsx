@@ -902,7 +902,7 @@ export const ClientDashboard: React.FC = () => {
 
       {/* ABA 2: MINHAS RESERVAS */}
       <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
-        <div className="bg-[#121214] border border-white/[0.08] rounded-3xl p-5 sm:p-7 shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-6">
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-5 sm:p-7 space-y-6">
           {/* Sub-abas de Filtro de Reservas */}
           <div className="flex bg-white/[0.04] p-1 rounded-2xl border border-white/[0.08] text-xs">
             <button

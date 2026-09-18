@@ -56,7 +56,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-2xl bg-[#121214] border border-white/[0.1] rounded-3xl shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-[#09090b] border border-white/[0.08] rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         {/* Header com botão fechar */}
         <div className="absolute top-4 right-4 z-20">
           <button
