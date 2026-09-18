@@ -356,10 +356,10 @@ public class AgendamentoService {
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarTodos(Long usuarioId, boolean historico) {
         List<Agendamento> agendamentos;
-        
-        if (usuarioId != null) {
-            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
-            if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
+        Usuario usuario = (usuarioId != null) ? usuarioRepository.findById(usuarioId).orElse(null) : null;
+
+        if (usuario != null) {
+            if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
                 if (usuario.isMasterAdmin()) {
                     // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
                     if (historico) {
