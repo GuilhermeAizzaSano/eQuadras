@@ -87,7 +87,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
   ];
 
   return (
-    <div className="bg-[#121214]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] space-y-4">
+    <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 sm:p-5 space-y-4">
       {/* Top Bar: Data, Navegação e Alternador de View */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Controles de Data */}

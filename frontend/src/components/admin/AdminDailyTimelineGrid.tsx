@@ -168,9 +168,9 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
   }
 
   return (
-    <div className="bg-[#121214] border border-white/[0.08] rounded-3xl shadow-apple-card shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] overflow-hidden flex flex-col">
+    <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col">
       {/* Header da Grade */}
-      <div className="p-4 sm:p-5 border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-3 bg-[#121214]">
+      <div className="p-4 sm:p-5 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-3 bg-transparent">
         <div className="flex items-center gap-2.5">
           <Clock className="w-4 h-4 text-white/70" />
           <span className="text-sm font-semibold text-white tracking-tight">Linha do Tempo das Quadras</span>
@@ -284,7 +284,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] text-white/50 font-mono bg-white/[0.05] px-2 py-0.5 rounded-full border border-white/[0.08]">
+                        <span className="text-[10px] text-white/40 font-mono tracking-wider uppercase">
                           {quadra.tipoEsporte.replace('_', ' ')}
                         </span>
 

@@ -662,16 +662,16 @@ export const ClientDashboard: React.FC = () => {
               <ChevronDown className="w-4 h-4 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            {/* Filtro por Esporte (Pills no Desktop) */}
-            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
+            {/* Filtro por Esporte (Tipográfico Apple no Desktop) */}
+            <div className="hidden sm:flex items-center gap-1 overflow-x-auto pb-1 max-w-full scrollbar-none">
               {ESPORTES.map((esp) => (
                 <button
                   key={esp}
                   onClick={() => setFiltroEsporte(esp)}
-                  className={`text-xs px-3.5 py-1.5 rounded-full border whitespace-nowrap transition-all active:scale-[0.98] cursor-pointer tracking-tight font-medium ${
+                  className={`text-xs px-3 py-1 rounded-lg whitespace-nowrap transition-all cursor-pointer tracking-tight font-medium ${
                     filtroEsporte === esp
-                      ? 'bg-white text-black font-semibold border-white shadow-sm'
-                      : 'bg-white/[0.04] text-white/60 border-white/[0.08] hover:border-white/[0.16] hover:text-white'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   {esp === 'TODOS' ? 'Todos os Esportes' : esp.replace('_', ' ')}

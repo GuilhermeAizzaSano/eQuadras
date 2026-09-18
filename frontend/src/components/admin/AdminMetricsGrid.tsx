@@ -15,12 +15,10 @@ export const AdminMetricsGrid: React.FC<AdminMetricsGridProps> = ({ metricas }) 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
       {/* Receita */}
-      <div className="bg-[#121214] border border-white/[0.08] hover:border-white/[0.18] p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-3 transition-all duration-200 group">
-        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-semibold">
+      <div className="bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.14] p-5 sm:p-6 rounded-2xl space-y-3 transition-all duration-200 group">
+        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-medium">
           <span>Receita Total</span>
-          <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 group-hover:text-white transition-colors">
-            <DollarSign className="w-4 h-4" />
-          </div>
+          <DollarSign className="w-4 h-4 text-white/60" />
         </div>
         <div>
           <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
@@ -31,12 +29,10 @@ export const AdminMetricsGrid: React.FC<AdminMetricsGridProps> = ({ metricas }) 
       </div>
 
       {/* Jogos de Hoje */}
-      <div className="bg-[#121214] border border-white/[0.08] hover:border-white/[0.18] p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-3 transition-all duration-200 group">
-        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-semibold">
+      <div className="bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.14] p-5 sm:p-6 rounded-2xl space-y-3 transition-all duration-200 group">
+        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-medium">
           <span>Jogos de Hoje</span>
-          <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 group-hover:text-white transition-colors">
-            <TrendingUp className="w-4 h-4" />
-          </div>
+          <TrendingUp className="w-4 h-4 text-white/60" />
         </div>
         <div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-[-0.03em]">
@@ -47,12 +43,10 @@ export const AdminMetricsGrid: React.FC<AdminMetricsGridProps> = ({ metricas }) 
       </div>
 
       {/* Total de Reservas */}
-      <div className="bg-[#121214] border border-white/[0.08] hover:border-white/[0.18] p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-3 transition-all duration-200 group">
-        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-semibold">
+      <div className="bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.14] p-5 sm:p-6 rounded-2xl space-y-3 transition-all duration-200 group">
+        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-medium">
           <span>Total de Reservas</span>
-          <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 group-hover:text-white transition-colors">
-            <Users className="w-4 h-4" />
-          </div>
+          <Users className="w-4 h-4 text-white/60" />
         </div>
         <div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-[-0.03em]">
@@ -63,17 +57,17 @@ export const AdminMetricsGrid: React.FC<AdminMetricsGridProps> = ({ metricas }) 
       </div>
 
       {/* Quadras Ativas */}
-      <div className="bg-[#121214] border border-white/[0.08] hover:border-white/[0.18] p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-apple-card hover:shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] space-y-3 transition-all duration-200 group">
-        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-semibold">
+      <div className="bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.14] p-5 sm:p-6 rounded-2xl space-y-3 transition-all duration-200 group">
+        <div className="flex items-center justify-between text-white/50 text-[11px] uppercase tracking-wider font-medium">
           <span>Quadras Ativas</span>
-          <div className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white/80 group-hover:text-white transition-colors">
-            <ShieldCheck className="w-4 h-4" />
-          </div>
+          <ShieldCheck className="w-4 h-4 text-white/60" />
         </div>
         <div>
           <div className="text-2xl sm:text-3xl font-bold text-white tracking-[-0.03em]">
-            {metricas.quadrasAtivas}{' '}
-            <span className="text-sm font-normal text-white/40 font-mono">/ {metricas.totalQuadras}</span>
+            {metricas.quadrasAtivas}
+            <span className="text-sm font-normal text-white/40 ml-1.5 font-mono">
+              / {metricas.totalQuadras}
+            </span>
           </div>
           <span className="text-[11px] text-white/40 mt-1 block tracking-tight">Prontas para locação</span>
         </div>
