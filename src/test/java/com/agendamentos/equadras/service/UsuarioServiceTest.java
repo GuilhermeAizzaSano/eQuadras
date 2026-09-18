@@ -231,4 +231,32 @@ class UsuarioServiceTest {
         assertTrue(ex.getMessage().contains("A senha atual informada está incorreta"));
         verify(usuarioRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Deve executar verificação de senha dummy quando usuário não existir para evitar timing attack")
+    void deveExecutarDummyPasswordQuandoUsuarioNaoExiste() {
+        UsuarioLoginDTO dto = new UsuarioLoginDTO("inexistente@email.com", "qualquerSenha");
+        when(usuarioRepository.findByEmail_usuario("inexistente@email.com")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.login(dto));
+
+        assertEquals("E-mail ou senha incorretos.", ex.getMessage());
+        verify(passwordEncoder, times(1)).matches(eq("qualquerSenha"), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve falhar login quando a senha estiver errada")
+    void deveFalharLoginQuandoSenhaIncorreta() {
+        UsuarioLoginDTO dto = new UsuarioLoginDTO("mariana@email.com", "senhaErrada");
+        when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.login(dto));
+
+        assertEquals("E-mail ou senha incorretos.", ex.getMessage());
+        verify(passwordEncoder, times(1)).matches("senhaErrada", usuario.getSenha_usuario());
+    }
 }
+

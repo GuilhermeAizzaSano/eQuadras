@@ -43,6 +43,7 @@ public class JwtService {
                 .subject(usuario.getId_usuario().toString())
                 .claim("role", roleStr)
                 .claim("scope", scope)
+                .claim("ver", usuario.getTokenVersion())
                 .issuedAt(Date.from(agora))
                 .expiration(Date.from(expira))
                 .signWith(chave)

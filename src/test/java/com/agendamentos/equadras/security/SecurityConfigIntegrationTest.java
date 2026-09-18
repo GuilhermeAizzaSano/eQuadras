@@ -89,13 +89,25 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /usuarios/logout com X-Client deve limpar o cookie de sessão com maxAge 0")
-    void postLogoutDeveLimparCookie() throws Exception {
+    @DisplayName("POST /usuarios/logout com X-Client deve limpar o cookie e invalidar o token para acessos subsequentes")
+    void postLogoutDeveLimparCookieEInvalidarToken() throws Exception {
+        // 1. Acesso inicial válido com o token
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
+                .andExpect(status().isOk());
+
+        // 2. Logout com o cookie
         mockMvc.perform(post("/usuarios/logout")
-                        .header("X-Client", "frontend"))
+                        .header("X-Client", "frontend")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().exists("equadras_session"))
                 .andExpect(cookie().maxAge("equadras_session", 0));
+
+        // 3. Tentar reutilizar o token anterior via cookie após logout -> deve retornar 401 Unauthorized
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenCliente)))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -210,5 +222,28 @@ public class SecurityConfigIntegrationTest {
         assertNotNull(tokenClient);
         assertFalse(tokenAdmin.isBlank());
         assertFalse(tokenClient.isBlank());
+    }
+
+    @Test
+    @DisplayName("POST /usuarios/login com 5 falhas consecutivas para o mesmo e-mail deve retornar 429 Too Many Requests na 6ª tentativa")
+    void loginComFalhasConsecutivasDeveBloquearPorRateLimitDeEmail() throws Exception {
+        String emailVitima = "vitima_brute_force_" + System.currentTimeMillis() + "@equadras.com";
+
+        // 5 tentativas erradas (retornam 400 Bad Request por credenciais incorretas)
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/usuarios/login")
+                            .header("X-Client", "frontend")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email_usuario\":\"" + emailVitima + "\",\"senha_usuario\":\"senhaErrada" + i + "\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        // 6ª tentativa deve ser bloqueada antes mesmo de verificar senha -> 429 Too Many Requests
+        mockMvc.perform(post("/usuarios/login")
+                        .header("X-Client", "frontend")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email_usuario\":\"" + emailVitima + "\",\"senha_usuario\":\"qualquer\"}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().exists("Retry-After"));
     }
 }
