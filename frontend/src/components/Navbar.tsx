@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, UserCircle2, Shield, KeyRound, Terminal } from 'lucide-react';
-import { Logo, ChangePasswordModal, ApiKeyModal, Badge } from './ui';
+import { Logo, ChangePasswordModal, ApiKeyModal } from './ui';
 
 export const Navbar: React.FC = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -18,36 +18,34 @@ export const Navbar: React.FC = () => {
 
           {user && (
             <div className="flex items-center gap-2 sm:gap-2.5">
-              {/* Usuário logado e Badge de Role */}
-              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/[0.08] backdrop-blur-md">
+              {/* Usuário logado */}
+              <div className="flex items-center gap-2 px-2.5 py-1 text-xs text-white/80">
                 <div className="relative flex items-center justify-center">
                   {isAdmin ? (
-                    <Shield className="w-4 h-4 text-white/80" />
+                    <Shield className="w-3.5 h-3.5 text-white/70" />
                   ) : (
-                    <UserCircle2 className="w-4 h-4 text-white/60" />
+                    <UserCircle2 className="w-3.5 h-3.5 text-white/60" />
                   )}
-                  <span className="w-2 h-2 rounded-full bg-[#30D158] absolute -bottom-0.5 -right-0.5 ring-2 ring-black" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] absolute -bottom-0.5 -right-0.5" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-medium text-white max-w-[120px] sm:max-w-[180px] truncate tracking-tight">
-                    {user.nome_usuario}
-                  </span>
-                  <Badge variant={isAdmin ? 'success' : 'neutral'} className="hidden sm:inline-flex text-[10px] py-0.5 px-2">
-                    {isAdmin ? 'ADMIN' : 'CLIENTE'}
-                  </Badge>
-                </div>
+                <span className="font-medium text-white max-w-[120px] sm:max-w-[160px] truncate tracking-tight">
+                  {user.nome_usuario}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                  {isAdmin ? 'Admin' : 'Cliente'}
+                </span>
               </div>
 
-              <div className="h-5 w-[1px] bg-white/[0.08] hidden sm:block mx-1" />
+              <div className="h-4 w-[1px] bg-white/[0.08] hidden sm:block mx-0.5" />
 
               {/* Botão de API-KEY */}
               <button
                 onClick={() => setModalApiKeyOpen(true)}
-                className="p-2 sm:px-3 sm:py-1.5 rounded-full text-white/80 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] transition-all flex items-center gap-1.5 text-xs font-medium active:scale-95 shadow-sm cursor-pointer tracking-tight"
+                className="px-2.5 py-1 text-xs font-medium text-white/70 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer tracking-tight"
                 title="Visualizar API-KEY"
                 aria-label="Visualizar chave de API"
               >
-                <Terminal className="w-3.5 h-3.5 text-white/70" />
+                <Terminal className="w-3.5 h-3.5 text-white/60" />
                 <span className="hidden md:inline">API-KEY</span>
               </button>
 
