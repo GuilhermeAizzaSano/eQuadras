@@ -61,30 +61,30 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="relative overflow-hidden rounded-2xl border border-[#FF9F0A]/30 bg-[#FF9F0A]/[0.08] backdrop-blur-xl p-3.5 sm:p-4 shadow-apple-card min-h-[92px] sm:h-[92px] flex items-center">
+    <div className="w-full max-w-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="relative overflow-hidden rounded-2xl border border-[#FF9F0A]/30 bg-[#FF9F0A]/[0.08] backdrop-blur-xl p-4 sm:p-5 shadow-apple-card min-h-[108px] sm:h-[108px] flex items-center">
         {/* Glow de fundo sutil */}
-        <div className="absolute -right-8 -top-8 w-28 h-28 bg-[#FF9F0A]/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#FF9F0A]/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="flex items-center justify-between gap-3 relative z-10 w-full">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="p-2 rounded-xl bg-[#FF9F0A]/15 border border-[#FF9F0A]/30 text-[#FF9F0A] shrink-0">
-              <Clock className="w-4 h-4 animate-pulse" />
+        <div className="flex items-center justify-between gap-4 relative z-10 w-full">
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div className="p-2.5 rounded-xl bg-[#FF9F0A]/15 border border-[#FF9F0A]/30 text-[#FF9F0A] shrink-0">
+              <Clock className="w-5 h-5 animate-pulse" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                <span className="text-[10px] uppercase font-bold tracking-wider font-mono text-[#FF9F0A]">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-[11px] uppercase font-bold tracking-wider font-mono text-[#FF9F0A]">
                   Pagamento Pendente
                 </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#FF9F0A]/20 border border-[#FF9F0A]/30 text-[#FF9F0A]">
+                <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#FF9F0A]/20 border border-[#FF9F0A]/30 text-[#FF9F0A]">
                   Expira em {tempoFormatado}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-white/90 leading-snug line-clamp-2">
+              <p className="text-xs sm:text-[13px] text-white/90 leading-relaxed line-clamp-2">
                 Confirme o pagamento da sua reserva na{' '}
-                <span className="font-semibold text-white truncate inline-block align-bottom max-w-[140px] sm:max-w-[180px]">{agendamentoAtual.nomeQuadra}</span> em até{' '}
+                <span className="font-semibold text-white">{agendamentoAtual.nomeQuadra}</span> em até{' '}
                 <span className="font-mono font-bold text-[#FF9F0A]">{tempoFormatado}</span> ou ela será cancelada automaticamente.
               </p>
             </div>
