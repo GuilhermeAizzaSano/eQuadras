@@ -335,29 +335,37 @@ export const AuditLogsPanel: React.FC = () => {
 
       {/* Tabela de Logs */}
       <div className="bg-[#121214] border border-white/[0.08] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-white/80">
+        <div className="overflow-x-auto min-h-[560px]">
+          <table className="w-full text-left text-xs text-white/80 table-fixed min-w-[1000px]">
+            <colgroup>
+              <col className="w-[140px]" />
+              <col className="w-[180px]" />
+              <col className="w-[140px]" />
+              <col className="w-[140px]" />
+              <col />
+              <col className="w-[150px]" />
+            </colgroup>
             <thead className="bg-white/[0.02] text-white/40 uppercase tracking-wider font-semibold border-b border-white/[0.06] text-[10px] font-mono">
               <tr>
                 <th className="px-5 py-3.5">Data / Hora</th>
                 <th className="px-5 py-3.5">Usuário / Executor</th>
                 <th className="px-5 py-3.5">Categoria / Ação</th>
                 <th className="px-5 py-3.5">Recurso</th>
-                <th className="px-5 py-3.5 min-w-[280px]">Detalhes</th>
+                <th className="px-5 py-3.5">Detalhes</th>
                 <th className="px-5 py-3.5">Origem (IP)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04] font-sans">
               {loading && logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center text-white/40">
+                  <td colSpan={6} className="px-5 py-24 text-center text-white/40">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-white/20" />
                     Carregando trilha de auditoria...
                   </td>
                 </tr>
               ) : erroCarregamento ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center text-rose-400">
+                  <td colSpan={6} className="px-5 py-24 text-center text-rose-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-400/80" />
                     <p className="font-medium text-sm text-white">Não foi possível carregar os logs</p>
                     <p className="text-xs text-rose-400/80 mt-1 max-w-md mx-auto">{erroCarregamento}</p>
@@ -371,30 +379,30 @@ export const AuditLogsPanel: React.FC = () => {
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center text-white/40">
+                  <td colSpan={6} className="px-5 py-24 text-center text-white/40">
                     <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-white/20" />
                     Nenhum log de auditoria encontrado para os critérios selecionados.
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-white/[0.02] transition">
+                  <tr key={log.id} className="h-[56px] hover:bg-white/[0.02] transition">
                     {/* Data / Hora */}
                     <td className="px-5 py-3.5 whitespace-nowrap text-white/50 font-mono text-[11px]">
                       {formatarData(log.criadoEm)}
                     </td>
 
                     {/* Usuário / Executor */}
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 truncate">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 truncate">
                           {renderBadgeExecutor(log.tipoExecutor)}
-                          <span className="font-medium text-white text-xs">
+                          <span className="font-medium text-white text-xs truncate" title={log.usuarioNome || log.usuarioEmail || 'Sistema'}>
                             {log.usuarioNome || log.usuarioEmail || 'Sistema'}
                           </span>
                         </div>
                         {log.usuarioEmail && log.usuarioNome && (
-                          <div className="text-[11px] text-white/40 font-mono">
+                          <div className="text-[11px] text-white/40 font-mono truncate" title={log.usuarioEmail}>
                             {log.usuarioEmail}
                           </div>
                         )}
@@ -425,7 +433,9 @@ export const AuditLogsPanel: React.FC = () => {
 
                     {/* Detalhes */}
                     <td className="px-5 py-3.5 text-white/70 text-xs leading-relaxed">
-                      {log.detalhes || '—'}
+                      <span className="line-clamp-2" title={log.detalhes || ''}>
+                        {log.detalhes || '—'}
+                      </span>
                     </td>
 
                     {/* Origem (IP & User-Agent) */}
@@ -437,7 +447,7 @@ export const AuditLogsPanel: React.FC = () => {
                         </span>
                         {log.userAgent && (
                           <div
-                            className="text-[10px] text-white/30 truncate max-w-[140px]"
+                            className="text-[10px] text-white/30 truncate max-w-[130px]"
                             title={log.userAgent}
                           >
                             {log.userAgent}

@@ -84,8 +84,15 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
 
       {/* Tabela de Usuários */}
       <div className="bg-[#121214] border border-white/[0.08] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-white/80">
+        <div className="overflow-x-auto min-h-[420px]">
+          <table className="w-full text-left text-xs text-white/80 table-fixed min-w-[800px]">
+            <colgroup>
+              <col className="w-[260px]" />
+              <col className="w-[240px]" />
+              <col className="w-[160px]" />
+              <col className="w-[140px]" />
+              <col className="w-[100px]" />
+            </colgroup>
             <thead className="bg-white/[0.02] text-white/40 uppercase tracking-wider font-semibold border-b border-white/[0.06] text-[10px] font-mono">
               <tr>
                 <th className="py-3.5 px-5">Usuário</th>
@@ -98,13 +105,13 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
             <tbody className="divide-y divide-white/[0.06]">
               {loading && usuarios.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-white/40 font-mono text-xs">
+                  <td colSpan={5} className="py-20 text-center text-white/40 font-mono text-xs">
                     Carregando usuários...
                   </td>
                 </tr>
               ) : usuariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-white/40 font-mono text-xs">
+                  <td colSpan={5} className="py-20 text-center text-white/40 font-mono text-xs">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -112,20 +119,20 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                 usuariosFiltrados.map((u) => {
                   const isMaster = u.masterAdmin === true || u.email_usuario.toLowerCase() === 'gui@gmail.com';
                   return (
-                    <tr key={u.id_usuario} className="hover:bg-white/[0.02] transition">
-                      <td className="py-3.5 px-5 font-medium text-white flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/70">
+                    <tr key={u.id_usuario} className="h-[56px] hover:bg-white/[0.02] transition">
+                      <td className="py-3.5 px-5 font-medium text-white flex items-center gap-3 truncate">
+                        <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/70 shrink-0">
                           {u.role === 'ADMIN' ? (
                             <Shield className="w-4 h-4 text-[#FF9F0A]" />
                           ) : (
                             <User className="w-4 h-4 text-[#0A84FF]" />
                           )}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-1.5 font-semibold text-sm">
-                            <span>{u.nome_usuario}</span>
+                        <div className="truncate">
+                          <div className="flex items-center gap-1.5 font-semibold text-sm truncate">
+                            <span className="truncate" title={u.nome_usuario}>{u.nome_usuario}</span>
                             {isMaster && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30 font-mono font-medium">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/30 font-mono font-medium shrink-0">
                                 MASTER
                               </span>
                             )}
@@ -134,7 +141,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-white/70 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-white/70 font-mono text-[11px] truncate" title={u.email_usuario}>
                         {u.email_usuario}
                       </td>
 

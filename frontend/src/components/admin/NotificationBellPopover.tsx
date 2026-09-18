@@ -128,7 +128,7 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
               </button>
             </div>
           )}
-          <div className="max-h-88 overflow-y-auto divide-y divide-white/[0.06] scrollbar-thin">
+          <div className="h-88 overflow-y-auto divide-y divide-white/[0.06] scrollbar-thin">
             {notificacoes.length === 0 ? (
               <div className="p-8 text-center text-white/40 text-xs">
                 Nenhuma notificação por enquanto.
