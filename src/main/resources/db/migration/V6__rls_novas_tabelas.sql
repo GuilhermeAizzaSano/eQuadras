@@ -27,15 +27,3 @@ CREATE POLICY backend_full_access_logs_auditoria
     TO postgres, service_role
     USING (true)
     WITH CHECK (true);
-
--- 3. Tabela: flyway_schema_history
-ALTER TABLE public.flyway_schema_history ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS backend_full_access_flyway_schema_history ON public.flyway_schema_history;
-CREATE POLICY backend_full_access_flyway_schema_history
-    ON public.flyway_schema_history
-    AS PERMISSIVE
-    FOR ALL
-    TO postgres, service_role
-    USING (true)
-    WITH CHECK (true);
