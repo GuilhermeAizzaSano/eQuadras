@@ -38,6 +38,17 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
   onSubmit,
   onRemoverBloqueio,
 }) => {
+  React.useEffect(() => {
+    if (!quadra) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [quadra, isSubmitting, onClose]);
+
   if (!quadra) return null;
 
   return (

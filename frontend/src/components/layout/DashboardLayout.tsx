@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Sidebar } from './Sidebar';
+import { Sidebar, NavigationTab } from './Sidebar';
 import { ChangePasswordModal, ApiKeyModal } from '../ui';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  currentTab: string;
-  onSelectTab: (tab: any) => void;
+  currentTab: NavigationTab;
+  onSelectTab: (tab: NavigationTab) => void;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({

@@ -89,14 +89,26 @@ export const ModalPix: React.FC<ModalPixProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !simulando) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, simulando, onClose]);
+
   const handleSimularPagamento = async () => {
     setSimulando(true);
     setErro(null);
     try {
       const atualizado = await pagamentoApi.simularAprovacao(agendamento.id_agendamento);
       onSuccess(atualizado);
-    } catch (err: any) {
-      setErro(err.message || 'Falha ao confirmar pagamento.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Falha ao confirmar pagamento.';
+      setErro(msg);
     } finally {
       setSimulando(false);
     }

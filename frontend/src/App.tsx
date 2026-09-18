@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { DashboardLayout } from './components/layout/DashboardLayout';
+import { NavigationTab, ClientTab, AdminTab } from './components/layout/Sidebar';
 import { Loader2 } from 'lucide-react';
 
 const AuthPage = lazy(() => import('./pages/AuthPage').then((m) => ({ default: m.AuthPage })));
@@ -43,11 +44,11 @@ export const App: React.FC = () => {
   };
 
   const currentTab = isAdmin ? adminTab : clientTab;
-  const handleSelectTab = (tab: any) => {
+  const handleSelectTab = (tab: NavigationTab) => {
     if (isAdmin) {
-      setAdminTab(tab);
+      setAdminTab(tab as AdminTab);
     } else {
-      setClientTab(tab);
+      setClientTab(tab as ClientTab);
     }
   };
 

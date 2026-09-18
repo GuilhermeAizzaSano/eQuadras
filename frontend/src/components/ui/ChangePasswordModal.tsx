@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Lock, Check, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { usuarioApi } from '../../api/apiClient';
@@ -41,6 +41,17 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     temNumero &&
     temSimbolo &&
     senhasConferem;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, loading, onClose]);
 
   if (!isOpen) return null;
 

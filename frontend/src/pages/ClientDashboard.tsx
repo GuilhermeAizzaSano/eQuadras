@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, bloqueioApi, getAssetUrl } from '../api/apiClient';
 import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } from '../types';
@@ -264,6 +264,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     }
   }, [isBookingModalOpen, diasDisponiveis, dataSelecionada]);
 
+  const cepAbortControllerRef = useRef<AbortController | null>(null);
+
   const buscarQuadrasPorLocalizacao = async () => {
     const cepNumerico = cepBusca.replace(/\D/g, '');
     if (cepNumerico.length !== 8) {
@@ -271,21 +273,27 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       return;
     }
 
+    if (cepAbortControllerRef.current) {
+      cepAbortControllerRef.current.abort();
+    }
+    cepAbortControllerRef.current = new AbortController();
+    const signal = cepAbortControllerRef.current.signal;
+
     setLoadingMessage('Buscando quadras próximas ao CEP informado...');
     setLoading(true);
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cepNumerico}/json/`);
+      const response = await fetch(`https://viacep.com.br/ws/${cepNumerico}/json/`, { signal });
       const data = await response.json();
       
       if (!data.erro) {
-        let nominatimData: any[] = [];
+        let nominatimData: Array<{ lat: string; lon: string }> = [];
         let usedFallbackBairro = false;
 
         const fetchNominatim = async (query: string) => {
           try {
             const res = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-              { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
+              { headers: { 'User-Agent': 'eQuadras-App/1.0' }, signal }
             );
             if (res.ok) {
               return await res.json();

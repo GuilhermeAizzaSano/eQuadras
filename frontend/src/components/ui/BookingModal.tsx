@@ -46,6 +46,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   onOpenDetails,
 }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, loading, onClose]);
+
   if (!isOpen || !quadra) return null;
 
   const ordenados = getSlotsOrdenados();
