@@ -109,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onConfirm: () => {},
   });
 
-  const carregarAgendamentos = async (buscarHistorico?: boolean) => {
+  const carregarAgendamentos = React.useCallback(async (buscarHistorico?: boolean) => {
     const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
       const agendamentos = await agendamentoApi.listar(deveBuscarHistorico);
@@ -120,7 +120,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [historicoAdminCarregado]);
+
+  const handleNotificationReceived = React.useCallback((novaNotificacao: import('../types').Notificacao) => {
+    setFeedback({ type: 'success', message: novaNotificacao.mensagem });
+    carregarAgendamentos();
+  }, [carregarAgendamentos]);
 
   const {
     notificacoes,
@@ -133,10 +138,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     excluirTodasNotificacoes,
   } = useAdminNotifications({
     user,
-    onNotificationReceived: (novaNotificacao) => {
-      setFeedback({ type: 'success', message: novaNotificacao.mensagem });
-      carregarAgendamentos();
-    },
+    onNotificationReceived: handleNotificationReceived,
   });
 
   const {
