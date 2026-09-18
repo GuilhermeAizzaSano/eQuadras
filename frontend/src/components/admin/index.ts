@@ -12,3 +12,4 @@ export * from './AdminDailyTimelineGrid';
 export * from './UserManagementList';
 export * from './UserFormModal';
 export * from './AuditLogsPanel';
+export * from './NotificationBellPopover';

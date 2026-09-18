@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi, notificacaoApi, bloqueioApi, getBaseUrl, getAssetUrl } from '../api/apiClient';
-import { Quadra, Agendamento, TipoEsporte, Notificacao, DiaSemana, DisponibilidadeDia, BloqueioHorario } from '../types';
+import { quadraApi, agendamentoApi, getAssetUrl } from '../api/apiClient';
+import { Quadra, Agendamento } from '../types';
 import { FeedbackBanner, ConfirmModal, LoadingOverlay, CourtDetailsModal } from '../components/ui';
+import { useAdminNotifications, useCourtBlocks, useCourtForm } from '../hooks';
 import {
   AdminMetricsGrid,
   CalendarOccupancy,
@@ -17,16 +18,8 @@ import {
   UserManagementList,
   UserFormModal,
   AuditLogsPanel,
-  HorariosPorDia,
-  DEFAULT_HORARIOS,
-  DIAS_SEMANA
+  NotificationBellPopover,
 } from '../components/admin';
-import {
-  Bell,
-  X,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
 import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
 import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../utils/dateUtils';
@@ -45,12 +38,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
   
-  // Notificações SSE
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
-  const [notificacoesPage, setNotificacoesPage] = useState(0);
-  const [notificacoesTotalPages, setNotificacoesTotalPages] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const eventSourceRef = useRef<EventSource | null>(null);
+
   
   // Controle de Abas
   const activeTab = controlledActiveTab || 'dashboard';
@@ -61,48 +49,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null);
 
-  // Modal de Criar / Editar Quadra
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editandoId, setEditandoId] = useState<number | null>(null);
-  const [nome, setNome] = useState('');
-  const [tipoEsporte, setTipoEsporte] = useState<TipoEsporte>('FUTEBOL');
-  const [valorHora, setValorHora] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [dataLimiteAgendamento, setDataLimiteAgendamento] = useState('');
-  const [fotosExistentes, setFotosExistentes] = useState<string[]>([]);
-  const [novasFotos, setNovasFotos] = useState<File[]>([]);
-  const [novasFotosPreviews, setNovasFotosPreviews] = useState<string[]>([]);
-  const [horarios, setHorarios] = useState<HorariosPorDia>(DEFAULT_HORARIOS);
-  const previewsRef = useRef<string[]>([]);
-  previewsRef.current = novasFotosPreviews;
-
-  // Gerenciamento de Bloqueios e Histórico por Quadra
-  const [bloqueioModalQuadra, setBloqueioModalQuadra] = useState<Quadra | null>(null);
+  // Histórico por Quadra
   const [quadraHistoricoModal, setQuadraHistoricoModal] = useState<Quadra | null>(null);
-  const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
-  const [loadingBloqueios, setLoadingBloqueios] = useState(false);
-  const [mapaBloqueiosPorQuadra, setMapaBloqueiosPorQuadra] = useState<Record<number, BloqueioHorario[]>>({});
-  const [bloqueioData, setBloqueioData] = useState('');
-  const [bloqueioHoraInicio, setBloqueioHoraInicio] = useState('');
-  const [bloqueioHoraFim, setBloqueioHoraFim] = useState('');
-  const [bloqueioMotivo, setBloqueioMotivo] = useState('');
-  const [submittingBloqueio, setSubmittingBloqueio] = useState(false);
-
-  // Revogar ObjectURLs criadas para previews ao desmontar o componente
-  useEffect(() => {
-    return () => {
-      previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
-  
-  // Endereço
-  const [cep, setCep] = useState('');
-  const [logradouro, setLogradouro] = useState('');
-  const [bairro, setBairro] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [estado, setEstado] = useState('');
-  const [latitude, setLatitude] = useState<number | undefined>();
-  const [longitude, setLongitude] = useState<number | undefined>();
 
   // Controle do Calendário Mensal
   // Visualização e Filtros da Agenda / Toolbar
@@ -163,55 +111,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onConfirm: () => {},
   });
 
-  useEffect(() => {
-    carregarDados();
-    carregarNotificacoes();
-
-    if (user) {
-      // Setup SSE for real-time notifications via HttpOnly cookie
-      const streamUrl = `${getBaseUrl()}/notificacoes/stream`;
-      eventSourceRef.current = new EventSource(streamUrl, { withCredentials: true });
-      
-      eventSourceRef.current.addEventListener('notificacao', (event) => {
-        try {
-          const novaNotificacao: Notificacao = JSON.parse(event.data);
-          setNotificacoes((prev) => [novaNotificacao, ...prev.slice(0, 4)]);
-          setFeedback({ type: 'success', message: novaNotificacao.mensagem });
-          carregarAgendamentos();
-        } catch {
-          // Payload parsing guard
-        }
-      });
-
-      eventSourceRef.current.onerror = () => {
-        // Se a conexão cair ou falhar temporariamente, fecha o socket para evitar tempestade de reconexões imediatas
-        if (eventSourceRef.current) {
-          eventSourceRef.current.close();
-          eventSourceRef.current = null;
-        }
-      };
-
-      return () => {
-        if (eventSourceRef.current) {
-          eventSourceRef.current.close();
-          eventSourceRef.current = null;
-        }
-      };
-    }
-  }, [user]);
-
-  const formatarDataHora = (dataIso?: string) => {
-    if (!dataIso) return '';
-    const d = new Date(dataIso);
-    if (isNaN(d.getTime())) return dataIso;
-    const dia = String(d.getDate()).padStart(2, '0');
-    const mes = String(d.getMonth() + 1).padStart(2, '0');
-    const ano = d.getFullYear();
-    const horas = String(d.getHours()).padStart(2, '0');
-    const minutos = String(d.getMinutes()).padStart(2, '0');
-    return `${dia}/${mes}/${ano} ${horas}:${minutos}`;
-  };
-
   const carregarAgendamentos = async (buscarHistorico?: boolean) => {
     const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
@@ -224,6 +123,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       console.error(err);
     }
   };
+
+  const {
+    notificacoes,
+    notificacoesPage,
+    notificacoesTotalPages,
+    unreadCount,
+    carregarNotificacoes,
+    lerNotificacao,
+    marcarTodasComoLidas,
+    excluirTodasNotificacoes,
+  } = useAdminNotifications({
+    user,
+    onNotificationReceived: (novaNotificacao) => {
+      setFeedback({ type: 'success', message: novaNotificacao.mensagem });
+      carregarAgendamentos();
+    },
+  });
+
+  const {
+    bloqueioModalQuadra,
+    setBloqueioModalQuadra,
+    bloqueiosQuadra,
+    loadingBloqueios,
+    mapaBloqueiosPorQuadra,
+    bloqueioData,
+    setBloqueioData,
+    bloqueioHoraInicio,
+    setBloqueioHoraInicio,
+    bloqueioHoraFim,
+    setBloqueioHoraFim,
+    bloqueioMotivo,
+    setBloqueioMotivo,
+    submittingBloqueio,
+    carregarMapaBloqueios,
+    abrirGerenciamentoBloqueios,
+    handleBloquearSlot,
+    handleDesbloquearSlot,
+    handleCriarBloqueio,
+    handleRemoverBloqueio,
+  } = useCourtBlocks({
+    minhasQuadras,
+    onSuccessAction: () => carregarDados(),
+    setFeedback,
+    setConfirmModal,
+  });
+
+  const {
+    isModalOpen: modalOpen,
+    editandoId,
+    nome,
+    setNome,
+    tipoEsporte,
+    setTipoEsporte,
+    valorHora,
+    descricao,
+    setDescricao,
+    dataLimiteAgendamento,
+    setDataLimiteAgendamento,
+    cep,
+    logradouro,
+    setLogradouro,
+    bairro,
+    setBairro,
+    cidade,
+    setCidade,
+    estado,
+    setEstado,
+    loadingCep,
+    fotosExistentes,
+    novasFotosPreviews,
+    horarios,
+    abrirModalCriacao,
+    abrirModalEdicao,
+    fecharModal,
+    handleCepChange,
+    handleValorChange,
+    handleDiaToggle,
+    handleHorarioChange,
+    copiarSegParaTodos,
+    aplicarPadraoTodos,
+    handleFileChange,
+    removerNovaFoto,
+    removerFotoExistente,
+    handleSalvarQuadra,
+  } = useCourtForm({
+    user,
+    onSuccessAction: () => carregarDados(),
+    setFeedback,
+    setLoading,
+    setLoadingMessage,
+    setConfirmModal,
+  });
+
+  useEffect(() => {
+    carregarDados();
+  }, [user]);
 
   const carregarHistoricoAdmin = async () => {
     if (carregandoHistoricoAdmin) return;
@@ -240,18 +235,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const carregarNotificacoes = async (page = 0) => {
-    if (!user) return;
-    try {
-      const data = await notificacaoApi.listarPorAdmin(page, 5);
-      setNotificacoes(data.content);
-      setNotificacoesPage(data.number);
-      setNotificacoesTotalPages(data.totalPages);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const confirmarExcluirTodasNotificacoes = () => {
     setConfirmModal({
       isOpen: true,
@@ -262,10 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       onConfirm: async () => {
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
         try {
-          await notificacaoApi.excluirTodas();
-          setNotificacoes([]);
-          setNotificacoesPage(0);
-          setNotificacoesTotalPages(0);
+          await excluirTodasNotificacoes();
           setFeedback({ type: 'success', message: 'Notificações excluídas com sucesso.' });
         } catch (err) {
           console.error('Erro ao excluir notificações:', err);
@@ -273,25 +253,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }
       },
     });
-  };
-
-  const lerNotificacao = async (id: number) => {
-    try {
-      await notificacaoApi.marcarComoLida(id);
-      setNotificacoes(notificacoes.map(n => n.id === id ? { ...n, lida: true } : n));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const marcarTodasComoLidas = async () => {
-    try {
-      setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })));
-      await notificacaoApi.marcarTodasComoLidas();
-    } catch (err) {
-      console.error('Erro ao marcar todas notificações como lidas:', err);
-      carregarNotificacoes();
-    }
   };
 
   const carregarDados = async (buscarHistorico?: boolean) => {
@@ -308,26 +269,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setHistoricoAdminCarregado(true);
       }
 
-      // Carregar todos os bloqueios do admin em uma única requisição HTTP consolidada
-      try {
-        const todosBloqueios = await bloqueioApi.listarTodosAdmin();
-        const hojeIso = getHojeLocalIso();
-        const novoMapa: Record<number, BloqueioHorario[]> = {};
-        todosBloqueios
-          .filter((b) => !b.data || b.data >= hojeIso)
-          .forEach((b) => {
-            if (b.quadraId) {
-              if (!novoMapa[b.quadraId]) {
-                novoMapa[b.quadraId] = [];
-              }
-              novoMapa[b.quadraId].push(b);
-            }
-          });
-        setMapaBloqueiosPorQuadra(novoMapa);
-      } catch (bErr) {
-        console.error('Erro ao carregar mapa de bloqueios consolidado:', bErr);
-        setMapaBloqueiosPorQuadra({});
-      }
+      // Carregar todos os bloqueios do admin consolidado
+      await carregarMapaBloqueios();
     } catch (err: any) {
       console.error(err);
     }
@@ -423,160 +366,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, [minhasQuadras, agendamentosAdmin]);
 
-  const buscarCep = async (cepBuscado: string) => {
-    const cepNumerico = cepBuscado.replace(/\D/g, '');
-    if (cepNumerico.length !== 8) return;
 
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cepNumerico}/json/`);
-      const data = await response.json();
-      
-      if (!data.erro) {
-        setLogradouro(data.logradouro);
-        setBairro(data.bairro);
-        setCidade(data.localidade);
-        setEstado(data.uf);
-
-        // Fetch Coordinates via Nominatim OpenStreetMap (com fallback de bairro)
-        const fetchCoord = async (q: string) => {
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`, {
-              headers: { 'User-Agent': 'eQuadras-App/1.0' }
-            });
-            if (res.ok) return await res.json();
-          } catch {
-            return [];
-          }
-          return [];
-        };
-
-        let nominatimData = await fetchCoord(`${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
-        if (!nominatimData || nominatimData.length === 0) {
-          nominatimData = await fetchCoord(`${data.logradouro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
-        }
-        if (!nominatimData || nominatimData.length === 0) {
-          nominatimData = await fetchCoord(`${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
-        }
-        
-        if (nominatimData && nominatimData.length > 0) {
-          setLatitude(parseFloat(nominatimData[0].lat));
-          setLongitude(parseFloat(nominatimData[0].lon));
-        }
-      }
-    } catch (err) {
-      console.error('Erro ao buscar CEP', err);
-    }
-  };
-
-  const abrirModalCriacao = () => {
-    fecharModal();
-    setHorarios(DEFAULT_HORARIOS);
-    setModalOpen(true);
-  };
-
-  const abrirModalEdicao = (q: Quadra) => {
-    novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
-    setEditandoId(q.id_quadra);
-    setNome(q.nome);
-    setTipoEsporte(q.tipoEsporte);
-    setValorHora(q.valorHora.toString());
-    setDescricao(q.descricao || '');
-    setDataLimiteAgendamento(q.dataLimiteAgendamento || '');
-    setFotosExistentes(q.fotos || []);
-    setNovasFotos([]);
-    setNovasFotosPreviews([]);
-    setCep(q.cep || '');
-    setLogradouro(q.logradouro || '');
-    setBairro(q.bairro || '');
-    setCidade(q.cidade || '');
-    setEstado(q.estado || '');
-    setLatitude(q.latitude);
-    setLongitude(q.longitude);
-
-    if (q.disponibilidades && q.disponibilidades.length > 0) {
-      const novosHorarios: HorariosPorDia = {
-        MONDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        TUESDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        WEDNESDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        THURSDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        FRIDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        SATURDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-        SUNDAY: { ativo: false, horaInicio: '06:00', horaFim: '23:00' },
-      };
-      q.disponibilidades.forEach((d) => {
-        if (novosHorarios[d.diaSemana]) {
-          novosHorarios[d.diaSemana] = {
-            ativo: true,
-            horaInicio: d.horaInicio ? d.horaInicio.slice(0, 5) : '06:00',
-            horaFim: d.horaFim ? d.horaFim.slice(0, 5) : '23:00',
-          };
-        }
-      });
-      setHorarios(novosHorarios);
-    } else {
-      setHorarios(DEFAULT_HORARIOS);
-    }
-
-    setModalOpen(true);
-  };
-
-  const fecharModal = () => {
-    novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
-    setModalOpen(false);
-    setEditandoId(null);
-    setNome('');
-    setValorHora('');
-    setDescricao('');
-    setDataLimiteAgendamento('');
-    setFotosExistentes([]);
-    setNovasFotos([]);
-    setNovasFotosPreviews([]);
-    setCep('');
-    setLogradouro('');
-    setBairro('');
-    setCidade('');
-    setEstado('');
-    setLatitude(undefined);
-    setLongitude(undefined);
-    setHorarios(DEFAULT_HORARIOS);
-  };
-
-  const handleDiaToggle = (dia: DiaSemana) => {
-    setHorarios((prev) => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        ativo: !prev[dia].ativo,
-      },
-    }));
-  };
-
-  const handleHorarioChange = (dia: DiaSemana, field: 'horaInicio' | 'horaFim', value: string) => {
-    setHorarios((prev) => ({
-      ...prev,
-      [dia]: {
-        ...prev[dia],
-        [field]: value,
-      },
-    }));
-  };
-
-  const copiarSegParaTodos = () => {
-    const seg = horarios.MONDAY;
-    setHorarios({
-      MONDAY: { ...seg },
-      TUESDAY: { ...seg },
-      WEDNESDAY: { ...seg },
-      THURSDAY: { ...seg },
-      FRIDAY: { ...seg },
-      SATURDAY: { ...seg },
-      SUNDAY: { ...seg },
-    });
-  };
-
-  const aplicarPadraoTodos = () => {
-    setHorarios(DEFAULT_HORARIOS);
-  };
 
   const abrirAgendaDoDia = async (dataIso: string) => {
     setDataSelecionada(dataIso);
@@ -609,54 +399,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const handleBloquearSlot = (quadraId: number, data: string, horaInicio: string, horaFim: string) => {
-    const quadra = minhasQuadras.find((q) => q.id_quadra === quadraId);
-    if (!quadra) return;
-    setBloqueioModalQuadra(quadra);
-    setBloqueioData(data);
-    setBloqueioHoraInicio(horaInicio);
-    setBloqueioHoraFim(horaFim);
-    setBloqueioMotivo('');
-    carregarBloqueios(quadraId);
-  };
 
-  const handleDesbloquearSlot = (
-    quadraId: number,
-    data: string,
-    horaInicio: string,
-    horaFim: string,
-    bloqueio: BloqueioHorario
-  ) => {
-    const quadra = minhasQuadras.find((q) => q.id_quadra === quadraId);
-    const quadraNome = quadra ? quadra.nome : 'Quadra';
-    const dataFormatada = data.split('-').reverse().join('/');
-
-    setConfirmModal({
-      isOpen: true,
-      title: 'Desbloquear Horário',
-      description: `Deseja realmente desbloquear o horário das ${horaInicio} às ${horaFim} na quadra "${quadraNome}" em ${dataFormatada}? O restante dos horários permanecerá bloqueado.`,
-      isDestructive: true,
-      confirmLabel: 'Sim, desbloquear este horário',
-      onConfirm: async () => {
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-        try {
-          await bloqueioApi.desbloquear(quadraId, {
-            bloqueioId: bloqueio.id,
-            data,
-            horaInicio: `${horaInicio}:00`,
-            horaFim: `${horaFim}:00`,
-          });
-          setFeedback({
-            type: 'success',
-            message: `Horário das ${horaInicio} às ${horaFim} desbloqueado com sucesso!`,
-          });
-          await carregarDados();
-        } catch (err: any) {
-          setFeedback({ type: 'error', message: err.message || 'Erro ao desbloquear horário.' });
-        }
-      },
-    });
-  };
 
   const handleAbrirAgendamentoDetalhe = (ag: Agendamento) => {
     const dataIso = ag.dataHoraInicio.split('T')[0];
@@ -688,230 +431,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .finally(() => setLoadingHorariosModal(false));
   };
 
-  const abrirGerenciamentoBloqueios = async (q: Quadra) => {
-    setBloqueioModalQuadra(q);
-    setBloqueioData(new Date().toISOString().split('T')[0]);
-    setBloqueioHoraInicio('');
-    setBloqueioHoraFim('');
-    setBloqueioMotivo('');
-    await carregarBloqueios(q.id_quadra);
-  };
 
-  const carregarBloqueios = async (quadraId: number) => {
-    setLoadingBloqueios(true);
-    try {
-      const data = await bloqueioApi.listar(quadraId);
-      const hojeIso = getHojeLocalIso();
-      setBloqueiosQuadra(data.filter((b) => !b.data || b.data >= hojeIso));
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao carregar bloqueios.' });
-    } finally {
-      setLoadingBloqueios(false);
-    }
-  };
 
-  const executarCriacaoBloqueio = async (substituirDiaInteiro: boolean = false) => {
-    if (!bloqueioModalQuadra || submittingBloqueio) return;
 
-    setSubmittingBloqueio(true);
-    try {
-      await bloqueioApi.criar(bloqueioModalQuadra.id_quadra, {
-        data: bloqueioData,
-        horaInicio: bloqueioHoraInicio ? `${bloqueioHoraInicio}:00` : undefined,
-        horaFim: bloqueioHoraFim ? `${bloqueioHoraFim}:00` : undefined,
-        motivo: bloqueioMotivo || undefined,
-        substituirDiaInteiro,
-      });
-
-      setFeedback({
-        type: 'success',
-        message: substituirDiaInteiro
-          ? 'Bloqueio do dia todo substituído pelo horário específico com sucesso!'
-          : 'Bloqueio adicionado com sucesso!',
-      });
-      setBloqueioHoraInicio('');
-      setBloqueioHoraFim('');
-      setBloqueioMotivo('');
-      await carregarBloqueios(bloqueioModalQuadra.id_quadra);
-      await carregarDados();
-    } catch (err: any) {
-      if (err.message && err.message.includes('DIA_INTEIRO_BLOQUEADO')) {
-        // Exibir modal para o usuário confirmar a substituição
-        setConfirmModal({
-          isOpen: true,
-          title: 'Substituir Bloqueio do Dia Todo',
-          description: `A quadra "${bloqueioModalQuadra.nome}" já está bloqueada o dia todo em ${bloqueioData.split('-').reverse().join('/')}. Deseja desbloquear o restante do dia e manter bloqueado apenas o horário das ${bloqueioHoraInicio} às ${bloqueioHoraFim}?`,
-          isDestructive: false,
-          confirmLabel: 'Sim, desbloquear dia e bloquear horário',
-          onConfirm: async () => {
-            setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-            await executarCriacaoBloqueio(true);
-          },
-        });
-        return;
-      }
-      setFeedback({ type: 'error', message: err.message || 'Erro ao adicionar bloqueio.' });
-    } finally {
-      setSubmittingBloqueio(false);
-    }
-  };
-
-  const handleCriarBloqueio = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bloqueioModalQuadra) return;
-
-    if (bloqueioHoraInicio && !bloqueioHoraFim) {
-      setFeedback({ type: 'error', message: 'Informe também o horário de término do bloqueio.' });
-      return;
-    }
-    if (!bloqueioHoraInicio && bloqueioHoraFim) {
-      setFeedback({ type: 'error', message: 'Informe também o horário de início do bloqueio.' });
-      return;
-    }
-
-    // Verificar previamente se já existe bloqueio de dia inteiro cadastrado na quadra nesta data
-    const bloqueiosDaData = bloqueiosQuadra.filter((b) => b.data === bloqueioData);
-    const temBloqueioDiaInteiro = bloqueiosDaData.some((b) => !b.horaInicio || !b.horaFim);
-
-    if (bloqueioHoraInicio && bloqueioHoraFim && temBloqueioDiaInteiro) {
-      setConfirmModal({
-        isOpen: true,
-        title: 'Substituir Bloqueio do Dia Todo',
-        description: `A quadra "${bloqueioModalQuadra.nome}" já está bloqueada o dia todo em ${bloqueioData.split('-').reverse().join('/')}. Deseja desbloquear o restante do dia e manter bloqueado apenas o horário das ${bloqueioHoraInicio} às ${bloqueioHoraFim}?`,
-        isDestructive: false,
-        confirmLabel: 'Sim, desbloquear dia e bloquear horário',
-        onConfirm: async () => {
-          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-          await executarCriacaoBloqueio(true);
-        },
-      });
-      return;
-    }
-
-    await executarCriacaoBloqueio(false);
-  };
-
-  const handleRemoverBloqueio = async (bloqueioId: number) => {
-    if (!bloqueioModalQuadra) return;
-    try {
-      await bloqueioApi.remover(bloqueioModalQuadra.id_quadra, bloqueioId);
-      setFeedback({ type: 'success', message: 'Bloqueio removido com sucesso!' });
-      await carregarBloqueios(bloqueioModalQuadra.id_quadra);
-      await carregarDados();
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao remover bloqueio.' });
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
-      const totalFotos = fotosExistentes.length + novasFotos.length + selectedFiles.length;
-      if (totalFotos > 5) {
-        setFeedback({ type: 'error', message: 'Você pode ter no máximo 5 fotos por quadra.' });
-        return;
-      }
-      setNovasFotos((prev) => [...prev, ...selectedFiles]);
-      const previews = selectedFiles.map((file) => URL.createObjectURL(file));
-      setNovasFotosPreviews((prev) => [...prev, ...previews]);
-    }
-  };
-
-  const removerNovaFoto = (index: number) => {
-    const urlToRemove = novasFotosPreviews[index];
-    if (urlToRemove) {
-      URL.revokeObjectURL(urlToRemove);
-    }
-    setNovasFotos((prev) => prev.filter((_, i) => i !== index));
-    setNovasFotosPreviews((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removerFotoExistente = async (fotoUrl: string) => {
-    if (!user || !editandoId) {
-      setFotosExistentes((prev) => prev.filter((f) => f !== fotoUrl));
-      return;
-    }
-    try {
-      await quadraApi.removerFoto(editandoId, fotoUrl);
-      setFotosExistentes((prev) => prev.filter((f) => f !== fotoUrl));
-      setFeedback({ type: 'success', message: 'Foto removida com sucesso!' });
-      await carregarDados();
-    } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao remover foto.' });
-    }
-  };
-
-  const handleSalvarQuadra = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    const acaoTexto = editandoId ? 'salvar as alterações da quadra' : 'cadastrar a nova quadra';
-    const acaoTitulo = editandoId ? 'Confirmar Edição de Quadra' : 'Confirmar Cadastro de Quadra';
-
-    setConfirmModal({
-      isOpen: true,
-      title: acaoTitulo,
-      description: `Deseja realmente ${acaoTexto} "${nome}" com valor de R$ ${parseFloat(valorHora || '0').toFixed(2)}/hora?`,
-      isDestructive: false,
-      onConfirm: async () => {
-        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
-        setLoadingMessage(editandoId ? 'Atualizando dados e fotos da quadra...' : 'Cadastrando nova quadra e enviando fotos...');
-        setLoading(true);
-        setFeedback(null);
-
-        try {
-          const disponibilidades: DisponibilidadeDia[] = DIAS_SEMANA
-            .filter((dia) => horarios[dia.key].ativo)
-            .map((dia) => ({
-              diaSemana: dia.key,
-              horaInicio: `${horarios[dia.key].horaInicio}:00`,
-              horaFim: `${horarios[dia.key].horaFim}:00`,
-            }));
-
-          const payload = {
-            nome,
-            tipoEsporte,
-            valorHora: parseFloat(valorHora),
-            descricao,
-            dataLimiteAgendamento: dataLimiteAgendamento || undefined,
-            fotos: fotosExistentes,
-            cep,
-            logradouro,
-            bairro,
-            cidade,
-            estado,
-            latitude,
-            longitude,
-            disponibilidades,
-          };
-
-          let quadraSalva: Quadra;
-          if (editandoId) {
-            quadraSalva = await quadraApi.editar(editandoId, payload);
-          } else {
-            quadraSalva = await quadraApi.cadastrar(payload);
-          }
-
-          // Se tiver fotos novas para enviar
-          if (novasFotos.length > 0 && quadraSalva.id_quadra) {
-            await quadraApi.uploadFotos(quadraSalva.id_quadra, novasFotos);
-          }
-
-          setFeedback({
-            type: 'success',
-            message: `Quadra "${nome}" ${editandoId ? 'atualizada' : 'cadastrada'} com sucesso!`,
-          });
-
-          fecharModal();
-          await carregarDados();
-        } catch (err: any) {
-          setFeedback({ type: 'error', message: err.message || 'Falha ao salvar quadra.' });
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-  };
 
   const handleExcluirQuadra = (q: Quadra) => {
     if (!user) return;
@@ -995,15 +517,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value === '') {
-      setValorHora('');
-      return;
-    }
-    const decimalValue = (parseInt(value, 10) / 100).toFixed(2);
-    setValorHora(decimalValue);
-  };
+
 
   const [filtroAgendaAdmin, setFiltroAgendaAdmin] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
 
@@ -1031,133 +545,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Abas e Notificações */}
         <div className="flex items-center gap-3">
           
-          {/* Sino de Notificações */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 text-white/60 hover:text-white transition rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/20 hover:bg-white/[0.08] cursor-pointer"
-              aria-label="Notificações"
-            >
-              <Bell className="w-4 h-4" />
-              {notificacoes.filter(n => !n.lida).length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#FF453A] rounded-full ring-2 ring-black" />
-              )}
-            </button>
-
-            {/* Popover de Notificações */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#121214]/90 border border-white/[0.1] rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/80 z-50 overflow-hidden flex flex-col backdrop-blur-2xl">
-                <div className="p-4 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.02]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
-                      <Bell className="w-3.5 h-3.5 text-white/80" />
-                    </div>
-                    <h3 className="text-xs font-semibold text-white uppercase tracking-wider font-mono">Notificações</h3>
-                    {notificacoes.filter((n) => !n.lida).length > 0 && (
-                      <span className="text-[10px] bg-white/10 text-white border border-white/20 font-medium px-1.5 py-0.5 rounded-full font-mono">
-                        {notificacoes.filter((n) => !n.lida).length}
-                      </span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => setShowNotifications(false)}
-                    className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
-                    title="Fechar"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Barra de Ações: Marcar Lidas & Excluir Todas */}
-                {notificacoes.length > 0 && (
-                  <div className="px-4 py-2 border-b border-white/[0.06] bg-white/[0.02] flex items-center justify-between gap-2">
-                    {notificacoes.some((n) => !n.lida) ? (
-                      <button
-                        type="button"
-                        onClick={marcarTodasComoLidas}
-                        className="px-2.5 py-1 text-[11px] font-medium text-[#0A84FF] hover:bg-[#0A84FF]/10 rounded-lg transition active:scale-95 cursor-pointer"
-                      >
-                        Marcar tudo lido
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-white/40 font-mono px-1">Todas lidas</span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={confirmarExcluirTodasNotificacoes}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#FF453A] hover:bg-[#FF453A]/10 rounded-lg transition active:scale-95 cursor-pointer"
-                      title="Excluir todas as notificações"
-                    >
-                      Excluir todas
-                    </button>
-                  </div>
-                )}
-                <div className="max-h-88 overflow-y-auto divide-y divide-white/[0.06] scrollbar-thin">
-                  {notificacoes.length === 0 ? (
-                    <div className="p-8 text-center text-white/40 text-xs">
-                      Nenhuma notificação por enquanto.
-                    </div>
-                  ) : (
-                    notificacoes.map((notif) => (
-                      <div 
-                        key={notif.id} 
-                        className={`p-4 flex flex-col gap-2 transition ${
-                          notif.lida ? 'bg-white/[0.01] opacity-50' : 'bg-white/[0.03] hover:bg-white/[0.06]'
-                        }`}
-                      >
-                        <p className="text-xs text-white/80 leading-relaxed whitespace-normal break-words">
-                          {notif.mensagem}
-                        </p>
-                        <div className="flex justify-between items-center pt-1">
-                          <span className="text-[10px] text-white/40 font-mono">
-                            {formatarDataHora(notif.dataCriacao)}
-                          </span>
-                          {!notif.lida && (
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                lerNotificacao(notif.id);
-                              }}
-                              className="text-[10px] font-medium text-[#0A84FF] hover:underline transition active:scale-95 cursor-pointer"
-                            >
-                              Marcar como lida
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                {notificacoesTotalPages > 1 && (
-                  <div className="p-3 border-t border-white/[0.06] flex items-center justify-between bg-white/[0.02] text-xs">
-                    <button
-                      type="button"
-                      disabled={notificacoesPage === 0}
-                      onClick={() => carregarNotificacoes(notificacoesPage - 1)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                      <span>Anterior</span>
-                    </button>
-                    <span className="text-[10px] text-white/50 font-mono">
-                      Página {notificacoesPage + 1} de {notificacoesTotalPages}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={notificacoesPage >= notificacoesTotalPages - 1}
-                      onClick={() => carregarNotificacoes(notificacoesPage + 1)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-                    >
-                      <span>Próxima</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Sino e Popover de Notificações */}
+          <NotificationBellPopover
+            notificacoes={notificacoes}
+            unreadCount={unreadCount}
+            notificacoesPage={notificacoesPage}
+            notificacoesTotalPages={notificacoesTotalPages}
+            onCarregarNotificacoes={carregarNotificacoes}
+            onLerNotificacao={lerNotificacao}
+            onMarcarTodasComoLidas={marcarTodasComoLidas}
+            onConfirmarExcluirTodas={confirmarExcluirTodasNotificacoes}
+          />
         </div>
       </div>
 
@@ -1279,7 +677,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         bairro={bairro}
         cidade={cidade}
         estado={estado}
-        loading={loading}
+        loading={loading || loadingCep}
         onClose={fecharModal}
         onNomeChange={setNome}
         onTipoEsporteChange={setTipoEsporte}
@@ -1293,11 +691,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         onFileChange={handleFileChange}
         onRemoverFotoExistente={removerFotoExistente}
         onRemoverNovaFoto={removerNovaFoto}
-        onCepChange={(v) => {
-          const formatted = v.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').substring(0, 9);
-          setCep(formatted);
-          if (formatted.length === 9) buscarCep(formatted);
-        }}
+        onCepChange={handleCepChange}
         onLogradouroChange={setLogradouro}
         onBairroChange={setBairro}
         setCidadeChange={setCidade}
