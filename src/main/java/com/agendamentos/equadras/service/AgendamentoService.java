@@ -232,6 +232,8 @@ public class AgendamentoService {
         agendamento.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
+        notificarAdminCancelamento(agendamentoAtualizado, usuario);
+
         String tipoExecutor = usuario.isMasterAdmin() ? "MASTER_ADMIN" : (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN ? "ADMIN_QUADRA" : "CLIENTE");
         String nomeQuadra = agendamento.getQuadra() != null ? agendamento.getQuadra().getNome() : "N/A";
         if (auditoriaService != null) {
@@ -243,6 +245,37 @@ public class AgendamentoService {
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
+    }
+
+    private void notificarAdminCancelamento(Agendamento agendamento, Usuario executor) {
+        try {
+            if (agendamento.getQuadra() != null && agendamento.getQuadra().getAdmin() != null) {
+                java.time.format.DateTimeFormatter formatadorData = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+                java.time.format.DateTimeFormatter formatadorHora = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
+
+                String dataFormatada = agendamento.getDataHoraInicio().format(formatadorData);
+                String horaInicio = agendamento.getDataHoraInicio().format(formatadorHora);
+                String horaFim = agendamento.getDataHoraFim().format(formatadorHora);
+                String telefone = agendamento.getUsuario().getPhone_usuario() != null && !agendamento.getUsuario().getPhone_usuario().isBlank()
+                        ? agendamento.getUsuario().getPhone_usuario()
+                        : "Não informado";
+
+                String msg = String.format(
+                        "Agendamento Cancelado!\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s\nCancelado por: %s",
+                        agendamento.getUsuario().getNome_usuario(),
+                        telefone,
+                        agendamento.getQuadra().getNome(),
+                        dataFormatada,
+                        horaInicio,
+                        horaFim,
+                        executor.getNome_usuario()
+                );
+
+                notificacaoService.enviarNotificacao(agendamento.getQuadra().getAdmin().getId_usuario(), msg);
+            }
+        } catch (Exception e) {
+            log.error("Falha ao enviar notificação de cancelamento para admin do agendamento {}: {}", agendamento.getId_agendamento(), e.getMessage(), e);
+        }
     }
 
     @Transactional(readOnly = true)
