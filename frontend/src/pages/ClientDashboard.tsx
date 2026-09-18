@@ -246,28 +246,50 @@ export const ClientDashboard: React.FC = () => {
       const data = await response.json();
       
       if (!data.erro) {
-        // Tenta buscar com logradouro + cidade + UF, e fallback para cidade + UF se não encontrar
-        const queryCompleta = [data.logradouro, data.bairro, data.localidade, data.uf, 'Brasil']
-          .filter(Boolean)
-          .join(', ');
-        
-        let nominatimRes = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryCompleta)}&limit=1`,
-          { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
-        ).catch(() => null);
+        let nominatimData: any[] = [];
+        let usedFallbackBairro = false;
 
-        let nominatimData = nominatimRes && nominatimRes.ok ? await nominatimRes.json().catch(() => []) : [];
+        const fetchNominatim = async (query: string) => {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+              { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
+            );
+            if (res.ok) {
+              return await res.json();
+            }
+          } catch {
+            return [];
+          }
+          return [];
+        };
 
-        // Se a busca completa não encontrar, tenta pelo menos com cidade e UF
-        if ((!nominatimData || nominatimData.length === 0) && data.localidade) {
-          const queryCidade = `${data.localidade}, ${data.uf || 'SP'}, Brasil`;
-          nominatimRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryCidade)}&limit=1`,
-            { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
-          ).catch(() => null);
-          nominatimData = nominatimRes && nominatimRes.ok ? await nominatimRes.json().catch(() => []) : [];
+        // 1. Tenta com logradouro + bairro + cidade + UF
+        if (data.logradouro && data.bairro && data.localidade) {
+          nominatimData = await fetchNominatim(
+            `${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
+          );
         }
-        
+
+        // 2. Se não achar, tenta logradouro + cidade + UF (caso o nome do bairro divirja no OSM)
+        if ((!nominatimData || nominatimData.length === 0) && data.logradouro && data.localidade) {
+          nominatimData = await fetchNominatim(
+            `${data.logradouro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
+          );
+        }
+
+        // 3. Se ainda não achar, tenta bairro + cidade + UF (centro do bairro)
+        if ((!nominatimData || nominatimData.length === 0) && data.bairro && data.localidade) {
+          nominatimData = await fetchNominatim(
+            `${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
+          );
+          if (nominatimData && nominatimData.length > 0) {
+            usedFallbackBairro = true;
+          }
+        }
+
+        // NUNCA fazer fallback para o centro genérico da cidade (data.localidade)
+        // pois distorceria buscas em raio curto (ex: 2 km) em cidades de pequeno/médio porte.
         if (nominatimData && nominatimData.length > 0) {
           const lat = parseFloat(nominatimData[0].lat);
           const lon = parseFloat(nominatimData[0].lon);
@@ -277,12 +299,28 @@ export const ClientDashboard: React.FC = () => {
           setQuadras(filtradas);
           
           if (filtradas.length === 0) {
-            setFeedback({ type: 'error', message: `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.` });
+            setFeedback({
+              type: 'error',
+              message: usedFallbackBairro
+                ? `Nenhuma quadra ativa encontrada em um raio de até 2 km a partir do bairro ${data.bairro} (rua não mapeada).`
+                : `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.`
+            });
           } else {
-            setFeedback({ type: 'success', message: `${filtradas.length} quadra(s) encontrada(s) a até 2 km do seu CEP!` });
+            setFeedback({
+              type: 'success',
+              message: usedFallbackBairro
+                ? `${filtradas.length} quadra(s) encontrada(s) a até 2 km do bairro ${data.bairro} (rua não mapeada).`
+                : `${filtradas.length} quadra(s) encontrada(s) a até 2 km do seu CEP!`
+            });
           }
           return;
         }
+
+        setFeedback({
+          type: 'error',
+          message: `Não foi possível localizar o endereço ou bairro do CEP ${cepBusca} no mapa para calcular o raio de 2 km.`
+        });
+        return;
       }
       
       setFeedback({ type: 'error', message: 'Não foi possível obter as coordenadas do CEP digitado.' });
