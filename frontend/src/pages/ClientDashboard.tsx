@@ -18,9 +18,12 @@ const DIA_SEMANA_MAP: DiaSemana[] = [
   'SATURDAY',
 ];
 
-export const ClientDashboard: React.FC = () => {
+interface ClientDashboardProps {
+  activeTab?: 'QUADRAS' | 'AGENDAS';
+}
+
+export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'QUADRAS' }) => {
   const { user } = useAuth();
-  const [abaPrincipal, setAbaPrincipal] = useState<'QUADRAS' | 'RESERVAS'>('QUADRAS');
   const [quadras, setQuadras] = useState<Quadra[]>([]);
   const [selectedQuadra, setSelectedQuadra] = useState<number | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -51,7 +54,7 @@ export const ClientDashboard: React.FC = () => {
   // Resetar página ao mudar filtro de status ou alternar aba principal
   useEffect(() => {
     setPaginaAtualReservas(1);
-  }, [filtroStatusReservas, abaPrincipal]);
+  }, [filtroStatusReservas, activeTab]);
 
   const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
 
@@ -585,63 +588,20 @@ export const ClientDashboard: React.FC = () => {
       {/* Feedback Unificado */}
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
-      {/* Top Header com Abas Principais: Explorar Quadras vs Minhas Reservas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
-            {abaPrincipal === 'QUADRAS' ? 'Encontre sua Quadra' : 'Minhas Reservas'}
-          </h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
-            {abaPrincipal === 'QUADRAS'
-              ? 'Consulte disponibilidades em tempo real e garanta sua partida'
-              : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
-          </p>
-        </div>
-
-        {/* Segmented Control iOS / macOS Style */}
-        <div className="flex bg-white/[0.05] p-1 rounded-2xl border border-white/[0.08] backdrop-blur-md w-full sm:w-auto shrink-0 shadow-sm">
-          <button
-            onClick={() => setAbaPrincipal('QUADRAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer tracking-tight ${
-              abaPrincipal === 'QUADRAS'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-white/60 hover:text-white'
-            }`}
-          >
-            <MapPin className="w-4 h-4 text-white/80" />
-            <span>Explorar Quadras</span>
-            <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${
-                abaPrincipal === 'QUADRAS'
-                  ? 'bg-black/10 text-black'
-                  : 'bg-white/10 text-white/60'
-              }`}
-            >
-              {quadrasFiltradas.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setAbaPrincipal('RESERVAS')}
-            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer tracking-tight ${
-              abaPrincipal === 'RESERVAS'
-                ? 'bg-white text-black shadow-sm'
-                : 'text-white/60 hover:text-white'
-            }`}
-          >
-            <Clock className="w-4 h-4 text-white/80" />
-            <span>Minhas Reservas</span>
-            {contadoresReservas.ativos > 0 && (
-              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#30D158] text-black">
-                {contadoresReservas.ativos}
-              </span>
-            )}
-          </button>
-        </div>
+      {/* Top Header */}
+      <div className="border-b border-white/[0.08] pb-5">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
+          {activeTab === 'QUADRAS' ? 'Quadras' : 'Minhas Agendas'}
+        </h1>
+        <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
+          {activeTab === 'QUADRAS'
+            ? 'Consulte disponibilidades em tempo real e garanta sua partida'
+            : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}
+        </p>
       </div>
 
       {/* ABA 1: EXPLORAR QUADRAS */}
-      <div className={abaPrincipal === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
+      <div className={activeTab === 'QUADRAS' ? 'space-y-6' : 'hidden'}>
         {/* Barra de Filtros e Busca Clean Apple */}
         <div className="flex flex-col gap-3.5 bg-white/[0.02] p-3 sm:p-4 rounded-2xl sm:rounded-3xl border border-white/[0.06]">
           {/* Linha Superior: Esportes + Chave Seletora de Modo de Busca */}
@@ -901,7 +861,7 @@ export const ClientDashboard: React.FC = () => {
 
 
       {/* ABA 2: MINHAS RESERVAS */}
-      <div className={abaPrincipal === 'RESERVAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
+      <div className={activeTab === 'AGENDAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
         <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-5 sm:p-7 space-y-6">
           {/* Sub-abas de Filtro de Reservas */}
           <div className="flex bg-white/[0.04] p-1 rounded-2xl border border-white/[0.08] text-xs">
