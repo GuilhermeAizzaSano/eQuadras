@@ -18,12 +18,12 @@ public interface BloqueioHorarioRepository extends JpaRepository<BloqueioHorario
     @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.id_quadra IN :quadraIds AND b.data = :data")
     List<BloqueioHorario> findByQuadraIdsAndData(@Param("quadraIds") List<Long> quadraIds, @Param("data") LocalDate data);
 
-    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.id_quadra = :quadraId ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
-    List<BloqueioHorario> findByQuadraId(@Param("quadraId") Long quadraId);
+    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.id_quadra = :quadraId AND b.data >= :hoje ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
+    List<BloqueioHorario> findByQuadraId(@Param("quadraId") Long quadraId, @Param("hoje") LocalDate hoje);
 
-    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.admin.id_usuario = :adminId ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
-    List<BloqueioHorario> findAllByAdminId(@Param("adminId") Long adminId);
+    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.admin.id_usuario = :adminId AND b.data >= :hoje ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
+    List<BloqueioHorario> findAllByAdminId(@Param("adminId") Long adminId, @Param("hoje") LocalDate hoje);
 
-    @Query("SELECT b FROM BloqueioHorario b ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
-    List<BloqueioHorario> findAllOrdered();
+    @Query("SELECT b FROM BloqueioHorario b WHERE b.data >= :hoje ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
+    List<BloqueioHorario> findAllOrdered(@Param("hoje") LocalDate hoje);
 }

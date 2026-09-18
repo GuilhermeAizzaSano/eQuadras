@@ -132,7 +132,8 @@ public class BloqueioHorarioService {
 
     @Transactional(readOnly = true)
     public List<BloqueioHorarioResponseDTO> listarBloqueios(Long quadraId) {
-        return bloqueioHorarioRepository.findByQuadraId(quadraId)
+        LocalDate hoje = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+        return bloqueioHorarioRepository.findByQuadraId(quadraId, hoje)
                 .stream()
                 .map(BloqueioHorarioResponseDTO::fromEntity)
                 .toList();
@@ -140,15 +141,16 @@ public class BloqueioHorarioService {
 
     @Transactional(readOnly = true)
     public List<BloqueioHorarioResponseDTO> listarTodosDoAdmin(Long adminId) {
+        LocalDate hoje = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
         Usuario admin = usuarioRepository.findById(adminId).orElse(null);
         if (admin != null && admin.isMasterAdmin()) {
-            return bloqueioHorarioRepository.findAllOrdered()
+            return bloqueioHorarioRepository.findAllOrdered(hoje)
                     .stream()
                     .map(BloqueioHorarioResponseDTO::fromEntity)
                     .toList();
         }
 
-        return bloqueioHorarioRepository.findAllByAdminId(adminId)
+        return bloqueioHorarioRepository.findAllByAdminId(adminId, hoje)
                 .stream()
                 .map(BloqueioHorarioResponseDTO::fromEntity)
                 .toList();
