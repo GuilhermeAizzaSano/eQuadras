@@ -31,8 +31,7 @@ public class PagamentoController {
         this.pagamentoService = pagamentoService;
     }
 
-    @Operation(summary = "Simular aprovação de pagamento Pix (Dev)", description = "Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.")
-    @com.agendamentos.equadras.config.DevOnly
+    @Operation(summary = "Simular aprovação de pagamento Pix", description = "Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.")
     @PostMapping("/{agendamentoId}/simular-aprovacao")
     public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId,
                                                                    @UsuarioLogado UsuarioAutenticado usuarioLogado) {
