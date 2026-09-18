@@ -301,15 +301,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       // Carregar todos os bloqueios do admin em uma única requisição HTTP consolidada
       try {
         const todosBloqueios = await bloqueioApi.listarTodosAdmin();
+        const hojeIso = getHojeLocalIso();
         const novoMapa: Record<number, BloqueioHorario[]> = {};
-        todosBloqueios.forEach((b) => {
-          if (b.quadraId) {
-            if (!novoMapa[b.quadraId]) {
-              novoMapa[b.quadraId] = [];
+        todosBloqueios
+          .filter((b) => !b.data || b.data >= hojeIso)
+          .forEach((b) => {
+            if (b.quadraId) {
+              if (!novoMapa[b.quadraId]) {
+                novoMapa[b.quadraId] = [];
+              }
+              novoMapa[b.quadraId].push(b);
             }
-            novoMapa[b.quadraId].push(b);
-          }
-        });
+          });
         setMapaBloqueiosPorQuadra(novoMapa);
       } catch (bErr) {
         console.error('Erro ao carregar mapa de bloqueios consolidado:', bErr);
@@ -688,7 +691,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setLoadingBloqueios(true);
     try {
       const data = await bloqueioApi.listar(quadraId);
-      setBloqueiosQuadra(data);
+      const hojeIso = getHojeLocalIso();
+      setBloqueiosQuadra(data.filter((b) => !b.data || b.data >= hojeIso));
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Erro ao carregar bloqueios.' });
     } finally {

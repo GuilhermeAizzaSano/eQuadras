@@ -171,7 +171,7 @@ class BloqueioHorarioServiceTest {
     @DisplayName("Deve listar bloqueios da quadra")
     void deveListarBloqueios() {
         BloqueioHorario b1 = new BloqueioHorario(1L, quadra, LocalDate.now().plusDays(1), null, null, "Feriado", null);
-        when(bloqueioHorarioRepository.findByQuadraId(10L)).thenReturn(List.of(b1));
+        when(bloqueioHorarioRepository.findByQuadraId(eq(10L), any(LocalDate.class))).thenReturn(List.of(b1));
 
         List<BloqueioHorarioResponseDTO> lista = bloqueioHorarioService.listarBloqueios(10L);
 
@@ -257,13 +257,13 @@ class BloqueioHorarioServiceTest {
     @DisplayName("Deve listar todos os bloqueios do admin em lote")
     void deveListarTodosDoAdmin() {
         BloqueioHorario b1 = new BloqueioHorario(50L, quadra, LocalDate.now().plusDays(1), null, null, "B1", null);
-        when(bloqueioHorarioRepository.findAllByAdminId(1L)).thenReturn(List.of(b1));
+        when(bloqueioHorarioRepository.findAllByAdminId(eq(1L), any(LocalDate.class))).thenReturn(List.of(b1));
 
         List<BloqueioHorarioResponseDTO> lista = bloqueioHorarioService.listarTodosDoAdmin(1L);
 
         assertEquals(1, lista.size());
         assertEquals("B1", lista.get(0).motivo());
-        verify(bloqueioHorarioRepository, times(1)).findAllByAdminId(1L);
+        verify(bloqueioHorarioRepository, times(1)).findAllByAdminId(eq(1L), any(LocalDate.class));
     }
 
     @Test
@@ -278,14 +278,14 @@ class BloqueioHorarioServiceTest {
         when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
 
         BloqueioHorario bGlobal = new BloqueioHorario(51L, quadra, LocalDate.now().plusDays(1), null, null, "Global", null);
-        when(bloqueioHorarioRepository.findAllOrdered()).thenReturn(List.of(bGlobal));
+        when(bloqueioHorarioRepository.findAllOrdered(any(LocalDate.class))).thenReturn(List.of(bGlobal));
 
         List<BloqueioHorarioResponseDTO> lista = bloqueioHorarioService.listarTodosDoAdmin(99L);
 
         assertEquals(1, lista.size());
         assertEquals("Global", lista.get(0).motivo());
-        verify(bloqueioHorarioRepository, times(1)).findAllOrdered();
-        verify(bloqueioHorarioRepository, never()).findAllByAdminId(99L);
+        verify(bloqueioHorarioRepository, times(1)).findAllOrdered(any(LocalDate.class));
+        verify(bloqueioHorarioRepository, never()).findAllByAdminId(eq(99L), any(LocalDate.class));
     }
 
     @Test
