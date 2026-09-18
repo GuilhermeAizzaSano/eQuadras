@@ -39,7 +39,7 @@ public class Agendamento {
     @Column(nullable = false, length = 20)
     private StatusAgendamento status;
 
-    @Column(length = 100)
+    @Column(length = 100, unique = true)
     private String transacaoPagamentoId;
 
     @Column(columnDefinition = "TEXT")

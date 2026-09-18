@@ -55,15 +55,40 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    // Trata violações de integridade referencial do banco de dados (ex: Foreign Keys)
+    // Trata violações de integridade referencial, unique constraints e constraints de exclusão GiST (23P01)
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ProblemDetail handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
-        String msg = "Não é possível excluir este registro pois ele possui agendamentos ou vínculos no banco de dados. Utilize a opção de inativar a quadra.";
+        String sqlState = null;
+        Throwable causa = ex.getMostSpecificCause();
+        if (causa instanceof java.sql.SQLException sqlEx) {
+            sqlState = sqlEx.getSQLState();
+        }
+
+        String msg;
+        String code;
+        String title;
+
+        if ("23P01".equalsIgnoreCase(sqlState)) {
+            // PostgreSQL exclusion_violation (ex: agendamento_sem_sobreposicao via EXCLUDE USING GIST)
+            title = "Conflito de Horário";
+            code = "HORARIO_INDISPONIVEL";
+            msg = "O horário selecionado conflita com outro agendamento já existente para esta quadra.";
+        } else if ("23505".equalsIgnoreCase(sqlState)) {
+            // PostgreSQL unique_violation (ex: transacaoPagamentoId duplicada, e-mail já existente)
+            title = "Registro Duplicado";
+            code = "REGISTRO_DUPLICADO";
+            msg = "A operação não pôde ser concluída pois já existe um registro com os mesmos dados identificadores.";
+        } else {
+            title = "Conflito de Integridade de Dados";
+            code = "CONFLITO_INTEGRIDADE";
+            msg = "Não é possível concluir a operação pois o registro possui vínculos ativos no banco de dados.";
+        }
+
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, msg);
-        problemDetail.setTitle("Conflito de Integridade de Dados");
-        problemDetail.setType(URI.create("https://api.equadras.com/erros/conflito-integridade"));
+        problemDetail.setTitle(title);
+        problemDetail.setType(URI.create("https://api.equadras.com/erros/" + code.toLowerCase().replace('_', '-')));
         problemDetail.setInstance(URI.create(request.getRequestURI()));
-        problemDetail.setProperty("code", "CONFLITO_INTEGRIDADE");
+        problemDetail.setProperty("code", code);
         problemDetail.setProperty("timestamp", Instant.now().toString());
         return problemDetail;
     }

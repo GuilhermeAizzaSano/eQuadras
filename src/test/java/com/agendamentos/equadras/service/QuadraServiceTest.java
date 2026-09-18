@@ -169,4 +169,26 @@ class QuadraServiceTest {
         assertThrows(IllegalArgumentException.class, () -> quadraService.editar(10L, dto, 2L));
         verify(quadraRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por proximidade calculando os limites de Bounding Box corretamente")
+    void deveFiltrarQuadrasPorProximidadeComBoundingBox() {
+        Double lat = -23.5505;
+        Double lng = -46.6333;
+        Double raioKm = 5.0;
+
+        when(quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
+                eq(lat), eq(lng), eq(raioKm),
+                anyDouble(), anyDouble(), anyDouble(), anyDouble()
+        )).thenReturn(List.of(quadraAdminComum));
+
+        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, lat, lng, raioKm, null, null, null, null, null);
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+        verify(quadraRepository, times(1)).findByAtivaTrueAndProximidadeMenorQue(
+                eq(lat), eq(lng), eq(raioKm),
+                anyDouble(), anyDouble(), anyDouble(), anyDouble()
+        );
+    }
 }

@@ -260,6 +260,19 @@ public class QuadraService {
                                                 String nome, String cidade, String bairro, String cep) {
         List<Quadra> quadras;
         double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
+
+        java.util.function.BiFunction<Double, Double, List<Quadra>> buscarPorProximidade = (lat, lng) -> {
+            double deltaLat = raio / 111.0;
+            double cosLat = Math.cos(Math.toRadians(lat));
+            double deltaLng = (Math.abs(cosLat) > 0.0001) ? raio / (111.0 * Math.abs(cosLat)) : deltaLat;
+
+            double minLat = lat - deltaLat;
+            double maxLat = lat + deltaLat;
+            double minLng = lng - deltaLng;
+            double maxLng = lng + deltaLng;
+
+            return quadraRepository.findByAtivaTrueAndProximidadeMenorQue(lat, lng, raio, minLat, maxLat, minLng, maxLng);
+        };
         
         if (usuarioId != null) {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
@@ -271,14 +284,14 @@ public class QuadraService {
                 }
             } else {
                 if (latitude != null && longitude != null) {
-                    quadras = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(latitude, longitude, raio);
+                    quadras = buscarPorProximidade.apply(latitude, longitude);
                 } else {
                     quadras = quadraRepository.findByAtivaTrue();
                 }
             }
         } else {
             if (latitude != null && longitude != null) {
-                quadras = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(latitude, longitude, raio);
+                quadras = buscarPorProximidade.apply(latitude, longitude);
             } else {
                 quadras = quadraRepository.findByAtivaTrue();
             }
