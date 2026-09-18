@@ -422,10 +422,26 @@ export const AdminDashboard: React.FC = () => {
         setCidade(data.localidade);
         setEstado(data.uf);
 
-        // Fetch Coordinates via Nominatim OpenStreetMap
-        const query = encodeURIComponent(`${data.logradouro}, ${data.localidade}, ${data.uf}`);
-        const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
-        const nominatimData = await nominatimRes.json();
+        // Fetch Coordinates via Nominatim OpenStreetMap (com fallback de bairro)
+        const fetchCoord = async (q: string) => {
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`, {
+              headers: { 'User-Agent': 'eQuadras-App/1.0' }
+            });
+            if (res.ok) return await res.json();
+          } catch {
+            return [];
+          }
+          return [];
+        };
+
+        let nominatimData = await fetchCoord(`${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
+        if (!nominatimData || nominatimData.length === 0) {
+          nominatimData = await fetchCoord(`${data.logradouro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
+        }
+        if (!nominatimData || nominatimData.length === 0) {
+          nominatimData = await fetchCoord(`${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`);
+        }
         
         if (nominatimData && nominatimData.length > 0) {
           setLatitude(parseFloat(nominatimData[0].lat));

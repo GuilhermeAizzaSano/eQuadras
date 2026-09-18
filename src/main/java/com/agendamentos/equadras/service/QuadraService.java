@@ -274,7 +274,17 @@ public class QuadraService {
             return quadraRepository.findByAtivaTrueAndProximidadeMenorQue(lat, lng, raio, minLat, maxLat, minLng, maxLng);
         };
         
-        if (usuarioId != null) {
+        if (latitude != null && longitude != null) {
+            quadras = buscarPorProximidade.apply(latitude, longitude);
+            if (usuarioId != null) {
+                Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+                if (usuario != null && usuario.getRole() == Role.ADMIN && !usuario.isMasterAdmin()) {
+                    quadras = quadras.stream()
+                            .filter(q -> q.getAdmin() != null && usuarioId.equals(q.getAdmin().getId_usuario()))
+                            .toList();
+                }
+            }
+        } else if (usuarioId != null) {
             Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == Role.ADMIN) {
                 if (usuario.isMasterAdmin()) {
@@ -283,18 +293,10 @@ public class QuadraService {
                     quadras = quadraRepository.findByAdminId(usuarioId);
                 }
             } else {
-                if (latitude != null && longitude != null) {
-                    quadras = buscarPorProximidade.apply(latitude, longitude);
-                } else {
-                    quadras = quadraRepository.findByAtivaTrue();
-                }
-            }
-        } else {
-            if (latitude != null && longitude != null) {
-                quadras = buscarPorProximidade.apply(latitude, longitude);
-            } else {
                 quadras = quadraRepository.findByAtivaTrue();
             }
+        } else {
+            quadras = quadraRepository.findByAtivaTrue();
         }
 
         quadras.forEach(q -> {
