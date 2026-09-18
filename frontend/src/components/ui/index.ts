@@ -14,3 +14,4 @@ export * from './BookingModal';
 export * from './ModalPix';
 export * from './ChangePasswordModal';
 export * from './ApiKeyModal';
+export * from './sign-in';
