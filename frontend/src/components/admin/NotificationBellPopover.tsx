@@ -141,7 +141,7 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
                     notif.lida ? 'bg-white/[0.01] opacity-50' : 'bg-white/[0.03] hover:bg-white/[0.06]'
                   }`}
                 >
-                  <p className="text-xs text-white/80 leading-relaxed whitespace-normal break-words">
+                  <p className="text-xs text-white/90 leading-relaxed whitespace-pre-line break-words tracking-tight font-sans">
                     {notif.mensagem}
                   </p>
                   <div className="flex justify-between items-center pt-1">
