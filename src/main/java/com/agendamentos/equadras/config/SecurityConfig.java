@@ -93,7 +93,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers("/notificacoes", "/notificacoes/**", "/api/notificacoes", "/api/notificacoes/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao", "/api/pagamentos/*/simular-aprovacao").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao", "/api/pagamentos/*/simular-aprovacao").hasAnyRole("ADMIN", "CLIENT")
 
                         .requestMatchers("/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**")
                             .hasAnyRole("ADMIN", "CLIENT")
