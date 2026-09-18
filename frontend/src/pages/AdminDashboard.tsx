@@ -38,8 +38,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
   
-
-  
   // Controle de Abas
   const activeTab = controlledActiveTab || 'dashboard';
 
