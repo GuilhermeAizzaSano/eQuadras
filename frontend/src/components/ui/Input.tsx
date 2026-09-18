@@ -32,12 +32,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             disabled={disabled}
-            className={`w-full bg-white/[0.04] border rounded-xl py-2.5 text-xs sm:text-sm text-white placeholder-white/30 transition-all duration-150 focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)] disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`w-full bg-white/[0.03] border rounded-xl py-2.5 text-xs sm:text-sm text-white placeholder-white/30 transition-all duration-150 focus:outline-none focus:border-white/40 focus:bg-white/[0.05] disabled:opacity-40 disabled:cursor-not-allowed ${
               leftIcon ? 'pl-10' : 'pl-3.5'
             } ${rightElement ? 'pr-11' : 'pr-3.5'} ${
               error
-                ? 'border-[#FF453A]/80 focus:border-[#FF453A] focus:ring-[#FF453A]/20'
-                : 'border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.06]'
+                ? 'border-[#FF453A]/80 focus:border-[#FF453A]'
+                : 'border-white/[0.08] hover:border-white/[0.15]'
             } ${className}`}
             {...props}
           />
