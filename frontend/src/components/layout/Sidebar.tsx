@@ -11,20 +11,181 @@ import {
   KeyRound,
   Terminal,
   LogOut,
-  UserCircle2,
-  Shield
+  ChevronsUpDown,
 } from 'lucide-react';
+import {
+  Sidebar as SidebarPrimitive,
+  SidebarItemText,
+  useSidebar,
+} from '../ui/sidebar';
+import {
+  Avatar,
+  AvatarFallback,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Separator,
+} from '../ui';
+import { cn } from '../../lib/utils';
 
 export type ClientTab = 'QUADRAS' | 'AGENDAS';
 export type AdminTab = 'RELATORIOS' | 'GESTAO_QUADRAS' | 'USUARIOS' | 'AUDITORIA';
 export type NavigationTab = ClientTab | AdminTab;
 
-interface SidebarProps {
+export interface SidebarProps {
   currentTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
   onOpenApiKey: () => void;
   onOpenTrocarSenha: () => void;
 }
+
+const SidebarHeader: React.FC<{ onOpenApiKey: () => void; onSelectHome: () => void }> = ({
+  onOpenApiKey,
+  onSelectHome,
+}) => {
+  const { isCollapsed } = useSidebar();
+
+  return (
+    <div className="flex h-14 w-full items-center px-2">
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild className="w-full">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-white/[0.06] text-left outline-none cursor-pointer"
+          >
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] border border-white/[0.12]">
+              <Logo size={20} showText={false} />
+            </div>
+            {!isCollapsed && (
+              <div className="flex min-w-0 flex-1 items-center justify-between">
+                <div className="flex flex-col truncate">
+                  <span className="text-xs font-semibold text-white tracking-tight truncate">
+                    eQuadras
+                  </span>
+                  <span className="text-[10px] text-white/40 truncate">
+                    Sistema de Gestão
+                  </span>
+                </div>
+                <ChevronsUpDown className="size-3.5 shrink-0 text-white/40 ml-1" />
+              </div>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48 bg-[#121214] border-white/10 text-white">
+          <div className="px-2 py-1.5 text-xs font-medium text-white/50">
+            Ambiente Ativo
+          </div>
+          <DropdownMenuItem
+            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer"
+            onClick={onSelectHome}
+          >
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-emerald-400" />
+              <span>eQuadras Principal</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuItem
+            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer"
+            onClick={onOpenApiKey}
+          >
+            <Terminal className="mr-2 size-3.5 text-white/60" />
+            <span>Credenciais API</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
+
+const SidebarFooter: React.FC<{
+  onOpenApiKey: () => void;
+  onOpenTrocarSenha: () => void;
+}> = ({ onOpenApiKey, onOpenTrocarSenha }) => {
+  const { user, isAdmin, isMasterAdmin, logout } = useAuth();
+  const { isCollapsed } = useSidebar();
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'EQ';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild className="w-full">
+        <button
+          type="button"
+          className="flex h-10 w-full items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-white/[0.06] text-left outline-none cursor-pointer"
+          title={user?.nome_usuario || 'Conta'}
+        >
+          <div className="relative flex size-7 shrink-0 items-center justify-center">
+            <Avatar className="size-7 bg-white/[0.08] border border-white/[0.12] text-white">
+              <AvatarFallback>{getInitials(user?.nome_usuario)}</AvatarFallback>
+            </Avatar>
+            <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-[#30D158] ring-2 ring-black" />
+          </div>
+
+          {!isCollapsed && (
+            <div className="flex min-w-0 flex-1 items-center justify-between">
+              <div className="flex flex-col truncate">
+                <span className="text-xs font-medium text-white truncate">
+                  {user?.nome_usuario || 'Usuário'}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 truncate">
+                  {isMasterAdmin ? 'Master Admin' : isAdmin ? 'Admin' : 'Cliente'}
+                </span>
+              </div>
+              <ChevronsUpDown className="size-3.5 shrink-0 text-white/40 ml-1" />
+            </div>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent side="right" align="end" sideOffset={10} className="w-56 bg-[#121214] border-white/10 text-white shadow-apple-elevated">
+        <div className="flex items-center gap-2.5 p-2">
+          <Avatar className="size-8 bg-white/[0.08] border border-white/[0.12] text-white">
+            <AvatarFallback>{getInitials(user?.nome_usuario)}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-semibold text-white truncate">
+              {user?.nome_usuario}
+            </span>
+            <span className="text-[10px] text-white/50 truncate">
+              {user?.email_usuario}
+            </span>
+          </div>
+        </div>
+        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuItem
+          onClick={onOpenTrocarSenha}
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+        >
+          <KeyRound className="size-3.5 text-white/60" />
+          <span>Trocar Senha</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={onOpenApiKey}
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+        >
+          <Terminal className="size-3.5 text-white/60" />
+          <span>Gerenciar API-Key</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuItem
+          onClick={logout}
+          className="text-xs flex items-center gap-2 cursor-pointer text-[#FF453A] focus:bg-[#FF453A]/10 focus:text-[#FF453A]"
+        >
+          <LogOut className="size-3.5" />
+          <span>Sair da conta</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
@@ -32,178 +193,152 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenApiKey,
   onOpenTrocarSenha,
 }) => {
-  const { user, isAdmin, isMasterAdmin, logout } = useAuth();
+  const { isAdmin, isMasterAdmin } = useAuth();
 
   return (
-    <aside className="w-64 h-screen bg-black border-r border-white/[0.08] flex flex-col justify-between select-none shrink-0">
-      {/* Top Section: Brand & Nav Links */}
-      <div className="flex flex-col">
-        {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center border-b border-white/[0.08]">
-          <Logo size={28} />
-        </div>
+    <SidebarPrimitive
+      header={
+        <SidebarHeader
+          onOpenApiKey={onOpenApiKey}
+          onSelectHome={() => onSelectTab(isAdmin ? 'RELATORIOS' : 'QUADRAS')}
+        />
+      }
+      footer={
+        <SidebarFooter
+          onOpenApiKey={onOpenApiKey}
+          onOpenTrocarSenha={onOpenTrocarSenha}
+        />
+      }
+    >
+      <div className="flex w-full flex-col gap-1">
+        {!isAdmin ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onSelectTab('QUADRAS')}
+              className={cn(
+                'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                currentTab === 'QUADRAS'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+              )}
+              title="Quadras"
+            >
+              <MapPin className="size-4 shrink-0" />
+              <SidebarItemText className="ml-3">Quadras</SidebarItemText>
+            </button>
 
-        {/* Navigation Sections */}
-        <div className="p-4 space-y-6">
-          {/* Main Links */}
-          <div>
-            <div className="text-[10px] font-mono tracking-widest text-white/40 uppercase px-3 mb-2 font-medium">
-              Menu
-            </div>
-            <nav className="space-y-1">
-              {!isAdmin ? (
-                // Cliente Nav Items
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('QUADRAS')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      currentTab === 'QUADRAS'
-                        ? 'bg-white text-black font-semibold shadow-sm'
-                        : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <span>Quadras</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('AGENDAS')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      currentTab === 'AGENDAS'
-                        ? 'bg-white text-black font-semibold shadow-sm'
-                        : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <Clock className="w-4 h-4 shrink-0" />
-                    <span>Minhas Agendas</span>
-                  </button>
-                </>
-              ) : (
-                // Admin / Master Nav Items
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('RELATORIOS')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      currentTab === 'RELATORIOS'
-                        ? 'bg-white text-black font-semibold shadow-sm'
-                        : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <LayoutDashboard className="w-4 h-4 shrink-0" />
-                    <span>Relatórios & Agenda</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTab('GESTAO_QUADRAS')}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                      currentTab === 'GESTAO_QUADRAS'
-                        ? 'bg-white text-black font-semibold shadow-sm'
-                        : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <Settings2 className="w-4 h-4 shrink-0" />
-                    <span>Gestão de Quadras</span>
-                  </button>
+            <button
+              type="button"
+              onClick={() => onSelectTab('AGENDAS')}
+              className={cn(
+                'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                currentTab === 'AGENDAS'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+              )}
+              title="Minhas Agendas"
+            >
+              <Clock className="size-4 shrink-0" />
+              <SidebarItemText className="ml-3">Minhas Agendas</SidebarItemText>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => onSelectTab('RELATORIOS')}
+              className={cn(
+                'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                currentTab === 'RELATORIOS'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+              )}
+              title="Relatórios & Agenda"
+            >
+              <LayoutDashboard className="size-4 shrink-0" />
+              <SidebarItemText className="ml-3">Relatórios & Agenda</SidebarItemText>
+            </button>
 
-                  {isMasterAdmin && (
-                    <>
-                      <div className="pt-3 pb-1">
-                        <div className="text-[10px] font-mono tracking-widest text-white/40 uppercase px-3 font-medium">
-                          Master
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onSelectTab('USUARIOS')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                          currentTab === 'USUARIOS'
-                            ? 'bg-white text-black font-semibold shadow-sm'
-                            : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <Users className="w-4 h-4 shrink-0" />
-                        <span>Gestão de Usuários</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onSelectTab('AUDITORIA')}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition cursor-pointer ${
-                          currentTab === 'AUDITORIA'
-                            ? 'bg-white text-black font-semibold shadow-sm'
-                            : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        <ShieldAlert className="w-4 h-4 shrink-0" />
-                        <span>Auditoria & Logs</span>
-                      </button>
-                    </>
+            <button
+              type="button"
+              onClick={() => onSelectTab('GESTAO_QUADRAS')}
+              className={cn(
+                'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                currentTab === 'GESTAO_QUADRAS'
+                  ? 'bg-white text-black font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+              )}
+              title="Gestão de Quadras"
+            >
+              <Settings2 className="size-4 shrink-0" />
+              <SidebarItemText className="ml-3">Gestão de Quadras</SidebarItemText>
+            </button>
+
+            {isMasterAdmin && (
+              <>
+                <div className="py-1">
+                  <Separator className="bg-white/[0.08]" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('USUARIOS')}
+                  className={cn(
+                    'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                    currentTab === 'USUARIOS'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
                   )}
-                </>
-              )}
-            </nav>
-          </div>
+                  title="Gestão de Usuários"
+                >
+                  <Users className="size-4 shrink-0" />
+                  <SidebarItemText className="ml-3">Gestão de Usuários</SidebarItemText>
+                </button>
 
-          {/* Account / Settings */}
-          <div>
-            <div className="text-[10px] font-mono tracking-widest text-white/40 uppercase px-3 mb-2 font-medium">
-              Conta
-            </div>
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={onOpenApiKey}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] transition cursor-pointer"
-              >
-                <Terminal className="w-4 h-4 shrink-0" />
-                <span>API-Key</span>
-              </button>
-              <button
-                type="button"
-                onClick={onOpenTrocarSenha}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] transition cursor-pointer"
-              >
-                <KeyRound className="w-4 h-4 shrink-0" />
-                <span>Trocar Senha</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section: User Profile & Logout */}
-      <div className="p-4 border-t border-white/[0.08] space-y-3">
-        {user && (
-          <div className="flex items-center gap-3 px-2">
-            <div className="relative flex items-center justify-center">
-              {isAdmin ? (
-                <Shield className="w-4 h-4 text-white/70" />
-              ) : (
-                <UserCircle2 className="w-4 h-4 text-white/60" />
-              )}
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30D158] absolute -bottom-0.5 -right-0.5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-xs text-white truncate">
-                {user.nome_usuario}
-              </div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-white/40">
-                {isMasterAdmin ? 'Master Admin' : isAdmin ? 'Admin' : 'Cliente'}
-              </div>
-            </div>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('AUDITORIA')}
+                  className={cn(
+                    'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
+                    currentTab === 'AUDITORIA'
+                      ? 'bg-white text-black font-semibold shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                  )}
+                  title="Auditoria & Logs"
+                >
+                  <ShieldAlert className="size-4 shrink-0" />
+                  <SidebarItemText className="ml-3">Auditoria & Logs</SidebarItemText>
+                </button>
+              </>
+            )}
+          </>
         )}
+
+        <div className="py-1">
+          <Separator className="bg-white/[0.08]" />
+        </div>
+
+        {/* Atalhos Rápidos */}
+        <button
+          type="button"
+          onClick={onOpenApiKey}
+          className="flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] cursor-pointer"
+          title="API-Key"
+        >
+          <Terminal className="size-4 shrink-0" />
+          <SidebarItemText className="ml-3">API-Key</SidebarItemText>
+        </button>
 
         <button
           type="button"
-          onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-white/40 hover:text-[#FF453A] hover:bg-[#FF453A]/10 transition cursor-pointer active:scale-98"
+          onClick={onOpenTrocarSenha}
+          className="flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] cursor-pointer"
+          title="Trocar Senha"
         >
-          <LogOut className="w-4 h-4 shrink-0" />
-          <span>Sair</span>
+          <KeyRound className="size-4 shrink-0" />
+          <SidebarItemText className="ml-3">Trocar Senha</SidebarItemText>
         </button>
       </div>
-    </aside>
+    </SidebarPrimitive>
   );
 };
