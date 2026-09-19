@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -48,3 +48,65 @@ jobs:
 
       - name: Type check and build Frontend
         run: npm run build
+
+  deploy:
+    name: Deploy to Production (OCI VM)
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect Changed Components
+        id: changes
+        run: |
+          # Detecta se houve alteracao no backend
+          BACKEND_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^(src/|pom.xml)' || true)
+          if [ -n "$BACKEND_CHANGED" ]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Detecta se houve alteracao no frontend
+          FRONTEND_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^frontend/' || true)
+          if [ -n "$FRONTEND_CHANGED" ]; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            echo "==> Conectado ao servidor de produção. Atualizando repositório..."
+            cd /home/ubuntu/eQuadras
+            git pull origin main
+
+            if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
+              echo "==> Mudanças no backend detectadas. Compilando pacote Spring Boot..."
+              mvn clean package -DskipTests=true
+              echo "==> Reiniciando serviço equadras-backend.service..."
+              sudo systemctl restart equadras-backend.service
+            fi
+
+            if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
+              echo "==> Mudanças no frontend detectadas. Reconstruindo bundle SPA..."
+              /home/ubuntu/rebuild_frontend.sh
+              echo "==> Recarregando Nginx..."
+              sudo systemctl reload nginx
+            fi
+
+            echo "==> Verificando status dos serviços..."
+            sudo systemctl is-active equadras-backend.service
+            sudo systemctl is-active nginx
+            echo "==> Deploy concluído com sucesso!"
