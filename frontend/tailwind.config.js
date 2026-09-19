@@ -46,6 +46,34 @@ export default {
           gray: '#8E8E93',
         },
         background: "#000000",
+        foreground: "#f5f5f7",
+        border: "rgba(255, 255, 255, 0.1)",
+        input: "rgba(255, 255, 255, 0.15)",
+        ring: "rgba(255, 255, 255, 0.2)",
+        primary: {
+          DEFAULT: "#ffffff",
+          foreground: "#000000",
+        },
+        secondary: {
+          DEFAULT: "rgba(255, 255, 255, 0.08)",
+          foreground: "#ffffff",
+        },
+        destructive: {
+          DEFAULT: "#FF453A",
+          foreground: "#ffffff",
+        },
+        muted: {
+          DEFAULT: "rgba(255, 255, 255, 0.06)",
+          foreground: "rgba(255, 255, 255, 0.5)",
+        },
+        accent: {
+          DEFAULT: "rgba(255, 255, 255, 0.08)",
+          foreground: "#ffffff",
+        },
+        popover: {
+          DEFAULT: "#121214",
+          foreground: "#f5f5f7",
+        },
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'system-ui', 'sans-serif'],

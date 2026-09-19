@@ -26,8 +26,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         onOpenTrocarSenha={() => setModalSenhaOpen(true)}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto bg-black">
+      {/* Main Content Area com offset para a barra fixa recolhida */}
+      <main className="flex-1 h-screen overflow-y-auto bg-black pl-[3.25rem]">
         {children}
       </main>
 
