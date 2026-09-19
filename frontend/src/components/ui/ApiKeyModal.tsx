@@ -16,6 +16,7 @@ import {
   Clock,
   Calendar,
   ShieldAlert,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usuarioApi } from '../../api/apiClient';
@@ -42,6 +43,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
 
   // Confirmações
   const [confirmTipo, setConfirmTipo] = useState<'regenerar' | 'revogar' | null>(null);
+  const [modalRevogadoSucesso, setModalRevogadoSucesso] = useState(false);
 
   const carregarInfo = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -63,6 +65,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
       // Limpeza de segurança: descartar imediatamente qualquer texto plano da memória
       setChaveRecemGerada(null);
       setConfirmTipo(null);
+      setModalRevogadoSucesso(false);
       setFeedback(null);
       setCopiado(false);
       return;
@@ -72,7 +75,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
     carregarInfo(controller.signal);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !confirmTipo && !loadingAcao) {
+      if (e.key === 'Escape' && !confirmTipo && !loadingAcao && !modalRevogadoSucesso) {
         onClose();
       }
     };
@@ -82,7 +85,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
       controller.abort();
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, carregarInfo, confirmTipo, loadingAcao, onClose]);
+  }, [isOpen, carregarInfo, confirmTipo, loadingAcao, modalRevogadoSucesso, onClose]);
 
   if (!isOpen) return null;
 
@@ -131,7 +134,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
       setInfo({ possuiChave: false, last4: null, criadaEm: null, ultimoUsoEm: null });
       setChaveRecemGerada(null);
       setConfirmTipo(null);
-      setFeedback({ type: 'success', message: 'Chave de API revogada com sucesso. Nenhuma chave está ativa.' });
+      setModalRevogadoSucesso(true);
     } catch (err: any) {
       setFeedback({ type: 'error', message: err.message || 'Falha ao revogar Chave de API.' });
     } finally {
@@ -429,6 +432,57 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         onConfirm={handleRevogar}
         onCancel={() => setConfirmTipo(null)}
       />
+
+      {/* Modal de Aviso de Chave Revogada com Sucesso */}
+      {modalRevogadoSucesso && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-200"
+        >
+          <div className="bg-[#121214] border border-white/[0.1] rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-apple-elevated space-y-6 relative my-auto animate-in zoom-in-95 duration-200">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl border shrink-0 bg-[#30D158]/10 border-[#30D158]/25 text-[#30D158]">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-semibold text-white tracking-tight leading-tight">
+                  Chave Revogada com Sucesso
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalRevogadoSucesso(false);
+                  onClose();
+                }}
+                className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.08] transition shrink-0 cursor-pointer"
+                aria-label="Fechar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs sm:text-sm text-white/80 leading-relaxed font-sans">
+              Sua Chave de API foi revogada permanentemente. A partir deste instante, nenhuma chave está ativa e quaisquer integrações foram desabilitadas com segurança.
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={() => {
+                  setModalRevogadoSucesso(false);
+                  onClose();
+                }}
+                className="w-full"
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
