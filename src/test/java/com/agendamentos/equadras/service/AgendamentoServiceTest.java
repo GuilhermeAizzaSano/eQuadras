@@ -211,8 +211,43 @@ class AgendamentoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve listar todos os agendamentos omitindo dados Pix (qrCodeBase64 e pixCopiaECola)")
+    @DisplayName("Deve listar agendamentos confirmados omitindo dados Pix (qrCodeBase64 e pixCopiaECola)")
     void deveListarTodosOmitindoPix() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0);
+        LocalDateTime fim = inicio.plusHours(1);
+
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(20L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(inicio)
+                .dataHoraFim(fim)
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .transacaoPagamentoId("tx-123")
+                .pixCopiaECola("copia-e-cola-pesado")
+                .qrCodeBase64("base64-pesado")
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
+                .thenReturn(List.of(agendamento));
+
+        List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L);
+
+        assertEquals(1, resultado.size());
+        AgendamentoResponseDTO dto = resultado.get(0);
+        assertEquals(20L, dto.id_agendamento());
+        assertEquals("tx-123", dto.transacaoPagamentoId());
+        assertNull(dto.pixCopiaECola());
+        assertNull(dto.qrCodeBase64());
+        verify(agendamentoRepository, times(1)).findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class));
+        verify(agendamentoRepository, never()).findByUsuarioId(1L);
+    }
+
+    @Test
+    @DisplayName("Deve manter dados Pix para agendamentos pendentes do próprio cliente")
+    void deveManterPixParaAgendamentoPendenteDoCliente() {
         LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0);
         LocalDateTime fim = inicio.plusHours(1);
 
@@ -238,11 +273,8 @@ class AgendamentoServiceTest {
         assertEquals(1, resultado.size());
         AgendamentoResponseDTO dto = resultado.get(0);
         assertEquals(20L, dto.id_agendamento());
-        assertEquals("tx-123", dto.transacaoPagamentoId());
-        assertNull(dto.pixCopiaECola());
-        assertNull(dto.qrCodeBase64());
-        verify(agendamentoRepository, times(1)).findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class));
-        verify(agendamentoRepository, never()).findByUsuarioId(1L);
+        assertEquals("copia-e-cola-pesado", dto.pixCopiaECola());
+        assertEquals("base64-pesado", dto.qrCodeBase64());
     }
 
     @Test
