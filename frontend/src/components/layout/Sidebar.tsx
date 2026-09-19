@@ -41,8 +41,7 @@ export interface SidebarProps {
   onOpenTrocarSenha: () => void;
 }
 
-const SidebarHeader: React.FC<{ onOpenApiKey: () => void; onSelectHome: () => void }> = ({
-  onOpenApiKey,
+const SidebarHeader: React.FC<{ onSelectHome: () => void }> = ({
   onSelectHome,
 }) => {
   const { isCollapsed } = useSidebar();
@@ -85,14 +84,6 @@ const SidebarHeader: React.FC<{ onOpenApiKey: () => void; onSelectHome: () => vo
               <span className="size-2 rounded-full bg-emerald-400" />
               <span>eQuadras Principal</span>
             </div>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-white/10" />
-          <DropdownMenuItem
-            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer"
-            onClick={onOpenApiKey}
-          >
-            <Terminal className="mr-2 size-3.5 text-white/60" />
-            <span>Credenciais API</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -199,7 +190,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <SidebarPrimitive
       header={
         <SidebarHeader
-          onOpenApiKey={onOpenApiKey}
           onSelectHome={() => onSelectTab(isAdmin ? 'RELATORIOS' : 'QUADRAS')}
         />
       }
@@ -313,31 +303,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </>
         )}
-
-        <div className="py-1">
-          <Separator className="bg-white/[0.08]" />
-        </div>
-
-        {/* Atalhos Rápidos */}
-        <button
-          type="button"
-          onClick={onOpenApiKey}
-          className="flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] cursor-pointer"
-          title="API-Key"
-        >
-          <Terminal className="size-4 shrink-0" />
-          <SidebarItemText className="ml-3">API-Key</SidebarItemText>
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenTrocarSenha}
-          className="flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium text-white/60 hover:text-white hover:bg-white/[0.04] cursor-pointer"
-          title="Trocar Senha"
-        >
-          <KeyRound className="size-4 shrink-0" />
-          <SidebarItemText className="ml-3">Trocar Senha</SidebarItemText>
-        </button>
       </div>
     </SidebarPrimitive>
   );
