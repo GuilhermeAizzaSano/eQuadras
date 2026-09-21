@@ -1,4 +1,4 @@
-import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, DisponibilidadeDia } from '../types';
+import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, DisponibilidadeDia, Page } from '../types';
 
 export const getBaseUrl = (): string => {
   const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
@@ -223,6 +223,8 @@ export interface QuadraFiltroParams {
   cidade?: string;
   bairro?: string;
   cep?: string;
+  page?: number;
+  size?: number;
 }
 
 // --- Quadras ---
@@ -244,6 +246,8 @@ export const quadraApi = {
       if (paramsOrLat.cidade) params.append('cidade', paramsOrLat.cidade);
       if (paramsOrLat.bairro) params.append('bairro', paramsOrLat.bairro);
       if (paramsOrLat.cep) params.append('cep', paramsOrLat.cep);
+      if (paramsOrLat.page !== undefined) params.append('page', paramsOrLat.page.toString());
+      if (paramsOrLat.size !== undefined) params.append('size', paramsOrLat.size.toString());
     } else if (paramsOrLat !== undefined && lon !== undefined) {
       params.append('latitude', paramsOrLat.toString());
       params.append('longitude', lon.toString());
@@ -256,6 +260,33 @@ export const quadraApi = {
       url += `?${queryString}`;
     }
     return apiFetch<Quadra[]>(url);
+  },
+
+  listarPaginado: (filtros: QuadraFiltroParams = {}, page = 0, size = 6, signal?: AbortSignal) => {
+    let url = '/quadras';
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('size', size.toString());
+
+    if (filtros.latitude !== undefined && filtros.longitude !== undefined) {
+      params.append('latitude', filtros.latitude.toString());
+      params.append('longitude', filtros.longitude.toString());
+      if (filtros.raioKm !== undefined) {
+        params.append('raioKm', filtros.raioKm.toString());
+      }
+    }
+    if (filtros.nome) params.append('nome', filtros.nome);
+    if (filtros.endereco) params.append('endereco', filtros.endereco);
+    if (filtros.tipoEsporte) params.append('tipoEsporte', filtros.tipoEsporte);
+    if (filtros.cidade) params.append('cidade', filtros.cidade);
+    if (filtros.bairro) params.append('bairro', filtros.bairro);
+    if (filtros.cep) params.append('cep', filtros.cep);
+
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+    return apiFetch<Page<Quadra>>(url, { signal });
   },
 
   cadastrar: (dados: { nome: string; tipoEsporte: TipoEsporte; valorHora: number; cep?: string; logradouro?: string; bairro?: string; cidade?: string; estado?: string; latitude?: number; longitude?: number; descricao?: string; dataLimiteAgendamento?: string; fotos?: string[]; disponibilidades?: DisponibilidadeDia[] }) =>

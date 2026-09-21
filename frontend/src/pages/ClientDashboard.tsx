@@ -82,12 +82,21 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
   const [buscaEndereco, setBuscaEndereco] = useState('');
   const [cepBusca, setCepBusca] = useState('');
 
+  // Paginação de 6 em 6
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalItens, setTotalItens] = useState(0);
+
+  // Coordenadas ativas da busca por CEP (para manter paginação consistente em buscas por geolocalização)
+  const [coordsAtivas, setCoordsAtivas] = useState<{ lat: number; lon: number } | null>(null);
+
   const alternarModoBusca = (novoModo: ModoBusca) => {
     setModoBusca(novoModo);
+    setPaginaAtual(1);
     if (novoModo === 'ATRIBUTOS') {
-      if (cepBusca) {
+      if (cepBusca || coordsAtivas) {
         setCepBusca('');
-        carregarQuadras();
+        setCoordsAtivas(null);
         setFeedback(null);
       }
     } else {
@@ -99,11 +108,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
   const limparFiltrosAtributos = () => {
     setBuscaNome('');
     setBuscaEndereco('');
+    setPaginaAtual(1);
   };
 
   const limparFiltroCep = () => {
     setCepBusca('');
-    carregarQuadras();
+    setCoordsAtivas(null);
+    setPaginaAtual(1);
     setFeedback(null);
   };
 
@@ -202,7 +213,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       
       if (!data.erro) {
         let nominatimData: Array<{ lat: string; lon: string }> = [];
-        let usedFallbackBairro = false;
 
         const fetchNominatim = async (query: string) => {
           try {
@@ -238,9 +248,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
           nominatimData = await fetchNominatim(
             `${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
           );
-          if (nominatimData && nominatimData.length > 0) {
-            usedFallbackBairro = true;
-          }
         }
 
         // NUNCA fazer fallback para o centro genérico da cidade (data.localidade)
@@ -248,26 +255,10 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
         if (nominatimData && nominatimData.length > 0) {
           const lat = parseFloat(nominatimData[0].lat);
           const lon = parseFloat(nominatimData[0].lon);
+          setCoordsAtivas({ lat, lon });
+          setPaginaAtual(1);
+          await carregarQuadras(1, { lat, lon });
           
-          const q = await quadraApi.listar(lat, lon, 2.0);
-          const filtradas = q.filter(quadra => quadra.ativa);
-          setQuadras(filtradas);
-          
-          if (filtradas.length === 0) {
-            setFeedback({
-              type: 'error',
-              message: usedFallbackBairro
-                ? `Nenhuma quadra ativa encontrada em um raio de até 2 km a partir do bairro ${data.bairro} (rua não mapeada).`
-                : `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.`
-            });
-          } else {
-            setFeedback({
-              type: 'success',
-              message: usedFallbackBairro
-                ? `${filtradas.length} quadra(s) encontrada(s) a até 2 km do bairro ${data.bairro} (rua não mapeada).`
-                : `${filtradas.length} quadra(s) encontrada(s) a até 2 km do seu CEP!`
-            });
-          }
           return;
         }
 
@@ -289,30 +280,55 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
   };
 
   useEffect(() => {
-    carregarQuadras();
     carregarMeusAgendamentos();
   }, [user]);
 
-  useEffect(() => {
-    if (isBookingModalOpen && selectedQuadra && dataSelecionada) {
-      carregarHorarios(selectedQuadra, dataSelecionada);
-    } else if (!isBookingModalOpen) {
-      setHorarios([]);
-      setSlotsSelecionados([]);
-    }
-  }, [isBookingModalOpen, selectedQuadra, dataSelecionada]);
-
-  const carregarQuadras = async () => {
+  // Carregar quadras paginadas no backend com filtros
+  const carregarQuadras = async (pagina = paginaAtual, coordsOverride?: { lat: number; lon: number } | null) => {
     try {
-      const data = await quadraApi.listar();
-      setQuadras(data);
-      if (data.length > 0 && !selectedQuadra) {
-        setSelectedQuadra(data[0].id_quadra);
+      const coords = coordsOverride !== undefined ? coordsOverride : coordsAtivas;
+      const filtroParams: any = {
+        tipoEsporte: filtroEsporte !== 'TODOS' ? filtroEsporte : undefined,
+      };
+
+      if (coords) {
+        filtroParams.latitude = coords.lat;
+        filtroParams.longitude = coords.lon;
+        filtroParams.raioKm = 2.0;
+      } else if (modoBusca === 'ATRIBUTOS') {
+        if (buscaNome.trim()) filtroParams.nome = buscaNome.trim();
+        if (buscaEndereco.trim()) filtroParams.endereco = buscaEndereco.trim();
+      }
+
+      const res = await quadraApi.listarPaginado(filtroParams, pagina - 1, 6);
+      const quadrasConteudo = res.content ? res.content.filter((q: Quadra) => q.ativa) : [];
+      setQuadras(quadrasConteudo);
+      setTotalPaginas(Math.max(1, res.totalPages || 1));
+      setTotalItens(res.totalElements || 0);
+
+      if (quadrasConteudo.length > 0 && !selectedQuadra) {
+        setSelectedQuadra(quadrasConteudo[0].id_quadra);
+      }
+
+      if (coords && quadrasConteudo.length === 0) {
+        setFeedback({
+          type: 'error',
+          message: `Nenhuma quadra ativa encontrada em um raio de até 2 km do CEP ${cepBusca}.`,
+        });
+      } else if (coords && quadrasConteudo.length > 0 && pagina === 1) {
+        setFeedback({
+          type: 'success',
+          message: `${res.totalElements || quadrasConteudo.length} quadra(s) encontrada(s) a até 2 km do seu CEP!`,
+        });
       }
     } catch (err: any) {
       console.error(err);
     }
   };
+
+  useEffect(() => {
+    carregarQuadras(paginaAtual);
+  }, [paginaAtual, filtroEsporte, buscaNome, buscaEndereco, modoBusca, coordsAtivas]);
 
   const carregarMeusAgendamentos = async (buscarHistorico?: boolean) => {
     if (!user) return;
@@ -479,36 +495,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     });
   };
 
-  const normalizarBusca = (txt?: string) =>
-    (txt || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-
-  const quadrasFiltradas = quadras.filter((q) => {
-    if (filtroEsporte !== 'TODOS' && q.tipoEsporte !== filtroEsporte) {
-      return false;
-    }
-    if (modoBusca === 'ATRIBUTOS') {
-      if (buscaNome.trim()) {
-        const nomeNorm = normalizarBusca(buscaNome);
-        if (!normalizarBusca(q.nome).includes(nomeNorm)) {
-          return false;
-        }
-      }
-      if (buscaEndereco.trim()) {
-        const endNorm = normalizarBusca(buscaEndereco);
-        const matchLogradouro = normalizarBusca(q.logradouro).includes(endNorm);
-        const matchBairro = normalizarBusca(q.bairro).includes(endNorm);
-        if (!matchLogradouro && !matchBairro) {
-          return false;
-        }
-      }
-    }
-    return true;
-  });
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-7">
       {/* Feedback Unificado */}
@@ -555,13 +541,17 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
 
         {/* Grade de Quadras */}
         <CourtCardGrid
-          quadras={quadrasFiltradas}
+          quadras={quadras}
           modoBusca={modoBusca}
           onSelectCourtDetails={(q) => setQuadraDetalhes(q)}
           onOpenBookingModal={(quadraId) => {
             setSelectedQuadra(quadraId);
             setIsBookingModalOpen(true);
           }}
+          paginaAtual={paginaAtual}
+          totalPaginas={totalPaginas}
+          totalItens={totalItens}
+          onMudarPagina={(p) => setPaginaAtual(p)}
         />
       </div>
 

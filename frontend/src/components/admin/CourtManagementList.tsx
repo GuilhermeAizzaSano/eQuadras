@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Quadra, BloqueioHorario } from '../../types';
 import { Badge, EmptyState, Button } from '../ui';
 import {
@@ -10,7 +10,9 @@ import {
   Trash2,
   PlusCircle,
   MapPin,
-  History
+  History,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface CourtManagementListProps {
@@ -36,6 +38,14 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
   onAbrirHistorico,
   getAssetUrl,
 }) => {
+  const ITENS_POR_PAGINA = 6;
+  const [paginaAtual, setPaginaAtual] = useState(1);
+
+  const totalItens = minhasQuadras.length;
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / ITENS_POR_PAGINA));
+  const paginaValida = Math.min(Math.max(1, paginaAtual), totalPaginas);
+  const indiceInicio = (paginaValida - 1) * ITENS_POR_PAGINA;
+  const quadrasPaginadas = minhasQuadras.slice(indiceInicio, indiceInicio + ITENS_POR_PAGINA);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -65,8 +75,9 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
           className="py-16"
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {minhasQuadras.map((q) => {
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {quadrasPaginadas.map((q) => {
             const bloqueiosDesta = mapaBloqueiosPorQuadra[q.id_quadra] || [];
             const temBloqueiosAtivos = bloqueiosDesta.length > 0;
 
@@ -196,6 +207,34 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
             );
           })}
         </div>
+
+        {/* Rodapé com Paginação */}
+        {totalPaginas > 1 && (
+          <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">
+            <button
+              type="button"
+              disabled={paginaValida <= 1}
+              onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Anterior</span>
+            </button>
+            <span className="text-[11px] text-white/50 font-mono">
+              Página {paginaValida} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'quadra' : 'quadras'})
+            </span>
+            <button
+              type="button"
+              disabled={paginaValida >= totalPaginas}
+              onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+            >
+              <span>Próxima</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
       )}
     </div>
   );

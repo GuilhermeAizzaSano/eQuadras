@@ -12,6 +12,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -39,7 +42,7 @@ public class QuadraController {
 
     @Operation(
             summary = "Listar quadras ativas / por proximidade e filtros",
-            description = "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO). Também suporta o parâmetro 'resumido=true/false'."
+            description = "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO) com suporte a paginação (page, size). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO) sem paginação. Também suporta o parâmetro 'resumido=true/false'."
     )
     @GetMapping
     public ResponseEntity<?> listarTodas(
@@ -54,6 +57,8 @@ public class QuadraController {
             @RequestParam(required = false) String bairro,
             @RequestParam(required = false) String cep,
             @RequestParam(required = false) Boolean resumido,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false, defaultValue = "6") Integer size,
             @RequestHeader(value = "X-Client", required = false) String client,
             @RequestHeader(value = "X-View", required = false) String view,
             @RequestHeader(value = "Origin", required = false) String origin) {
@@ -78,6 +83,13 @@ public class QuadraController {
 
         if (querResumido) {
             return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
+        }
+
+        // Rota /quadras (frontend) com paginação
+        if (page != null) {
+            int tamanhoPagina = (size != null && size > 0) ? size : 6;
+            Pageable pageable = PageRequest.of(page, tamanhoPagina);
+            return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep, pageable));
         }
 
         return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));

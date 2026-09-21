@@ -17,6 +17,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -236,5 +240,58 @@ class QuadraServiceTest {
         List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "Beach", "oiti", null, null, null);
         assertEquals(1, resultado.size());
         assertEquals("Arena Beach", resultado.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve listar quadras de forma paginada respeitando limite por página")
+    void deveListarQuadrasPaginadas() {
+        List<Quadra> quadras = new ArrayList<>();
+        for (long i = 1; i <= 14; i++) {
+            quadras.add(Quadra.builder()
+                    .id_quadra(i)
+                    .nome("Quadra " + i)
+                    .ativa(true)
+                    .fotos(new ArrayList<>())
+                    .disponibilidades(new ArrayList<>())
+                    .build());
+        }
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(quadras);
+
+        Pageable pageable = PageRequest.of(0, 6);
+        Page<QuadraResponseDTO> primeiraPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
+
+        assertEquals(6, primeiraPagina.getContent().size());
+        assertEquals(14, primeiraPagina.getTotalElements());
+        assertEquals(3, primeiraPagina.getTotalPages());
+        assertEquals(0, primeiraPagina.getNumber());
+        assertEquals("Quadra 1", primeiraPagina.getContent().get(0).nome());
+
+        Pageable pageableSegunda = PageRequest.of(1, 6);
+        Page<QuadraResponseDTO> segundaPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageableSegunda);
+        assertEquals(6, segundaPagina.getContent().size());
+        assertEquals("Quadra 7", segundaPagina.getContent().get(0).nome());
+
+        Pageable pageableTerceira = PageRequest.of(2, 6);
+        Page<QuadraResponseDTO> terceiraPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageableTerceira);
+        assertEquals(2, terceiraPagina.getContent().size());
+        assertEquals("Quadra 13", terceiraPagina.getContent().get(0).nome());
+    }
+
+    @Test
+    @DisplayName("Deve aplicar paginação sobre os resultados dos filtros de CEP/endereço")
+    void deveAplicarPaginacaoAposFiltros() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra Centro 1").logradouro("Rua Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra Bairro 1").logradouro("Rua Norte").bairro("Norte").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q3 = Quadra.builder().id_quadra(3L).nome("Quadra Centro 2").logradouro("Av Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2, q3));
+
+        Pageable pageable = PageRequest.of(0, 6);
+        Page<QuadraResponseDTO> pagina = quadraService.listar(null, null, null, null, null, null, "Centro", null, null, null, pageable);
+
+        assertEquals(2, pagina.getTotalElements());
+        assertEquals(1, pagina.getTotalPages());
+        assertEquals(2, pagina.getContent().size());
     }
 }
