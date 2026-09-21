@@ -11,6 +11,9 @@ import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -250,6 +253,25 @@ public class QuadraService {
                 .stream()
                 .map(QuadraResponseDTO::fromEntity)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                          String tipoEsporte,
+                                          String nome, String endereco, String cidade, String bairro, String cep,
+                                          Pageable pageable) {
+        List<QuadraResponseDTO> todas = listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
+        if (pageable == null || pageable.isUnpaged()) {
+            return new PageImpl<>(todas);
+        }
+        int total = todas.size();
+        int start = (int) pageable.getOffset();
+        if (start >= total) {
+            return new PageImpl<>(List.of(), pageable, total);
+        }
+        int end = Math.min(start + pageable.getPageSize(), total);
+        List<QuadraResponseDTO> subLista = todas.subList(start, end);
+        return new PageImpl<>(subLista, pageable, total);
     }
 
     @Transactional(readOnly = true)

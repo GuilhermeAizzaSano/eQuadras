@@ -744,9 +744,10 @@ paths:
       - Quadras - API
       summary: Listar quadras ativas / por proximidade e filtros
       description: "Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna\
-        \ a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota\
-        \ /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO).\
-        \ Também suporta o parâmetro 'resumido=true/false'."
+        \ a lista completa com fotos e disponibilidades (QuadraResponseDTO) com suporte\
+        \ a paginação (page, size). Na rota /api/quadras (Bot / Integrações), retorna\
+        \ o formato resumido (QuadraResumoResponseDTO) sem paginação. Também suporta\
+        \ o parâmetro 'resumido=true/false'."
       operationId: listarTodas
       parameters:
       - name: latitude
@@ -803,6 +804,19 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 6
       - name: X-Client
         in: header
         required: false
@@ -899,7 +913,7 @@ paths:
     post:
       tags:
       - Pagamentos - API
-      summary: Simular aprovação de pagamento Pix (Dev)
+      summary: Simular aprovação de pagamento Pix
       description: Transita uma reserva pendente para CONFIRMADO e notifica o administrador
         via SSE.
       operationId: simularAprovacao
@@ -2427,12 +2441,12 @@ components:
         numberOfElements:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
           type: boolean
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -2441,26 +2455,26 @@ components:
         offset:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        paged:
-          type: boolean
-        unpaged:
-          type: boolean
         pageSize:
           type: integer
           format: int32
         pageNumber:
           type: integer
           format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
     SortObject:
       type: object
       properties:
         empty:
           type: boolean
-        sorted:
-          type: boolean
         unsorted:
+          type: boolean
+        sorted:
           type: boolean
     HorarioDisponivelDTO:
       type: object
@@ -2616,12 +2630,12 @@ components:
         numberOfElements:
           type: integer
           format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
           type: boolean
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     QuadraResumoResponseDTO:

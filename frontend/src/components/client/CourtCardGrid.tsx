@@ -2,7 +2,7 @@ import React from 'react';
 import { Quadra } from '../../types';
 import { getAssetUrl } from '../../api/apiClient';
 import { EmptyState, Badge } from '../ui';
-import { Calendar as CalendarIcon, MapPin, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ModoBusca } from './CourtSearchBar';
 
 interface CourtCardGridProps {
@@ -10,6 +10,10 @@ interface CourtCardGridProps {
   modoBusca: ModoBusca;
   onSelectCourtDetails: (quadra: Quadra) => void;
   onOpenBookingModal: (quadraId: number) => void;
+  paginaAtual?: number;
+  totalPaginas?: number;
+  totalItens?: number;
+  onMudarPagina?: (pagina: number) => void;
 }
 
 export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
@@ -17,6 +21,10 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
   modoBusca,
   onSelectCourtDetails,
   onOpenBookingModal,
+  paginaAtual = 1,
+  totalPaginas = 1,
+  totalItens = 0,
+  onMudarPagina,
 }) => {
   if (quadras.length === 0) {
     return (
@@ -126,6 +134,32 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
           </div>
         );
       })}
+
+      {totalPaginas > 1 && (
+        <div className="col-span-full pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">
+          <button
+            type="button"
+            disabled={paginaAtual <= 1}
+            onClick={() => onMudarPagina?.(Math.max(1, paginaAtual - 1))}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            <span>Anterior</span>
+          </button>
+          <span className="text-[11px] text-white/50 font-mono">
+            Página {paginaAtual} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'quadra' : 'quadras'})
+          </span>
+          <button
+            type="button"
+            disabled={paginaAtual >= totalPaginas}
+            onClick={() => onMudarPagina?.(Math.min(totalPaginas, paginaAtual + 1))}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+          >
+            <span>Próxima</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
