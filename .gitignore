@@ -75,10 +75,12 @@ desktop.ini
 .gemini/
 .superpowers/
 .codegraph/
-docs/
+docs/*
 !docs/api/
-!docs/api/**
 *.log
+*.diff
+*.patch
+DIFF_*.md
 
 # Maven Wrapper binaries
 .mvn/wrapper/maven-wrapper.jar
