@@ -386,6 +386,15 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     }
   };
 
+  useEffect(() => {
+    if (isBookingModalOpen && selectedQuadra && dataSelecionada) {
+      carregarHorarios(selectedQuadra, dataSelecionada);
+    } else if (!isBookingModalOpen) {
+      setHorarios([]);
+      setSlotsSelecionados([]);
+    }
+  }, [isBookingModalOpen, selectedQuadra, dataSelecionada]);
+
   const toggleSlotSelection = (slot: HorarioDisponivel) => {
     setSlotsSelecionados((prev) => {
       const exists = prev.some((s) => s.inicio === slot.inicio);
