@@ -495,6 +495,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const cancelarAgendamento = (id: number) => {
     if (!user) return;
+    const ag = agendamentosAdmin.find((a) => a.id_agendamento === id);
+    if (ag && parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
+      setFeedback({
+        type: 'error',
+        message: 'Não é possível cancelar um agendamento que está em andamento ou retroativo.',
+      });
+      return;
+    }
     setConfirmModal({
       isOpen: true,
       title: 'Cancelar Agendamento',

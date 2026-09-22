@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Agendamento } from '../../types';
 import { EmptyState, Badge } from '../ui';
 import { Calendar as CalendarIcon, Clock, QrCode, History, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatarDataHoraBr } from '../../utils/dateUtils';
+import { formatarDataHoraBr, getAgoraBrasilia, parseDataHoraLocal } from '../../utils/dateUtils';
 
 interface ClientBookingsListProps {
   meusAgendamentos: Agendamento[];
@@ -231,8 +231,11 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         <div className="space-y-4">
           <div className="space-y-3.5 min-h-[580px]">
             {agendamentosPaginados.map((ag) => {
+              const agora = getAgoraBrasilia().agora;
               const isCancelado = ag.status === 'CANCELADO';
-              const isPassado = new Date(ag.dataHoraFim) < new Date();
+              const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
+              const isRetroativoOuEmAndamento = dataInicio <= agora;
+              const isPassado = parseDataHoraLocal(ag.dataHoraFim) < agora;
               const [data, tempoInicio] = ag.dataHoraInicio.split('T');
               const [, tempoFim] = ag.dataHoraFim.split('T');
               const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
@@ -297,7 +300,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                     </Badge>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.08] text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-white/[0.08] text-xs gap-2">
                     <span className="text-white font-mono font-bold text-sm tracking-tight">
                       R$ {ag.valorTotal.toFixed(2)}
                     </span>
@@ -314,12 +317,18 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                       )}
 
                       {!isCancelado && (
-                        <button
-                          onClick={() => onCancelBooking(ag.id_agendamento)}
-                          className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
-                        >
-                          Cancelar
-                        </button>
+                        isRetroativoOuEmAndamento ? (
+                          <span className="text-[11px] text-white/40 italic">
+                            Não é possível cancelar um agendamento que está em andamento ou retroativo.
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onCancelBooking(ag.id_agendamento)}
+                            className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
+                          >
+                            Cancelar
+                          </button>
+                        )
                       )}
                     </div>
                   </div>
