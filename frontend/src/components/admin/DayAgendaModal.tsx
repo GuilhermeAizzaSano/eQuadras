@@ -202,7 +202,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-200">
       <div className="bg-[#121214] border border-white/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-3xl h-[720px] max-h-[90vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header do Modal */}
-        <div className="p-5 sm:p-6 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
+        <div className="p-5 sm:p-6 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white flex items-center justify-center">
               <Clock className="w-5 h-5" />
@@ -227,7 +227,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
         </div>
 
         {/* Sub-header com Seletor de Quadra, Filtros e Abas de Visualização */}
-        <div className="px-5 sm:px-6 py-3 border-b border-white/[0.06] bg-white/[0.02] flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="px-5 sm:px-6 py-3 border-b border-white/[0.06] bg-white/[0.02] flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs text-white/50 font-medium font-mono">Quadra:</span>
@@ -335,7 +335,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
         </div>
 
         {/* Conteúdo do Modal */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 scrollbar-thin">
+        <div className="flex-1 min-h-0 p-5 sm:p-6 overflow-y-auto space-y-6 scrollbar-thin">
           {visualizacaoAgendaAba === 'GRADE_HORARIOS' ? (
             <div className="space-y-6">
               {/* Legenda Resumida */}
@@ -675,7 +675,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                 />
               ) : (
                 <div className="space-y-3">
-                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
+                  <div className="space-y-3">
                     {agendamentosPaginados.map((ag) => {
                       const agora = getAgoraBrasilia().agora;
                       const isCancelado = ag.status === 'CANCELADO';
@@ -821,7 +821,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
         </div>
 
         {/* Rodapé do Modal */}
-        <div className="p-4 border-t border-white/[0.06] bg-white/[0.02] flex justify-end">
+        <div className="mt-auto shrink-0 p-4 border-t border-white/[0.06] bg-white/[0.02] flex justify-end">
           <Button
             type="button"
             variant="outline"
