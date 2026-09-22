@@ -22,6 +22,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByApiKeyHash(String apiKeyHash);
 
+    java.util.List<Usuario> findByRole(com.agendamentos.equadras.model.enums.Role role);
+
     @org.springframework.transaction.annotation.Transactional
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE Usuario u SET u.apiKeyUltimoUsoEm = :agora WHERE u.id_usuario = :id AND (u.apiKeyUltimoUsoEm IS NULL OR u.apiKeyUltimoUsoEm < :limite)")
