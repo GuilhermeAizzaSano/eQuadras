@@ -2436,12 +2436,12 @@ components:
         number:
           type: integer
           format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
         first:
           type: boolean
         last:
           type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
@@ -2455,18 +2455,18 @@ components:
         offset:
           type: integer
           format: int64
-        pageSize:
-          type: integer
-          format: int32
+        paged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        unpaged:
+          type: boolean
         pageNumber:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        paged:
-          type: boolean
-        unpaged:
-          type: boolean
+        pageSize:
+          type: integer
+          format: int32
     SortObject:
       type: object
       properties:
@@ -2625,12 +2625,12 @@ components:
         number:
           type: integer
           format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
         first:
           type: boolean
         last:
           type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32

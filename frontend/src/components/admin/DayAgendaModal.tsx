@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import { parseDataHoraLocal, formatarDataHoraBr } from '../../utils/dateUtils';
+import { parseDataHoraLocal, formatarDataHoraBr, getAgoraBrasilia } from '../../utils/dateUtils';
 
 interface DayAgendaModalProps {
   isOpen: boolean;
@@ -677,8 +677,11 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                 <div className="space-y-3">
                   <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 scrollbar-thin">
                     {agendamentosPaginados.map((ag) => {
+                      const agora = getAgoraBrasilia().agora;
                       const isCancelado = ag.status === 'CANCELADO';
-                      const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
+                      const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
+                      const isRetroativoOuEmAndamento = dataInicio <= agora;
+                      const isPassado = parseDataHoraLocal(ag.dataHoraFim) < agora;
                       const horaInicio = ag.dataHoraInicio.split('T')[1]?.substring(0, 5);
                       const horaFim = ag.dataHoraFim.split('T')[1]?.substring(0, 5);
                       const quadraCorrespondente = minhasQuadras.find((q) => q.id_quadra === ag.quadraId);
@@ -763,16 +766,22 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-white/[0.06] text-xs gap-2">
                             <span className="text-white font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
-                            {!isCancelado && !isPassado && (
-                              <button
-                                type="button"
-                                onClick={() => onCancelarAgendamento(ag.id_agendamento)}
-                                className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
-                              >
-                                Cancelar Agendamento
-                              </button>
+                            {!isCancelado && (
+                              isRetroativoOuEmAndamento ? (
+                                <span className="text-[11px] text-white/40 italic">
+                                  Não é possível cancelar um agendamento que está em andamento ou retroativo.
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => onCancelarAgendamento(ag.id_agendamento)}
+                                  className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
+                                >
+                                  Cancelar Agendamento
+                                </button>
+                              )
                             )}
                           </div>
                         </div>

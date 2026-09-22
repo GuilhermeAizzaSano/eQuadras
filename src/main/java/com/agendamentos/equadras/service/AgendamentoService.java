@@ -198,8 +198,8 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Este agendamento já está cancelado.");
         }
 
-        if (agendamento.getDataHoraInicio().isBefore(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
-            throw new IllegalArgumentException("Não é possível cancelar um agendamento retroativo ou já iniciado.");
+        if (!agendamento.getDataHoraInicio().isAfter(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
+            throw new IllegalArgumentException("Não é possível cancelar um agendamento que está em andamento ou retroativo.");
         }
 
         agendamento.setStatus(StatusAgendamento.CANCELADO);
