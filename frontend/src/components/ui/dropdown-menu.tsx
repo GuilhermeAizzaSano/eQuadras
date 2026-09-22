@@ -1,9 +1,14 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface DropdownMenuContextValue {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  contentRef: React.RefObject<HTMLDivElement | null>;
+  triggerRect: DOMRect | null;
+  updateTriggerRect: () => void;
 }
 
 const DropdownMenuContext = React.createContext<DropdownMenuContextValue | null>(null);
@@ -27,29 +32,48 @@ export interface DropdownMenuProps {
 
 const DropdownMenu: React.FC<DropdownMenuProps> = ({ children, open: controlledOpen, onOpenChange }) => {
   const [internalOpen, setInternalOpen] = React.useState(false);
+  const [triggerRect, setTriggerRect] = React.useState<DOMRect | null>(null);
+
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
+
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+
+  const updateTriggerRect = React.useCallback(() => {
+    if (triggerRef.current) {
+      setTriggerRect(triggerRef.current.getBoundingClientRect());
+    }
+  }, []);
 
   const setOpen = React.useCallback(
     (value: React.SetStateAction<boolean>) => {
       const nextOpen = typeof value === "function" ? value(open) : value;
+      if (nextOpen) {
+        updateTriggerRect();
+      }
       if (!isControlled) {
         setInternalOpen(nextOpen);
       }
       onOpenChange?.(nextOpen);
     },
-    [isControlled, open, onOpenChange]
+    [isControlled, open, onOpenChange, updateTriggerRect]
   );
-
-  const containerRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     if (!open) return;
 
+    updateTriggerRect();
+
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (triggerRef.current && triggerRef.current.contains(target)) {
+        return;
       }
+      if (contentRef.current && contentRef.current.contains(target)) {
+        return;
+      }
+      setOpen(false);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -58,17 +82,28 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ children, open: controlledO
       }
     }
 
+    function handleResizeOrScroll() {
+      updateTriggerRect();
+    }
+
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResizeOrScroll);
+    window.addEventListener("scroll", handleResizeOrScroll, true);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResizeOrScroll);
+      window.removeEventListener("scroll", handleResizeOrScroll, true);
     };
-  }, [open, setOpen]);
+  }, [open, setOpen, updateTriggerRect]);
 
   return (
-    <DropdownMenuContext.Provider value={{ open, setOpen }}>
-      <div ref={containerRef} className="relative inline-block text-left w-full">
+    <DropdownMenuContext.Provider
+      value={{ open, setOpen, triggerRef, contentRef, triggerRect, updateTriggerRect }}
+    >
+      <div className="relative inline-block text-left w-full">
         {children}
       </div>
     </DropdownMenuContext.Provider>
@@ -80,10 +115,20 @@ export interface DropdownMenuTriggerProps extends React.ButtonHTMLAttributes<HTM
 }
 
 const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTriggerProps>(
-  ({ className, children, asChild, onClick, ...props }, ref) => {
-    const { open, setOpen } = useDropdownMenuContext();
+  ({ className, children, asChild, onClick, ...props }, forwardedRef) => {
+    const { open, setOpen, triggerRef, updateTriggerRect } = useDropdownMenuContext();
+
+    const handleRef = (node: HTMLButtonElement | null) => {
+      (triggerRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+      if (typeof forwardedRef === "function") {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        (forwardedRef as React.MutableRefObject<HTMLButtonElement | null>).current = node;
+      }
+    };
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      updateTriggerRect();
       onClick?.(e);
       if (!e.defaultPrevented) {
         setOpen((prev) => !prev);
@@ -92,7 +137,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
 
     if (asChild && React.isValidElement(children)) {
       return React.cloneElement(children as React.ReactElement<any>, {
-        ref,
+        ref: handleRef,
         "aria-haspopup": "menu",
         "aria-expanded": open,
         onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -104,7 +149,7 @@ const DropdownMenuTrigger = React.forwardRef<HTMLButtonElement, DropdownMenuTrig
 
     return (
       <button
-        ref={ref}
+        ref={handleRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -126,28 +171,69 @@ export interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivEl
 }
 
 const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContentProps>(
-  ({ className, children, side = "bottom", align = "start", sideOffset = 4, ...props }, ref) => {
-    const { open } = useDropdownMenuContext();
+  ({ className, children, side = "bottom", align = "start", sideOffset = 4, style: customStyle, ...props }, forwardedRef) => {
+    const { open, contentRef, triggerRect } = useDropdownMenuContext();
 
-    if (!open) return null;
+    const handleRef = (node: HTMLDivElement | null) => {
+      (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (typeof forwardedRef === "function") {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    };
 
-    // Posicionamento relativo adaptado
-    const sideClass =
-      side === "right"
-        ? "left-full bottom-0 ml-2"
-        : side === "top"
-        ? "bottom-full mb-2 left-0"
-        : side === "left"
-        ? "right-full mr-2 bottom-0"
-        : "top-full mt-2 left-0";
+    if (!open || typeof document === "undefined") return null;
 
-    return (
+    const computedStyle: React.CSSProperties = {
+      position: "fixed",
+      zIndex: 99999,
+      ...customStyle,
+    };
+
+    if (triggerRect) {
+      if (side === "right") {
+        computedStyle.left = `${triggerRect.right + sideOffset}px`;
+        if (align === "end") {
+          computedStyle.bottom = `${Math.max(8, window.innerHeight - triggerRect.bottom)}px`;
+        } else if (align === "center") {
+          computedStyle.top = `${triggerRect.top + triggerRect.height / 2}px`;
+          computedStyle.transform = "translateY(-50%)";
+        } else {
+          computedStyle.top = `${triggerRect.top}px`;
+        }
+      } else if (side === "left") {
+        computedStyle.right = `${window.innerWidth - triggerRect.left + sideOffset}px`;
+        if (align === "end") {
+          computedStyle.bottom = `${Math.max(8, window.innerHeight - triggerRect.bottom)}px`;
+        } else {
+          computedStyle.top = `${triggerRect.top}px`;
+        }
+      } else if (side === "top") {
+        computedStyle.bottom = `${window.innerHeight - triggerRect.top + sideOffset}px`;
+        if (align === "end") {
+          computedStyle.right = `${window.innerWidth - triggerRect.right}px`;
+        } else {
+          computedStyle.left = `${triggerRect.left}px`;
+        }
+      } else {
+        // bottom
+        computedStyle.top = `${triggerRect.bottom + sideOffset}px`;
+        if (align === "end") {
+          computedStyle.right = `${window.innerWidth - triggerRect.right}px`;
+        } else {
+          computedStyle.left = `${triggerRect.left}px`;
+        }
+      }
+    }
+
+    const content = (
       <div
-        ref={ref}
+        ref={handleRef}
         role="menu"
+        style={computedStyle}
         className={cn(
-          "absolute z-50 min-w-[8rem] overflow-hidden rounded-xl border border-white/10 bg-[#121214] p-1 text-white shadow-xl animate-in fade-in zoom-in-95 duration-100",
-          sideClass,
+          "min-w-[8rem] overflow-hidden rounded-xl border border-white/10 bg-[#121214] p-1 text-white shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none",
           className
         )}
         {...props}
@@ -155,6 +241,8 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
         {children}
       </div>
     );
+
+    return createPortal(content, document.body);
   }
 );
 DropdownMenuContent.displayName = "DropdownMenuContent";
