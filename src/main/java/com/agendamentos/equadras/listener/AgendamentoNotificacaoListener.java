@@ -38,7 +38,7 @@ public class AgendamentoNotificacaoListener {
         this.usuarioRepository = usuarioRepository;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onAgendamentoPagamentoConfirmado(AgendamentoPagamentoConfirmadoEvent event) {
         Agendamento salvo = event.agendamento();
         if (salvo == null) return;
@@ -81,7 +81,7 @@ public class AgendamentoNotificacaoListener {
         }
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onAgendamentoCancelado(AgendamentoCanceladoEvent event) {
         Agendamento salvo = event.agendamento();
         Usuario executor = event.executor();
