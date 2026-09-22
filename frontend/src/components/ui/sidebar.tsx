@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { motion, type Transition } from "framer-motion";
 
 export interface SidebarContextValue {
   isCollapsed: boolean;
@@ -29,12 +28,6 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   footer?: React.ReactNode;
 }
 
-const transitionProps: Transition = {
-  type: "tween",
-  ease: "easeOut",
-  duration: 0.2,
-};
-
 export const SidebarItemText: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
   className,
@@ -43,15 +36,14 @@ export const SidebarItemText: React.FC<{ children: React.ReactNode; className?: 
   if (isCollapsed) return null;
 
   return (
-    <motion.span
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -10 }}
-      transition={{ duration: 0.15 }}
-      className={cn("truncate", className)}
+    <span
+      className={cn(
+        "truncate animate-in fade-in duration-150 transition-opacity",
+        className
+      )}
     >
       {children}
-    </motion.span>
+    </span>
   );
 };
 
@@ -67,6 +59,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       expandedWidth = "15rem",
       header,
       footer,
+      style,
       ...props
     },
     ref
@@ -81,22 +74,19 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 
     return (
       <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed: setInternalCollapsed }}>
-        <motion.aside
+        <aside
           ref={ref}
-          initial={isCollapsed ? "closed" : "open"}
-          animate={isCollapsed ? "closed" : "open"}
-          variants={{
-            open: { width: expandedWidth },
-            closed: { width: collapsedWidth },
-          }}
-          transition={transitionProps}
           onMouseEnter={() => handleHover(false)}
           onMouseLeave={() => handleHover(true)}
+          style={{
+            width: isCollapsed ? collapsedWidth : expandedWidth,
+            ...style,
+          }}
           className={cn(
-            "fixed left-0 top-0 z-40 h-full shrink-0 border-r border-white/[0.08] bg-black select-none flex flex-col justify-between overflow-hidden",
+            "fixed left-0 top-0 z-40 h-full shrink-0 border-r border-white/[0.08] bg-black select-none flex flex-col justify-between overflow-hidden transition-[width] duration-200 ease-out",
             className
           )}
-          {...(props as any)}
+          {...props}
         >
           {header && <div className="shrink-0 border-b border-white/[0.08]">{header}</div>}
 
@@ -105,7 +95,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           </div>
 
           {footer && <div className="shrink-0 border-t border-white/[0.08] p-2">{footer}</div>}
-        </motion.aside>
+        </aside>
       </SidebarContext.Provider>
     );
   }

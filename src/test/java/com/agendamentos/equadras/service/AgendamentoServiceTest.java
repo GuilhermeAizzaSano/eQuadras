@@ -45,9 +45,6 @@ class AgendamentoServiceTest {
     private QuadraRepository quadraRepository;
 
     @Mock
-    private NotificacaoService notificacaoService;
-
-    @Mock
     private PagamentoService pagamentoService;
 
     @Mock
@@ -57,7 +54,7 @@ class AgendamentoServiceTest {
     private com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
 
     @Mock
-    private AuditoriaService auditoriaService;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private AgendamentoService agendamentoService;
