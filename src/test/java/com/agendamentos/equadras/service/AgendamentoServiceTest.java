@@ -502,12 +502,12 @@ class AgendamentoServiceTest {
                 .status(StatusAgendamento.CONFIRMADO)
                 .build();
 
-        when(agendamentoRepository.findAll()).thenReturn(List.of(a1));
+        when(agendamentoRepository.findAllOrderByDataHoraInicioDesc()).thenReturn(List.of(a1));
 
         List<AgendamentoResponseDTO> lista = agendamentoService.listarTodos(99L, true);
 
         assertEquals(1, lista.size());
-        verify(agendamentoRepository, times(1)).findAll();
+        verify(agendamentoRepository, times(1)).findAllOrderByDataHoraInicioDesc();
         verify(agendamentoRepository, never()).findByAdminId(99L);
     }
 
