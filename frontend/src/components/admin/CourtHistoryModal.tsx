@@ -113,16 +113,25 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
       }
     });
 
-    const filtrados = agendamentos.filter((ag) => {
-      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-      const isCancelado = ag.status === 'CANCELADO';
-      const isPassado = dataFim < agora;
+    const filtrados = agendamentos
+      .filter((ag) => {
+        const dataFim = parseDataHoraLocal(ag.dataHoraFim);
+        const isCancelado = ag.status === 'CANCELADO';
+        const isPassado = dataFim < agora;
 
-      if (filtroStatus === 'ATIVOS') return !isCancelado && !isPassado;
-      if (filtroStatus === 'REALIZADOS') return !isCancelado && isPassado;
-      if (filtroStatus === 'CANCELADOS') return isCancelado;
-      return true;
-    });
+        if (filtroStatus === 'ATIVOS') return !isCancelado && !isPassado;
+        if (filtroStatus === 'REALIZADOS') return !isCancelado && isPassado;
+        if (filtroStatus === 'CANCELADOS') return isCancelado;
+        return true;
+      })
+      .sort((a, b) => {
+        const tempoA = parseDataHoraLocal(a.dataHoraInicio).getTime();
+        const tempoB = parseDataHoraLocal(b.dataHoraInicio).getTime();
+        if (filtroStatus === 'ATIVOS') {
+          return tempoA - tempoB;
+        }
+        return tempoB - tempoA;
+      });
 
     return {
       contadores: {
