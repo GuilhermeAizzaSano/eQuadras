@@ -108,15 +108,24 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   }, [agendamentosAdmin, dataSelecionada, quadraSelecionadaAgendaId]);
 
   const agendamentosDoDiaFiltrados = React.useMemo(() => {
-    return agendamentosDoDia.filter((ag) => {
-      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-      const isCancelado = ag.status === 'CANCELADO';
-      const isPassado = dataFim < agoraLocal;
+    return agendamentosDoDia
+      .filter((ag) => {
+        const dataFim = parseDataHoraLocal(ag.dataHoraFim);
+        const isCancelado = ag.status === 'CANCELADO';
+        const isPassado = dataFim < agoraLocal;
 
-      if (filtroAgendaAdmin === 'CANCELADOS') return isCancelado;
-      if (filtroAgendaAdmin === 'REALIZADOS') return !isCancelado && isPassado;
-      return !isCancelado && !isPassado;
-    });
+        if (filtroAgendaAdmin === 'CANCELADOS') return isCancelado;
+        if (filtroAgendaAdmin === 'REALIZADOS') return !isCancelado && isPassado;
+        return !isCancelado && !isPassado;
+      })
+      .sort((a, b) => {
+        const tempoA = parseDataHoraLocal(a.dataHoraInicio).getTime();
+        const tempoB = parseDataHoraLocal(b.dataHoraInicio).getTime();
+        if (filtroAgendaAdmin === 'ATIVOS') {
+          return tempoA - tempoB;
+        }
+        return tempoB - tempoA;
+      });
   }, [agendamentosDoDia, filtroAgendaAdmin, agoraLocal]);
 
   const totalItens = agendamentosDoDiaFiltrados.length;

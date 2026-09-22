@@ -298,7 +298,7 @@ public class AgendamentoService {
                 if (usuario.isMasterAdmin()) {
                     // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
                     if (historico) {
-                        agendamentos = agendamentoRepository.findAll();
+                        agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
                     } else {
                         agendamentos = agendamentoRepository.findAtivosAll(
                                 StatusAgendamento.CANCELADO,
@@ -328,10 +328,10 @@ public class AgendamentoService {
                     );
                 }
             } else {
-                agendamentos = agendamentoRepository.findAll();
+                agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
             }
         } else {
-            agendamentos = agendamentoRepository.findAll();
+            agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
         }
 
         return agendamentos.stream()

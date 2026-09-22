@@ -50,23 +50,34 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  // Filtragem dinâmica de agendamentos do cliente
+  // Filtragem dinâmica e ordenação cronológica de agendamentos do cliente
   const agendamentosFiltrados = useMemo(() => {
     const agoraLocal = new Date();
-    return meusAgendamentos.filter((ag) => {
-      const dataFim = new Date(ag.dataHoraFim);
-      const isCancelado = ag.status === 'CANCELADO';
-      const isPassado = dataFim < agoraLocal;
+    return meusAgendamentos
+      .filter((ag) => {
+        const dataFim = new Date(ag.dataHoraFim);
+        const isCancelado = ag.status === 'CANCELADO';
+        const isPassado = dataFim < agoraLocal;
 
-      if (filtroStatusReservas === 'CANCELADOS') {
-        return isCancelado;
-      }
-      if (filtroStatusReservas === 'REALIZADOS') {
-        return !isCancelado && isPassado;
-      }
-      // 'ATIVOS' (Futuros/Em andamento que não foram cancelados)
-      return !isCancelado && !isPassado;
-    });
+        if (filtroStatusReservas === 'CANCELADOS') {
+          return isCancelado;
+        }
+        if (filtroStatusReservas === 'REALIZADOS') {
+          return !isCancelado && isPassado;
+        }
+        // 'ATIVOS' (Futuros/Em andamento que não foram cancelados)
+        return !isCancelado && !isPassado;
+      })
+      .sort((a, b) => {
+        const tempoA = new Date(a.dataHoraInicio).getTime();
+        const tempoB = new Date(b.dataHoraInicio).getTime();
+        // Para ativos: partidas mais próximas primeiro (ordem crescente)
+        // Para realizados e cancelados: mais recentes primeiro (ordem decrescente)
+        if (filtroStatusReservas === 'ATIVOS') {
+          return tempoA - tempoB;
+        }
+        return tempoB - tempoA;
+      });
   }, [meusAgendamentos, filtroStatusReservas]);
 
   const totalItensReservas = agendamentosFiltrados.length;

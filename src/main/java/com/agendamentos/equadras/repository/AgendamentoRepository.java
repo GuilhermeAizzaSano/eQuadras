@@ -44,7 +44,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     );
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
-    @Query("SELECT a FROM Agendamento a WHERE a.usuario.id_usuario = :usuarioId")
+    @Query("SELECT a FROM Agendamento a WHERE a.usuario.id_usuario = :usuarioId ORDER BY a.dataHoraInicio DESC")
     List<Agendamento> findByUsuarioId(@Param("usuarioId") Long usuarioId);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
@@ -62,7 +62,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     );
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
-    @Query("SELECT a FROM Agendamento a WHERE a.quadra.admin.id_usuario = :adminId")
+    @Query("SELECT a FROM Agendamento a WHERE a.quadra.admin.id_usuario = :adminId ORDER BY a.dataHoraInicio DESC")
     List<Agendamento> findByAdminId(@Param("adminId") Long adminId);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
@@ -97,6 +97,10 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a WHERE a.quadra.id_quadra = :quadraId ORDER BY a.dataHoraInicio DESC")
     List<Agendamento> findByQuadraIdOrderByDataHoraInicioDesc(@Param("quadraId") Long quadraId);
+
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @Query("SELECT a FROM Agendamento a ORDER BY a.dataHoraInicio DESC")
+    List<Agendamento> findAllOrderByDataHoraInicioDesc();
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     List<Agendamento> findAll();
