@@ -109,8 +109,12 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
     java.util.Optional<Agendamento> findByTransacaoPagamentoId(String transacaoPagamentoId);
 
     @Override
-    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    @EntityGraph(attributePaths = {"usuario", "quadra", "quadra.admin"})
     java.util.Optional<Agendamento> findById(Long id);
+
+    @EntityGraph(attributePaths = {"usuario", "quadra", "quadra.admin"})
+    @Query("SELECT a FROM Agendamento a WHERE a.id_agendamento = :id")
+    java.util.Optional<Agendamento> buscarComAdminEUsuarioPorId(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a WHERE a.id_agendamento = :id AND (a.usuario.id_usuario = :userId OR a.quadra.admin.id_usuario = :userId)")
