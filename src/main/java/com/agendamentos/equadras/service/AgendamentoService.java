@@ -6,7 +6,9 @@ import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.model.entity.Agendamento;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
-import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
+import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
+import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
+import com.agendamentos.equadras.event.AgendamentosExpiradosCanceladosEvent;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
@@ -14,6 +16,7 @@ import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.util.DataFlexivelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,34 +40,31 @@ public class AgendamentoService {
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioRepository usuarioRepository;
     private final QuadraRepository quadraRepository;
-    private final NotificacaoService notificacaoService;
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
     private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraService quadraService;
     private final UsuarioService usuarioService;
-    private final AuditoriaService auditoriaService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
                               QuadraRepository quadraRepository,
-                              NotificacaoService notificacaoService,
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
                               com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
                               @org.springframework.context.annotation.Lazy QuadraService quadraService,
                               UsuarioService usuarioService,
-                              AuditoriaService auditoriaService) {
+                              ApplicationEventPublisher eventPublisher) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
-        this.notificacaoService = notificacaoService;
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraService = quadraService;
         this.usuarioService = usuarioService;
-        this.auditoriaService = auditoriaService;
+        this.eventPublisher = eventPublisher;
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
@@ -113,7 +113,9 @@ public class AgendamentoService {
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
-        notificarAdminPagamento(salvo);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(salvo));
+        }
 
         return AgendamentoResponseDTO.fromEntity(salvo);
     }
@@ -148,39 +150,11 @@ public class AgendamentoService {
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
-        notificarAdminPagamento(salvo);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(salvo));
+        }
 
         return AgendamentoResponseDTO.fromEntity(salvo);
-    }
-
-    private void notificarAdminPagamento(Agendamento salvo) {
-        try {
-            if (salvo.getQuadra().getAdmin() != null) {
-                java.time.format.DateTimeFormatter formatadorData = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                java.time.format.DateTimeFormatter formatadorHora = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
-
-                String dataFormatada = salvo.getDataHoraInicio().format(formatadorData);
-                String horaInicio = salvo.getDataHoraInicio().format(formatadorHora);
-                String horaFim = salvo.getDataHoraFim().format(formatadorHora);
-                String telefone = salvo.getUsuario().getPhone_usuario() != null && !salvo.getUsuario().getPhone_usuario().isBlank()
-                        ? salvo.getUsuario().getPhone_usuario()
-                        : "Não informado";
-
-                String msg = String.format(
-                        "Pagamento Pix confirmado!\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s",
-                        salvo.getUsuario().getNome_usuario(),
-                        telefone,
-                        salvo.getQuadra().getNome(),
-                        dataFormatada,
-                        horaInicio,
-                        horaFim
-                );
-
-                notificacaoService.enviarNotificacao(salvo.getQuadra().getAdmin().getId_usuario(), msg);
-            }
-        } catch (Exception e) {
-            log.error("Falha ao enviar notificação de pagamento para admin do agendamento {}: {}", salvo.getId_agendamento(), e.getMessage(), e);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -232,50 +206,11 @@ public class AgendamentoService {
         agendamento.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
-        notificarAdminCancelamento(agendamentoAtualizado, usuario);
-
-        String tipoExecutor = usuario.isMasterAdmin() ? "MASTER_ADMIN" : (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN ? "ADMIN_QUADRA" : "CLIENTE");
-        String nomeQuadra = agendamento.getQuadra() != null ? agendamento.getQuadra().getNome() : "N/A";
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcao(usuario, CategoriaAuditoria.AGENDAMENTO, "CANCELAR", "AGENDAMENTO",
-                    agendamento.getId_agendamento().toString(),
-                    String.format("Agendamento #%d cancelado por %s (%s). Quadra: %s. Horário: %s até %s",
-                            agendamento.getId_agendamento(), usuario.getNome_usuario(), tipoExecutor, nomeQuadra,
-                            agendamento.getDataHoraInicio(), agendamento.getDataHoraFim()));
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentoCanceladoEvent(agendamentoAtualizado, usuario));
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
-    }
-
-    private void notificarAdminCancelamento(Agendamento agendamento, Usuario executor) {
-        try {
-            if (agendamento.getQuadra() != null && agendamento.getQuadra().getAdmin() != null) {
-                java.time.format.DateTimeFormatter formatadorData = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                java.time.format.DateTimeFormatter formatadorHora = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
-
-                String dataFormatada = agendamento.getDataHoraInicio().format(formatadorData);
-                String horaInicio = agendamento.getDataHoraInicio().format(formatadorHora);
-                String horaFim = agendamento.getDataHoraFim().format(formatadorHora);
-                String telefone = agendamento.getUsuario().getPhone_usuario() != null && !agendamento.getUsuario().getPhone_usuario().isBlank()
-                        ? agendamento.getUsuario().getPhone_usuario()
-                        : "Não informado";
-
-                String msg = String.format(
-                        "Agendamento Cancelado!\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s\nCancelado por: %s",
-                        agendamento.getUsuario().getNome_usuario(),
-                        telefone,
-                        agendamento.getQuadra().getNome(),
-                        dataFormatada,
-                        horaInicio,
-                        horaFim,
-                        executor.getNome_usuario()
-                );
-
-                notificacaoService.enviarNotificacao(agendamento.getQuadra().getAdmin().getId_usuario(), msg);
-            }
-        } catch (Exception e) {
-            log.error("Falha ao enviar notificação de cancelamento para admin do agendamento {}: {}", agendamento.getId_agendamento(), e.getMessage(), e);
-        }
     }
 
     @Transactional(readOnly = true)
@@ -683,14 +618,8 @@ public class AgendamentoService {
                 limite,
                 agora
         );
-        if (cancelados > 0 && auditoriaService != null) {
-            auditoriaService.registrarAcaoSistema(
-                    CategoriaAuditoria.AGENDAMENTO,
-                    "CANCELAR",
-                    "AGENDAMENTO",
-                    "BATCH",
-                    "Cancelamento automático de " + cancelados + " agendamento(s) pendente(s) expirado(s) por timeout de pagamento Pix (15 min)."
-            );
+        if (cancelados > 0 && eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentosExpiradosCanceladosEvent(cancelados));
         }
     }
 }
