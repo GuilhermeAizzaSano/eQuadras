@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NotificacaoService {
@@ -51,6 +53,7 @@ public class NotificacaoService {
         return emitter;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void enviarNotificacao(Long adminId, String mensagem) {
         Usuario admin = usuarioRepository.findById(adminId)
             .orElseThrow(() -> new IllegalArgumentException("Admin não encontrado"));
@@ -63,12 +66,11 @@ public class NotificacaoService {
         SseEmitter emitter = emitters.get(adminId);
         if (emitter != null) {
             try {
-                Map<String, Object> payload = Map.of(
-                    "id", salva.getId(),
-                    "mensagem", salva.getMensagem(),
-                    "lida", false,
-                    "dataCriacao", salva.getDataCriacao().toString()
-                );
+                Map<String, Object> payload = new java.util.HashMap<>();
+                payload.put("id", salva.getId());
+                payload.put("mensagem", salva.getMensagem());
+                payload.put("lida", salva.isLida());
+                payload.put("dataCriacao", salva.getDataCriacao() != null ? salva.getDataCriacao().toString() : java.time.LocalDateTime.now().toString());
                 String json = objectMapper.writeValueAsString(payload);
                 emitter.send(SseEmitter.event().name("notificacao").data(json));
             } catch (IOException e) {
@@ -96,12 +98,12 @@ public class NotificacaoService {
         notificacaoRepository.save(notif);
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void marcarTodasComoLidas(Long adminId) {
         notificacaoRepository.marcarTodasComoLidas(adminId);
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void excluirTodas(Long adminId) {
         notificacaoRepository.marcarTodasComoExcluidas(adminId);
     }

@@ -39,12 +39,16 @@ public class AgendamentoConcorrenciaIntegrationTest {
     @Autowired
     private AgendamentoRepository agendamentoRepository;
 
+    @Autowired
+    private com.agendamentos.equadras.repository.NotificacaoRepository notificacaoRepository;
+
     private Usuario usuario1;
     private Usuario usuario2;
     private Quadra quadra;
 
     @BeforeEach
     void setUp() {
+        notificacaoRepository.deleteAll();
         agendamentoRepository.deleteAll();
         quadraRepository.deleteAll();
         usuarioRepository.deleteAll();

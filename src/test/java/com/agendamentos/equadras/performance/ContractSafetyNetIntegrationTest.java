@@ -44,6 +44,9 @@ public class ContractSafetyNetIntegrationTest {
     @Autowired
     private com.agendamentos.equadras.repository.AgendamentoRepository agendamentoRepository;
 
+    @Autowired
+    private com.agendamentos.equadras.repository.NotificacaoRepository notificacaoRepository;
+
     private MockMvc mockMvc;
     private String adminToken;
     private Long quadraId;
@@ -55,6 +58,7 @@ public class ContractSafetyNetIntegrationTest {
                 .apply(springSecurity())
                 .build();
 
+        notificacaoRepository.deleteAll();
         agendamentoRepository.deleteAll();
         quadraRepository.deleteAll();
         usuarioRepository.deleteAll();
