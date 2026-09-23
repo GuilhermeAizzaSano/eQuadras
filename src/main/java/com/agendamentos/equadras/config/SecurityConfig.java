@@ -41,8 +41,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(origensPermitidas));
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"));
-        // Permite headers legítimos de navegação da SPA. X-API-KEY e Authorization ficam fora da allowlist CORS do browser.
-        configuration.setAllowedHeaders(List.of("Content-Type", "X-Client", "X-Correlation-Id"));
+        // Permite headers legítimos de navegação da SPA e integração via API-KEY
+        configuration.setAllowedHeaders(List.of("Content-Type", "X-Client", "X-Correlation-Id", "X-API-KEY", "Authorization"));
         configuration.setExposedHeaders(List.of("Set-Cookie", "Content-Disposition", "X-Total-Count", "X-Correlation-Id", "Retry-After"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -86,25 +86,32 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
-                        // 2. Rotas de Negócio Explícitas: aceitam tanto Sessão Web quanto API-KEY,
-                        // preservando as restrições estritas de ROLE
+                        // 2. Rotas exclusivas de ADMIN (gestão de quadras, bloqueios, notificações, auditoria e usuários)
                         .requestMatchers(HttpMethod.POST, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasRole("ADMIN")
                         .requestMatchers("/notificacoes", "/notificacoes/**", "/api/notificacoes", "/api/notificacoes/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/auditoria", "/admin/auditoria/**", "/api/admin/auditoria", "/api/admin/auditoria/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/agendamentos/dia", "/api/agendamentos/dia").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/agendamentos/quadra/{quadraId}", "/api/agendamentos/quadra/{quadraId}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/usuarios", "/api/usuarios").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/usuarios", "/api/usuarios").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/usuarios/*", "/api/usuarios/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/usuarios/*", "/api/usuarios/*").hasRole("ADMIN")
+
+                        // 3. Rotas de negócio e perfil (CLIENT ou ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/usuarios/me", "/api/usuarios/me").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/usuarios/api-key", "/usuarios/api-key/**", "/api/usuarios/api-key", "/api/usuarios/api-key/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.PATCH, "/usuarios/minha-senha", "/api/usuarios/minha-senha").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.GET, "/usuarios/*", "/api/usuarios/*").hasAnyRole("ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao", "/api/pagamentos/*/simular-aprovacao").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**").hasAnyRole("ADMIN", "CLIENT")
 
-                        .requestMatchers("/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**")
-                            .hasAnyRole("ADMIN", "CLIENT")
-                        .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**")
-                            .hasAnyRole("ADMIN", "CLIENT")
-                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**")
-                            .hasAnyRole("ADMIN", "CLIENT")
-
-                        // 3. Qualquer outra rota (incluindo todas as rotas /usuarios/**, /usuarios/api-key/**, /usuarios/minha-senha, /usuarios/me):
-                        // Negação por padrão: EXIGE estritamente SCOPE_SESSION (API-KEY recebe 403 Forbidden automaticamente)
-                        .anyRequest().hasAuthority("SCOPE_SESSION")
+                        // 4. Qualquer outra rota exige autenticação válida (Sessão Web ou API-KEY)
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(jsonAuthenticationEntryPoint)

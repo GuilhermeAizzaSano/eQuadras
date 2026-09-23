@@ -95,21 +95,22 @@ public class ApiKeySecurityIntegrationTest {
     }
 
     @Test
-    @DisplayName("API-KEY em rota de conta (GET /usuarios/me) deve retornar 403 Forbidden por isolamento de escopo")
-    void apiKeyEmRotaDeContaDeveRetornar403() throws Exception {
+    @DisplayName("API-KEY em rota de conta (GET /usuarios/me) deve retornar 200 OK com perfil do usuário")
+    void apiKeyEmRotaDeContaDeveRetornar200() throws Exception {
         mockMvc.perform(get("/usuarios/me")
                         .header("X-API-KEY", rawApiKeyAdmin))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.title").value("Acesso Proibido"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email_usuario").value("admin_integ@equadras.com"));
     }
 
     @Test
-    @DisplayName("API-KEY em rota de gerenciamento de chaves (POST /usuarios/api-key/regenerar) deve retornar 403 Forbidden")
-    void apiKeyNaoPodeGerenciarPropriaConta() throws Exception {
+    @DisplayName("API-KEY em rota de gerenciamento de chaves (POST /usuarios/api-key/regenerar) deve retornar 200 OK")
+    void apiKeyPodeGerenciarPropriaChave() throws Exception {
         mockMvc.perform(post("/usuarios/api-key/regenerar")
                         .header("X-API-KEY", rawApiKeyAdmin))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.apiKey").exists())
+                .andExpect(jsonPath("$.last4").exists());
     }
 
     @Test

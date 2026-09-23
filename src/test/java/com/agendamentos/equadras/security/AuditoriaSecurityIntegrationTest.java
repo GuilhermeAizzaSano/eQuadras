@@ -134,11 +134,12 @@ public class AuditoriaSecurityIntegrationTest {
     }
 
     @Test
-    @DisplayName("API-KEY mesmo de Master Admin em /admin/auditoria deve retornar 403 Forbidden (apenas Sessão Web)")
-    void apiKeyDeveRetornar403() throws Exception {
+    @DisplayName("Master Admin com API-KEY válida acessando /admin/auditoria deve retornar 200 OK")
+    void masterAdminComApiKeyDeveRetornar200() throws Exception {
         mockMvc.perform(get("/admin/auditoria")
                         .header("X-API-KEY", rawApiKeyMaster))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test

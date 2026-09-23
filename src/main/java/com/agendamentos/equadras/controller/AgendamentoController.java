@@ -96,20 +96,13 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
-    @org.springframework.beans.factory.annotation.Value("${equadras.bot.api-secret:}")
-    private String botApiSecret;
-
     @Operation(
             summary = "Agendamento simplificado via Bot / WhatsApp",
             description = "Permite a criação e reserva direta de horário a partir de integrações externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09') e cria a reserva com lock pessimista gerando os dados de Pix."
     )
     @PostMapping("/bot")
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(
-            @RequestHeader(value = "X-Bot-Secret", required = false) String botSecret,
             @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
-        if (botApiSecret != null && !botApiSecret.isBlank() && !botApiSecret.equals(botSecret)) {
-            throw new org.springframework.security.access.AccessDeniedException("Acesso não autorizado para integração bot.");
-        }
         AgendamentoResponseDTO resposta = agendamentoService.agendarViaBot(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
