@@ -32,6 +32,7 @@ import java.util.Map;
 public class OpenApiConfig {
 
     private static final String SECURITY_SCHEME_NAME = "BearerAuth";
+    private static final String API_KEY_SCHEME_NAME = "ApiKeyAuth";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
@@ -64,6 +65,7 @@ public class OpenApiConfig {
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .addSecurityItem(new SecurityRequirement().addList(API_KEY_SCHEME_NAME))
                 .components(new Components()
                         .addSchemas("LocalTime", timeSchema)
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,
@@ -71,8 +73,14 @@ public class OpenApiConfig {
                                          .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Informe o token JWT no formato: `Bearer <seu_token>` gerado no endpoint de login.")
-                        ));
+                                        .description("Informe o token JWT ou API-Key no formato: `Bearer eq_...` gerado no painel da conta."))
+                        .addSecuritySchemes(API_KEY_SCHEME_NAME,
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.APIKEY)
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("X-API-KEY")
+                                        .description("Chave de API pessoal gerada no painel do usuário (formato `eq_...`). Válida em todas as rotas da API respeitando os papéis (ROLE_CLIENT e ROLE_ADMIN)."))
+                        );
     }
 
     @Bean
@@ -697,29 +705,6 @@ public class OpenApiConfig {
                       "mensagem": "Todas as notificações foram marcadas como lidas."
                     }
                     """, "Notificações marcadas como lidas");
-            }
-
-            case "/api/agendamentos/quadra/{quadraId}/data" -> {
-                setResponseExample(operation, "200", """
-                    [
-                      {
-                        "id_agendamento": 42,
-                        "usuarioId": 10,
-                        "nomeUsuario": "Arthur Prado",
-                        "telefoneUsuario": "(11) 99999-8888",
-                        "quadraId": 1,
-                        "nomeQuadra": "Arena Gol Society",
-                        "dataHoraInicio": "2026-09-12T19:00:00",
-                        "dataHoraFim": "2026-09-12T20:00:00",
-                        "valorTotal": 140.00,
-                        "status": "CONFIRMADO",
-                        "transacaoPagamentoId": "mp-pix-987654321",
-                        "pixCopiaECola": null,
-                        "qrCodeBase64": null,
-                        "criadoEm": "2026-09-09T00:30:00"
-                      }
-                    ]
-                    """, "Lista de agendamentos da quadra na data informada");
             }
 
             case "/api/quadras/{id}/fotos", "/api/quadras/fotos" -> {

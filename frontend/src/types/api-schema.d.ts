@@ -544,26 +544,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agendamentos/quadra/{quadraId}/data": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Listar agendamentos por quadra e data
-         * @description Retorna as reservas cadastradas para uma quadra em um determinado dia.
-         */
-        get: operations["listarPorQuadraEData"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agendamentos/horarios-disponiveis": {
         parameters: {
             query?: never;

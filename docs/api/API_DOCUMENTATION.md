@@ -11,43 +11,36 @@ A documentação interativa com Swagger UI / OpenAPI 3 está disponível nos seg
 
 ## 1. Autenticação & Segurança
 
-A plataforma eQuadras adota uma arquitetura de segurança segregada entre o tráfego da aplicação web frontend e a API REST externa de integrações.
+A plataforma eQuadras adota uma arquitetura de segurança unificada e baseada em papéis (**RBAC**):
 
-### 1.1 Autenticação da API Externa (/api/**)
-As rotas da API externa (`/api/**`) utilizam o modelo **Stateless** baseado em tokens no cabeçalho HTTP:
+### 1.1 Autenticação da API Externa e Integrações
+Todas as rotas da API aceitam chamadas autenticadas com a **API-KEY pessoal** gerada no painel do usuário (formato opaco `eq_...` de alta entropia), através de qualquer um dos cabeçalhos HTTP:
 ```http
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_a1b2c3d4...
+```
+ou
+```http
+Authorization: Bearer eq_a1b2c3d4...
 ```
 
-Para integrações externas, parceiros e bots (WhatsApp):
-- **Endpoint de Login:** `POST /api/usuarios/login`
-- **Corpo da Requisição:**
-  ```json
-  {
-    "email": "admin@equadras.com",
-    "senha": "sua_senha_aqui"
-  }
-  ```
-- **Retorno:** Token JWT com expiração configurada (default 8 horas) e dados do perfil.
+**Como obter sua API-Key:**
+1. Acesse o portal web e efetue login na sua conta.
+2. No menu de perfil ou via `POST /api/usuarios/api-key/regenerar`, emita sua chave pessoal de integração.
+3. Utilize essa chave em suas chamadas externas, automações e integrações.
+
+**Controle de Acesso por Papel (RBAC):**
+- **Atleta (`ROLE_CLIENT`):** Permissão para consultar quadras, fazer agendamentos, consultar suas próprias reservas (`/api/agendamentos`), consultar dados do seu perfil (`/api/usuarios/me`) e gerenciar sua chave de API. Não tem acesso a rotas administrativas.
+- **Administrador (`ROLE_ADMIN`):** Permissões completas de gestão de quadras, fotos, bloqueios, notificações, histórico de reservas de suas quadras e acesso à trilha de auditoria (para Master Admin).
 
 **Exemplo de uso via cURL (Produção):**
 ```bash
-# 1. Realizar login e obter o token JWT
-TOKEN=$(curl -s -X POST "https://equadras.app/api/usuarios/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@equadras.com","senha":"sua_senha_aqui"}' | jq -r '.token')
-
-# 2. Utilizar o token nas requisições autenticadas da API externa
+# Consultar quadras com sua API-KEY
 curl -X GET "https://equadras.app/api/quadras" \
-  -H "Authorization: Bearer $TOKEN"
+  -H "X-API-KEY: eq_SUA_CHAVE_AQUI"
 ```
 
-### 1.2 Proteção de Sessão da Aplicação Web (Frontend)
-As consultas realizadas pela aplicação web frontend utilizam sessão protegida por cookie seguro HttpOnly (`equadras_session`):
-- O cookie é emitido automaticamente nos endpoints de autenticação (`/usuarios/login` e auto-cadastro) e limpo no logout (`/usuarios/logout`).
-- O backend valida a existência e autenticidade da sessão via cookie em todas as consultas internas.
-- Requisições diretas, forçadas ou não autenticadas (cURL sem sessão, scrapers não autorizados) enviadas às rotas internas do frontend são terminantemente recusadas com status **HTTP 401 Unauthorized**.
-- As rotas de consumo interno do frontend são omitidas do Swagger e desta documentação pública, garantindo a proteção e integridade da aplicação.
+### 1.2 Sessão Web (Frontend)
+Na aplicação web oficial, a autenticação ocorre via cookie seguro `HttpOnly` (`equadras_session`), dispensando armazenamento de credenciais no `localStorage`.
 
 ---
 
@@ -75,10 +68,10 @@ As consultas realizadas pela aplicação web frontend utilizam sessão protegida
 | **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Público | Listar grade com status detalhado dos slots da quadra |
 | **Agendamentos** | `GET` | `/api/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
 | **Agendamentos** | `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
-| **Agendamentos** | `POST` | `/api/agendamentos/bot` | Público / Bot | Criar agendamento flexível via Bot/WhatsApp com auto-cadastro e resolução de datas |
+| **Agendamentos** | `POST` | `/api/agendamentos/bot` | Público / Bot | Criar agendamento via WhatsApp/Bot (100% público, sem token/secret) |
 | **Agendamentos** | `GET` | `/api/agendamentos/horarios-disponiveis` | Público | Consulta consolidada e flexível de grade de horários por data/esporte/quadra |
+| **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}` | `ROLE_ADMIN` | Listar histórico de reservas de uma quadra específica do admin |
 | **Agendamentos** | `GET` | `/api/agendamentos` | Autenticado | Listar reservas do atleta/admin (`?historico=true` para histórico completo) |
-| **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}/data` | Público | Listar reservas do dia para uma quadra |
 | **Agendamentos** | `PATCH`| `/api/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
 | **Pagamentos** | `POST` | `/api/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
 | **Pagamentos** | `POST` | `/api/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
@@ -1007,15 +1000,18 @@ Authorization: Bearer <TOKEN>
 
 ---
 
-### 6.5 Listar Reservas por Quadra e Data
+### 6.5 Listar Histórico de Reservas por Quadra (Apenas Administrador da Quadra)
+Retorna o histórico de todas as reservas cadastradas para a quadra especificada. Apenas o administrador proprietário da quadra ou o Master Admin possui permissão.
+
 - **Método:** `GET`
-- **URL:** `/api/agendamentos/quadra/{quadraId}/data?data=2026-09-10`
-- **Autenticação:** Pública
+- **URL:** `/api/agendamentos/quadra/{quadraId}`
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - via `X-API-KEY` ou Sessão)
 
 #### Requisição:
 ```http
-GET /api/agendamentos/quadra/11/data?data=2026-09-10 HTTP/1.1
+GET /api/agendamentos/quadra/11 HTTP/1.1
 Host: localhost:8080
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1079,9 +1075,11 @@ Authorization: Bearer <TOKEN>
 ### 6.7 Agendamento Flexível via Bot / WhatsApp
 Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19h"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
 
+> **Integração WhatsApp:** Este endpoint é 100% público e isento de tokens ou cabeçalhos de autenticação (`X-Bot-Secret` não é exigido), facilitando integrações diretas com fluxos de WhatsApp (Twilio, Baileys, Evolution API, Typebot, Z-API, webhooks de IA).
+
 - **Método:** `POST`
 - **URL:** `/api/agendamentos/bot`
-- **Autenticação:** Pública / Bot
+- **Autenticação:** Pública (sem necessidade de token ou secret)
 
 #### Requisição:
 ```http

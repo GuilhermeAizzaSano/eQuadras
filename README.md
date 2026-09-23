@@ -86,9 +86,9 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
    - Visão mensal com barras diárias de ocupação percentual e status de reservas.
    - Modal com sub-abas organizadas: jogos ativos visíveis de imediato e carregamento sob demanda para jogos realizados e cancelados.
 
-4. **Autenticação Dupla com Segregação Estrita (Sessão Web vs API Key):**
+4. **Autenticação Unificada (Sessão Web & API Key com RBAC):**
    - Sessão Web por cookie seguro com atributos `HttpOnly`, `SameSite=Lax` e `Secure=true` (`equadras_session`).
-   - Suporte a chaves de integração externas (API Key no cabeçalho `X-API-Key`) com hash SHA-256 no banco e escopo restrito a rotas de negócio.
+   - Suporte padronizado a chaves de integração externas (API Key no cabeçalho `X-API-KEY` ou `Authorization: Bearer eq_...`) com hash SHA-256 no banco e suporte a todas as rotas da API respeitando os papéis (`ROLE_CLIENT` e `ROLE_ADMIN`).
 
 5. **Trilha de Auditoria Completa:**
    - Registro automático e imutável de ações sensíveis (logins, alterações cadastrais, bloqueios, agendamentos e cancelamentos) com IP, User-Agent e categoria.
@@ -408,8 +408,9 @@ O frontend estará acessível em `http://localhost:5173`.
 | `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de horários ou dia inteiro |
 | `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Grade consolidada de agendamentos para uma data |
 | `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Autenticado | Slots disponíveis de uma quadra para a data informada |
+| `GET` | `/agendamentos/quadra/{id}` | `ROLE_ADMIN` | Histórico completo de reservas da quadra do admin |
 | `POST` | `/agendamentos` | Autenticado | Criar agendamento com lock pessimista e emissão de Pix |
-| `POST` | `/agendamentos/bot` | Público / Bot | Agendamento simplificado via linguagem natural |
+| `POST` | `/agendamentos/bot` | Público (WhatsApp) | Agendamento simplificado sem token para automação WhatsApp |
 | `GET` | `/agendamentos` | Autenticado | Listagem de reservas (`?historico=true` para histórico) |
 | `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
 | `GET` | `/notificacoes/stream` | `ROLE_ADMIN` | Stream de Server-Sent Events (SSE) para notificações em tempo real |

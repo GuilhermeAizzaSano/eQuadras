@@ -21,6 +21,7 @@ servers:
   description: Ambiente Local (Desenvolvimento)
 security:
 - BearerAuth: []
+- ApiKeyAuth: []
 tags:
 - name: Usuários - API
   description: "Autenticação JWT, perfil de usuário e administração cadastral."
@@ -994,12 +995,6 @@ paths:
         \ datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09')\
         \ e cria a reserva com lock pessimista gerando os dados de Pix."
       operationId: agendarViaBot
-      parameters:
-      - name: X-Bot-Secret
-        in: header
-        required: false
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
@@ -2381,12 +2376,12 @@ components:
     PageNotificacao:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         size:
           type: integer
           format: int32
@@ -2397,14 +2392,14 @@ components:
         number:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         pageable:
           $ref: "#/components/schemas/PageableObject"
         sort:
           $ref: "#/components/schemas/SortObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         numberOfElements:
           type: integer
           format: int32
@@ -2416,18 +2411,18 @@ components:
         offset:
           type: integer
           format: int64
-        paged:
-          type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        unpaged:
-          type: boolean
-        pageSize:
-          type: integer
-          format: int32
         pageNumber:
           type: integer
           format: int32
+        pageSize:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
@@ -2570,12 +2565,12 @@ components:
     PageLogAuditoriaResponseDTO:
       type: object
       properties:
-        totalElements:
-          type: integer
-          format: int64
         totalPages:
           type: integer
           format: int32
+        totalElements:
+          type: integer
+          format: int64
         size:
           type: integer
           format: int32
@@ -2586,14 +2581,14 @@ components:
         number:
           type: integer
           format: int32
-        first:
-          type: boolean
-        last:
-          type: boolean
         pageable:
           $ref: "#/components/schemas/PageableObject"
         sort:
           $ref: "#/components/schemas/SortObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
         numberOfElements:
           type: integer
           format: int32
@@ -2637,7 +2632,13 @@ components:
   securitySchemes:
     BearerAuth:
       type: http
-      description: "Informe o token JWT no formato: `Bearer <seu_token>` gerado no\
-        \ endpoint de login."
+      description: "Informe o token JWT ou API-Key no formato: `Bearer eq_...` gerado\
+        \ no painel da conta."
       scheme: bearer
       bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      description: Chave de API pessoal gerada no painel do usuário (formato `eq_...`).
+        Válida em todas as rotas da API respeitando os papéis (ROLE_CLIENT e ROLE_ADMIN).
+      name: X-API-KEY
+      in: header
