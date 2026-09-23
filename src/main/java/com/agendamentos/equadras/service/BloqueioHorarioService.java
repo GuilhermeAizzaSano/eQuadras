@@ -55,7 +55,7 @@ public class BloqueioHorarioService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         if (!podeGerenciarBloqueio(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.");
         }
 
         if (dto.data().isBefore(LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL))) {
@@ -162,7 +162,7 @@ public class BloqueioHorarioService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         if (!podeGerenciarBloqueio(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
         BloqueioHorario bloqueio = bloqueioHorarioRepository.findById(bloqueioId)
@@ -210,7 +210,7 @@ public class BloqueioHorarioService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         if (!podeGerenciarBloqueio(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
         LocalDate data = dto.data();

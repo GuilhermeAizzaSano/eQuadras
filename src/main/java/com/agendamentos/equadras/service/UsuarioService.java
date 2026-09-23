@@ -258,6 +258,9 @@ public class UsuarioService {
     @Transactional
     public Usuario obterOuCriarUsuarioBot(String nome, String telefone) {
         String telefoneSanitizado = telefone != null ? telefone.replaceAll("\\D", "") : "";
+        if (telefoneSanitizado.length() < 10 || telefoneSanitizado.length() > 11) {
+            throw new IllegalArgumentException("Número de telefone inválido para cadastro via bot (deve conter DDD + 8 ou 9 dígitos).");
+        }
         
         return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
                 .orElseGet(() -> {

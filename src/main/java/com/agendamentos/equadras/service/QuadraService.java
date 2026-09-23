@@ -112,7 +112,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
         if (quadra.getAdmin() == null || !podeGerenciarQuadra(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 
         quadra.setNome(dto.nome());
@@ -163,7 +163,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
         if (!podeGerenciarQuadra(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.");
         }
 
         if (arquivos == null || arquivos.isEmpty()) {
@@ -189,7 +189,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
         if (!podeGerenciarQuadra(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.");
         }
 
         if (quadra.getFotos().remove(fotoUrl)) {
@@ -206,7 +206,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
         if (!podeGerenciarQuadra(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.");
         }
 
         if (agendamentoRepository.existsByQuadraId(id)) {
