@@ -191,6 +191,18 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    // Trata ordenação inválida ou fora da whitelist permitida
+    @ExceptionHandler(com.agendamentos.equadras.shared.pagination.InvalidSortException.class)
+    public ProblemDetail handleInvalidSort(com.agendamentos.equadras.shared.pagination.InvalidSortException ex, HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Parâmetro de ordenação não permitido.");
+        problemDetail.setTitle("Ordenação Inválida");
+        problemDetail.setType(URI.create("https://api.equadras.com/erros/bad-request"));
+        problemDetail.setInstance(URI.create(request.getRequestURI()));
+        problemDetail.setProperty("code", "PARAMETRO_INVALIDO");
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        return problemDetail;
+    }
+
     // Trata método HTTP não suportado (ex: GET em rota de POST)
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ProblemDetail handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
