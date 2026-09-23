@@ -87,7 +87,7 @@ public class QuadraController {
 
         // Rota /quadras (frontend) com paginação
         if (page != null) {
-            int tamanhoPagina = (size != null && size > 0) ? size : 6;
+            int tamanhoPagina = (size != null && size > 0) ? Math.min(size, 50) : 6;
             Pageable pageable = PageRequest.of(page, tamanhoPagina);
             return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep, pageable));
         }

@@ -57,6 +57,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
             double needed = 1.0 - tokens;
             return Math.max(1, (long) Math.ceil(needed / refillTokensPerSecond));
         }
+
+        public synchronized boolean isFullAndStale() {
+            refill();
+            return tokens >= capacity;
+        }
+
+        public synchronized long getLastRefillNanos() {
+            return lastRefillTimestampNanos;
+        }
     }
 
     @Override
@@ -102,9 +111,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
             recargaPorSegundo = 120.0 / 60.0;
         }
 
-        // Limpeza de segurança se houver muitos IPs rastreados
+        // Limpeza de segurança se houver muitos IPs rastreados (remove apenas os inativos)
         if (buckets.size() > MAX_TRACKED_IPS) {
-            buckets.clear();
+            buckets.entrySet().removeIf(entry -> entry.getValue().isFullAndStale());
         }
 
         String cacheKey = categoria + ":" + clientIp;

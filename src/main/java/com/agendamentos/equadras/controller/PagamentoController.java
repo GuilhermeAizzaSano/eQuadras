@@ -119,7 +119,7 @@ public class PagamentoController {
                     }
 
                     try {
-                        agendamentoService.confirmarPagamentoPorWebhook(agendamentoId, paymentId);
+                        agendamentoService.confirmarPagamentoPorWebhook(agendamentoId, paymentId, mpStatus.transactionAmount());
                         log.info("Agendamento associado ao pagamento {} confirmado com sucesso via Webhook!", paymentId);
                         return ResponseEntity.ok(Map.of("status", "processed", "payment_status", "approved"));
                     } catch (Exception e) {

@@ -34,7 +34,7 @@ public class PagamentoService {
 
     public record PixDados(String transacaoId, String pixCopiaECola, String qrCodeBase64) {}
 
-    public record MercadoPagoStatus(String id, String status, String statusDetail, String externalReference) {}
+    public record MercadoPagoStatus(String id, String status, String statusDetail, String externalReference, java.math.BigDecimal transactionAmount) {}
 
     /**
      * Gera uma cobranca Pix. Se um access token real for fornecido, chama a API oficial do Mercado Pago.
@@ -71,7 +71,7 @@ public class PagamentoService {
     }
 
     private PixDados gerarPixMercadoPagoApi(Agendamento agendamento) throws Exception {
-        String idempotencyKey = UUID.randomUUID().toString();
+        String idempotencyKey = "eq-agendamento-" + (agendamento.getId_agendamento() != null ? agendamento.getId_agendamento() : UUID.randomUUID().toString());
 
         // Tratamento seguro de e-mail do comprador para ambiente de teste / sandbox do Mercado Pago
         // O Mercado Pago rejeita pagamentos com o mesmo e-mail do vendedor (Invalid users involved - code 2034)
@@ -146,7 +146,7 @@ public class PagamentoService {
 
         // Se for um ID mock gerado pelo dev, trata localmente
         if (paymentId.startsWith("MP-DEV-")) {
-            return Optional.of(new MercadoPagoStatus(paymentId, "approved", "accredited", null));
+            return Optional.of(new MercadoPagoStatus(paymentId, "approved", "accredited", null, null));
         }
 
         try {
@@ -166,8 +166,11 @@ public class PagamentoService {
                 String externalReference = root.path("external_reference").isMissingNode() || root.path("external_reference").isNull()
                         ? null
                         : root.path("external_reference").asText();
+                java.math.BigDecimal amount = root.has("transaction_amount") && !root.path("transaction_amount").isNull()
+                        ? new java.math.BigDecimal(root.path("transaction_amount").asText())
+                        : null;
 
-                return Optional.of(new MercadoPagoStatus(id, status, statusDetail, externalReference));
+                return Optional.of(new MercadoPagoStatus(id, status, statusDetail, externalReference, amount));
             } else {
                 log.warn("Falha ao consultar pagamento {} no MP. Status: {}", paymentId, response.statusCode());
             }

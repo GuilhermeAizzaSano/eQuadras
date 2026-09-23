@@ -448,15 +448,15 @@ class AgendamentoServiceTest {
 
         when(agendamentoRepository.findByTransacaoPagamentoId("mp-payment-999"))
                 .thenReturn(Optional.of(agendamentoPendente));
-        when(agendamentoRepository.save(any(Agendamento.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(agendamentoRepository.confirmarPagamentoPendente(eq(99L), eq("mp-payment-999"), eq(StatusAgendamento.CONFIRMADO), eq(StatusAgendamento.PENDENTE)))
+                .thenReturn(1);
 
         AgendamentoResponseDTO response = agendamentoService.confirmarPagamentoPorWebhook(null, "mp-payment-999");
 
         assertNotNull(response);
         assertEquals(StatusAgendamento.CONFIRMADO, response.status());
         assertEquals(99L, response.id_agendamento());
-        verify(agendamentoRepository, times(1)).save(agendamentoPendente);
+        verify(agendamentoRepository, times(1)).confirmarPagamentoPendente(99L, "mp-payment-999", StatusAgendamento.CONFIRMADO, StatusAgendamento.PENDENTE);
     }
 
     @Test

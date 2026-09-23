@@ -170,7 +170,7 @@ class QuadraServiceTest {
                 List.of()
         );
 
-        assertThrows(IllegalArgumentException.class, () -> quadraService.editar(10L, dto, 2L));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> quadraService.editar(10L, dto, 2L));
         verify(quadraRepository, never()).save(any());
     }
 

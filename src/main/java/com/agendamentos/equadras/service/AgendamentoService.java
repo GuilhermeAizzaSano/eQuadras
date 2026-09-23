@@ -79,8 +79,21 @@ public class AgendamentoService {
         // 1. Cria o agendamento em transação com lock pessimista na quadra e commita imediatamente
         Agendamento agendamentoSalvo = agendamentoLockService.criarAgendamentoPendenteComLock(dto, usuarioIdAutenticado);
 
-        // 2. Chama API externa FORA da transação e do lock do banco
-        PagamentoService.PixDados pixDados = pagamentoService.gerarPix(agendamentoSalvo);
+        PagamentoService.PixDados pixDados;
+        try {
+            // 2. Chama API externa FORA da transação e do lock do banco
+            pixDados = pagamentoService.gerarPix(agendamentoSalvo);
+        } catch (Exception e) {
+            log.error("Falha ao gerar cobrança Pix para agendamento {}. Executando compensação imediata.", agendamentoSalvo.getId_agendamento(), e);
+            try {
+                agendamentoSalvo.setStatus(StatusAgendamento.CANCELADO);
+                agendamentoSalvo.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
+                agendamentoRepository.save(agendamentoSalvo);
+            } catch (Exception exCompensacao) {
+                log.error("Erro crítico ao tentar cancelar agendamento órfão {}", agendamentoSalvo.getId_agendamento(), exCompensacao);
+            }
+            throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento. O slot foi liberado.", e);
+        }
 
         // 3. Atualiza os dados Pix em nova transação leve
         Agendamento agendamentoAtualizado = agendamentoLockService.atualizarDadosPix(agendamentoSalvo.getId_agendamento(), pixDados);
@@ -122,6 +135,11 @@ public class AgendamentoService {
 
     @Transactional
     public AgendamentoResponseDTO confirmarPagamentoPorWebhook(Long idAgendamento, String transacaoId) {
+        return confirmarPagamentoPorWebhook(idAgendamento, transacaoId, null);
+    }
+
+    @Transactional
+    public AgendamentoResponseDTO confirmarPagamentoPorWebhook(Long idAgendamento, String transacaoId, BigDecimal valorPago) {
         Agendamento agendamento = null;
         if (idAgendamento != null) {
             agendamento = agendamentoRepository.findById(idAgendamento).orElse(null);
@@ -140,21 +158,37 @@ public class AgendamentoService {
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
-            throw new IllegalStateException("Não é possível confirmar pagamento de um agendamento cancelado.");
+            log.error("ALERTA CRÍTICO: Pagamento recebido para agendamento {} que já estava CANCELADO. Necessário estorno!", agendamento.getId_agendamento());
+            throw new IllegalStateException("Não é possível confirmar pagamento de um agendamento cancelado. Favor estornar o valor ao cliente.");
         }
 
-        if (transacaoId != null && !transacaoId.isBlank() && agendamento.getTransacaoPagamentoId() == null) {
-            agendamento.setTransacaoPagamentoId(transacaoId);
+        if (valorPago != null && valorPago.compareTo(agendamento.getValorTotal()) < 0) {
+            log.error("Valor pago no gateway [{}] é inferior ao valor total [{}] da reserva {}", valorPago, agendamento.getValorTotal(), agendamento.getId_agendamento());
+            throw new IllegalArgumentException("Valor pago inconsistente com o valor contratado da reserva.");
+        }
+
+        int afetados = agendamentoRepository.confirmarPagamentoPendente(
+                agendamento.getId_agendamento(),
+                transacaoId,
+                StatusAgendamento.CONFIRMADO,
+                StatusAgendamento.PENDENTE
+        );
+
+        if (afetados == 0) {
+            log.error("ALERTA CRÍTICO: Conflito de concorrência. Agendamento {} não estava mais PENDENTE no momento da confirmação atômica.", agendamento.getId_agendamento());
+            throw new IllegalStateException("Não foi possível confirmar o agendamento pois ele foi expirado ou cancelado concorrentemente.");
         }
 
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
-        Agendamento salvo = agendamentoRepository.save(agendamento);
-
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(salvo));
+        if (transacaoId != null && !transacaoId.isBlank()) {
+            agendamento.setTransacaoPagamentoId(transacaoId);
         }
 
-        return AgendamentoResponseDTO.fromEntity(salvo);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(agendamento));
+        }
+
+        return AgendamentoResponseDTO.fromEntity(agendamento);
     }
 
     @Transactional(readOnly = true)
@@ -186,11 +220,11 @@ public class AgendamentoService {
             // Master Admin tem permissão para cancelar qualquer agendamento
         } else if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
             if (!agendamento.getUsuario().getId_usuario().equals(usuarioId)) {
-                throw new IllegalArgumentException("Você não tem permissão para cancelar este agendamento.");
+                throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para cancelar este agendamento.");
             }
         } else if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
             if (!agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioId)) {
-                throw new IllegalArgumentException("Você não tem permissão para cancelar agendamentos desta quadra.");
+                throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para cancelar agendamentos desta quadra.");
             }
         }
 

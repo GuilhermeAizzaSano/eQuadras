@@ -994,6 +994,12 @@ paths:
         \ datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09')\
         \ e cria a reserva com lock pessimista gerando os dados de Pix."
       operationId: agendarViaBot
+      parameters:
+      - name: X-Bot-Secret
+        in: header
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -1557,51 +1563,6 @@ paths:
                 status: 404
                 detail: A quadra informada não foi localizada.
                 instance: "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
-  /api/agendamentos/quadra/{quadraId}/data:
-    get:
-      tags:
-      - Agendamentos - API
-      summary: Listar agendamentos por quadra e data
-      description: Retorna as reservas cadastradas para uma quadra em um determinado
-        dia.
-      operationId: listarPorQuadraEData
-      parameters:
-      - name: quadraId
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      - name: data
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        "200":
-          description: Lista de agendamentos da quadra na data informada
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AgendamentoResponseDTO"
-              example:
-              - id_agendamento: 42
-                usuarioId: 10
-                nomeUsuario: Arthur Prado
-                telefoneUsuario: (11) 99999-8888
-                quadraId: 1
-                nomeQuadra: Arena Gol Society
-                dataHoraInicio: 2026-09-12T19:00:00
-                dataHoraFim: 2026-09-12T20:00:00
-                valorTotal: 140.0
-                status: CONFIRMADO
-                transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
-                criadoEm: 2026-09-09T00:30:00
   /api/agendamentos/quadra/{quadraId}:
     get:
       tags:
@@ -2420,12 +2381,12 @@ components:
     PageNotificacao:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         size:
           type: integer
           format: int32
@@ -2436,17 +2397,17 @@ components:
         number:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        sort:
+          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -2461,10 +2422,10 @@ components:
           $ref: "#/components/schemas/SortObject"
         unpaged:
           type: boolean
-        pageNumber:
+        pageSize:
           type: integer
           format: int32
-        pageSize:
+        pageNumber:
           type: integer
           format: int32
     SortObject:
@@ -2472,9 +2433,9 @@ components:
       properties:
         empty:
           type: boolean
-        sorted:
-          type: boolean
         unsorted:
+          type: boolean
+        sorted:
           type: boolean
     HorarioDisponivelDTO:
       type: object
@@ -2609,12 +2570,12 @@ components:
     PageLogAuditoriaResponseDTO:
       type: object
       properties:
-        totalPages:
-          type: integer
-          format: int32
         totalElements:
           type: integer
           format: int64
+        totalPages:
+          type: integer
+          format: int32
         size:
           type: integer
           format: int32
@@ -2625,17 +2586,17 @@ components:
         number:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        sort:
+          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     QuadraResumoResponseDTO:

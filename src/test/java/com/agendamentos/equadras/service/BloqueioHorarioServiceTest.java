@@ -130,7 +130,7 @@ class BloqueioHorarioServiceTest {
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        org.springframework.security.access.AccessDeniedException ex = assertThrows(org.springframework.security.access.AccessDeniedException.class,
                 () -> bloqueioHorarioService.criarBloqueio(10L, dto, 999L));
 
         assertTrue(ex.getMessage().contains("Apenas o administrador dono da quadra"));

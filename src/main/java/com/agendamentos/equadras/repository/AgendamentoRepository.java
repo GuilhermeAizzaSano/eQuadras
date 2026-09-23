@@ -143,4 +143,19 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
             @Param("limite") LocalDateTime limite,
             @Param("agora") LocalDateTime agora
     );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("""
+        UPDATE Agendamento a 
+        SET a.status = :statusConfirmado, 
+            a.transacaoPagamentoId = COALESCE(:transacaoId, a.transacaoPagamentoId) 
+        WHERE a.id_agendamento = :id 
+          AND a.status = :statusPendente
+    """)
+    int confirmarPagamentoPendente(
+            @Param("id") Long id,
+            @Param("transacaoId") String transacaoId,
+            @Param("statusConfirmado") StatusAgendamento statusConfirmado,
+            @Param("statusPendente") StatusAgendamento statusPendente
+    );
 }
