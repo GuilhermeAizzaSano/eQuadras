@@ -9,10 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 @Repository
-public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
+public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>, JpaSpecificationExecutor<Agendamento> {
 
     @Query("""
         SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Agendamento a
@@ -104,6 +108,14 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> 
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     List<Agendamento> findAll();
+
+    @Override
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    Page<Agendamento> findAll(Specification<Agendamento> spec, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"usuario", "quadra"})
+    List<Agendamento> findAll(Specification<Agendamento> spec);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     java.util.Optional<Agendamento> findByTransacaoPagamentoId(String transacaoPagamentoId);
