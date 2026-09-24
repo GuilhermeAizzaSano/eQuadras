@@ -12,6 +12,8 @@ import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
 import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
 import com.agendamentos.equadras.event.AgendamentosExpiradosCanceladosEvent;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
+import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
+import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
@@ -98,11 +100,11 @@ public class AgendamentoService {
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
         if (!dto.dataHoraFim().isAfter(dto.dataHoraInicio())) {
-            throw new IllegalArgumentException("A data/hora de término deve ser posterior à data/hora de início.");
+            throw new RegraNegocioException("INTERVALO_INVALIDO", "A data/hora de término deve ser posterior à data/hora de início.");
         }
 
         if (dto.dataHoraInicio().isBefore(LocalDateTime.now(clock))) {
-            throw new IllegalArgumentException("Não é possível realizar agendamentos em horários passados.");
+            throw new RegraNegocioException("HORARIO_PASSADO", "Não é possível realizar agendamentos em horários passados.");
         }
 
         // 1. Cria o agendamento em transação com lock pessimista na quadra e commita imediatamente
@@ -121,7 +123,7 @@ public class AgendamentoService {
             } catch (Exception exCompensacao) {
                 log.error("Erro crítico ao tentar cancelar agendamento órfão {}", agendamentoSalvo.getId_agendamento(), exCompensacao);
             }
-            throw new IllegalStateException("Não foi possível gerar a cobrança Pix no gateway de pagamento. O slot foi liberado.", e);
+            throw new RegraNegocioException("FALHA_GATEWAY_PAGAMENTO", "Não foi possível gerar a cobrança Pix no gateway de pagamento. O slot foi liberado.", e);
         }
 
         // 3. Atualiza os dados Pix em nova transação leve
@@ -133,7 +135,7 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoResponseDTO confirmarPagamento(Long idAgendamento, Long usuarioIdAutenticado) {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
-                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
 
         Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
         boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
@@ -141,7 +143,7 @@ public class AgendamentoService {
         boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
                 && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
         if (!ehDono && !ehAdminDaQuadra && !ehMasterAdmin) {
-            throw new IllegalArgumentException("Você não tem permissão para confirmar o pagamento deste agendamento.");
+            throw new RegraNegocioException("ACESSO_NEGADO", "Você não tem permissão para confirmar o pagamento deste agendamento.");
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CONFIRMADO) {
@@ -149,7 +151,7 @@ public class AgendamentoService {
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
-            throw new IllegalStateException("Não é possível confirmar pagamento de um agendamento cancelado.");
+            throw new RegraNegocioException("STATUS_INVALIDO", "Não é possível confirmar pagamento de um agendamento cancelado.");
         }
 
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
@@ -178,7 +180,7 @@ public class AgendamentoService {
         }
 
         if (agendamento == null) {
-            throw new IllegalArgumentException("Agendamento não encontrado para conciliação do pagamento (ID: "
+            throw new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado para conciliação do pagamento (ID: "
                     + idAgendamento + ", transacaoId: " + transacaoId + ")");
         }
 
@@ -188,12 +190,12 @@ public class AgendamentoService {
 
         if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
             log.error("ALERTA CRÍTICO: Pagamento recebido para agendamento {} que já estava CANCELADO. Necessário estorno!", agendamento.getId_agendamento());
-            throw new IllegalStateException("Não é possível confirmar pagamento de um agendamento cancelado. Favor estornar o valor ao cliente.");
+            throw new RegraNegocioException("STATUS_INVALIDO", "Não é possível confirmar pagamento de um agendamento cancelado. Favor estornar o valor ao cliente.");
         }
 
         if (valorPago != null && valorPago.compareTo(agendamento.getValorTotal()) < 0) {
             log.error("Valor pago no gateway [{}] é inferior ao valor total [{}] da reserva {}", valorPago, agendamento.getValorTotal(), agendamento.getId_agendamento());
-            throw new IllegalArgumentException("Valor pago inconsistente com o valor contratado da reserva.");
+            throw new RegraNegocioException("VALOR_INCONSISTENTE", "Valor pago inconsistente com o valor contratado da reserva.");
         }
 
         int afetados = agendamentoRepository.confirmarPagamentoPendente(
@@ -205,7 +207,7 @@ public class AgendamentoService {
 
         if (afetados == 0) {
             log.error("ALERTA CRÍTICO: Conflito de concorrência. Agendamento {} não estava mais PENDENTE no momento da confirmação atômica.", agendamento.getId_agendamento());
-            throw new IllegalStateException("Não foi possível confirmar o agendamento pois ele foi expirado ou cancelado concorrentemente.");
+            throw new RegraNegocioException("CONFLITO_STATUS", "Não foi possível confirmar o agendamento pois ele foi expirado ou cancelado concorrentemente.");
         }
 
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
@@ -228,10 +230,10 @@ public class AgendamentoService {
         Agendamento agendamento;
         if (ehMasterAdmin) {
             agendamento = agendamentoRepository.findById(idAgendamento)
-                    .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
         } else {
             agendamento = agendamentoRepository.buscarPorIdEEscopo(idAgendamento, usuarioIdAutenticado)
-                    .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado. ID: " + idAgendamento));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamento);
@@ -240,10 +242,10 @@ public class AgendamentoService {
     @Transactional
     public AgendamentoResponseDTO cancelar(Long id, Long usuarioId) {
         Agendamento agendamento = agendamentoRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Agendamento não encontrado para o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado para o ID: " + id));
 
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
 
         if (usuario.isMasterAdmin()) {
             // Master Admin tem permissão para cancelar qualquer agendamento

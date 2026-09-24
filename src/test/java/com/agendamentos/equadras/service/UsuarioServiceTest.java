@@ -6,6 +6,8 @@ import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.UsuarioRepository;
+import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
+import com.agendamentos.equadras.exception.RegraNegocioException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,7 +94,7 @@ class UsuarioServiceTest {
 
         when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(true);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> usuarioService.cadastrar(dto));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.cadastrar(dto));
         assertEquals("E-mail já cadastrado no sistema.", ex.getMessage());
 
         verify(usuarioRepository, never()).save(any(Usuario.class));
@@ -123,7 +125,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> usuarioService.login(dto));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.login(dto));
         assertEquals("E-mail ou senha incorretos.", ex.getMessage());
     }
 
@@ -196,7 +198,7 @@ class UsuarioServiceTest {
 
         when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> usuarioService.excluirUsuario(99L, 99L));
         assertTrue(ex.getMessage().contains("não pode ser excluída"));
     }
@@ -226,7 +228,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> usuarioService.alterarMinhaSenha(1L, dto));
         assertTrue(ex.getMessage().contains("A senha atual informada está incorreta"));
         verify(usuarioRepository, never()).save(any());
@@ -238,7 +240,7 @@ class UsuarioServiceTest {
         UsuarioLoginDTO dto = new UsuarioLoginDTO("inexistente@email.com", "qualquerSenha");
         when(usuarioRepository.findByEmail_usuario("inexistente@email.com")).thenReturn(Optional.empty());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> usuarioService.login(dto));
 
         assertEquals("E-mail ou senha incorretos.", ex.getMessage());
@@ -252,7 +254,7 @@ class UsuarioServiceTest {
         when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> usuarioService.login(dto));
 
         assertEquals("E-mail ou senha incorretos.", ex.getMessage());

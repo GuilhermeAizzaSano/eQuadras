@@ -8,6 +8,8 @@ import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.Role;
+import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
+import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.security.JwtService;
 import org.springframework.security.access.AccessDeniedException;
@@ -67,7 +69,7 @@ public class UsuarioService {
         validarAcessoMasterAdmin(usuarioLogadoId);
 
         if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
-            throw new IllegalArgumentException("E-mail já cadastrado no sistema.");
+            throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado no sistema.");
         }
 
         Role roleParaAtribuir = dto.role() != null ? dto.role() : Role.CLIENT;
@@ -92,7 +94,7 @@ public class UsuarioService {
     @Transactional
     public LoginResponseDTO cadastrar(UsuarioCriacaoDTO dto) {
         if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
-            throw new IllegalArgumentException("E-mail já cadastrado no sistema.");
+            throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado no sistema.");
         }
 
         Role roleParaAtribuir = dto.role() != null ? dto.role() : Role.CLIENT;
@@ -115,16 +117,16 @@ public class UsuarioService {
         validarAcessoMasterAdmin(usuarioLogadoId);
 
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
 
         // Se o e-mail foi alterado, verificar duplicidade
         if (!usuario.getEmail_usuario().equalsIgnoreCase(dto.email_usuario())) {
             if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
-                throw new IllegalArgumentException("E-mail já cadastrado por outro usuário.");
+                throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado por outro usuário.");
             }
             // Não permitir alterar o e-mail do Admin Geral
             if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
-                throw new IllegalArgumentException("O e-mail do Administrador Geral não pode ser modificado.");
+                throw new RegraNegocioException("OPERACAO_NAO_PERMITIDA", "O e-mail do Administrador Geral não pode ser modificado.");
             }
             usuario.setEmail_usuario(dto.email_usuario());
         }
@@ -158,10 +160,10 @@ public class UsuarioService {
         validarAcessoMasterAdmin(usuarioLogadoId);
 
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
 
         if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
-            throw new IllegalArgumentException("A conta do Administrador Geral não pode ser excluída.");
+            throw new RegraNegocioException("OPERACAO_NAO_PERMITIDA", "A conta do Administrador Geral não pode ser excluída.");
         }
 
         usuarioRepository.delete(usuario);
@@ -184,14 +186,14 @@ public class UsuarioService {
             if (auditoriaService != null) {
                 auditoriaService.registrarLoginFalha(dto.email_usuario(), "E-mail não cadastrado.");
             }
-            throw new IllegalArgumentException("E-mail ou senha incorretos.");
+            throw new RegraNegocioException("CREDENCIAIS_INVALIDAS", "E-mail ou senha incorretos.");
         }
 
         if (!passwordEncoder.matches(dto.senha_usuario(), usuario.getSenha_usuario())) {
             if (auditoriaService != null) {
                 auditoriaService.registrarLoginFalha(dto.email_usuario(), "Senha incorreta.");
             }
-            throw new IllegalArgumentException("E-mail ou senha incorretos.");
+            throw new RegraNegocioException("CREDENCIAIS_INVALIDAS", "E-mail ou senha incorretos.");
         }
 
         String token = jwtService.gerarToken(usuario);
@@ -221,7 +223,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
         return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
     }
 
@@ -237,14 +239,14 @@ public class UsuarioService {
     @Transactional
     public void alterarMinhaSenha(Long usuarioId, com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado para o ID: " + usuarioId));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + usuarioId));
 
         if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha_usuario())) {
-            throw new IllegalArgumentException("A senha atual informada está incorreta.");
+            throw new RegraNegocioException("SENHA_INCORRETA", "A senha atual informada está incorreta.");
         }
 
         if (passwordEncoder.matches(dto.novaSenha(), usuario.getSenha_usuario())) {
-            throw new IllegalArgumentException("A nova senha deve ser diferente da senha atual.");
+            throw new RegraNegocioException("SENHA_REPETIDA", "A nova senha deve ser diferente da senha atual.");
         }
 
         usuario.setSenha_usuario(passwordEncoder.encode(dto.novaSenha()));

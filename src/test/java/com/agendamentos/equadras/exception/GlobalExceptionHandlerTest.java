@@ -28,6 +28,34 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("Deve mapear RecursoNaoEncontradoException para 404 Not Found com código e mensagem originais")
+    void deveMapearRecursoNaoEncontrado() {
+        RecursoNaoEncontradoException ex = new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
+
+        ProblemDetail problem = exceptionHandler.handleRecursoNaoEncontrado(ex, request);
+
+        assertNotNull(problem);
+        assertEquals(HttpStatus.NOT_FOUND.value(), problem.getStatus());
+        assertEquals("Recurso Não Encontrado", problem.getTitle());
+        assertEquals("USUARIO_NAO_ENCONTRADO", problem.getProperties().get("code"));
+        assertEquals("Usuário não encontrado.", problem.getDetail());
+    }
+
+    @Test
+    @DisplayName("Deve mapear RegraNegocioException para 400 Bad Request com código de domínio")
+    void deveMapearRegraNegocio() {
+        RegraNegocioException ex = new RegraNegocioException("HORARIO_INVALIDO", "Horário fora do expediente.");
+
+        ProblemDetail problem = exceptionHandler.handleRegraNegocio(ex, request);
+
+        assertNotNull(problem);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), problem.getStatus());
+        assertEquals("Regra de Negócio Violada", problem.getTitle());
+        assertEquals("HORARIO_INVALIDO", problem.getProperties().get("code"));
+        assertEquals("Horário fora do expediente.", problem.getDetail());
+    }
+
+    @Test
     @DisplayName("Deve mapear SQLState 23P01 (Exclusion Violation / GiST) para 409 Conflict com código HORARIO_INDISPONIVEL")
     void deveMapear23P01ParaHorarioIndisponivel() {
         SQLException sqlEx = new SQLException("exclusion violation", "23P01");

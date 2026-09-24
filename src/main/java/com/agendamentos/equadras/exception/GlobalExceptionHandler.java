@@ -28,7 +28,31 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // Trata erros de regras de negócio (ex: e-mail duplicado, ID não encontrado, conflitos de domínio)
+    // Trata recurso/entidade não encontrada (HTTP 404)
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ProblemDetail handleRecursoNaoEncontrado(RecursoNaoEncontradoException ex, HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Recurso Não Encontrado");
+        problemDetail.setType(URI.create("https://api.equadras.com/erros/recurso-nao-encontrado"));
+        problemDetail.setInstance(URI.create(request.getRequestURI()));
+        problemDetail.setProperty("code", ex.getCode());
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        return problemDetail;
+    }
+
+    // Trata violações explícitas de regras de negócio de domínio (HTTP 400)
+    @ExceptionHandler(RegraNegocioException.class)
+    public ProblemDetail handleRegraNegocio(RegraNegocioException ex, HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Regra de Negócio Violada");
+        problemDetail.setType(URI.create("https://api.equadras.com/erros/regra-negocio-violada"));
+        problemDetail.setInstance(URI.create(request.getRequestURI()));
+        problemDetail.setProperty("code", ex.getCode());
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        return problemDetail;
+    }
+
+    // Trata erros de requisição inválida legados / argumentos incorretos (Fallback)
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, traduzirMensagemNegocio(ex.getMessage()));
