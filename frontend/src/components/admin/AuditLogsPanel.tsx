@@ -69,19 +69,12 @@ export const AuditLogsPanel: React.FC = () => {
       if (acao !== 'TODAS') filtros.acao = acao;
       if (busca.trim()) filtros.busca = busca.trim();
 
-      const [resLogs, resStats] = await Promise.all([
-        auditoriaApi.listarLogs(filtros),
-        auditoriaApi.obterEstatisticas().catch(() => null),
-      ]);
+      const resLogs = await auditoriaApi.listarLogs(filtros);
 
       setLogs(resLogs.content || []);
       setTotalPages(resLogs.totalPages || 0);
       setTotalLogs(resLogs.totalElements || 0);
       setPage(resLogs.number || 0);
-
-      if (resStats) {
-        setEstatisticas(resStats);
-      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao carregar registros de auditoria';
       console.error('Falha ao carregar trilha de auditoria:', err);
@@ -90,6 +83,19 @@ export const AuditLogsPanel: React.FC = () => {
       setLoading(false);
     }
   }, [page, categoria, acao, busca]);
+
+  // Estatísticas são do dia e independem de página/filtros: carregar só na abertura e no "Atualizar"
+  const carregarEstatisticas = useCallback(async () => {
+    try {
+      setEstatisticas(await auditoriaApi.obterEstatisticas());
+    } catch (err: unknown) {
+      console.error('Falha ao carregar estatísticas de auditoria:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarEstatisticas();
+  }, [carregarEstatisticas]);
 
   useEffect(() => {
     carregarDados(0);
@@ -322,7 +328,10 @@ export const AuditLogsPanel: React.FC = () => {
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
-              onClick={() => carregarDados(page)}
+              onClick={() => {
+                carregarDados(page);
+                carregarEstatisticas();
+              }}
               disabled={loading}
               className="p-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white transition disabled:opacity-40 cursor-pointer"
               title="Atualizar registros de auditoria"
