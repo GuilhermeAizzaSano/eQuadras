@@ -177,7 +177,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
 
     @Query("""
         SELECT COUNT(a),
-               SUM(a.valorTotal),
+               SUM(CASE WHEN a.status = com.agendamentos.equadras.model.enums.StatusAgendamento.CONFIRMADO THEN a.valorTotal END),
                COUNT(CASE WHEN a.dataHoraInicio >= :inicioHoje AND a.dataHoraInicio < :inicioAmanha THEN 1 END)
         FROM Agendamento a
         WHERE a.status != com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
@@ -191,7 +191,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
 
     @Query("""
         SELECT COUNT(a),
-               SUM(a.valorTotal),
+               SUM(CASE WHEN a.status = com.agendamentos.equadras.model.enums.StatusAgendamento.CONFIRMADO THEN a.valorTotal END),
                COUNT(CASE WHEN a.dataHoraInicio >= :inicioHoje AND a.dataHoraInicio < :inicioAmanha THEN 1 END)
         FROM Agendamento a
         WHERE a.status != com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO

@@ -14,7 +14,7 @@ public record DashboardMetricasDTO(
         @Schema(description = "Total histórico de reservas válidas (não canceladas)", example = "128")
         long totalReservas,
 
-        @Schema(description = "Faturamento total acumulado em reservas não canceladas", example = "15420.00")
+        @Schema(description = "Faturamento total acumulado em reservas confirmadas (pagas)", example = "15420.00")
         BigDecimal faturamentoTotal,
 
         @Schema(description = "Total de reservas agendadas para o dia atual", example = "6")
