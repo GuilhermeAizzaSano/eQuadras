@@ -448,6 +448,17 @@ export const agendamentoApi = {
     return apiFetch<Agendamento[]>(`/agendamentos/agenda/completa?${query.toString()}`, { signal: params.signal });
   },
 
+  listarAgendaMensal: (params: { ano: number; mes: number; quadraId?: number; signal?: AbortSignal }) => {
+    const query = new URLSearchParams({
+      ano: params.ano.toString(),
+      mes: params.mes.toString(),
+    });
+    if (params.quadraId !== undefined) {
+      query.append('quadraId', params.quadraId.toString());
+    }
+    return apiFetch<Agendamento[]>(`/agendamentos/agenda/mensal?${query.toString()}`, { signal: params.signal });
+  },
+
   obterMetricasDashboard: (signal?: AbortSignal) =>
     apiFetch<DashboardMetricas>('/agendamentos/dashboard/metricas', { signal }),
 
