@@ -42,6 +42,8 @@ class AgendamentoSpecificationsTest {
     private Usuario usuario1;
     private Usuario usuario2;
     private Quadra quadra;
+    private static final java.time.ZoneId ZONE_BRASIL = java.time.ZoneId.of("America/Sao_Paulo");
+    private java.time.Clock fixedClock;
     private LocalDateTime baseTime;
 
     @BeforeEach
@@ -50,6 +52,10 @@ class AgendamentoSpecificationsTest {
         agendamentoRepository.deleteAll();
         quadraRepository.deleteAll();
         usuarioRepository.deleteAll();
+
+        java.time.Instant fixedInstant = java.time.Instant.parse("2026-10-01T12:00:00Z");
+        fixedClock = java.time.Clock.fixed(fixedInstant, ZONE_BRASIL);
+        baseTime = LocalDateTime.now(fixedClock);
 
         usuario1 = usuarioRepository.save(Usuario.builder()
                 .nome_usuario("Usuario Teste 1")
@@ -74,8 +80,6 @@ class AgendamentoSpecificationsTest {
                 .ativa(true)
                 .admin(usuario1)
                 .build());
-
-        baseTime = LocalDateTime.now();
     }
 
     private Agendamento criarAgendamento(Usuario user, StatusAgendamento status, LocalDateTime inicio, LocalDateTime fim) {
@@ -188,5 +192,51 @@ class AgendamentoSpecificationsTest {
             List<Agendamento> resultados = agendamentoRepository.findAll(spec);
             assertTrue(resultados.isEmpty(), "Usuario 1 nao deve ver agendamentos de Usuario 2 na aba " + aba);
         }
+    }
+
+    @Test
+    @DisplayName("Limite exato: Agendamento com dataHoraFim == agora entra em ATIVOS (dataHoraFim >= agora)")
+    void deveRetornarEmAtivosQuandoDataHoraFimIgualAgora() {
+        Agendamento noLimite = criarAgendamento(
+                usuario1,
+                StatusAgendamento.CONFIRMADO,
+                baseTime.minusHours(1),
+                baseTime // exatamente agora
+        );
+
+        Specification<Agendamento> specAtivos = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.daAba(AbaAgendamento.ATIVOS, baseTime));
+        Specification<Agendamento> specRealizados = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.daAba(AbaAgendamento.REALIZADOS, baseTime));
+
+        List<Agendamento> ativos = agendamentoRepository.findAll(specAtivos);
+        List<Agendamento> realizados = agendamentoRepository.findAll(specRealizados);
+
+        assertEquals(1, ativos.size(), "dataHoraFim == agora deve constar em ATIVOS");
+        assertEquals(noLimite.getId_agendamento(), ativos.getFirst().getId_agendamento());
+        assertTrue(realizados.isEmpty(), "dataHoraFim == agora nao deve constar em REALIZADOS");
+    }
+
+    @Test
+    @DisplayName("Limite exato cancelado: cancelado no instante agora entra em CANCELADOS")
+    void deveRetornarEmCanceladosQuandoCanceladoNoInstanteAgora() {
+        Agendamento canceladoNoLimite = criarAgendamento(
+                usuario1,
+                StatusAgendamento.CANCELADO,
+                baseTime.minusHours(1),
+                baseTime // exatamente agora
+        );
+
+        Specification<Agendamento> specCancelados = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.daAba(AbaAgendamento.CANCELADOS, baseTime));
+        Specification<Agendamento> specAtivos = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.daAba(AbaAgendamento.ATIVOS, baseTime));
+
+        List<Agendamento> cancelados = agendamentoRepository.findAll(specCancelados);
+        List<Agendamento> ativos = agendamentoRepository.findAll(specAtivos);
+
+        assertEquals(1, cancelados.size(), "Cancelado no instante agora deve constar em CANCELADOS");
+        assertEquals(canceladoNoLimite.getId_agendamento(), cancelados.getFirst().getId_agendamento());
+        assertTrue(ativos.isEmpty(), "Cancelado no instante agora nao deve constar em ATIVOS");
     }
 }

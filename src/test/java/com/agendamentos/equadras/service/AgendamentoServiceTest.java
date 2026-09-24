@@ -56,6 +56,9 @@ class AgendamentoServiceTest {
     @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private java.time.Clock clock;
+
     @InjectMocks
     private AgendamentoService agendamentoService;
 
