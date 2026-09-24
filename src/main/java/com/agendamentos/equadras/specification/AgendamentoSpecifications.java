@@ -37,6 +37,14 @@ public final class AgendamentoSpecifications {
         return (root, query, cb) -> cb.equal(root.get("quadra").get("id_quadra"), quadraId);
     }
 
+    public static Specification<Agendamento> doAdmin(Long adminId) {
+        return (root, query, cb) -> cb.equal(root.get("quadra").get("admin").get("id_usuario"), adminId);
+    }
+
+    public static Specification<Agendamento> comInicioEntre(LocalDateTime inicio, LocalDateTime fim) {
+        return (root, query, cb) -> cb.between(root.get("dataHoraInicio"), inicio, fim);
+    }
+
     public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {
         // Pendente e criado há menos de 15 minutos
         LocalDateTime limite = agora.minusMinutes(15);

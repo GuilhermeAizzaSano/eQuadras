@@ -503,4 +503,113 @@ class AgendamentoControllerPaginationTest {
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries em listarPorQuadraPaginado não pode variar com a quantidade de itens retornados");
     }
+
+    @Test
+    @DisplayName("18. GET /agendamentos/agenda?data=...&page=0&size=5 deve retornar 200 com PageResponse para admin dono")
+    void deveRetornarAgendaDoDiaPaginada() throws Exception {
+        java.time.LocalDate dataAmanha = baseTime.toLocalDate().plusDays(1);
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(10, 0), dataAmanha.atTime(11, 0));
+
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAmanha.toString())
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("19. IDOR: GET /agendamentos/agenda?data=...&quadraId={quadraId} por outro admin deve retornar 403")
+    void outroAdminNaoDeveAcessarAgendaDeQuadraAlheia() throws Exception {
+        java.time.LocalDate dataAmanha = baseTime.toLocalDate().plusDays(1);
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(10, 0), dataAmanha.atTime(11, 0));
+
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .param("data", dataAmanha.toString())
+                        .param("quadraId", quadra.getId_quadra().toString())
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("20. Escopo: GET /agendamentos/agenda?data=... por admin sem quadras deve retornar 0 itens")
+    void adminSemQuadrasDeveReceberZeroItensNaAgenda() throws Exception {
+        java.time.LocalDate dataAmanha = baseTime.toLocalDate().plusDays(1);
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(10, 0), dataAmanha.atTime(11, 0));
+
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .param("data", dataAmanha.toString())
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("21. GET /agendamentos/agenda/contadores deve retornar 200 com contadores por aba")
+    void deveRetornarContadoresAgendaDoDia() throws Exception {
+        java.time.LocalDate dataAmanha = baseTime.toLocalDate().plusDays(1);
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(10, 0), dataAmanha.atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, dataAmanha.atTime(14, 0), dataAmanha.atTime(15, 0));
+
+        mockMvc.perform(get("/agendamentos/agenda/contadores")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAmanha.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ATIVOS").value(1))
+                .andExpect(jsonPath("$.CANCELADOS").value(1));
+    }
+
+    @Test
+    @DisplayName("22. N+1 Safety: contagem de queries deve ser idêntica comparando 2 vs 10 registros em GET /agendamentos/agenda?data=...&page=0&size=20")
+    void testeN1AusenteEmListarAgendaDoDiaComparando2Vs10Itens() throws Exception {
+        java.time.LocalDate dataAmanha = baseTime.toLocalDate().plusDays(1);
+
+        // 1. Cenário com 2 itens
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(8, 0), dataAmanha.atTime(9, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(9, 0), dataAmanha.atTime(10, 0));
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAmanha.toString())
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2));
+
+        long queriesPara2Itens = statistics.getPrepareStatementCount();
+
+        // 2. Adiciona mais 8 itens (total 10)
+        for (int i = 10; i <= 17; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAmanha.atTime(i, 0), dataAmanha.atTime(i + 1, 0));
+        }
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAmanha.toString())
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10));
+
+        long queriesPara10Itens = statistics.getPrepareStatementCount();
+
+        assertEquals(queriesPara2Itens, queriesPara10Itens,
+                "Número de queries em listarAgendaDoDia não pode variar com a quantidade de itens retornados");
+    }
 }

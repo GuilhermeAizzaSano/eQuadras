@@ -141,6 +141,28 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
+    @Operation(summary = "Listar reservas da agenda do dia paginadas (Admin)", description = "Retorna agendamentos paginados do dia informado para as quadras do admin autenticado, com filtro opcional por quadra e aba.")
+    @GetMapping("/agenda")
+    public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarAgendaDoDia(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) Long quadraId,
+            @RequestParam(required = false) AbaAgendamento aba,
+            Pageable pageable,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, quadraId, aba, pageable));
+    }
+
+    @Operation(summary = "Contadores de reservas da agenda do dia por aba (Admin)", description = "Retorna contadores de agendamentos por aba para a data e quadra(s) do admin autenticado.")
+    @GetMapping("/agenda/contadores")
+    public ResponseEntity<Map<AbaAgendamento, Long>> obterContadoresAgendaDoDia(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) Long quadraId,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, quadraId));
+    }
+
     @Operation(
             summary = "Agendamento simplificado via Bot / WhatsApp",
             description = "Permite a criação e reserva direta de horário a partir de integrações externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09') e cria a reserva com lock pessimista gerando os dados de Pix."

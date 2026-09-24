@@ -388,6 +388,36 @@ export const agendamentoApi = {
   listarHorariosDoDiaAdmin: (dataIso: string) =>
     apiFetch<Record<number, HorarioDisponivel[]>>(`/agendamentos/dia?data=${dataIso}`),
 
+  listarAgendaDoDiaPaginado: (params: {
+    data: string;
+    page: number;
+    size: number;
+    quadraId?: number;
+    aba?: AbaAgendamento;
+    signal?: AbortSignal;
+  }) => {
+    const query = new URLSearchParams({
+      data: params.data,
+      page: params.page.toString(),
+      size: params.size.toString(),
+    });
+    if (params.quadraId !== undefined) {
+      query.append('quadraId', params.quadraId.toString());
+    }
+    if (params.aba) {
+      query.append('aba', params.aba);
+    }
+    return apiFetch<PageResponse<Agendamento>>(`/agendamentos/agenda?${query.toString()}`, { signal: params.signal });
+  },
+
+  obterContadoresAgendaDoDia: (params: { data: string; quadraId?: number; signal?: AbortSignal }) => {
+    const query = new URLSearchParams({ data: params.data });
+    if (params.quadraId !== undefined) {
+      query.append('quadraId', params.quadraId.toString());
+    }
+    return apiFetch<Record<AbaAgendamento, number>>(`/agendamentos/agenda/contadores?${query.toString()}`, { signal: params.signal });
+  },
+
   cancelar: (agendamentoId: number) =>
     apiFetch<Agendamento>(`/agendamentos/${agendamentoId}/cancelar`, { method: 'PATCH' }),
 };

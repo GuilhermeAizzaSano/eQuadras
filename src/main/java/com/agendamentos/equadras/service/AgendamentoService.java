@@ -355,6 +355,85 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<AgendamentoResponseDTO> listarAgendaDoDiaPaginado(
+            Long usuarioId,
+            LocalDate data,
+            Long quadraId,
+            AbaAgendamento aba,
+            Pageable pageable
+    ) {
+        if (data == null) {
+            throw new IllegalArgumentException("A data da agenda é obrigatória.");
+        }
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        LocalDateTime agora = LocalDateTime.now(clock);
+        LocalDateTime inicioDoDia = data.atStartOfDay();
+        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
+
+        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(inicioDoDia, fimDoDia);
+
+        if (!usuario.isMasterAdmin()) {
+            spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
+        }
+
+        if (quadraId != null) {
+            Quadra quadra = quadraRepository.findById(quadraId)
+                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+            validarAcessoQuadra(quadra, usuarioId);
+            spec = spec.and(AgendamentoSpecifications.daQuadra(quadraId));
+        }
+
+        if (aba != null) {
+            spec = spec.and(AgendamentoSpecifications.daAba(aba, agora));
+        }
+
+        SortPolicy policy = (aba == AbaAgendamento.ATIVOS) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
+        Pageable pageableComSort = policy.apply(pageable);
+
+        Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
+
+        return PageResponse.of(pagina, AgendamentoResponseDTO::fromEntitySemPix);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
+            Long usuarioId,
+            LocalDate data,
+            Long quadraId
+    ) {
+        if (data == null) {
+            throw new IllegalArgumentException("A data da agenda é obrigatória.");
+        }
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        LocalDateTime agora = LocalDateTime.now(clock);
+        LocalDateTime inicioDoDia = data.atStartOfDay();
+        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
+
+        Specification<Agendamento> base = AgendamentoSpecifications.comInicioEntre(inicioDoDia, fimDoDia);
+
+        if (!usuario.isMasterAdmin()) {
+            base = base.and(AgendamentoSpecifications.doAdmin(usuarioId));
+        }
+
+        if (quadraId != null) {
+            Quadra quadra = quadraRepository.findById(quadraId)
+                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+            validarAcessoQuadra(quadra, usuarioId);
+            base = base.and(AgendamentoSpecifications.daQuadra(quadraId));
+        }
+
+        Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
+        for (AbaAgendamento aba : AbaAgendamento.values()) {
+            contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
+        }
+        return contagens;
+    }
+
+    @Transactional(readOnly = true)
     public List<HorarioDisponivelDTO> listarHorariosDisponiveis(Long quadraId, LocalDate data) {
         Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
