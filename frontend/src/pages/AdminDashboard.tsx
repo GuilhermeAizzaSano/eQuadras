@@ -253,6 +253,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   }, []);
 
+  const [agendamentosMes, setAgendamentosMes] = useState<Agendamento[]>([]);
+
+  const carregarAgendaMensal = React.useCallback(async (mesReferencia: Date, signal?: AbortSignal) => {
+    try {
+      const reservas = await agendamentoApi.listarAgendaMensal({
+        ano: mesReferencia.getFullYear(),
+        mes: mesReferencia.getMonth() + 1,
+        signal,
+      });
+      setAgendamentosMes(reservas);
+    } catch (err) {
+      if (signal?.aborted) return;
+      console.error('Erro ao carregar agenda mensal do calendário:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user || viewMode !== 'CALENDAR') return;
+    const controller = new AbortController();
+    carregarAgendaMensal(currentMonthDate, controller.signal);
+    return () => controller.abort();
+  }, [user, viewMode, currentMonthDate, carregarAgendaMensal]);
+
   const carregarDados = async () => {
     if (!user) return;
     try {
@@ -277,6 +300,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         } else {
           await carregarTimelineDia(dataSelecionada);
         }
+      }
+
+      if (viewMode === 'CALENDAR') {
+        await carregarAgendaMensal(currentMonthDate);
       }
     } catch (err: any) {
       console.error(err);
@@ -627,7 +654,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               quadraFiltroCalendarId={quadraFiltroCalendarId}
               statusFiltroCalendar={statusFiltroSchedule}
               minhasQuadras={minhasQuadras}
-              agendamentosAdmin={agendamentosTimeline}
+              agendamentosAdmin={agendamentosMes}
               mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
               onMudarMes={(offset) =>
                 setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))
