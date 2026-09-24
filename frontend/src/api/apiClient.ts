@@ -425,6 +425,23 @@ export const agendamentoApi = {
     return apiFetch<Record<AbaAgendamento, number>>(`/agendamentos/agenda/contadores?${query.toString()}`, { signal: params.signal });
   },
 
+  listarAgendaCompleta: (params: {
+    data?: string;
+    inicio?: string;
+    fim?: string;
+    quadraId?: number;
+    signal?: AbortSignal;
+  }) => {
+    const query = new URLSearchParams();
+    if (params.data) query.append('data', params.data);
+    if (params.inicio) query.append('inicio', params.inicio);
+    if (params.fim) query.append('fim', params.fim);
+    if (params.quadraId !== undefined) {
+      query.append('quadraId', params.quadraId.toString());
+    }
+    return apiFetch<Agendamento[]>(`/agendamentos/agenda/completa?${query.toString()}`, { signal: params.signal });
+  },
+
   obterMetricasDashboard: (signal?: AbortSignal) =>
     apiFetch<DashboardMetricas>('/agendamentos/dashboard/metricas', { signal }),
 

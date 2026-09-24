@@ -418,6 +418,63 @@ public class AgendamentoService {
         return PageResponse.of(pagina, AgendamentoResponseDTO::fromEntitySemPix);
     }
 
+    public List<AgendamentoResponseDTO> listarAgendaCompleta(
+            Long usuarioId,
+            LocalDate data,
+            Long quadraId
+    ) {
+        return listarAgendaCompleta(usuarioId, data, null, null, quadraId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarAgendaCompleta(
+            Long usuarioId,
+            LocalDate data,
+            LocalDateTime inicio,
+            LocalDateTime fim,
+            Long quadraId
+    ) {
+        LocalDateTime dataInicio;
+        LocalDateTime dataFim;
+        if (inicio != null && fim != null) {
+            dataInicio = inicio;
+            dataFim = fim;
+        } else if (data != null) {
+            dataInicio = data.atStartOfDay();
+            dataFim = data.plusDays(1).atStartOfDay();
+        } else {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
+        }
+
+        if (Duration.between(dataInicio, dataFim).toSeconds() > 86400 || dataFim.isBefore(dataInicio)) {
+            throw new IllegalArgumentException("O intervalo não pode ser superior a 24 horas.");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
+
+        if (!usuario.isMasterAdmin()) {
+            spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
+        }
+
+        if (quadraId != null) {
+            Quadra quadra = quadraRepository.findById(quadraId)
+                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+            validarAcessoQuadra(quadra, usuarioId);
+            spec = spec.and(AgendamentoSpecifications.daQuadra(quadraId));
+        }
+
+        spec = spec.and((root, query, cb) -> cb.notEqual(root.get("status"), StatusAgendamento.CANCELADO));
+
+        List<Agendamento> agendamentos = agendamentoRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "dataHoraInicio", "id"));
+
+        return agendamentos.stream()
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
             Long usuarioId,
