@@ -254,17 +254,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, []);
 
   const [agendamentosMes, setAgendamentosMes] = useState<Agendamento[]>([]);
+  const agendaMensalRequestIdRef = React.useRef(0);
 
   const carregarAgendaMensal = React.useCallback(async (mesReferencia: Date, signal?: AbortSignal) => {
+    const requestId = ++agendaMensalRequestIdRef.current;
     try {
       const reservas = await agendamentoApi.listarAgendaMensal({
         ano: mesReferencia.getFullYear(),
         mes: mesReferencia.getMonth() + 1,
         signal,
       });
+      // Descarta respostas obsoletas: uma chamada mais recente ja foi feita
+      // (evita corrida entre a troca de mes e o recarregamento pelo carregarDados).
+      if (requestId !== agendaMensalRequestIdRef.current) return;
       setAgendamentosMes(reservas);
     } catch (err) {
       if (signal?.aborted) return;
+      if (requestId !== agendaMensalRequestIdRef.current) return;
       console.error('Erro ao carregar agenda mensal do calendário:', err);
     }
   }, []);
