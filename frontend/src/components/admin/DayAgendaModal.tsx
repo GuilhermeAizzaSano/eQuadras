@@ -30,16 +30,13 @@ interface DayAgendaModalProps {
   visualizacaoAgendaAba: 'GRADE_HORARIOS' | 'LISTA_RESERVAS';
   filtroAgendaAdmin: 'ATIVOS' | 'REALIZADOS' | 'CANCELADOS';
   highlightedAgendamentoId: number | null;
-  historicoCarregado?: boolean;
-  carregandoHistorico?: boolean;
-  onCarregarHistorico?: () => Promise<void> | void;
   onClose: () => void;
   onQuadraChange: (id: number | 'TODAS') => void;
   onStatusFiltroChange: (status: 'TODOS' | 'LIVRES' | 'AGENDADOS' | 'BLOQUEADOS') => void;
   onVisualizacaoAbaChange: (aba: 'GRADE_HORARIOS' | 'LISTA_RESERVAS') => void;
   onFiltroAgendaAdminChange: (filtro: 'ATIVOS' | 'REALIZADOS' | 'CANCELADOS') => void;
   onSelectHighlightedAgendamento: (id: number | null) => void;
-  onCancelarAgendamento: (id: number) => void;
+  onCancelarAgendamento: (id: number, onSuccess?: () => void) => void;
   onVerQuadra: (quadra: Quadra) => void;
   getTempoRestantePix: (criadoEm: string) => string | null;
 }
@@ -100,7 +97,8 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
     status,
     error,
     isEmpty,
-  } = usePaginatedQuery(fetchAgendaPage, filters, { size: ITENS_POR_PAGINA });
+    reload,
+  } = usePaginatedQuery(fetchAgendaPage, filters, { size: ITENS_POR_PAGINA, enabled: isOpen });
 
   const [contadores, setContadores] = useState<Record<AbaAgendamento, number>>({
     ATIVOS: 0,
@@ -672,7 +670,12 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => onCancelarAgendamento(ag.id_agendamento)}
+                                  onClick={() =>
+                                    onCancelarAgendamento(ag.id_agendamento, () => {
+                                      reload();
+                                      carregarContadores();
+                                    })
+                                  }
                                   className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
                                 >
                                   Cancelar Agendamento

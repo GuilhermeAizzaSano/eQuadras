@@ -117,4 +117,27 @@ describe('DayAgendaModal (Server-side Pagination)', () => {
 
     expect(onFiltroAgendaAdminChange).toHaveBeenCalledWith('CANCELADOS');
   });
+
+  it('não busca a agenda enquanto o modal está fechado', () => {
+    render(<DayAgendaModal {...defaultProps} isOpen={false} />);
+    expect(agendamentoApi.listarAgendaDoDiaPaginado).not.toHaveBeenCalled();
+    expect(agendamentoApi.obterContadoresAgendaDoDia).not.toHaveBeenCalled();
+  });
+
+  it('recarrega lista e contadores após cancelamento bem-sucedido', async () => {
+    vi.mocked(agendamentoApi.obterContadoresAgendaDoDia).mockResolvedValue({ ATIVOS: 1, REALIZADOS: 0, CANCELADOS: 0 });
+    vi.mocked(agendamentoApi.listarAgendaDoDiaPaginado).mockResolvedValue({
+      content: [{ ...mockAgendamento(1), dataHoraInicio: '2099-10-01T14:00:00', dataHoraFim: '2099-10-01T15:00:00' }],
+      page: 0, size: 5, totalElements: 1, totalPages: 1,
+    });
+    const onCancelar = vi.fn((_id: number, onSuccess?: () => void) => onSuccess?.());
+
+    render(<DayAgendaModal {...defaultProps} dataSelecionada="2099-10-01" onCancelarAgendamento={onCancelar} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /cancelar agendamento/i }));
+
+    expect(onCancelar).toHaveBeenCalledWith(1, expect.any(Function));
+    await waitFor(() => expect(agendamentoApi.listarAgendaDoDiaPaginado).toHaveBeenCalledTimes(2));
+    expect(agendamentoApi.obterContadoresAgendaDoDia).toHaveBeenCalledTimes(2);
+  });
 });
