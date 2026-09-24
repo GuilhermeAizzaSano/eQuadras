@@ -44,7 +44,7 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-2xl sm:rounded-3xl bg-black border border-white/[0.08] group ${aspectClasses[aspectRatio]} ${className}`}
+      className={`relative w-full overflow-hidden rounded-2xl sm:rounded-3xl bg-bg border border-fg/[0.1] group ${aspectClasses[aspectRatio]} ${className}`}
     >
       {/* Imagem Atual */}
       <img
@@ -92,7 +92,7 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
                   setCurrentIndex(idx);
                 }}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                  currentIndex === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/50'
+                  currentIndex === idx ? 'w-4 bg-fg' : 'w-1.5 bg-fg/30 hover:bg-fg/50'
                 }`}
                 aria-label={`Ir para foto ${idx + 1}`}
               />
@@ -103,7 +103,7 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
 
       {/* Contador numérico de fotos */}
       <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/[0.1] text-[11px] font-medium text-white/80 flex items-center gap-1.5 shadow-sm">
-        <ImageIcon className="w-3.5 h-3.5 text-white/70" />
+        <ImageIcon className="w-3.5 h-3.5 text-fg/70" />
         <span>
           {currentIndex + 1} / {listaFotos.length}
         </span>

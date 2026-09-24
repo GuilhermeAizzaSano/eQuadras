@@ -31,10 +31,10 @@ export const Pagination: FC<PaginationProps> = ({
       aria-label="Paginação"
       className={`flex flex-col sm:flex-row items-center ${
         totalElements !== undefined ? 'justify-between' : 'justify-center'
-      } gap-3 py-3 text-xs sm:text-sm text-white/70 ${className}`.trim()}
+      } gap-3 py-3 text-xs sm:text-sm text-fg/70 ${className}`.trim()}
     >
       {totalElements !== undefined && (
-        <span className="text-white/50 select-none">
+        <span className="text-fg/50 select-none">
           {totalElements} registros
         </span>
       )}
@@ -45,12 +45,12 @@ export const Pagination: FC<PaginationProps> = ({
           aria-label="Página anterior"
           disabled={isFirstPage || isLoading}
           onClick={() => onPageChange(page - 1)}
-          className="inline-flex items-center justify-center p-2 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/80 hover:bg-white/[0.08] hover:text-white transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 active:scale-95"
+          className="inline-flex items-center justify-center p-2 rounded-xl border border-fg/[0.1] bg-fg/[0.03] text-fg/80 hover:bg-fg/[0.1] hover:text-fg transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-fg/30 active:scale-95"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <span className="font-medium text-white/80 px-2 select-none">
+        <span className="font-medium text-fg/80 px-2 select-none">
           Página {page + 1} de {totalPages}
         </span>
 
@@ -59,7 +59,7 @@ export const Pagination: FC<PaginationProps> = ({
           aria-label="Próxima página"
           disabled={isLastPage || isLoading}
           onClick={() => onPageChange(page + 1)}
-          className="inline-flex items-center justify-center p-2 rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/80 hover:bg-white/[0.08] hover:text-white transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 active:scale-95"
+          className="inline-flex items-center justify-center p-2 rounded-xl border border-fg/[0.1] bg-fg/[0.03] text-fg/80 hover:bg-fg/[0.1] hover:text-fg transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-fg/30 active:scale-95"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

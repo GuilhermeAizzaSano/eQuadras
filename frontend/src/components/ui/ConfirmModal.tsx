@@ -43,14 +43,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       aria-modal="true"
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl overflow-y-auto animate-in fade-in duration-200"
     >
-      <div className="bg-[#121214] border border-white/[0.1] rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] space-y-6 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-2 border border-fg/[0.1] rounded-3xl w-full max-w-md p-6 sm:p-7 shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] space-y-6 relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div
               className={`p-3 rounded-2xl border shrink-0 ${
                 isDestructive
-                  ? 'bg-[#FF453A]/10 border-[#FF453A]/25 text-[#FF453A]'
-                  : 'bg-[#30D158]/10 border-[#30D158]/25 text-[#30D158]'
+                  ? 'bg-danger/10 border-danger/25 text-danger'
+                  : 'bg-success/10 border-success/25 text-success'
               }`}
             >
               {isDestructive ? (
@@ -59,19 +59,19 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 <CalendarCheck className="w-5 h-5" />
               )}
             </div>
-            <h3 className="text-lg font-semibold text-white tracking-tight leading-tight">{title}</h3>
+            <h3 className="text-lg font-semibold text-fg tracking-tight leading-tight">{title}</h3>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.08] transition shrink-0"
+            className="p-1.5 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition shrink-0"
             aria-label="Fechar modal"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs sm:text-sm text-white/80 leading-relaxed whitespace-pre-line break-words font-sans">
+        <div className="p-4 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] text-xs sm:text-sm text-fg/80 leading-relaxed whitespace-pre-line break-words font-sans">
           {description}
         </div>
 

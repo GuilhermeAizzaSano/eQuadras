@@ -20,32 +20,32 @@ export const Badge: React.FC<BadgeProps> = ({
 
   const variantClasses: Record<BadgeVariant, { container: string; dot: string }> = {
     neutral: {
-      container: 'bg-white/[0.06] border-white/[0.08] text-white/70',
-      dot: 'bg-white/40',
+      container: 'bg-fg/[0.06] border-fg/[0.1] text-fg/70',
+      dot: 'bg-fg/40',
     },
     outline: {
-      container: 'bg-transparent border-white/[0.12] text-white/60',
-      dot: 'bg-white/40',
+      container: 'bg-transparent border-fg/[0.15] text-fg/60',
+      dot: 'bg-fg/40',
     },
     active: {
-      container: 'bg-white text-black font-semibold border-white shadow-sm',
-      dot: 'bg-black',
+      container: 'bg-fg text-on-accent font-semibold border-fg shadow-sm',
+      dot: 'bg-bg',
     },
     success: {
-      container: 'bg-[#30D158]/10 border-[#30D158]/25 text-[#30D158]',
-      dot: 'bg-[#30D158]',
+      container: 'bg-success/10 border-success/25 text-success',
+      dot: 'bg-success',
     },
     warning: {
-      container: 'bg-[#FF9F0A]/10 border-[#FF9F0A]/25 text-[#FF9F0A]',
-      dot: 'bg-[#FF9F0A]',
+      container: 'bg-warning/10 border-warning/25 text-warning',
+      dot: 'bg-warning',
     },
     danger: {
-      container: 'bg-[#FF453A]/10 border-[#FF453A]/25 text-[#FF453A]',
-      dot: 'bg-[#FF453A]',
+      container: 'bg-danger/10 border-danger/25 text-danger',
+      dot: 'bg-danger',
     },
     info: {
-      container: 'bg-[#0A84FF]/10 border-[#0A84FF]/25 text-[#0A84FF]',
-      dot: 'bg-[#0A84FF]',
+      container: 'bg-info/10 border-info/25 text-info',
+      dot: 'bg-info',
     },
   };
 

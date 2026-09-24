@@ -67,7 +67,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-2xl bg-[#09090b] border border-white/[0.08] rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-surface-1 border border-fg/[0.1] rounded-3xl overflow-hidden z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
         {/* Header com botão fechar */}
         <div className="absolute top-4 right-4 z-20">
           <button
@@ -89,7 +89,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
           />
 
           {/* Cabeçalho de Detalhes da Quadra */}
-          <div className="space-y-3.5 border-b border-white/[0.08] pb-5">
+          <div className="space-y-3.5 border-b border-fg/[0.1] pb-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <Badge variant="neutral" className="text-xs">
@@ -101,23 +101,23 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
               </div>
 
               <div className="flex items-baseline gap-1.5 font-mono">
-                <span className="text-xs text-white/50 font-medium uppercase">Valor:</span>
-                <span className="text-2xl font-bold text-white tracking-tight">
+                <span className="text-xs text-fg/50 font-medium uppercase">Valor:</span>
+                <span className="text-2xl font-bold text-fg tracking-tight">
                   R$ {quadra.valorHora.toFixed(2)}
                 </span>
-                <span className="text-xs text-white/50">/ hora</span>
+                <span className="text-xs text-fg/50">/ hora</span>
               </div>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-fg tracking-tight">
               {quadra.nome}
             </h2>
 
             {/* Endereço & Mapa */}
             {enderecoCompleto && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                <div className="flex items-start gap-2.5 text-xs text-white/70">
-                  <MapPin className="w-4 h-4 text-white/60 shrink-0 mt-0.5" />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1]">
+                <div className="flex items-start gap-2.5 text-xs text-fg/70">
+                  <MapPin className="w-4 h-4 text-fg/60 shrink-0 mt-0.5" />
                   <span>{enderecoCompleto}</span>
                 </div>
                 {googleMapsUrl && (
@@ -125,7 +125,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
                     href={googleMapsUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-[#0A84FF] hover:underline font-medium transition"
+                    className="inline-flex items-center gap-1.5 text-xs text-info hover:underline font-medium transition"
                   >
                     <span>Ver no Maps</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -137,16 +137,16 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
           {/* Descrição e Especificações */}
           <div className="space-y-2.5">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Info className="w-4 h-4 text-white/70" />
+            <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
+              <Info className="w-4 h-4 text-fg/70" />
               <span>Sobre o Espaço Esportivo</span>
             </h3>
 
-            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-xs sm:text-sm text-white/70 leading-relaxed whitespace-pre-line tracking-tight">
+            <div className="p-4 rounded-2xl bg-fg/[0.03] border border-fg/[0.06] text-xs sm:text-sm text-fg/70 leading-relaxed whitespace-pre-line tracking-tight">
               {quadra.descricao ? (
                 quadra.descricao
               ) : (
-                <span className="text-white/40 italic">
+                <span className="text-fg/40 italic">
                   Esta quadra possui infraestrutura completa para a prática esportiva, iluminação esportiva e ambiente preparado para atletas e visitantes.
                 </span>
               )}
@@ -155,27 +155,27 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
           {/* Destaques da Estrutura */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3">
-              <Activity className="w-5 h-5 text-white/70 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3">
+              <Activity className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-white/40 block uppercase font-medium">Piso</span>
-                <span className="text-xs text-white font-medium">Oficial / Padrão</span>
+                <span className="text-[10px] text-fg/40 block uppercase font-medium">Piso</span>
+                <span className="text-xs text-fg font-medium">Oficial / Padrão</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3">
-              <ShieldCheck className="w-5 h-5 text-white/70 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-white/40 block uppercase font-medium">Segurança</span>
-                <span className="text-xs text-white font-medium">Ambiente Monitorado</span>
+                <span className="text-[10px] text-fg/40 block uppercase font-medium">Segurança</span>
+                <span className="text-xs text-fg font-medium">Ambiente Monitorado</span>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center gap-3 col-span-2 sm:col-span-1">
-              <Calendar className="w-5 h-5 text-white/70 shrink-0" />
+            <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3 col-span-2 sm:col-span-1">
+              <Calendar className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-white/40 block uppercase font-medium">Agendamento</span>
-                <span className="text-xs text-white font-medium">Instantâneo via Pix</span>
+                <span className="text-[10px] text-fg/40 block uppercase font-medium">Agendamento</span>
+                <span className="text-xs text-fg font-medium">Instantâneo via Pix</span>
               </div>
             </div>
           </div>
@@ -183,7 +183,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
 
         {/* Rodapé / Botão de Ação */}
         {onSelectForBooking && (
-          <div className="p-4 sm:p-5 bg-[#0c0c0e] border-t border-white/[0.08] flex items-center justify-between gap-4">
+          <div className="p-4 sm:p-5 bg-surface-1 border-t border-fg/[0.1] flex items-center justify-between gap-4">
             <Button
               type="button"
               variant="outline"

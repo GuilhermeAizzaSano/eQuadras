@@ -83,18 +83,18 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             ...style,
           }}
           className={cn(
-            "fixed left-0 top-0 z-40 h-full shrink-0 border-r border-white/[0.08] bg-black select-none flex flex-col justify-between overflow-hidden transition-[width] duration-200 ease-out",
+            "fixed left-0 top-0 z-40 h-full shrink-0 border-r border-fg/[0.1] bg-bg select-none flex flex-col justify-between overflow-hidden transition-[width] duration-200 ease-out",
             className
           )}
           {...props}
         >
-          {header && <div className="shrink-0 border-b border-white/[0.08]">{header}</div>}
+          {header && <div className="shrink-0 border-b border-fg/[0.1]">{header}</div>}
 
           <div className="flex-1 min-h-0 overflow-hidden">
             <ScrollArea className="h-full p-2">{children}</ScrollArea>
           </div>
 
-          {footer && <div className="shrink-0 border-t border-white/[0.08] p-2">{footer}</div>}
+          {footer && <div className="shrink-0 border-t border-fg/[0.1] p-2">{footer}</div>}
         </aside>
       </SidebarContext.Provider>
     );

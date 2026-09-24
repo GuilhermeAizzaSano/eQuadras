@@ -11,7 +11,7 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 32, showText 
     <div className={`inline-flex items-center gap-3 select-none ${className}`}>
       <div
         style={{ width: size, height: size }}
-        className="relative flex items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.12] shadow-sm shrink-0 overflow-hidden group transition-all"
+        className="relative flex items-center justify-center rounded-xl bg-fg/[0.06] border border-fg/[0.15] shadow-sm shrink-0 overflow-hidden group transition-all"
       >
         <svg
           viewBox="0 0 100 100"
@@ -61,8 +61,8 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 32, showText 
 
       {showText && (
         <div className="flex items-baseline tracking-[-0.03em]">
-          <span className="text-white/60 text-xl font-medium">e</span>
-          <span className="text-white text-xl font-bold">Quadras</span>
+          <span className="text-fg/60 text-xl font-medium">e</span>
+          <span className="text-fg text-xl font-bold">Quadras</span>
         </div>
       )}
     </div>

@@ -29,21 +29,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer tracking-tight';
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-fg/30 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer tracking-tight';
 
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        'bg-white text-black hover:bg-white/90 font-semibold shadow-sm active:bg-white/80',
+        'bg-fg text-on-accent hover:bg-fg/90 font-semibold shadow-sm active:bg-fg/80',
       secondary:
-        'bg-white/[0.08] hover:bg-white/[0.14] active:bg-white/[0.18] text-white border border-white/[0.12] shadow-sm backdrop-blur-md',
+        'bg-fg/[0.1] hover:bg-fg/[0.15] active:bg-fg/[0.18] text-fg border border-fg/[0.15] shadow-sm backdrop-blur-md',
       destructive:
-        'bg-[#FF453A] hover:bg-[#FF453A]/90 active:bg-[#FF453A]/80 text-white font-semibold shadow-sm',
+        'bg-danger hover:bg-danger/90 active:bg-danger/80 text-white font-semibold shadow-sm',
       outline:
-        'bg-transparent border border-white/[0.12] hover:border-white/[0.2] hover:bg-white/[0.06] text-white/90 hover:text-white',
+        'bg-transparent border border-fg/[0.15] hover:border-fg/[0.2] hover:bg-fg/[0.06] text-fg/90 hover:text-fg',
       ghost:
-        'bg-transparent text-white/70 hover:text-white hover:bg-white/[0.06]',
+        'bg-transparent text-fg/70 hover:text-fg hover:bg-fg/[0.06]',
       subtle:
-        'bg-white/[0.04] hover:bg-white/[0.08] text-white/80 hover:text-white border border-white/[0.08]',
+        'bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/80 hover:text-fg border border-fg/[0.1]',
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
