@@ -1008,4 +1008,24 @@ class AgendamentoControllerPaginationTest {
         mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra() + "/contadores").cookie(cookieCliente))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @DisplayName("36. ADMIN: GET /agendamentos?page=0&aba=ATIVOS lista reservas das suas quadras (mesma semântica da rota legada)")
+    void adminDeveListarReservasDasSuasQuadrasNaRotaPaginada() throws Exception {
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+
+        mockMvc.perform(get("/agendamentos").cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("page", "0").param("size", "5").param("aba", "ATIVOS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        mockMvc.perform(get("/agendamentos").cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .param("page", "0").param("size", "5").param("aba", "ATIVOS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+
+        mockMvc.perform(get("/agendamentos/contadores").cookie(new Cookie("equadras_session", tokenAdmin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ATIVOS").value(1));
+    }
 }

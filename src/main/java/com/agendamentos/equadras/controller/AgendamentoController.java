@@ -45,7 +45,7 @@ public class AgendamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
-    @Operation(summary = "Listar agendamentos paginados por aba ou status pendente", description = "Retorna os agendamentos paginados do atleta autenticado por aba (ATIVOS, REALIZADOS, CANCELADOS) ou filtrado apenas por pendentes válidos.")
+    @Operation(summary = "Listar agendamentos paginados por aba ou status pendente", description = "Retorna agendamentos paginados por aba ou apenas pendentes válidos. CLIENT: próprias reservas; ADMIN: reservas das suas quadras; Master: todas.")
     @GetMapping(params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPaginado(
             @RequestParam(required = false) AbaAgendamento aba,
