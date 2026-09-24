@@ -622,7 +622,7 @@ class AgendamentoServiceTest {
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
         when(usuarioRepository.findById(3L)).thenReturn(Optional.of(outroAdmin));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+        org.springframework.security.access.AccessDeniedException ex = assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
                 agendamentoService.listarPorQuadra(1L, 3L)
         );
 
