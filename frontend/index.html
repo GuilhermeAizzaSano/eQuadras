@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,9 +7,28 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+      (function () {
+        try {
+          var tema = localStorage.getItem('equadras-tema');
+          if (tema === 'claro') {
+            document.documentElement.classList.add('light');
+            return;
+          }
+          if (tema === 'escuro') {
+            return;
+          }
+        } catch (e) {}
+        try {
+          if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.classList.add('light');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-black text-zinc-100 antialiased selection:bg-white selection:text-black">
+  <body class="bg-bg text-fg antialiased selection:bg-fg selection:text-on-accent">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

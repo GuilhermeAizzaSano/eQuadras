@@ -12,7 +12,10 @@ import {
   Terminal,
   LogOut,
   ChevronsUpDown,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTema } from '../../shared/theme/useTema';
 import {
   Sidebar as SidebarPrimitive,
   SidebarItemText,
@@ -96,6 +99,7 @@ const SidebarFooter: React.FC<{
   onOpenTrocarSenha: () => void;
 }> = ({ onOpenApiKey, onOpenTrocarSenha }) => {
   const { user, isAdmin, isMasterAdmin, logout } = useAuth();
+  const { tema, alternar: alternarTema } = useTema();
   const { isCollapsed } = useSidebar();
 
   const getInitials = (name?: string) => {
@@ -164,6 +168,17 @@ const SidebarFooter: React.FC<{
         >
           <Terminal className="size-3.5 text-white/60" />
           <span>Gerenciar API-Key</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={alternarTema}
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+        >
+          {tema === 'claro' ? (
+            <Moon className="size-3.5 text-white/60" />
+          ) : (
+            <Sun className="size-3.5 text-white/60" />
+          )}
+          <span>{tema === 'claro' ? 'Tema escuro' : 'Tema claro'}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-white/10" />
         <DropdownMenuItem

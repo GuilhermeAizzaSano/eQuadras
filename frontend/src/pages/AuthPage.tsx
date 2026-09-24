@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usuarioApi } from '../api/apiClient';
 import { FeedbackBanner } from '../components/ui/FeedbackBanner';
 import { SignInPage } from '../components/ui/sign-in';
+import { useTema } from '../shared/theme/useTema';
 import loginBg from '../assets/login-bg.jpg';
 
 export const AuthPage: React.FC = () => {
   const { login } = useAuth();
+  const { tema, alternar: alternarTema } = useTema();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +33,14 @@ export const AuthPage: React.FC = () => {
 
   return (
     <>
+      <button
+        type="button"
+        onClick={alternarTema}
+        aria-label="Alternar tema claro/escuro"
+        className="fixed top-4 right-4 z-50 p-2.5 rounded-xl border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition cursor-pointer"
+      >
+        {tema === 'claro' ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
+      </button>
       <FeedbackBanner
         feedback={error ? { type: 'error', message: error } : null}
         onClose={() => setError(null)}
