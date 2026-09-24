@@ -419,6 +419,21 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarAgendaMensal(Long usuarioId, int ano, int mes, Long quadraId) {
+        if (mes < 1 || mes > 12) {
+            throw new IllegalArgumentException("Mês inválido: informe um valor entre 1 e 12.");
+        }
+        if (ano < 2000 || ano > 2100) {
+            throw new IllegalArgumentException("Ano inválido: informe um valor entre 2000 e 2100.");
+        }
+        java.time.YearMonth anoMes = java.time.YearMonth.of(ano, mes);
+        IntervaloAgenda intervalo = new IntervaloAgenda(
+                anoMes.atDay(1).atStartOfDay(),
+                anoMes.plusMonths(1).atDay(1).atStartOfDay());
+        return listarNaoCancelados(escopoAgendaAdmin(usuarioId, intervalo, quadraId));
+    }
+
+    @Transactional(readOnly = true)
     public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
             Long usuarioId, LocalDate data, LocalDateTime inicio, LocalDateTime fim, Long quadraId) {
         Specification<Agendamento> base = escopoAgendaAdmin(usuarioId, resolverIntervalo(data, inicio, fim), quadraId);

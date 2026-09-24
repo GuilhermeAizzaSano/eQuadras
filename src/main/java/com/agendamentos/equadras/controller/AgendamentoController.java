@@ -190,6 +190,17 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarAgendaCompleta(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
+    @Operation(summary = "Listar agenda mensal (Admin)", description = "Retorna os agendamentos não cancelados do mês informado para as quadras do admin autenticado, usados no calendário de ocupação.")
+    @GetMapping("/agenda/mensal")
+    public ResponseEntity<List<AgendamentoResponseDTO>> listarAgendaMensal(
+            @RequestParam int ano,
+            @RequestParam int mes,
+            @RequestParam(required = false) Long quadraId,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarAgendaMensal(usuarioLogado.id(), ano, mes, quadraId));
+    }
+
     @Operation(
             summary = "Obter métricas agregadas do dashboard admin",
             description = "Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado."
