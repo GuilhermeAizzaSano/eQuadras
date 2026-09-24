@@ -110,7 +110,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
 
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative">
+      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-apple-elevated relative">
         <Button
           onClick={onClose}
           variant="ghost" size="icon" className="absolute top-5 right-5"

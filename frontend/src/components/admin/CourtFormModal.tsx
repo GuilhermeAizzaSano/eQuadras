@@ -108,7 +108,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
 
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
-      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-xl p-6 sm:p-7 shadow-2xl shadow-black/80 space-y-6 max-h-[90vh] overflow-y-auto scrollbar-thin">
+      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-xl p-6 sm:p-7 shadow-apple-elevated space-y-6 max-h-[90vh] overflow-y-auto scrollbar-thin">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-fg/[0.06] pb-4">
           <div className="flex items-center gap-2.5">

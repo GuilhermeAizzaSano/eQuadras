@@ -10,6 +10,9 @@
     --surface-1: 12 12 14;
     --surface-2: 18 18 20;
     --surface-3: 28 28 30;
+    --shadow-color: 0 0 0;
+    --shadow-strength: 0.6;
+    --highlight-border: rgba(255, 255, 255, 0.08);
     --success: 48 209 88;
     --danger: 255 69 58;
     --warning: 255 159 10;
@@ -21,17 +24,20 @@
 
   :root.light {
     /* Tema claro */
-    /* Cores de estado nas variantes de alto contraste da Apple (legíveis sobre branco) */
-    --bg: 255 255 255;
-    --fg: 0 0 0;
-    --surface-1: 242 242 247;
+    /* Cores de estado e superfícies calibradas para nitidez e contraste no estilo Apple */
+    --bg: 248 249 250;
+    --fg: 20 20 22;
+    --surface-1: 240 241 245;
     --surface-2: 255 255 255;
-    --surface-3: 229 229 234;
-    --success: 30 120 52;
-    --danger: 196 0 20;
-    --warning: 168 72 0;
-    --info: 0 64 221;
-    --purple: 137 68 171;
+    --surface-3: 228 230 236;
+    --shadow-color: 15 23 42;
+    --shadow-strength: 0.08;
+    --highlight-border: rgba(0, 0, 0, 0.04);
+    --success: 22 135 60;
+    --danger: 220 38 38;
+    --warning: 194 89 0;
+    --info: 2 101 220;
+    --purple: 126 58 160;
     --on-accent: 255 255 255;
     color-scheme: light;
   }
@@ -40,6 +46,11 @@
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  :root.light {
+    /* No tema claro o renderizador de fontes precisa de contraste ligeiramente mais encorpado */
+    font-weight: 450;
   }
 
   body {

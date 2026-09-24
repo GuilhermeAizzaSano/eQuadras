@@ -81,7 +81,7 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
 
       {/* Popover de Notificações */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-2/90 border border-fg/[0.1] rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/80 z-50 overflow-hidden flex flex-col backdrop-blur-2xl">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface-2/90 border border-fg/[0.1] rounded-2xl sm:rounded-3xl shadow-apple-elevated z-50 overflow-hidden flex flex-col backdrop-blur-2xl">
           <div className="p-4 border-b border-fg/[0.06] flex justify-between items-center bg-fg/[0.03]">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-fg/[0.06] border border-fg/[0.1] flex items-center justify-center">
