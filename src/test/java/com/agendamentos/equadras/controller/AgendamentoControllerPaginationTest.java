@@ -213,6 +213,22 @@ class AgendamentoControllerPaginationTest {
     }
 
     @Test
+    @DisplayName("4b. sort=dataHora (inexistente na entidade) deve retornar 400, não 500")
+    void sortComPropriedadeInexistenteDeveRetornar400() throws Exception {
+        for (String propriedade : List.of("dataHora", "id_agendamento")) {
+            mockMvc.perform(get("/agendamentos")
+                            .cookie(new Cookie("equadras_session", tokenA))
+                            .param("page", "0")
+                            .param("size", "5")
+                            .param("aba", "ATIVOS")
+                            .param("sort", propriedade)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("PARAMETRO_INVALIDO"));
+        }
+    }
+
+    @Test
     @DisplayName("5. aba inválida (ex: aba=INVALIDA) deve retornar 400 Bad Request com PARAMETRO_INVALIDO")
     void abaInvalidaDeveRetornar400() throws Exception {
         mockMvc.perform(get("/agendamentos")
