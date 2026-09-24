@@ -59,13 +59,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Detect Changed Components
         id: changes
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
         run: |
+          # Compara com o estado anterior ao push (cobre pushes com vários commits).
+          # Sem base válida (primeiro push ou force-push), reconstrói tudo por segurança.
+          if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" HEAD)
+          else
+            CHANGED_FILES=$(git ls-files)
+          fi
+
           # Detecta se houve alteracao no backend
-          BACKEND_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^(src/|pom.xml)' || true)
+          BACKEND_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^(src/|pom.xml)' || true)
           if [ -n "$BACKEND_CHANGED" ]; then
             echo "backend=true" >> "$GITHUB_OUTPUT"
           else
@@ -73,7 +83,7 @@ jobs:
           fi
 
           # Detecta se houve alteracao no frontend
-          FRONTEND_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^frontend/' || true)
+          FRONTEND_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^frontend/' || true)
           if [ -n "$FRONTEND_CHANGED" ]; then
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
