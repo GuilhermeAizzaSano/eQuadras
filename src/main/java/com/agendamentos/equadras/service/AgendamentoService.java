@@ -73,7 +73,6 @@ public class AgendamentoService {
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
     private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
-    private final QuadraService quadraService;
     private final UsuarioService usuarioService;
     private final ApplicationEventPublisher eventPublisher;
     private final java.time.Clock clock;
@@ -84,7 +83,6 @@ public class AgendamentoService {
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
                               com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
-                              @org.springframework.context.annotation.Lazy QuadraService quadraService,
                               UsuarioService usuarioService,
                               ApplicationEventPublisher eventPublisher,
                               java.time.Clock clock) {
@@ -94,7 +92,6 @@ public class AgendamentoService {
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
-        this.quadraService = quadraService;
         this.usuarioService = usuarioService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -802,10 +799,7 @@ public class AgendamentoService {
     public List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> consultarGradeHorarios(
             LocalDate data, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
         
-        List<Quadra> quadras = quadraService.filtrarQuadrasEntidades(null, null, null, null, tipoEsporte, nomeQuadra, null, null, null);
-        if (quadraId != null) {
-            quadras = quadras.stream().filter(q -> q.getId_quadra().equals(quadraId)).toList();
-        }
+        List<Quadra> quadras = buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
 
         List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultado = new ArrayList<>();
         for (Quadra q : quadras) {
@@ -859,7 +853,7 @@ public class AgendamentoService {
     public AgendamentoResponseDTO agendarViaBot(com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
         Long quadraId = dto.quadraId();
         if (quadraId == null) {
-            List<Quadra> quadras = quadraService.filtrarQuadrasEntidades(null, null, null, null, dto.tipoEsporte(), dto.nomeQuadra(), null, null, null);
+            List<Quadra> quadras = buscarQuadrasAtivas(null, dto.tipoEsporte(), dto.nomeQuadra());
             if (quadras.isEmpty()) {
                 throw new IllegalArgumentException("Nenhuma quadra encontrada para o esporte ou nome informado.");
             }
@@ -914,6 +908,67 @@ public class AgendamentoService {
         } catch (Exception e) {
             throw new IllegalArgumentException("Não foi possível entender a hora: " + horaStr);
         }
+    }
+
+    private List<Quadra> buscarQuadrasAtivas(Long quadraId, String tipoEsporte, String nomeQuadra) {
+        if (quadraId != null) {
+            return quadraRepository.findById(quadraId)
+                    .filter(Quadra::isAtiva)
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        org.springframework.data.jpa.domain.Specification<Quadra> spec = com.agendamentos.equadras.specification.QuadraSpecifications.ativa();
+
+        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
+            com.agendamentos.equadras.model.enums.TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
+            if (esporteEnum != null) {
+                spec = spec.and(com.agendamentos.equadras.specification.QuadraSpecifications.comTipoEsporte(esporteEnum));
+            } else {
+                return List.of();
+            }
+        }
+
+        if (nomeQuadra != null && !nomeQuadra.isBlank()) {
+            spec = spec.and(com.agendamentos.equadras.specification.QuadraSpecifications.comNome(nomeQuadra));
+        }
+
+        return quadraRepository.findAll(spec);
+    }
+
+    private com.agendamentos.equadras.model.enums.TipoEsporte parseTipoEsporte(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        String normalizado = com.agendamentos.equadras.util.TextoUtil.normalizar(valor)
+                .toUpperCase(java.util.Locale.ROOT).replace("-", "_").replace(" ", "_");
+
+        for (com.agendamentos.equadras.model.enums.TipoEsporte t : com.agendamentos.equadras.model.enums.TipoEsporte.values()) {
+            if (t.name().equals(normalizado)) {
+                return t;
+            }
+        }
+
+        if (normalizado.contains("SOCIETY") || normalizado.contains("CAMPO") || normalizado.contains("FUT")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTEBOL;
+        }
+        if (normalizado.contains("SALAO")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTSAL;
+        }
+        if (normalizado.contains("BEACH") || normalizado.contains("AREIA") || normalizado.contains("FUTEVOLEI") || normalizado.contains("BIT")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.BEACH_TENNIS;
+        }
+        if (normalizado.contains("BASQUET")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.BASQUETE;
+        }
+        if (normalizado.contains("TENIS")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.TENIS;
+        }
+        if (normalizado.contains("VOLEI")) {
+            return com.agendamentos.equadras.model.enums.TipoEsporte.VOLEI;
+        }
+
+        return null;
     }
 
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)

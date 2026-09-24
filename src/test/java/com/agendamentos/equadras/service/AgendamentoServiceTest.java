@@ -59,6 +59,9 @@ class AgendamentoServiceTest {
     @Mock
     private java.time.Clock clock;
 
+    @Mock
+    private UsuarioService usuarioService;
+
     @InjectMocks
     private AgendamentoService agendamentoService;
 
@@ -669,5 +672,85 @@ class AgendamentoServiceTest {
         );
 
         assertEquals("Quadra não encontrada para o ID: 999", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve consultar grade de horários filtrando por quadraId direto pelo repository")
+    void deveConsultarGradeHorariosPorQuadraId() {
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of());
+
+        LocalDate amanha = LocalDate.now(clock).plusDays(1);
+        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> grade =
+                agendamentoService.consultarGradeHorarios(amanha, 1L, null, null, false);
+
+        assertNotNull(grade);
+        assertEquals(1, grade.size());
+        assertEquals(1L, grade.get(0).id_quadra());
+        verify(quadraRepository, times(2)).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Deve consultar grade de horários via specification quando quadraId for nulo")
+    void deveConsultarGradeHorariosViaSpecification() {
+        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(List.of(quadra));
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of());
+
+        LocalDate amanha = LocalDate.now(clock).plusDays(1);
+        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> grade =
+                agendamentoService.consultarGradeHorarios(amanha, null, "TENIS", "Quadra de Tênis", false);
+
+        assertNotNull(grade);
+        assertEquals(1, grade.size());
+        verify(quadraRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class));
+    }
+
+    @Test
+    @DisplayName("Deve agendar via bot buscando quadra ativa pelo repository quando quadraId for nulo")
+    void deveAgendarViaBotBuscandoQuadraAtiva() {
+        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(List.of(quadra));
+
+        when(usuarioService.obterOuCriarUsuarioBot("Robson", "11999998888")).thenReturn(usuario);
+
+        LocalDateTime inicioEsperado = LocalDateTime.of(LocalDate.now(clock).plusDays(1), LocalTime.of(10, 0));
+        LocalDateTime fimEsperado = inicioEsperado.plusHours(1);
+
+        Agendamento agendamentoCriado = Agendamento.builder()
+                .id_agendamento(50L)
+                .usuario(usuario)
+                .quadra(quadra)
+                .dataHoraInicio(inicioEsperado)
+                .dataHoraFim(fimEsperado)
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .build();
+
+        when(agendamentoLockService.criarAgendamentoPendenteComLock(any(AgendamentoCriacaoDTO.class), eq(1L)))
+                .thenReturn(agendamentoCriado);
+        when(pagamentoService.gerarPix(any(Agendamento.class)))
+                .thenReturn(new PagamentoService.PixDados("tx-50", "copia-e-cola", "qr-code-base-64"));
+        when(agendamentoLockService.atualizarDadosPix(eq(50L), any()))
+                .thenReturn(agendamentoCriado);
+
+        com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO botDto =
+                new com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO(
+                        null,
+                        "Quadra de Tênis",
+                        "TENIS",
+                        LocalDate.now(clock).plusDays(1).toString(),
+                        "10:00",
+                        "11:00",
+                        "Robson",
+                        "11999998888"
+                );
+
+        AgendamentoResponseDTO resposta = agendamentoService.agendarViaBot(botDto);
+
+        assertNotNull(resposta);
+        assertEquals(50L, resposta.id_agendamento());
+        verify(quadraRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class));
     }
 }
