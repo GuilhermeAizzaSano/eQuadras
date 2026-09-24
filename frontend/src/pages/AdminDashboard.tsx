@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { quadraApi, agendamentoApi, getAssetUrl, DashboardMetricas } from '../api/apiClient';
 import { Quadra, Agendamento } from '../types';
@@ -23,6 +23,7 @@ import {
 import { usuarioApi } from '../api/apiClient';
 import { Usuario, Role } from '../types';
 import { parseDataHoraLocal, getHojeLocalIso, getAgoraBrasilia } from '../utils/dateUtils';
+import { filtrarProximasPartidas } from '../utils/proximasPartidas';
 
 interface AdminDashboardProps {
   activeTab?: 'dashboard' | 'quadras' | 'usuarios' | 'auditoria';
@@ -40,7 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     faturamentoTotal: 0,
     reservasHoje: 0,
   });
-  const [proximasPartidas, setProximasPartidas] = useState<Agendamento[]>([]);
+  const [agendamentosHoje, setAgendamentosHoje] = useState<Agendamento[]>([]);
   const [agendamentosTimeline, setAgendamentosTimeline] = useState<Agendamento[]>([]);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
   
@@ -77,12 +78,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
     const hasPendente =
-      proximasPartidas.some((a) => a.status === 'PENDENTE') ||
+      agendamentosHoje.some((a) => a.status === 'PENDENTE') ||
       agendamentosTimeline.some((a) => a.status === 'PENDENTE');
-    if (!hasPendente) return;
-    const timer = setInterval(() => setAgora(Date.now()), 1000);
+    // 1s para o contador do Pix; 60s para a lista de partidas acompanhar o relógio
+    const timer = setInterval(() => setAgora(Date.now()), hasPendente ? 1000 : 60000);
     return () => clearInterval(timer);
-  }, [proximasPartidas, agendamentosTimeline]);
+  }, [agendamentosHoje, agendamentosTimeline]);
+
+  const proximasPartidas = useMemo(() => {
+    const { agora: agoraBrasilia, hojeIso } = getAgoraBrasilia();
+    return filtrarProximasPartidas(agendamentosHoje, agoraBrasilia, hojeIso);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agendamentosHoje, agora]);
 
   const getTempoRestantePix = (criadoEm: string) => {
     const criadoMs = new Date(criadoEm).getTime();
@@ -249,26 +256,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const carregarDados = async () => {
     if (!user) return;
     try {
-      const { agora: agoraBrasilia } = getAgoraBrasilia();
-      const fimBrasilia = new Date(agoraBrasilia.getTime() + 4 * 60 * 60 * 1000);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const formatIsoLocal = (d: Date) =>
-        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-
-      const [quadras, metricasRes, proximasRes] = await Promise.all([
+      const [quadras, metricasRes, agendaHojeRes] = await Promise.all([
         quadraApi.listar(),
         agendamentoApi.obterMetricasDashboard(),
-        agendamentoApi.listarAgendaDoDiaPaginado({
-          inicio: formatIsoLocal(agoraBrasilia),
-          fim: formatIsoLocal(fimBrasilia),
-          aba: 'ATIVOS',
-          page: 0,
-          size: 20,
-        }),
+        agendamentoApi.listarAgendaCompleta({ data: getHojeLocalIso() }),
       ]);
       setMinhasQuadras(quadras);
       setMetricas(metricasRes);
-      setProximasPartidas(proximasRes.content);
+      setAgendamentosHoje(agendaHojeRes);
 
       // Carregar todos os bloqueios do admin consolidado
       await carregarMapaBloqueios();
@@ -495,7 +490,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!user) return;
     const ag =
       agendamentosTimeline.find((a) => a.id_agendamento === id) ||
-      proximasPartidas.find((a) => a.id_agendamento === id);
+      agendamentosHoje.find((a) => a.id_agendamento === id);
     if (ag && parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
       setFeedback({
         type: 'error',
