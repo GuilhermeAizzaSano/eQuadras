@@ -86,8 +86,29 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.cancelar(id, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.")
-    @GetMapping("/quadra/{quadraId}")
+    @Operation(summary = "Listar histórico paginado de agendamentos de uma quadra específica", description = "Retorna reservas paginadas da quadra para o administrador proprietário ou Master Admin.")
+    @GetMapping(value = "/quadra/{quadraId}", params = "page")
+    public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPorQuadraPaginado(
+            @PathVariable Long quadraId,
+            @RequestParam(required = false) AbaAgendamento aba,
+            Pageable pageable,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarPorQuadraPaginado(quadraId, aba, pageable, usuarioLogado.id()));
+    }
+
+    @Operation(summary = "Contadores de agendamentos por aba de uma quadra", description = "Retorna contadores de agendamentos (TODOS, ATIVOS, REALIZADOS, CANCELADOS) da quadra para o admin proprietário ou Master Admin.")
+    @GetMapping("/quadra/{quadraId}/contadores")
+    public ResponseEntity<Map<String, Long>> obterContadoresPorQuadra(
+            @PathVariable Long quadraId,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.contarPorAbaEQuadra(quadraId, usuarioLogado.id()));
+    }
+
+    @Deprecated
+    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.")
+    @GetMapping(value = "/quadra/{quadraId}", params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadra(
             @PathVariable Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado

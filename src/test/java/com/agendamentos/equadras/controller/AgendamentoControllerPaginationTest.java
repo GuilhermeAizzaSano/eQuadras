@@ -66,6 +66,8 @@ class AgendamentoControllerPaginationTest {
     private Quadra quadra;
     private String tokenA;
     private String tokenB;
+    private String tokenAdmin;
+    private String tokenOutroAdmin;
     private LocalDateTime baseTime;
 
     @BeforeEach
@@ -111,6 +113,15 @@ class AgendamentoControllerPaginationTest {
                 .ativo(true)
                 .build());
 
+        Usuario outroAdmin = usuarioRepository.save(Usuario.builder()
+                .nome_usuario("Outro Admin")
+                .email_usuario("outro_admin_" + System.currentTimeMillis() + "@teste.com")
+                .senha_usuario("senha123")
+                .phone_usuario("11999990004")
+                .role(Role.ADMIN)
+                .ativo(true)
+                .build());
+
         quadra = quadraRepository.save(Quadra.builder()
                 .nome("Arena Central")
                 .tipoEsporte(TipoEsporte.FUTEBOL)
@@ -121,6 +132,8 @@ class AgendamentoControllerPaginationTest {
 
         tokenA = jwtService.gerarToken(usuarioA);
         tokenB = jwtService.gerarToken(usuarioB);
+        tokenAdmin = jwtService.gerarToken(adminQuadra);
+        tokenOutroAdmin = jwtService.gerarToken(outroAdmin);
         baseTime = LocalDateTime.now();
     }
 
@@ -392,5 +405,102 @@ class AgendamentoControllerPaginationTest {
 
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries não pode variar com a quantidade de itens retornados com apenasPendentes=true");
+    }
+
+    @Test
+    @DisplayName("13. GET /agendamentos/quadra/{quadraId}?page=0&size=5 deve retornar 200 com PageResponse para admin dono")
+    void deveRetornarRespostaPaginadaParaHistoricoDeQuadra() throws Exception {
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra())
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("14. IDOR: GET /agendamentos/quadra/{quadraId}?page=0&size=5 por outro admin não proprietário deve retornar 403")
+    void outroAdminNaoDeveAcessarHistoricoDeQuadraAlheia() throws Exception {
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra())
+                        .cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .param("page", "0")
+                        .param("size", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("15. GET /agendamentos/quadra/{quadraId}/contadores deve retornar 200 com contadores corretos")
+    void deveRetornarContadoresDeQuadra() throws Exception {
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.minusDays(2), baseTime.minusDays(2).plusHours(1));
+        criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, baseTime.plusDays(2), baseTime.plusDays(2).plusHours(1));
+
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra() + "/contadores")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.TODOS").value(3))
+                .andExpect(jsonPath("$.ATIVOS").value(1))
+                .andExpect(jsonPath("$.REALIZADOS").value(1))
+                .andExpect(jsonPath("$.CANCELADOS").value(1));
+    }
+
+    @Test
+    @DisplayName("16. Endpoint legado: GET /agendamentos/quadra/{quadraId} sem page deve retornar 200 em array")
+    void endpointLegadoQuadraDeveRetornarArrayJson() throws Exception {
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra())
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("17. N+1 Safety: contagem de queries deve ser idêntica comparando 2 vs 10 registros em GET /agendamentos/quadra/{quadraId}?page=0&size=20")
+    void testeN1AusenteEmListarPorQuadraPaginadoComparando2Vs10Itens() throws Exception {
+        // 1. Cenário com 2 itens
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(1), baseTime.plusDays(1).plusHours(1));
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(2), baseTime.plusDays(2).plusHours(1));
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra())
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2));
+
+        long queriesPara2Itens = statistics.getPrepareStatementCount();
+
+        // 2. Adiciona mais 8 itens (total 10)
+        for (int i = 3; i <= 10; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, baseTime.plusDays(i), baseTime.plusDays(i).plusHours(1));
+        }
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra())
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10));
+
+        long queriesPara10Itens = statistics.getPrepareStatementCount();
+
+        assertEquals(queriesPara2Itens, queriesPara10Itens,
+                "Número de queries em listarPorQuadraPaginado não pode variar com a quantidade de itens retornados");
     }
 }

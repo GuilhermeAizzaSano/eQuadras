@@ -363,6 +363,20 @@ export const agendamentoApi = {
   listarPorQuadra: (quadraId: number) =>
     apiFetch<Agendamento[]>(`/agendamentos/quadra/${quadraId}`),
 
+  listarPorQuadraPaginado: (params: { quadraId: number; page: number; size: number; aba?: AbaAgendamento; signal?: AbortSignal }) => {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+    });
+    if (params.aba) {
+      query.append('aba', params.aba);
+    }
+    return apiFetch<PageResponse<Agendamento>>(`/agendamentos/quadra/${params.quadraId}?${query.toString()}`, { signal: params.signal });
+  },
+
+  obterContadoresPorQuadra: (quadraId: number, signal?: AbortSignal) =>
+    apiFetch<Record<string, number>>(`/agendamentos/quadra/${quadraId}/contadores`, { signal }),
+
   buscarPorId: (id: number) => apiFetch<Agendamento>(`/agendamentos/${id}`),
 
   agendar: (dados: { quadraId: number; dataHoraInicio: string; dataHoraFim: string }) =>

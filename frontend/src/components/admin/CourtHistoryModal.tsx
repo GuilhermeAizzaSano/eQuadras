@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Quadra, Agendamento } from '../../types';
 import { Badge, EmptyState, Button } from '../ui';
@@ -9,13 +9,13 @@ import {
   Clock,
   Phone,
   User,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   AlertCircle
 } from 'lucide-react';
 import { parseDataHoraLocal, formatarDataHoraBr } from '../../utils/dateUtils';
-import { agendamentoApi } from '../../api/apiClient';
+import { agendamentoApi, AbaAgendamento } from '../../api/apiClient';
+import { usePaginatedQuery, PageFetcher } from '../../shared/pagination';
+import { Pagination } from '../../shared/pagination/Pagination';
 
 interface CourtHistoryModalProps {
   isOpen: boolean;
@@ -25,45 +25,81 @@ interface CourtHistoryModalProps {
 
 type StatusFiltro = 'TODOS' | 'ATIVOS' | 'REALIZADOS' | 'CANCELADOS';
 
+const ITENS_POR_PAGINA = 5;
+
+const fetchCourtAgendamentosPage: PageFetcher<Agendamento, { quadraId: number; aba?: AbaAgendamento }> = ({
+  page,
+  size,
+  filters,
+  signal,
+}) => {
+  if (!filters.quadraId) {
+    return Promise.resolve({
+      content: [],
+      page: 0,
+      size,
+      totalElements: 0,
+      totalPages: 0,
+    });
+  }
+  return agendamentoApi.listarPorQuadraPaginado({
+    quadraId: filters.quadraId,
+    page,
+    size,
+    aba: filters.aba,
+    signal,
+  });
+};
+
 export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
   isOpen,
   quadra,
   onClose,
 }) => {
-  const ITENS_POR_PAGINA = 5;
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<StatusFiltro>('TODOS');
-  const [paginaAtual, setPaginaAtual] = useState(1);
+  const [contadores, setContadores] = useState<{ todos: number; ativos: number; realizados: number; cancelados: number }>({
+    todos: 0,
+    ativos: 0,
+    realizados: 0,
+    cancelados: 0,
+  });
 
-  // Carregamento rigorosamente sob demanda (Lazy Loading ao abrir a modal)
+  const carregarContadores = useCallback(async () => {
+    if (!quadra) return;
+    try {
+      const res = await agendamentoApi.obterContadoresPorQuadra(quadra.id_quadra);
+      setContadores({
+        todos: res['TODOS'] ?? 0,
+        ativos: res['ATIVOS'] ?? 0,
+        realizados: res['REALIZADOS'] ?? 0,
+        cancelados: res['CANCELADOS'] ?? 0,
+      });
+    } catch (err) {
+      console.error('Erro ao carregar contadores da quadra:', err);
+    }
+  }, [quadra]);
+
+  const filters = useMemo(() => ({
+    quadraId: isOpen && quadra ? quadra.id_quadra : 0,
+    aba: filtroStatus === 'TODOS' ? undefined : (filtroStatus as AbaAgendamento),
+  }), [isOpen, quadra, filtroStatus]);
+
+  const {
+    items: agendamentos,
+    page,
+    setPage,
+    totalPages,
+    totalElements,
+    status,
+    error,
+    isEmpty,
+  } = usePaginatedQuery(fetchCourtAgendamentosPage, filters, { size: ITENS_POR_PAGINA });
+
   useEffect(() => {
     if (isOpen && quadra) {
-      setPaginaAtual(1);
-      setFiltroStatus('TODOS');
-      setErro(null);
-      setLoading(true);
-
-      agendamentoApi
-        .listarPorQuadra(quadra.id_quadra)
-        .then((dados) => {
-          setAgendamentos(dados || []);
-        })
-        .catch((err: unknown) => {
-          console.error('Erro ao buscar histórico da quadra:', err);
-          const msg = err instanceof Error ? err.message : 'Falha ao carregar o histórico de agendamentos da quadra.';
-          setErro(msg);
-          setAgendamentos([]);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else if (!isOpen) {
-      setAgendamentos([]);
-      setErro(null);
+      carregarContadores();
     }
-  }, [isOpen, quadra]);
+  }, [isOpen, quadra, carregarContadores]);
 
   // Bloqueio de rolagem do body enquanto o modal estiver aberto e fechar com Escape
   useEffect(() => {
@@ -72,7 +108,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
       document.body.style.overflow = 'hidden';
 
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && !loading) {
+        if (e.key === 'Escape' && status !== 'loading') {
           onClose();
         }
       };
@@ -83,76 +119,13 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         window.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isOpen, loading, onClose]);
+  }, [isOpen, status, onClose]);
 
-  // Resetar página atual ao alterar filtro
   const handleFiltroChange = (novoFiltro: StatusFiltro) => {
     setFiltroStatus(novoFiltro);
-    setPaginaAtual(1);
   };
 
   const agora = useMemo(() => new Date(), [isOpen]);
-
-  // Contadores por categoria
-  const { contadores, agendamentosFiltrados } = useMemo(() => {
-    let ativos = 0;
-    let realizados = 0;
-    let cancelados = 0;
-
-    agendamentos.forEach((ag) => {
-      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-      const isCancelado = ag.status === 'CANCELADO';
-      const isPassado = dataFim < agora;
-
-      if (isCancelado) {
-        cancelados++;
-      } else if (isPassado) {
-        realizados++;
-      } else {
-        ativos++;
-      }
-    });
-
-    const filtrados = agendamentos
-      .filter((ag) => {
-        const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-        const isCancelado = ag.status === 'CANCELADO';
-        const isPassado = dataFim < agora;
-
-        if (filtroStatus === 'ATIVOS') return !isCancelado && !isPassado;
-        if (filtroStatus === 'REALIZADOS') return !isCancelado && isPassado;
-        if (filtroStatus === 'CANCELADOS') return isCancelado;
-        return true;
-      })
-      .sort((a, b) => {
-        const tempoA = parseDataHoraLocal(a.dataHoraInicio).getTime();
-        const tempoB = parseDataHoraLocal(b.dataHoraInicio).getTime();
-        if (filtroStatus === 'ATIVOS') {
-          return tempoA - tempoB;
-        }
-        return tempoB - tempoA;
-      });
-
-    return {
-      contadores: {
-        todos: agendamentos.length,
-        ativos,
-        realizados,
-        cancelados,
-      },
-      agendamentosFiltrados: filtrados,
-    };
-  }, [agendamentos, filtroStatus, agora]);
-
-  // Paginação de 5 em 5
-  const totalItens = agendamentosFiltrados.length;
-  const totalPaginas = Math.max(1, Math.ceil(totalItens / ITENS_POR_PAGINA));
-  const paginaValida = Math.min(Math.max(1, paginaAtual), totalPaginas);
-  const indiceInicio = (paginaValida - 1) * ITENS_POR_PAGINA;
-  const agendamentosPaginados = agendamentosFiltrados.slice(
-    indiceInicio,
-    indiceInicio + ITENS_POR_PAGINA
-  );
 
   const formatarData = (dataHoraIso: string) => {
     const dataParte = dataHoraIso.split('T')[0];
@@ -288,17 +261,19 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
 
         {/* Conteúdo da Modal */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 scrollbar-thin">
-          {loading ? (
+          {status === 'loading' && agendamentos.length === 0 ? (
             <div className="py-16 flex flex-col items-center justify-center gap-3 text-white/50 text-xs font-mono">
               <Loader2 className="w-6 h-6 animate-spin text-white/60" />
               <span>Carregando histórico de agendamentos...</span>
             </div>
-          ) : erro ? (
+          ) : status === 'error' && agendamentos.length === 0 ? (
             <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-[#FF453A]/20 rounded-2xl bg-[#FF453A]/5">
               <AlertCircle className="w-8 h-8 text-[#FF453A] mb-2" />
-              <p className="text-xs text-[#FF453A] font-medium">{erro}</p>
+              <p className="text-xs text-[#FF453A] font-medium">
+                {error instanceof Error ? error.message : 'Falha ao carregar histórico de agendamentos.'}
+              </p>
             </div>
-          ) : agendamentosFiltrados.length === 0 ? (
+          ) : isEmpty ? (
             <EmptyState
               icon={Calendar}
               title={
@@ -319,12 +294,12 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             />
           ) : (
             <div className="space-y-3">
-              {agendamentosPaginados.map((ag) => {
+              {agendamentos.map((ag) => {
                 const isCancelado = ag.status === 'CANCELADO';
                 const isPassado = parseDataHoraLocal(ag.dataHoraFim) < agora;
 
                 const statusVariant = isCancelado
-                  ? 'outline'
+                  ? 'danger'
                   : isPassado
                   ? 'neutral'
                   : ag.status === 'PENDENTE'
@@ -332,52 +307,57 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                   : 'success';
 
                 const statusLabel = isCancelado
-                  ? 'CANCELADO'
+                  ? 'Cancelado'
                   : isPassado
-                  ? 'REALIZADO'
-                  : ag.status;
+                  ? 'Realizado'
+                  : ag.status === 'PENDENTE'
+                  ? 'Pendente'
+                  : 'Confirmado';
 
                 return (
                   <div
                     key={ag.id_agendamento}
-                    className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/20 transition-colors space-y-3"
+                    className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors space-y-3"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="text-sm font-semibold text-white flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-white/60" />
-                          <span>{ag.nomeUsuario || 'Atleta'}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-semibold text-white">
+                            #{ag.id_agendamento}
+                          </span>
+                          <Badge
+                            variant={statusVariant}
+                            className="uppercase tracking-wider text-[10px] font-mono px-2 py-0.5"
+                          >
+                            {statusLabel}
+                          </Badge>
                         </div>
-
+                        <div className="flex items-center gap-2 mt-2 text-xs text-white/80">
+                          <User className="w-3.5 h-3.5 text-white/40" />
+                          <span className="font-medium text-white">{ag.nomeUsuario}</span>
+                        </div>
                         {ag.telefoneUsuario && (
-                          <div className="text-xs text-white/40 flex items-center gap-1.5 font-mono">
-                            <Phone className="w-3 h-3 text-white/40" />
-                            <span>{ag.telefoneUsuario}</span>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
+                            <Phone className="w-3.5 h-3.5 text-white/40" />
+                            <span className="font-mono text-[11px]">{ag.telefoneUsuario}</span>
                           </div>
                         )}
                       </div>
 
-                      <Badge variant={statusVariant} withDot>
-                        {statusLabel}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-white/60">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-white/40" />
-                        <span>{formatarData(ag.dataHoraInicio)}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-white/40" />
-                        <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
+                      <div className="text-right space-y-1">
+                        <div className="flex items-center justify-end gap-1.5 text-xs text-white/90 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-white/40" />
+                          <span>{formatarData(ag.dataHoraInicio)}</span>
+                        </div>
+                        <div className="flex items-center justify-end gap-1.5 text-xs text-white/50 font-mono">
+                          <Clock className="w-3 h-3 text-white/40" />
+                          <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/40 font-mono">
-                      {ag.criadoEm && (
-                        <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
-                      )}
+                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-white/[0.04] text-[11px] text-white/40 font-mono gap-2">
+                      <span>Criado em: {formatarDataHoraBr(ag.criadoEm)}</span>
                       {isCancelado && (
                         <span className="text-[#FF453A]/90">
                           Cancelado em: <strong className="text-[#FF453A] font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
@@ -400,37 +380,13 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
 
         {/* Rodapé com Paginação e Botão Fechar */}
         <div className="p-4 border-t border-white/[0.06] bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-3">
-          {totalPaginas > 1 ? (
-            <div className="flex items-center justify-between w-full sm:w-auto gap-2">
-              <button
-                type="button"
-                disabled={paginaValida <= 1}
-                onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Anterior</span>
-              </button>
-
-              <span className="text-[11px] text-white/50 font-mono px-2">
-                {paginaValida} / {totalPaginas} ({totalItens} {totalItens === 1 ? 'item' : 'itens'})
-              </span>
-
-              <button
-                type="button"
-                disabled={paginaValida >= totalPaginas}
-                onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
-              >
-                <span>Próxima</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <span className="text-[11px] text-white/40 font-mono">
-              Total de {totalItens} {totalItens === 1 ? 'reserva' : 'reservas'}
-            </span>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            isLoading={status === 'loading'}
+            onPageChange={setPage}
+          />
 
           <Button
             type="button"

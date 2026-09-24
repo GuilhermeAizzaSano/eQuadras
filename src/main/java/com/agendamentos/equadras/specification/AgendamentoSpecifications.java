@@ -33,6 +33,10 @@ public final class AgendamentoSpecifications {
         return (root, query, cb) -> cb.equal(root.get("status"), status);
     }
 
+    public static Specification<Agendamento> daQuadra(Long quadraId) {
+        return (root, query, cb) -> cb.equal(root.get("quadra").get("id_quadra"), quadraId);
+    }
+
     public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {
         // Pendente e criado há menos de 15 minutos
         LocalDateTime limite = agora.minusMinutes(15);

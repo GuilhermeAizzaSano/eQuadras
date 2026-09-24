@@ -290,11 +290,7 @@ public class AgendamentoService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
-    public List<AgendamentoResponseDTO> listarPorQuadra(Long quadraId, Long usuarioId) {
-        Quadra quadra = quadraRepository.findById(quadraId)
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
-
+    private void validarAcessoQuadra(Quadra quadra, Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
@@ -302,13 +298,60 @@ public class AgendamentoService {
         boolean ehDonoQuadra = quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(usuarioId);
 
         if (!ehMasterAdmin && !ehDonoQuadra) {
-            throw new IllegalArgumentException("Você não tem permissão para visualizar o histórico desta quadra.");
+            throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para visualizar o histórico desta quadra.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<AgendamentoResponseDTO> listarPorQuadra(Long quadraId, Long usuarioId) {
+        Quadra quadra = quadraRepository.findById(quadraId)
+                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+
+        validarAcessoQuadra(quadra, usuarioId);
 
         return agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(quadraId)
                 .stream()
                 .map(AgendamentoResponseDTO::fromEntitySemPix)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AgendamentoResponseDTO> listarPorQuadraPaginado(Long quadraId, AbaAgendamento aba, Pageable pageable, Long usuarioId) {
+        Quadra quadra = quadraRepository.findById(quadraId)
+                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+
+        validarAcessoQuadra(quadra, usuarioId);
+
+        LocalDateTime agora = LocalDateTime.now(clock);
+        Specification<Agendamento> spec = AgendamentoSpecifications.daQuadra(quadraId);
+        if (aba != null) {
+            spec = spec.and(AgendamentoSpecifications.daAba(aba, agora));
+        }
+
+        SortPolicy policy = (aba == AbaAgendamento.ATIVOS) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
+        Pageable pageableComSort = policy.apply(pageable);
+
+        Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
+
+        return PageResponse.of(pagina, AgendamentoResponseDTO::fromEntitySemPix);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> contarPorAbaEQuadra(Long quadraId, Long usuarioId) {
+        Quadra quadra = quadraRepository.findById(quadraId)
+                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+
+        validarAcessoQuadra(quadra, usuarioId);
+
+        LocalDateTime agora = LocalDateTime.now(clock);
+        Specification<Agendamento> base = AgendamentoSpecifications.daQuadra(quadraId);
+
+        Map<String, Long> contagens = new java.util.LinkedHashMap<>();
+        contagens.put("TODOS", agendamentoRepository.count(base));
+        for (AbaAgendamento aba : AbaAgendamento.values()) {
+            contagens.put(aba.name(), agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
+        }
+        return contagens;
     }
 
     @Transactional(readOnly = true)
