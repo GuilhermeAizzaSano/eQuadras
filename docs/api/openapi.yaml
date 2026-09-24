@@ -1047,11 +1047,31 @@ paths:
     get:
       tags:
       - Agendamentos - API
-      summary: Listar agendamentos do usuário autenticado
-      description: "Retorna os agendamentos do atleta logado (ativos por padrão, ou\
-        \ histórico completo com historico=true) ou pelas quadras do admin."
-      operationId: listarTodos_1
+      summary: Listar agendamentos (legado sem paginação)
+      description: Retorna todos os agendamentos em lista única. Use a rota paginada
+        com ?page=0.
+      operationId: listarPaginado
       parameters:
+      - name: aba
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVOS
+          - REALIZADOS
+          - CANCELADOS
+      - name: apenasPendentes
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       - name: historico
         in: query
         required: false
@@ -1064,9 +1084,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AgendamentoResponseDTO"
+                oneOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/AgendamentoResponseDTO"
+                - $ref: "#/components/schemas/PageResponseAgendamentoResponseDTO"
               example:
               - id_agendamento: 42
                 usuarioId: 10
@@ -1082,6 +1104,7 @@ paths:
                 pixCopiaECola: 00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...
                 qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAA...
                 criadoEm: 2026-09-09T00:30:00
+      deprecated: true
     post:
       tags:
       - Agendamentos - API
@@ -1558,14 +1581,14 @@ paths:
                 status: 404
                 detail: A quadra informada não foi localizada.
                 instance: "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
-  /api/agendamentos/quadra/{quadraId}:
+  /api/agendamentos/quadra/{quadraId}/contadores:
     get:
       tags:
       - Agendamentos - API
-      summary: Listar histórico de agendamentos de uma quadra específica
-      description: Retorna todas as reservas da quadra para o administrador proprietário
-        ou Master Admin.
-      operationId: listarPorQuadra
+      summary: Contadores de agendamentos por aba de uma quadra
+      description: "Retorna contadores de agendamentos (TODOS, ATIVOS, REALIZADOS,\
+        \ CANCELADOS) da quadra para o admin proprietário ou Master Admin."
+      operationId: obterContadoresPorQuadra
       parameters:
       - name: quadraId
         in: path
@@ -1579,9 +1602,52 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AgendamentoResponseDTO"
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+  /api/agendamentos/quadra/{quadraId}:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Listar histórico de agendamentos de uma quadra específica (legado sem
+        paginação)
+      description: Retorna todas as reservas da quadra para o administrador proprietário
+        ou Master Admin.
+      operationId: listarPorQuadraPaginado
+      parameters:
+      - name: quadraId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: aba
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVOS
+          - REALIZADOS
+          - CANCELADOS
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/AgendamentoResponseDTO"
+                - $ref: "#/components/schemas/PageResponseAgendamentoResponseDTO"
+      deprecated: true
   /api/agendamentos/horarios-disponiveis:
     get:
       tags:
@@ -1715,6 +1781,180 @@ paths:
                   status: DISPONIVEL
                   disponivel: true
                   motivo: null
+  /api/agendamentos/dashboard/metricas:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Obter métricas agregadas do dashboard admin
+      description: "Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas,\
+        \ faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados\
+        \ para o administrador autenticado."
+      operationId: obterMetricasDashboard
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardMetricasDTO"
+  /api/agendamentos/contadores:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Contadores de agendamentos por aba
+      description: "Retorna o total de agendamentos do atleta por aba (ATIVOS, REALIZADOS,\
+        \ CANCELADOS)."
+      operationId: obterContadores
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+  /api/agendamentos/agenda/contadores:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Contadores de reservas da agenda por aba (Admin)
+      description: Retorna contadores de agendamentos por aba para a data ou intervalo
+        informado e quadra(s) do admin autenticado.
+      operationId: obterContadoresAgendaDoDia
+      parameters:
+      - name: data
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: inicio
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: fim
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: quadraId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+  /api/agendamentos/agenda/completa:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Listar agenda completa do dia (Admin)
+      description: Retorna todos os agendamentos não cancelados de um único dia (máximo
+        24h) para visualização na grade operacional da timeline.
+      operationId: listarAgendaCompleta
+      parameters:
+      - name: data
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: inicio
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: fim
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: quadraId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgendamentoResponseDTO"
+  /api/agendamentos/agenda:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Listar reservas da agenda do dia ou intervalo paginadas (Admin)
+      description: "Retorna agendamentos paginados do dia informado ou intervalo [inicio,\
+        \ fim) para as quadras do admin autenticado, com filtro opcional por quadra\
+        \ e aba."
+      operationId: listarAgendaDoDia
+      parameters:
+      - name: data
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: inicio
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: fim
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: quadraId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      - name: aba
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ATIVOS
+          - REALIZADOS
+          - CANCELADOS
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageResponseAgendamentoResponseDTO"
   /api/admin/auditoria/estatisticas:
     get:
       tags:
@@ -2392,8 +2632,6 @@ components:
         number:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
@@ -2401,6 +2639,8 @@ components:
           type: boolean
         last:
           type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
         pageable:
           $ref: "#/components/schemas/PageableObject"
         empty:
@@ -2411,18 +2651,18 @@ components:
         offset:
           type: integer
           format: int64
-        pageSize:
-          type: integer
-          format: int32
-        pageNumber:
-          type: integer
-          format: int32
         paged:
           type: boolean
         sort:
           $ref: "#/components/schemas/SortObject"
         unpaged:
           type: boolean
+        pageSize:
+          type: integer
+          format: int32
+        pageNumber:
+          type: integer
+          format: int32
     SortObject:
       type: object
       properties:
@@ -2464,6 +2704,40 @@ components:
           type: string
           description: Justificativa ou motivo do status
           example: Disponível
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageResponseAgendamentoResponseDTO:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgendamentoResponseDTO"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     GradeHorariosResponseDTO:
       type: object
       description: Representação consolidada da grade de horários de uma quadra com
@@ -2503,6 +2777,34 @@ components:
           description: Lista dos slots de horários do dia
           items:
             $ref: "#/components/schemas/HorarioDisponivelDTO"
+    DashboardMetricasDTO:
+      type: object
+      description: Métricas agregadas do painel administrativo
+      properties:
+        totalQuadras:
+          type: integer
+          format: int64
+          description: Total de quadras pertencentes ao administrador
+          example: 4
+        quadrasAtivas:
+          type: integer
+          format: int64
+          description: Total de quadras ativas do administrador
+          example: 3
+        totalReservas:
+          type: integer
+          format: int64
+          description: Total histórico de reservas válidas (não canceladas)
+          example: 128
+        faturamentoTotal:
+          type: number
+          description: Faturamento total acumulado em reservas não canceladas
+          example: 15420.0
+        reservasHoje:
+          type: integer
+          format: int64
+          description: Total de reservas agendadas para o dia atual
+          example: 6
     EstatisticasAuditoriaDTO:
       type: object
       properties:
@@ -2581,8 +2883,6 @@ components:
         number:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
@@ -2590,6 +2890,8 @@ components:
           type: boolean
         last:
           type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
         pageable:
           $ref: "#/components/schemas/PageableObject"
         empty:
