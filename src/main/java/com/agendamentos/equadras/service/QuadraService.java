@@ -24,6 +24,34 @@ import java.util.List;
 @Service
 public class QuadraService {
 
+    private static final String PROPRIEDADE_ID_QUADRA_ORDENACAO = "id_quadra";
+
+    private static final com.agendamentos.equadras.shared.pagination.SortPolicy SORT_POLICY_QUADRAS =
+            com.agendamentos.equadras.shared.pagination.SortPolicy.of(
+                    java.util.Set.of("nome", PROPRIEDADE_ID_QUADRA_ORDENACAO),
+                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nome"),
+                    PROPRIEDADE_ID_QUADRA_ORDENACAO);
+
+    /**
+     * Spring Data trata "_" como separador de propriedade aninhada ao resolver um {@link Sort} via Criteria API
+     * (ex.: "id_quadra" seria interpretado como "id.quadra", que não existe em Quadra). Como o atributo da
+     * entidade é literalmente "id_quadra", a ordem correspondente precisa ser reconstruída como
+     * {@link org.springframework.data.jpa.domain.JpaSort#unsafe} para ser tratada como expressão HQL literal.
+     */
+    private static org.springframework.data.domain.Sort comOrdenacaoIdQuadraSegura(org.springframework.data.domain.Sort sort) {
+        List<org.springframework.data.domain.Sort.Order> ordens = new java.util.ArrayList<>();
+        for (org.springframework.data.domain.Sort.Order order : sort) {
+            if (PROPRIEDADE_ID_QUADRA_ORDENACAO.equals(order.getProperty())) {
+                ordens.addAll(org.springframework.data.jpa.domain.JpaSort
+                        .unsafe(order.getDirection(), PROPRIEDADE_ID_QUADRA_ORDENACAO)
+                        .toList());
+            } else {
+                ordens.add(order);
+            }
+        }
+        return org.springframework.data.domain.Sort.by(ordens);
+    }
+
     private final QuadraRepository quadraRepository;
     private final UsuarioRepository usuarioRepository;
     private final AgendamentoRepository agendamentoRepository;
@@ -323,7 +351,12 @@ public class QuadraService {
         }
 
         Pageable pageableEfetivo = (pageable != null && pageable.isPaged()) ? pageable : PageRequest.of(0, 10);
-        Page<Quadra> paginaQuadras = quadraRepository.findAll(spec, pageableEfetivo);
+        Pageable pageableOrdenado = SORT_POLICY_QUADRAS.apply(pageableEfetivo);
+        Pageable pageableOrdenadoSeguro = PageRequest.of(
+                pageableOrdenado.getPageNumber(),
+                pageableOrdenado.getPageSize(),
+                comOrdenacaoIdQuadraSegura(pageableOrdenado.getSort()));
+        Page<Quadra> paginaQuadras = quadraRepository.findAll(spec, pageableOrdenadoSeguro);
 
         return paginaQuadras.map(QuadraResponseDTO::fromEntity);
     }
@@ -447,13 +480,7 @@ public class QuadraService {
     }
 
     private String normalizarTexto(String texto) {
-        if (texto == null) {
-            return "";
-        }
-        return java.text.Normalizer.normalize(texto, java.text.Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(java.util.Locale.ROOT)
-                .trim();
+        return com.agendamentos.equadras.util.TextoUtil.normalizar(texto);
     }
 
     private com.agendamentos.equadras.model.enums.TipoEsporte parseTipoEsporte(String valor) {
