@@ -271,4 +271,27 @@ class AgendamentoSpecificationsTest {
         assertEquals(1, resultados.size());
         assertEquals(pendenteRecente.getId_agendamento(), resultados.getFirst().getId_agendamento());
     }
+
+    @Test
+    @DisplayName("Pendente criado exatamente há 15 minutos ainda é válido (expiração usa criadoEm < limite)")
+    void pendenteNoLimiteExatoDe15MinutosAindaEhValido() {
+        LocalDateTime agora = baseTime.withNano(0);
+        Agendamento pendenteNoLimite = agendamentoRepository.save(Agendamento.builder()
+                .usuario(usuario1)
+                .quadra(quadra)
+                .status(StatusAgendamento.PENDENTE)
+                .criadoEm(agora.minusMinutes(15))
+                .dataHoraInicio(agora.plusHours(2))
+                .dataHoraFim(agora.plusHours(3))
+                .valorTotal(BigDecimal.valueOf(100.0))
+                .build());
+
+        Specification<Agendamento> spec = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.apenasPendentesValidos(agora));
+
+        List<Agendamento> resultados = agendamentoRepository.findAll(spec);
+
+        assertEquals(1, resultados.size());
+        assertEquals(pendenteNoLimite.getId_agendamento(), resultados.getFirst().getId_agendamento());
+    }
 }
