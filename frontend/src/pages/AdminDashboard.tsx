@@ -570,17 +570,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Header & Navegação por Abas */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-fg/[0.1] pb-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
             <span>Painel Administrativo</span>
             {isMasterAdmin && (
-              <span className="text-[10px] uppercase font-mono font-medium tracking-wider px-2.5 py-0.5 rounded-full bg-[#0A84FF]/15 border border-[#0A84FF]/30 text-[#0A84FF]">
+              <span className="text-[10px] uppercase font-mono font-medium tracking-wider px-2.5 py-0.5 rounded-full bg-info/15 border border-info/30 text-info">
                 Master Admin
               </span>
             )}
           </h1>
-          <p className="text-xs text-white/50 mt-1">
+          <p className="text-xs text-fg/50 mt-1">
             Gestão operacional em tempo real de quadras, reservas e agenda.
           </p>
         </div>

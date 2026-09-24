@@ -148,20 +148,20 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
       aria-modal="true"
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-200"
     >
-      <div className="bg-[#121214] border border-white/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-2xl h-[650px] max-h-[90vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-2xl h-[650px] max-h-[90vh] flex flex-col shadow-2xl shadow-black/80 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
+        <div className="p-5 sm:p-6 border-b border-fg/[0.06] flex items-center justify-between bg-fg/[0.03]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.1] text-white flex items-center justify-center">
-              <History className="w-5 h-5 text-white/80" />
+            <div className="w-10 h-10 rounded-2xl bg-fg/[0.06] border border-fg/[0.1] text-fg flex items-center justify-center">
+              <History className="w-5 h-5 text-fg/80" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">
+              <h3 className="text-base sm:text-lg font-semibold text-fg tracking-tight">
                 Histórico de Agendas
               </h3>
-              <p className="text-xs text-white/50 mt-0.5">
-                Quadra: <strong className="text-white font-medium">{quadra.nome}</strong>
-                <span className="ml-2 font-mono text-[10px] text-white/40 uppercase px-1.5 py-0.5 bg-white/[0.04] rounded-md border border-white/[0.06]">
+              <p className="text-xs text-fg/50 mt-0.5">
+                Quadra: <strong className="text-fg font-medium">{quadra.nome}</strong>
+                <span className="ml-2 font-mono text-[10px] text-fg/40 uppercase px-1.5 py-0.5 bg-fg/[0.03] rounded-md border border-fg/[0.06]">
                   {quadra.tipoEsporte.replace('_', ' ')}
                 </span>
               </p>
@@ -171,7 +171,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/50 hover:text-white border border-white/[0.08] transition cursor-pointer active:scale-95"
+            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/50 hover:text-fg border border-fg/[0.1] transition cursor-pointer active:scale-95"
             title="Fechar histórico"
           >
             <X className="w-4 h-4" />
@@ -179,21 +179,21 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         </div>
 
         {/* Abas de Filtros por Status */}
-        <div className="px-5 sm:px-6 py-3 border-b border-white/[0.06] bg-white/[0.02] flex items-center">
-          <div className="flex w-full bg-white/[0.04] p-1 rounded-xl border border-white/[0.08] text-xs">
+        <div className="px-5 sm:px-6 py-3 border-b border-fg/[0.06] bg-fg/[0.03] flex items-center">
+          <div className="flex w-full bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1] text-xs">
             <button
               type="button"
               onClick={() => handleFiltroChange('TODOS')}
               className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 filtroStatus === 'TODOS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <span>Todos</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
-                  filtroStatus === 'TODOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
+                  filtroStatus === 'TODOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
                 {contadores.todos}
@@ -205,14 +205,14 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
               onClick={() => handleFiltroChange('ATIVOS')}
               className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 filtroStatus === 'ATIVOS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <span>Ativos</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
-                  filtroStatus === 'ATIVOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
+                  filtroStatus === 'ATIVOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
                 {contadores.ativos}
@@ -224,14 +224,14 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
               onClick={() => handleFiltroChange('REALIZADOS')}
               className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 filtroStatus === 'REALIZADOS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <span>Realizados</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
-                  filtroStatus === 'REALIZADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
+                  filtroStatus === 'REALIZADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
                 {contadores.realizados}
@@ -243,14 +243,14 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
               onClick={() => handleFiltroChange('CANCELADOS')}
               className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                 filtroStatus === 'CANCELADOS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <span>Cancelados</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
-                  filtroStatus === 'CANCELADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
+                  filtroStatus === 'CANCELADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
                 {contadores.cancelados}
@@ -262,14 +262,14 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         {/* Conteúdo da Modal */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 scrollbar-thin">
           {status === 'loading' && agendamentos.length === 0 ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-white/50 text-xs font-mono">
-              <Loader2 className="w-6 h-6 animate-spin text-white/60" />
+            <div className="py-16 flex flex-col items-center justify-center gap-3 text-fg/50 text-xs font-mono">
+              <Loader2 className="w-6 h-6 animate-spin text-fg/60" />
               <span>Carregando histórico de agendamentos...</span>
             </div>
           ) : status === 'error' && agendamentos.length === 0 ? (
-            <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-[#FF453A]/20 rounded-2xl bg-[#FF453A]/5">
-              <AlertCircle className="w-8 h-8 text-[#FF453A] mb-2" />
-              <p className="text-xs text-[#FF453A] font-medium">
+            <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-danger/20 rounded-2xl bg-danger/5">
+              <AlertCircle className="w-8 h-8 text-danger mb-2" />
+              <p className="text-xs text-danger font-medium">
                 {error instanceof Error ? error.message : 'Falha ao carregar histórico de agendamentos.'}
               </p>
             </div>
@@ -317,12 +317,12 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                 return (
                   <div
                     key={ag.id_agendamento}
-                    className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] transition-colors space-y-3"
+                    className="p-4 rounded-2xl bg-fg/[0.03] border border-fg/[0.06] hover:border-fg/[0.15] transition-colors space-y-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-semibold text-white">
+                          <span className="font-mono text-xs font-semibold text-fg">
                             #{ag.id_agendamento}
                           </span>
                           <Badge
@@ -332,42 +332,42 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                             {statusLabel}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-white/80">
-                          <User className="w-3.5 h-3.5 text-white/40" />
-                          <span className="font-medium text-white">{ag.nomeUsuario}</span>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-fg/80">
+                          <User className="w-3.5 h-3.5 text-fg/40" />
+                          <span className="font-medium text-fg">{ag.nomeUsuario}</span>
                         </div>
                         {ag.telefoneUsuario && (
-                          <div className="flex items-center gap-2 mt-1 text-xs text-white/50">
-                            <Phone className="w-3.5 h-3.5 text-white/40" />
+                          <div className="flex items-center gap-2 mt-1 text-xs text-fg/50">
+                            <Phone className="w-3.5 h-3.5 text-fg/40" />
                             <span className="font-mono text-[11px]">{ag.telefoneUsuario}</span>
                           </div>
                         )}
                       </div>
 
                       <div className="text-right space-y-1">
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-white/90 font-medium">
-                          <Calendar className="w-3.5 h-3.5 text-white/40" />
+                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/90 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-fg/40" />
                           <span>{formatarData(ag.dataHoraInicio)}</span>
                         </div>
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-white/50 font-mono">
-                          <Clock className="w-3 h-3 text-white/40" />
+                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/50 font-mono">
+                          <Clock className="w-3 h-3 text-fg/40" />
                           <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-white/[0.04] text-[11px] text-white/40 font-mono gap-2">
+                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-fg/[0.03] text-[11px] text-fg/40 font-mono gap-2">
                       <span>Criado em: {formatarDataHoraBr(ag.criadoEm)}</span>
                       {isCancelado && (
-                        <span className="text-[#FF453A]/90">
-                          Cancelado em: <strong className="text-[#FF453A] font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
+                        <span className="text-danger/90">
+                          Cancelado em: <strong className="text-danger font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
-                      <span className="text-white/50 font-mono">Valor Total:</span>
-                      <span className="text-white font-mono font-semibold text-sm">
+                    <div className="flex items-center justify-between pt-2 border-t border-fg/[0.06] text-xs">
+                      <span className="text-fg/50 font-mono">Valor Total:</span>
+                      <span className="text-fg font-mono font-semibold text-sm">
                         R$ {ag.valorTotal.toFixed(2)}
                       </span>
                     </div>
@@ -379,7 +379,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         </div>
 
         {/* Rodapé com Paginação e Botão Fechar */}
-        <div className="p-4 border-t border-white/[0.06] bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 border-t border-fg/[0.06] bg-fg/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
           <Pagination
             page={page}
             totalPages={totalPages}

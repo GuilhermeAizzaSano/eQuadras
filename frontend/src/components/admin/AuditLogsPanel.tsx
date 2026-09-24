@@ -161,28 +161,28 @@ export const AuditLogsPanel: React.FC = () => {
     switch (tipo) {
       case 'MASTER_ADMIN':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-warning/10 text-warning border border-warning/20">
             <ShieldAlert className="w-2.5 h-2.5" />
             Master Admin
           </span>
         );
       case 'ADMIN_QUADRA':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
             <ShieldCheck className="w-2.5 h-2.5" />
             Admin Quadra
           </span>
         );
       case 'CLIENTE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
             <User className="w-2.5 h-2.5" />
             Cliente
           </span>
         );
       case 'SISTEMA':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple/10 text-purple border border-purple/20">
             <Server className="w-2.5 h-2.5" />
             Sistema / Cron
           </span>
@@ -197,70 +197,70 @@ export const AuditLogsPanel: React.FC = () => {
       {/* Header & Estatísticas de Auditoria de Hoje */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Logins Hoje */}
-        <div className="bg-[#121214] border border-white/[0.08] p-4 rounded-2xl relative overflow-hidden shadow-sm">
+        <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
               Logins Hoje
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-xl bg-success/10 flex items-center justify-center text-success">
               <LogIn className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-white mt-2 font-mono">
+          <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalLoginsHoje : '—'}
           </p>
-          <span className="text-[11px] text-emerald-400/80 mt-1 block">Sessões autenticadas</span>
+          <span className="text-[11px] text-success/80 mt-1 block">Sessões autenticadas</span>
         </div>
 
         {/* Falhas de Login Hoje */}
-        <div className="bg-[#121214] border border-white/[0.08] p-4 rounded-2xl relative overflow-hidden shadow-sm">
+        <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
               Falhas Login
             </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
               estatisticas && estatisticas.totalFalhasLoginHoje > 0
-                ? 'bg-rose-500/20 text-rose-400 animate-pulse'
-                : 'bg-white/[0.05] text-white/40'
+                ? 'bg-danger/20 text-danger animate-pulse'
+                : 'bg-fg/[0.06] text-fg/40'
             }`}>
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <p className={`text-2xl font-bold mt-2 font-mono ${
-            estatisticas && estatisticas.totalFalhasLoginHoje > 0 ? 'text-rose-400' : 'text-white'
+            estatisticas && estatisticas.totalFalhasLoginHoje > 0 ? 'text-danger' : 'text-fg'
           }`}>
             {estatisticas ? estatisticas.totalFalhasLoginHoje : '—'}
           </p>
-          <span className="text-[11px] text-white/40 mt-1 block">Tentativas recusadas</span>
+          <span className="text-[11px] text-fg/40 mt-1 block">Tentativas recusadas</span>
         </div>
 
         {/* Cancelamentos Hoje */}
-        <div className="bg-[#121214] border border-white/[0.08] p-4 rounded-2xl relative overflow-hidden shadow-sm">
+        <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
               Cancelamentos
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+            <div className="w-8 h-8 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
               <CalendarX2 className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-white mt-2 font-mono">
+          <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalCancelamentosHoje : '—'}
           </p>
-          <span className="text-[11px] text-amber-400/80 mt-1 block">Cliente / Admin / Cron</span>
+          <span className="text-[11px] text-warning/80 mt-1 block">Cliente / Admin / Cron</span>
         </div>
 
         {/* Total Ações Hoje */}
-        <div className="bg-[#121214] border border-white/[0.08] p-4 rounded-2xl relative overflow-hidden shadow-sm">
+        <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-white/50 uppercase tracking-wider font-mono">
+            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
               Ações Auditadas
             </span>
             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-white mt-2 font-mono">
+          <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalAcoesHoje : '—'}
           </p>
           <span className="text-[11px] text-cyan-400/80 mt-1 block">Total de registros hoje</span>
@@ -268,18 +268,18 @@ export const AuditLogsPanel: React.FC = () => {
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <div className="bg-[#121214]/80 backdrop-blur-xl p-4 rounded-2xl sm:rounded-3xl border border-white/[0.08] space-y-3">
+      <div className="bg-surface-2/80 backdrop-blur-xl p-4 rounded-2xl sm:rounded-3xl border border-fg/[0.1] space-y-3">
         <form onSubmit={handleBuscar} className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2.5 flex-1">
             {/* Input de Busca Textual */}
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por e-mail, nome, detalhes, IP ou recurso..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition font-sans"
+                className="w-full bg-fg/[0.03] border border-fg/[0.1] rounded-xl pl-9 pr-3 py-2 text-xs text-fg placeholder-fg/30 focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition font-sans"
               />
             </div>
 
@@ -287,7 +287,7 @@ export const AuditLogsPanel: React.FC = () => {
             <select
               value={categoria}
               onChange={(e) => setCategoria(e.target.value as CategoriaAuditoria | 'TODAS')}
-              className="bg-[#1c1c1e] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white/80 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition cursor-pointer"
+              className="bg-surface-3 border border-fg/[0.1] rounded-xl px-3 py-2 text-xs text-fg/80 focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition cursor-pointer"
             >
               {CATEGORIAS.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -300,7 +300,7 @@ export const AuditLogsPanel: React.FC = () => {
             <select
               value={acao}
               onChange={(e) => setAcao(e.target.value)}
-              className="bg-[#1c1c1e] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white/80 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition cursor-pointer"
+              className="bg-surface-3 border border-fg/[0.1] rounded-xl px-3 py-2 text-xs text-fg/80 focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition cursor-pointer"
             >
               {ACOES.map((a) => (
                 <option key={a.value} value={a.value}>
@@ -318,7 +318,7 @@ export const AuditLogsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={handleLimparFiltros}
-                className="text-xs text-white/50 hover:text-white underline transition px-2"
+                className="text-xs text-fg/50 hover:text-fg underline transition px-2"
               >
                 Limpar
               </button>
@@ -333,7 +333,7 @@ export const AuditLogsPanel: React.FC = () => {
                 carregarEstatisticas();
               }}
               disabled={loading}
-              className="p-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] text-white/60 hover:text-white transition disabled:opacity-40 cursor-pointer"
+              className="p-2.5 rounded-xl border border-fg/[0.1] bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg transition disabled:opacity-40 cursor-pointer"
               title="Atualizar registros de auditoria"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -343,9 +343,9 @@ export const AuditLogsPanel: React.FC = () => {
       </div>
 
       {/* Tabela de Logs */}
-      <div className="bg-[#121214] border border-white/[0.08] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+      <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
         <div className="overflow-x-auto min-h-[560px]">
-          <table className="w-full text-left text-xs text-white/80 table-fixed min-w-[1000px]">
+          <table className="w-full text-left text-xs text-fg/80 table-fixed min-w-[1000px]">
             <colgroup>
               <col className="w-[140px]" />
               <col className="w-[180px]" />
@@ -354,7 +354,7 @@ export const AuditLogsPanel: React.FC = () => {
               <col />
               <col className="w-[150px]" />
             </colgroup>
-            <thead className="bg-white/[0.02] text-white/40 uppercase tracking-wider font-semibold border-b border-white/[0.06] text-[10px] font-mono">
+            <thead className="bg-fg/[0.03] text-fg/40 uppercase tracking-wider font-semibold border-b border-fg/[0.06] text-[10px] font-mono">
               <tr>
                 <th className="px-5 py-3.5">Data / Hora</th>
                 <th className="px-5 py-3.5">Usuário / Executor</th>
@@ -364,23 +364,23 @@ export const AuditLogsPanel: React.FC = () => {
                 <th className="px-5 py-3.5">Origem (IP)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04] font-sans">
+            <tbody className="divide-y divide-fg/[0.03] font-sans">
               {loading && logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center text-white/40">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-white/20" />
+                  <td colSpan={6} className="px-5 py-24 text-center text-fg/40">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-fg/20" />
                     Carregando trilha de auditoria...
                   </td>
                 </tr>
               ) : erroCarregamento ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center text-rose-400">
-                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-400/80" />
-                    <p className="font-medium text-sm text-white">Não foi possível carregar os logs</p>
-                    <p className="text-xs text-rose-400/80 mt-1 max-w-md mx-auto">{erroCarregamento}</p>
+                  <td colSpan={6} className="px-5 py-24 text-center text-danger">
+                    <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-danger/80" />
+                    <p className="font-medium text-sm text-fg">Não foi possível carregar os logs</p>
+                    <p className="text-xs text-danger/80 mt-1 max-w-md mx-auto">{erroCarregamento}</p>
                     <button
                       onClick={() => carregarDados(page)}
-                      className="mt-4 px-4 py-1.5 text-xs font-medium rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-white transition cursor-pointer"
+                      className="mt-4 px-4 py-1.5 text-xs font-medium rounded-xl bg-fg/[0.1] hover:bg-fg/[0.15] text-fg transition cursor-pointer"
                     >
                       Tentar Novamente
                     </button>
@@ -388,16 +388,16 @@ export const AuditLogsPanel: React.FC = () => {
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center text-white/40">
-                    <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-white/20" />
+                  <td colSpan={6} className="px-5 py-24 text-center text-fg/40">
+                    <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-fg/20" />
                     Nenhum log de auditoria encontrado para os critérios selecionados.
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="h-[56px] hover:bg-white/[0.02] transition">
+                  <tr key={log.id} className="h-[56px] hover:bg-fg/[0.03] transition">
                     {/* Data / Hora */}
-                    <td className="px-5 py-3.5 whitespace-nowrap text-white/50 font-mono text-[11px]">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-fg/50 font-mono text-[11px]">
                       {formatarData(log.criadoEm)}
                     </td>
 
@@ -406,12 +406,12 @@ export const AuditLogsPanel: React.FC = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 truncate">
                           {renderBadgeExecutor(log.tipoExecutor)}
-                          <span className="font-medium text-white text-xs truncate" title={log.usuarioNome || log.usuarioEmail || 'Sistema'}>
+                          <span className="font-medium text-fg text-xs truncate" title={log.usuarioNome || log.usuarioEmail || 'Sistema'}>
                             {log.usuarioNome || log.usuarioEmail || 'Sistema'}
                           </span>
                         </div>
                         {log.usuarioEmail && log.usuarioNome && (
-                          <div className="text-[11px] text-white/40 font-mono truncate" title={log.usuarioEmail}>
+                          <div className="text-[11px] text-fg/40 font-mono truncate" title={log.usuarioEmail}>
                             {log.usuarioEmail}
                           </div>
                         )}
@@ -422,7 +422,7 @@ export const AuditLogsPanel: React.FC = () => {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="space-y-1">
                         <div>{renderBadgeAcao(log.acao)}</div>
-                        <div className="text-[10px] text-white/40 font-mono uppercase tracking-wider">
+                        <div className="text-[10px] text-fg/40 font-mono uppercase tracking-wider">
                           {log.categoria}
                         </div>
                       </div>
@@ -431,17 +431,17 @@ export const AuditLogsPanel: React.FC = () => {
                     {/* Entidade & Recurso */}
                     <td className="px-5 py-3.5 whitespace-nowrap font-mono text-[11px]">
                       {log.entidade ? (
-                        <span className="text-white/70">
+                        <span className="text-fg/70">
                           {log.entidade}
                           {log.recursoId ? ` #${log.recursoId}` : ''}
                         </span>
                       ) : (
-                        <span className="text-white/30">—</span>
+                        <span className="text-fg/30">—</span>
                       )}
                     </td>
 
                     {/* Detalhes */}
-                    <td className="px-5 py-3.5 text-white/70 text-xs leading-relaxed">
+                    <td className="px-5 py-3.5 text-fg/70 text-xs leading-relaxed">
                       <span className="line-clamp-2" title={log.detalhes || ''}>
                         {log.detalhes || '—'}
                       </span>
@@ -450,13 +450,13 @@ export const AuditLogsPanel: React.FC = () => {
                     {/* Origem (IP & User-Agent) */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-white/60 bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
-                          <Globe className="w-2.5 h-2.5 text-white/40" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-fg/60 bg-fg/[0.03] px-2 py-0.5 rounded border border-fg/[0.06]">
+                          <Globe className="w-2.5 h-2.5 text-fg/40" />
                           {log.ip || '127.0.0.1'}
                         </span>
                         {log.userAgent && (
                           <div
-                            className="text-[10px] text-white/30 truncate max-w-[130px]"
+                            className="text-[10px] text-fg/30 truncate max-w-[130px]"
                             title={log.userAgent}
                           >
                             {log.userAgent}
@@ -472,17 +472,17 @@ export const AuditLogsPanel: React.FC = () => {
         </div>
 
         {/* Rodapé com Paginação */}
-        <div className="px-5 py-3.5 border-t border-white/[0.06] flex items-center justify-between text-xs text-white/50 bg-white/[0.01]">
+        <div className="px-5 py-3.5 border-t border-fg/[0.06] flex items-center justify-between text-xs text-fg/50 bg-fg/[0.03]">
           <span>
-            Exibindo <strong className="text-white">{logs.length}</strong> de{' '}
-            <strong className="text-white">{totalLogs}</strong> eventos
+            Exibindo <strong className="text-fg">{logs.length}</strong> de{' '}
+            <strong className="text-fg">{totalLogs}</strong> eventos
           </span>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => carregarDados(page - 1)}
               disabled={page <= 0 || loading}
-              className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition"
+              className="p-1.5 rounded-lg border border-fg/[0.1] hover:bg-fg/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition"
               title="Página anterior"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -493,7 +493,7 @@ export const AuditLogsPanel: React.FC = () => {
             <button
               onClick={() => carregarDados(page + 1)}
               disabled={page >= totalPages - 1 || loading}
-              className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition"
+              className="p-1.5 rounded-lg border border-fg/[0.1] hover:bg-fg/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition"
               title="Próxima página"
             >
               <ChevronRight className="w-4 h-4" />

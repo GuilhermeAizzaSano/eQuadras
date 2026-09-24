@@ -78,25 +78,25 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
     label: string;
     dotClass: string;
   }> = [
-    { id: 'TODOS', label: 'Todos', dotClass: 'bg-white/40' },
-    { id: 'CONFIRMADOS', label: 'Confirmados', dotClass: 'bg-[#0A84FF]' },
-    { id: 'REALIZADOS', label: 'Realizados', dotClass: 'bg-[#BF5AF2]' },
-    { id: 'PENDENTES', label: 'Pendentes Pix', dotClass: 'bg-[#FF9F0A]' },
-    { id: 'BLOQUEADOS', label: 'Bloqueados', dotClass: 'bg-[#FF453A]' },
-    { id: 'LIVRES', label: 'Livres', dotClass: 'bg-[#30D158]' },
+    { id: 'TODOS', label: 'Todos', dotClass: 'bg-fg/40' },
+    { id: 'CONFIRMADOS', label: 'Confirmados', dotClass: 'bg-info' },
+    { id: 'REALIZADOS', label: 'Realizados', dotClass: 'bg-purple' },
+    { id: 'PENDENTES', label: 'Pendentes Pix', dotClass: 'bg-warning' },
+    { id: 'BLOQUEADOS', label: 'Bloqueados', dotClass: 'bg-danger' },
+    { id: 'LIVRES', label: 'Livres', dotClass: 'bg-success' },
   ];
 
   return (
-    <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-4 sm:p-5 space-y-4">
+    <div className="bg-fg/[0.03] border border-fg/[0.06] rounded-2xl p-4 sm:p-5 space-y-4">
       {/* Top Bar: Data, Navegação e Alternador de View */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Controles de Data */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/[0.08]">
+          <div className="flex items-center bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1]">
             <button
               type="button"
               onClick={() => navegarDia(-1)}
-              className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+              className="p-1.5 rounded-lg text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
               title="Dia anterior"
               aria-label="Dia anterior"
             >
@@ -107,8 +107,8 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
               onClick={onHojeClick}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                 isHoje
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg hover:bg-fg/[0.06]'
               }`}
             >
               Hoje
@@ -116,7 +116,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
             <button
               type="button"
               onClick={() => navegarDia(1)}
-              className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+              className="p-1.5 rounded-lg text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
               title="Próximo dia"
               aria-label="Próximo dia"
             >
@@ -130,10 +130,10 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 type="date"
                 value={dataSelecionada}
                 onChange={(e) => onDataChange(e.target.value)}
-                className="bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition cursor-pointer"
+                className="bg-fg/[0.03] border border-fg/[0.1] rounded-xl px-3 py-2 text-xs text-fg font-mono focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition cursor-pointer"
               />
             </div>
-            <span className="text-xs text-white/50 capitalize hidden sm:inline font-medium">
+            <span className="text-xs text-fg/50 capitalize hidden sm:inline font-medium">
               {formatarDataExtenso(dataSelecionada)}
             </span>
           </div>
@@ -141,14 +141,14 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
 
         {/* Alternador de Visualização: Timeline vs Calendário */}
         <div className="flex items-center gap-2 self-end md:self-auto">
-          <div className="flex bg-white/[0.04] p-1 rounded-xl border border-white/[0.08]">
+          <div className="flex bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1]">
             <button
               type="button"
               onClick={() => onViewModeChange('TIMELINE')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                 viewMode === 'TIMELINE'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <Grid className="w-3.5 h-3.5" />
@@ -159,8 +159,8 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
               onClick={() => onViewModeChange('CALENDAR')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
                 viewMode === 'CALENDAR'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg'
               }`}
             >
               <CalendarDays className="w-3.5 h-3.5" />
@@ -171,7 +171,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
       </div>
 
       {/* Linha de Filtros: Quadra, Busca e Status */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-fg/[0.06]">
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Filtro de Quadras */}
           <div className="relative min-w-[170px]">
@@ -180,7 +180,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
               onChange={(e) =>
                 onQuadraFiltroChange(e.target.value === 'TODAS' ? 'TODAS' : Number(e.target.value))
               }
-              className="w-full bg-[#1c1c1e] border border-white/[0.08] rounded-xl px-3 py-2 text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition appearance-none cursor-pointer pr-8"
+              className="w-full bg-surface-3 border border-fg/[0.1] rounded-xl px-3 py-2 text-xs font-medium text-fg focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition appearance-none cursor-pointer pr-8"
             >
               <option value="TODAS">Todas as Quadras ({minhasQuadras.length})</option>
               {minhasQuadras.map((q) => (
@@ -189,7 +189,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 </option>
               ))}
             </select>
-            <Filter className="w-3.5 h-3.5 text-white/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Filter className="w-3.5 h-3.5 text-fg/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Busca por Nome/Telefone */}
@@ -199,9 +199,9 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
               placeholder="Buscar atleta ou telefone..."
               value={buscaTermo}
               onChange={(e) => onBuscaTermoChange(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition"
+              className="w-full bg-fg/[0.03] border border-fg/[0.1] rounded-xl pl-9 pr-3 py-2 text-xs text-fg placeholder-fg/30 focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition"
             />
-            <Search className="w-3.5 h-3.5 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-fg/40 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
         </div>
 
@@ -216,8 +216,8 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 onClick={() => onStatusFiltroChange(opt.id)}
                 className={`text-[11px] font-medium px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95 ${
                   isSelected
-                    ? 'bg-white text-black font-semibold border-white shadow-sm'
-                    : 'bg-white/[0.03] text-white/60 border-white/[0.08] hover:border-white/20 hover:text-white'
+                    ? 'bg-fg text-on-accent font-semibold border-fg shadow-sm'
+                    : 'bg-fg/[0.03] text-fg/60 border-fg/[0.1] hover:border-fg/20 hover:text-fg'
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${opt.dotClass}`} />
