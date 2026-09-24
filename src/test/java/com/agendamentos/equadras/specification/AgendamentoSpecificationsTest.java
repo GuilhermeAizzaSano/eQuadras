@@ -273,6 +273,38 @@ class AgendamentoSpecificationsTest {
     }
 
     @Test
+    @DisplayName("sobrepoeIntervalo inclui reservas que atravessam o período e exclui as adjacentes")
+    void deveFiltrarPorIntersecaoDeIntervalos() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 9, 24, 0, 0);
+        LocalDateTime fim = inicio.plusDays(1);
+
+        Agendamento terminaDentro = criarAgendamento(
+                usuario1, StatusAgendamento.CONFIRMADO,
+                inicio.minusHours(1), inicio.plusHours(1));
+        Agendamento atravessaTodoPeriodo = criarAgendamento(
+                usuario1, StatusAgendamento.CONFIRMADO,
+                inicio.minusHours(1), fim.plusHours(1));
+        Agendamento contido = criarAgendamento(
+                usuario1, StatusAgendamento.CONFIRMADO,
+                inicio.plusHours(10), inicio.plusHours(11));
+        criarAgendamento(usuario1, StatusAgendamento.CONFIRMADO,
+                inicio.minusHours(1), inicio);
+        criarAgendamento(usuario1, StatusAgendamento.CONFIRMADO,
+                fim, fim.plusHours(1));
+
+        List<Agendamento> resultados = agendamentoRepository.findAll(
+                AgendamentoSpecifications.sobrepoeIntervalo(inicio, fim));
+
+        assertEquals(3, resultados.size());
+        assertTrue(resultados.stream().map(Agendamento::getId_agendamento)
+                .toList()
+                .containsAll(List.of(
+                        terminaDentro.getId_agendamento(),
+                        atravessaTodoPeriodo.getId_agendamento(),
+                        contido.getId_agendamento())));
+    }
+
+    @Test
     @DisplayName("Pendente criado exatamente há 15 minutos ainda é válido (expiração usa criadoEm < limite)")
     void pendenteNoLimiteExatoDe15MinutosAindaEhValido() {
         LocalDateTime agora = baseTime.withNano(0);

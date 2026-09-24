@@ -959,6 +959,7 @@ class AgendamentoControllerPaginationTest {
         criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, mes.atDay(3).atTime(10, 0), mes.atDay(3).atTime(11, 0));
         criarAgendamento(usuarioA, StatusAgendamento.PENDENTE, mes.atDay(20).atTime(10, 0), mes.atDay(20).atTime(11, 0));
         criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, mes.atDay(21).atTime(10, 0), mes.atDay(21).atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, mes.atDay(1).atStartOfDay().minusHours(1), mes.atDay(1).atStartOfDay().plusHours(1));
         criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, mes.plusMonths(1).atDay(1).atTime(10, 0), mes.plusMonths(1).atDay(1).atTime(11, 0));
 
         mockMvc.perform(get("/agendamentos/agenda/mensal")
@@ -967,7 +968,7 @@ class AgendamentoControllerPaginationTest {
                         .param("mes", String.valueOf(mes.getMonthValue()))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(3));
 
         mockMvc.perform(get("/agendamentos/agenda/mensal")
                         .cookie(new Cookie("equadras_session", tokenOutroAdmin))

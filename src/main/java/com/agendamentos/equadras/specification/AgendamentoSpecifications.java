@@ -48,6 +48,13 @@ public final class AgendamentoSpecifications {
         );
     }
 
+    public static Specification<Agendamento> sobrepoeIntervalo(LocalDateTime inicio, LocalDateTime fim) {
+        return (root, query, cb) -> cb.and(
+                cb.lessThan(root.get("dataHoraInicio"), fim),
+                cb.greaterThan(root.get("dataHoraFim"), inicio)
+        );
+    }
+
     public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {
         // Pendente criado há no máximo 15 minutos (complementar a cancelarPendentesExpirados: criadoEm < limite)
         LocalDateTime limite = agora.minusMinutes(15);

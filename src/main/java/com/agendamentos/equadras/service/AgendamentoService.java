@@ -321,7 +321,7 @@ public class AgendamentoService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
-        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(intervalo.inicio(), intervalo.fim());
+        Specification<Agendamento> spec = AgendamentoSpecifications.sobrepoeIntervalo(intervalo.inicio(), intervalo.fim());
         if (!usuario.isMasterAdmin()) {
             spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
         }
