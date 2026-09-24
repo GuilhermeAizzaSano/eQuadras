@@ -11,9 +11,13 @@ import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.agendamentos.equadras.model.enums.TipoEsporte;
+import com.agendamentos.equadras.specification.QuadraSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -260,18 +264,68 @@ public class QuadraService {
                                           String tipoEsporte,
                                           String nome, String endereco, String cidade, String bairro, String cep,
                                           Pageable pageable) {
-        List<QuadraResponseDTO> todas = listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
-        if (pageable == null || pageable.isUnpaged()) {
-            return new PageImpl<>(todas);
+        if (latitude != null && longitude != null) {
+            List<QuadraResponseDTO> todas = listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
+            if (pageable == null || pageable.isUnpaged()) {
+                return new PageImpl<>(todas);
+            }
+            int total = todas.size();
+            int start = (int) pageable.getOffset();
+            if (start >= total) {
+                return new PageImpl<>(List.of(), pageable, total);
+            }
+            int end = Math.min(start + pageable.getPageSize(), total);
+            return new PageImpl<>(todas.subList(start, end), pageable, total);
         }
-        int total = todas.size();
-        int start = (int) pageable.getOffset();
-        if (start >= total) {
-            return new PageImpl<>(List.of(), pageable, total);
+
+        Specification<Quadra> spec = (root, query, cb) -> cb.conjunction();
+
+        if (usuarioId != null) {
+            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+            if (usuario != null && usuario.getRole() == Role.ADMIN) {
+                if (!usuario.isMasterAdmin()) {
+                    spec = spec.and(QuadraSpecifications.doAdmin(usuarioId));
+                }
+            } else {
+                spec = spec.and(QuadraSpecifications.ativa());
+            }
+        } else {
+            spec = spec.and(QuadraSpecifications.ativa());
         }
-        int end = Math.min(start + pageable.getPageSize(), total);
-        List<QuadraResponseDTO> subLista = todas.subList(start, end);
-        return new PageImpl<>(subLista, pageable, total);
+
+        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
+            TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
+            if (esporteEnum != null) {
+                spec = spec.and(QuadraSpecifications.comTipoEsporte(esporteEnum));
+            } else {
+                return new PageImpl<>(List.of(), pageable != null ? pageable : Pageable.unpaged(), 0);
+            }
+        }
+
+        if (nome != null && !nome.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comNome(nome));
+        }
+
+        if (endereco != null && !endereco.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comEndereco(endereco));
+        }
+
+        if (cidade != null && !cidade.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comCidade(cidade));
+        }
+
+        if (bairro != null && !bairro.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comBairro(bairro));
+        }
+
+        if (cep != null && !cep.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comCep(cep));
+        }
+
+        Pageable pageableEfetivo = (pageable != null && pageable.isPaged()) ? pageable : PageRequest.of(0, 10);
+        Page<Quadra> paginaQuadras = quadraRepository.findAll(spec, pageableEfetivo);
+
+        return paginaQuadras.map(QuadraResponseDTO::fromEntity);
     }
 
     @Transactional(readOnly = true)

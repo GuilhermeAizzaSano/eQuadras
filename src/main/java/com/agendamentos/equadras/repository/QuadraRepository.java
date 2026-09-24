@@ -1,8 +1,12 @@
 package com.agendamentos.equadras.repository;
 
 import com.agendamentos.equadras.model.entity.Quadra;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface QuadraRepository extends JpaRepository<Quadra, Long> {
+public interface QuadraRepository extends JpaRepository<Quadra, Long>, JpaSpecificationExecutor<Quadra> {
     @EntityGraph(attributePaths = {"admin", "fotos"})
     @Query("SELECT q FROM Quadra q WHERE q.admin.id_usuario = :adminId")
     List<Quadra> findByAdminId(@Param("adminId") Long adminId);
@@ -30,6 +34,17 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
 
     @EntityGraph(attributePaths = {"fotos"})
     List<Quadra> findByAtivaTrue();
+
+    @EntityGraph(attributePaths = {"fotos"})
+    Page<Quadra> findByAtivaTrue(Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"fotos"})
+    Page<Quadra> findAll(Specification<Quadra> spec, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"fotos"})
+    List<Quadra> findAll(Specification<Quadra> spec);
 
     @EntityGraph(attributePaths = {"admin", "fotos"})
     Optional<Quadra> findById(Long id);

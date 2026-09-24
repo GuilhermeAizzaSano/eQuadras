@@ -256,7 +256,14 @@ class QuadraServiceTest {
                     .build());
         }
 
-        when(quadraRepository.findByAtivaTrue()).thenReturn(quadras);
+        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenAnswer(invocation -> {
+                    Pageable p = invocation.getArgument(1);
+                    int start = (int) p.getOffset();
+                    int end = Math.min(start + p.getPageSize(), quadras.size());
+                    List<Quadra> sub = start >= quadras.size() ? List.of() : quadras.subList(start, end);
+                    return new org.springframework.data.domain.PageImpl<>(sub, p, quadras.size());
+                });
 
         Pageable pageable = PageRequest.of(0, 6);
         Page<QuadraResponseDTO> primeiraPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
@@ -282,10 +289,10 @@ class QuadraServiceTest {
     @DisplayName("Deve aplicar paginação sobre os resultados dos filtros de CEP/endereço")
     void deveAplicarPaginacaoAposFiltros() {
         Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra Centro 1").logradouro("Rua Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra Bairro 1").logradouro("Rua Norte").bairro("Norte").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
         Quadra q3 = Quadra.builder().id_quadra(3L).nome("Quadra Centro 2").logradouro("Av Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
 
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2, q3));
+        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(q1, q3), PageRequest.of(0, 6), 2));
 
         Pageable pageable = PageRequest.of(0, 6);
         Page<QuadraResponseDTO> pagina = quadraService.listar(null, null, null, null, null, null, "Centro", null, null, null, pageable);
