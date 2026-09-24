@@ -33,9 +33,6 @@ class AgendamentoNotificacaoListenerTest {
     private NotificacaoService notificacaoService;
 
     @Mock
-    private AgendamentoRepository agendamentoRepository;
-
-    @Mock
     private UsuarioRepository usuarioRepository;
 
     @InjectMocks
@@ -87,10 +84,10 @@ class AgendamentoNotificacaoListenerTest {
     @Test
     @DisplayName("Deve enviar notificação de pagamento Pix para o dono da quadra e demais administradores ativos")
     void deveEnviarNotificacaoPagamentoParaAdmins() {
-        when(agendamentoRepository.buscarComAdminEUsuarioPorId(100L)).thenReturn(Optional.of(agendamento));
         when(usuarioRepository.findByRole(Role.ADMIN)).thenReturn(List.of(adminQuadra, outroAdmin));
 
-        listener.onAgendamentoPagamentoConfirmado(new AgendamentoPagamentoConfirmadoEvent(agendamento));
+        var payload = com.agendamentos.equadras.event.AgendamentoNotificacaoPayload.fromEntity(agendamento);
+        listener.onAgendamentoPagamentoConfirmado(new AgendamentoPagamentoConfirmadoEvent(payload));
 
         verify(notificacaoService, times(1)).enviarNotificacao(eq(2L), anyString());
         verify(notificacaoService, times(1)).enviarNotificacao(eq(3L), anyString());
@@ -99,10 +96,16 @@ class AgendamentoNotificacaoListenerTest {
     @Test
     @DisplayName("Deve enviar notificação de cancelamento para os administradores ativos")
     void deveEnviarNotificacaoCancelamentoParaAdmins() {
-        when(agendamentoRepository.buscarComAdminEUsuarioPorId(100L)).thenReturn(Optional.of(agendamento));
         when(usuarioRepository.findByRole(Role.ADMIN)).thenReturn(List.of(adminQuadra));
 
-        listener.onAgendamentoCancelado(new AgendamentoCanceladoEvent(agendamento, cliente));
+        var payload = com.agendamentos.equadras.event.AgendamentoNotificacaoPayload.fromEntity(agendamento);
+        listener.onAgendamentoCancelado(new AgendamentoCanceladoEvent(
+                payload,
+                cliente.getId_usuario(),
+                cliente.getEmail_usuario(),
+                cliente.getNome_usuario(),
+                com.agendamentos.equadras.model.enums.TipoExecutor.CLIENTE
+        ));
 
         verify(notificacaoService, times(1)).enviarNotificacao(eq(2L), anyString());
     }

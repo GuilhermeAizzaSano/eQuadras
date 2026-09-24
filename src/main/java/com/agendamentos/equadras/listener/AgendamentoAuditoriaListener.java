@@ -21,27 +21,22 @@ public class AgendamentoAuditoriaListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onAgendamentoCancelado(AgendamentoCanceladoEvent event) {
-        if (auditoriaService == null) return;
+        if (auditoriaService == null || event == null || event.payload() == null) return;
 
-        Agendamento agendamento = event.agendamento();
-        Usuario usuario = event.executor();
+        var payload = event.payload();
+        String tipoExecutor = event.tipoExecutor() != null ? event.tipoExecutor().name() : "SISTEMA";
+        String nomeQuadra = payload.nomeQuadra() != null ? payload.nomeQuadra() : "N/A";
+        String executorNome = event.executorNome() != null ? event.executorNome() : "SISTEMA";
 
-        String tipoExecutor = usuario != null && usuario.isMasterAdmin()
-                ? "MASTER_ADMIN"
-                : (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN ? "ADMIN_QUADRA" : "CLIENTE");
-
-        String nomeQuadra = agendamento.getQuadra() != null ? agendamento.getQuadra().getNome() : "N/A";
-        String executorNome = usuario != null ? usuario.getNome_usuario() : "SISTEMA";
-
-        auditoriaService.registrarAcao(
-                usuario,
+        auditoriaService.registrarAcaoPorUsuarioId(
+                event.executorId(),
                 CategoriaAuditoria.AGENDAMENTO,
                 "CANCELAR",
                 "AGENDAMENTO",
-                agendamento.getId_agendamento().toString(),
+                payload.idAgendamento().toString(),
                 String.format("Agendamento #%d cancelado por %s (%s). Quadra: %s. Horário: %s até %s",
-                        agendamento.getId_agendamento(), executorNome, tipoExecutor, nomeQuadra,
-                        agendamento.getDataHoraInicio(), agendamento.getDataHoraFim())
+                        payload.idAgendamento(), executorNome, tipoExecutor, nomeQuadra,
+                        payload.dataHoraInicio(), payload.dataHoraFim())
         );
     }
 

@@ -8,7 +8,9 @@ import com.agendamentos.equadras.model.entity.Agendamento;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
+import com.agendamentos.equadras.model.enums.TipoExecutor;
 import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
+import com.agendamentos.equadras.event.AgendamentoNotificacaoPayload;
 import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
 import com.agendamentos.equadras.event.AgendamentosExpiradosCanceladosEvent;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
@@ -158,7 +160,7 @@ public class AgendamentoService {
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(salvo));
+            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(AgendamentoNotificacaoPayload.fromEntity(salvo)));
         }
 
         return AgendamentoResponseDTO.fromEntity(salvo);
@@ -216,7 +218,7 @@ public class AgendamentoService {
         }
 
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(agendamento));
+            eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(AgendamentoNotificacaoPayload.fromEntity(agendamento)));
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamento);
@@ -272,7 +274,22 @@ public class AgendamentoService {
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(new AgendamentoCanceladoEvent(agendamentoAtualizado, usuario));
+            String nomeExecutor = (usuario != null && usuario.getNome_usuario() != null) ? usuario.getNome_usuario() : "Sistema";
+            String emailExecutor = usuario != null ? usuario.getEmail_usuario() : null;
+            Long idExecutor = usuario != null ? usuario.getId_usuario() : null;
+            TipoExecutor tipoExec = usuario == null
+                    ? TipoExecutor.SISTEMA
+                    : (usuario.isMasterAdmin()
+                    ? TipoExecutor.MASTER_ADMIN
+                    : (usuario.getRole() == Role.ADMIN ? TipoExecutor.ADMIN_QUADRA : TipoExecutor.CLIENTE));
+
+            eventPublisher.publishEvent(new AgendamentoCanceladoEvent(
+                    AgendamentoNotificacaoPayload.fromEntity(agendamentoAtualizado),
+                    idExecutor,
+                    emailExecutor,
+                    nomeExecutor,
+                    tipoExec
+            ));
         }
 
         return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
