@@ -364,17 +364,36 @@ public class AgendamentoService {
             AbaAgendamento aba,
             Pageable pageable
     ) {
-        if (data == null) {
-            throw new IllegalArgumentException("A data da agenda é obrigatória.");
+        return listarAgendaDoDiaPaginado(usuarioId, data, null, null, quadraId, aba, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AgendamentoResponseDTO> listarAgendaDoDiaPaginado(
+            Long usuarioId,
+            LocalDate data,
+            LocalDateTime inicio,
+            LocalDateTime fim,
+            Long quadraId,
+            AbaAgendamento aba,
+            Pageable pageable
+    ) {
+        LocalDateTime dataInicio;
+        LocalDateTime dataFim;
+        if (inicio != null && fim != null) {
+            dataInicio = inicio;
+            dataFim = fim;
+        } else if (data != null) {
+            dataInicio = data.atStartOfDay();
+            dataFim = data.plusDays(1).atStartOfDay();
+        } else {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
         }
+
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         LocalDateTime agora = LocalDateTime.now(clock);
-        LocalDateTime inicioDoDia = data.atStartOfDay();
-        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
-
-        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(inicioDoDia, fimDoDia);
+        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
 
         if (!usuario.isMasterAdmin()) {
             spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
@@ -391,7 +410,7 @@ public class AgendamentoService {
             spec = spec.and(AgendamentoSpecifications.daAba(aba, agora));
         }
 
-        SortPolicy policy = (aba == AbaAgendamento.ATIVOS) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
+        SortPolicy policy = (aba == AbaAgendamento.ATIVOS || aba == null) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
         Pageable pageableComSort = policy.apply(pageable);
 
         Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
@@ -405,17 +424,34 @@ public class AgendamentoService {
             LocalDate data,
             Long quadraId
     ) {
-        if (data == null) {
-            throw new IllegalArgumentException("A data da agenda é obrigatória.");
+        return contarAgendaDoDiaPorAba(usuarioId, data, null, null, quadraId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
+            Long usuarioId,
+            LocalDate data,
+            LocalDateTime inicio,
+            LocalDateTime fim,
+            Long quadraId
+    ) {
+        LocalDateTime dataInicio;
+        LocalDateTime dataFim;
+        if (inicio != null && fim != null) {
+            dataInicio = inicio;
+            dataFim = fim;
+        } else if (data != null) {
+            dataInicio = data.atStartOfDay();
+            dataFim = data.plusDays(1).atStartOfDay();
+        } else {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
         }
+
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         LocalDateTime agora = LocalDateTime.now(clock);
-        LocalDateTime inicioDoDia = data.atStartOfDay();
-        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
-
-        Specification<Agendamento> base = AgendamentoSpecifications.comInicioEntre(inicioDoDia, fimDoDia);
+        Specification<Agendamento> base = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
 
         if (!usuario.isMasterAdmin()) {
             base = base.and(AgendamentoSpecifications.doAdmin(usuarioId));

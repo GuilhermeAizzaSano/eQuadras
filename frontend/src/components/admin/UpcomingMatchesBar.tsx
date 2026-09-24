@@ -6,35 +6,17 @@ import { Badge } from '../ui/Badge';
 import { parseDataHoraLocal, getAgoraBrasilia } from '../../utils/dateUtils';
 
 export interface UpcomingMatchesBarProps {
-  agendamentosAdmin: Agendamento[];
+  proximosJogos: Agendamento[];
   minhasQuadras: Quadra[];
   onAbrirAgendamento: (ag: Agendamento) => void;
 }
 
 export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
-  agendamentosAdmin,
+  proximosJogos,
   minhasQuadras,
   onAbrirAgendamento,
 }) => {
-  const { agora, hojeIso } = getAgoraBrasilia();
-  const proximas4Horas = new Date(agora.getTime() + 4 * 60 * 60 * 1000);
-
-  const proximosJogos = agendamentosAdmin
-    .filter((ag) => {
-      if (ag.status === 'CANCELADO') return false;
-      const [data] = ag.dataHoraInicio.split('T');
-      if (data !== hojeIso) return false;
-
-      const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-      const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
-
-      // Partida em andamento ou que começa nas próximas 4 horas
-      const emAndamento = dataInicio <= agora && dataFim > agora;
-      const emBreve = dataInicio >= agora && dataInicio <= proximas4Horas;
-
-      return emAndamento || emBreve;
-    })
-    .sort((a, b) => parseDataHoraLocal(a.dataHoraInicio).getTime() - parseDataHoraLocal(b.dataHoraInicio).getTime());
+  const { agora } = getAgoraBrasilia();
 
   if (proximosJogos.length === 0) return null;
 

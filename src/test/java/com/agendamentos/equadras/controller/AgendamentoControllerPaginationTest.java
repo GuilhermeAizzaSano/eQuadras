@@ -766,4 +766,87 @@ class AgendamentoControllerPaginationTest {
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries em obterMetricasDashboard deve ser constante e independente da quantidade de dados");
     }
+
+    @Test
+    @DisplayName("28. GET /agendamentos/agenda com intervalo [inicio, fim): às 22h, reserva às 01h do dia seguinte aparece")
+    void deveRetornarReservaDaMadrugadaDoDiaSeguinteEmIntervaloNoturno() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        java.time.LocalDate amanha = hoje.plusDays(1);
+
+        LocalDateTime inicioIntervalo = hoje.atTime(22, 0);
+        LocalDateTime fimIntervalo = amanha.atTime(2, 0);
+
+        // Reserva às 01h do dia seguinte (cai dentro de [22:00, 02:00))
+        Agendamento reservaMadrugada = criarAgendamento(
+                usuarioA,
+                StatusAgendamento.CONFIRMADO,
+                amanha.atTime(1, 0),
+                amanha.atTime(2, 0)
+        );
+
+        // Reserva às 03h do dia seguinte (fora do intervalo)
+        criarAgendamento(
+                usuarioB,
+                StatusAgendamento.CONFIRMADO,
+                amanha.atTime(3, 0),
+                amanha.atTime(4, 0)
+        );
+
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("inicio", inicioIntervalo.toString())
+                        .param("fim", fimIntervalo.toString())
+                        .param("page", "0")
+                        .param("size", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id_agendamento").value(reservaMadrugada.getId_agendamento()));
+    }
+
+    @Test
+    @DisplayName("29. N+1 Safety: contagem de queries para agenda por intervalo não pode variar entre 2 vs 10 registros")
+    void testeN1AusenteEmListarAgendaPorIntervaloComparando2Vs10Itens() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        LocalDateTime inicio = hoje.atTime(8, 0);
+        LocalDateTime fim = hoje.atTime(20, 0);
+
+        // 1. Cenário com 2 itens
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(9, 0), hoje.atTime(10, 0));
+        criarAgendamento(usuarioB, StatusAgendamento.CONFIRMADO, hoje.atTime(10, 0), hoje.atTime(11, 0));
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("inicio", inicio.toString())
+                        .param("fim", fim.toString())
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2));
+
+        long queriesPara2Itens = statistics.getPrepareStatementCount();
+
+        // 2. Adiciona mais 8 itens (total 10)
+        for (int i = 11; i <= 18; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(i, 0), hoje.atTime(i + 1, 0));
+        }
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("inicio", inicio.toString())
+                        .param("fim", fim.toString())
+                        .param("page", "0")
+                        .param("size", "20")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(10));
+
+        long queriesPara10Itens = statistics.getPrepareStatementCount();
+
+        assertEquals(queriesPara2Itens, queriesPara10Itens,
+                "Número de queries em listarAgenda por intervalo deve ser constante e independente da quantidade de dados");
+    }
 }
