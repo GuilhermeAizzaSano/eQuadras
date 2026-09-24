@@ -67,6 +67,9 @@ class AgendamentoServiceTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(clock.getZone()).thenReturn(com.agendamentos.equadras.config.ClockConfig.ZONE_BRASIL);
+        lenient().when(clock.instant()).thenAnswer(invocation -> java.time.Instant.now());
+
         usuario = Usuario.builder()
                 .id_usuario(1L)
                 .nome_usuario("Carlos")
@@ -545,6 +548,32 @@ class AgendamentoServiceTest {
         assertNotNull(response.canceladoEm());
         assertNotNull(agendamento.getCanceladoEm());
         verify(agendamentoRepository, times(1)).save(agendamento);
+    }
+
+    @Test
+    @DisplayName("Cancelamento deve usar o Clock injetado como referência de 'agora'")
+    void cancelarDeveUsarClockInjetado() {
+        LocalDateTime inicioReserva = LocalDateTime.of(2020, 1, 1, 10, 0);
+        LocalDateTime agoraFixo = inicioReserva.minusHours(2);
+        when(clock.instant()).thenReturn(agoraFixo.atZone(com.agendamentos.equadras.config.ClockConfig.ZONE_BRASIL).toInstant());
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(60L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(inicioReserva)
+                .dataHoraFim(inicioReserva.plusHours(1))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+        when(agendamentoRepository.findById(60L)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> i.getArgument(0));
+
+        AgendamentoResponseDTO response = agendamentoService.cancelar(60L, 1L);
+
+        assertEquals(StatusAgendamento.CANCELADO, response.status());
+        assertEquals(agoraFixo, agendamento.getCanceladoEm());
     }
 
     @Test

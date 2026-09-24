@@ -15,7 +15,6 @@ import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
-import com.agendamentos.equadras.util.DataFlexivelUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -102,7 +101,7 @@ public class AgendamentoService {
             throw new IllegalArgumentException("A data/hora de término deve ser posterior à data/hora de início.");
         }
 
-        if (dto.dataHoraInicio().isBefore(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
+        if (dto.dataHoraInicio().isBefore(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Não é possível realizar agendamentos em horários passados.");
         }
 
@@ -117,7 +116,7 @@ public class AgendamentoService {
             log.error("Falha ao gerar cobrança Pix para agendamento {}. Executando compensação imediata.", agendamentoSalvo.getId_agendamento(), e);
             try {
                 agendamentoSalvo.setStatus(StatusAgendamento.CANCELADO);
-                agendamentoSalvo.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
+                agendamentoSalvo.setCanceladoEm(LocalDateTime.now(clock));
                 agendamentoRepository.save(agendamentoSalvo);
             } catch (Exception exCompensacao) {
                 log.error("Erro crítico ao tentar cancelar agendamento órfão {}", agendamentoSalvo.getId_agendamento(), exCompensacao);
@@ -262,12 +261,12 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Este agendamento já está cancelado.");
         }
 
-        if (!agendamento.getDataHoraInicio().isAfter(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL))) {
+        if (!agendamento.getDataHoraInicio().isAfter(LocalDateTime.now(clock))) {
             throw new IllegalArgumentException("Não é possível cancelar um agendamento que está em andamento ou retroativo.");
         }
 
         agendamento.setStatus(StatusAgendamento.CANCELADO);
-        agendamento.setCanceladoEm(LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL));
+        agendamento.setCanceladoEm(LocalDateTime.now(clock));
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
         if (eventPublisher != null) {
@@ -624,7 +623,7 @@ public class AgendamentoService {
                     } else {
                         agendamentos = agendamentoRepository.findAtivosAll(
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                                LocalDateTime.now(clock)
                         );
                     }
                 } else {
@@ -635,7 +634,7 @@ public class AgendamentoService {
                         agendamentos = agendamentoRepository.findAtivosByAdminId(
                                 usuarioId,
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                                LocalDateTime.now(clock)
                         );
                     }
                 }
@@ -646,7 +645,7 @@ public class AgendamentoService {
                     agendamentos = agendamentoRepository.findAtivosByUsuarioId(
                             usuarioId,
                             StatusAgendamento.CANCELADO,
-                            LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL)
+                            LocalDateTime.now(clock)
                     );
                 }
             } else {
@@ -686,7 +685,7 @@ public class AgendamentoService {
             return List.of();
         }
 
-        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        LocalDateTime agora = LocalDateTime.now(clock);
         List<HorarioDisponivelDTO> slots = new ArrayList<>();
 
         boolean dataLimiteExcedida = quadra.getDataLimiteAgendamento() != null && data.isAfter(quadra.getDataLimiteAgendamento());
@@ -898,7 +897,7 @@ public class AgendamentoService {
         }
 
         // Predição de 14 dias para encontrar o próximo dia com horários disponíveis
-        LocalDate inicio = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+        LocalDate inicio = LocalDate.now(clock);
         List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultadoFinal = new ArrayList<>();
         
         for (int i = 0; i < 14; i++) {
@@ -928,7 +927,7 @@ public class AgendamentoService {
 
         LocalDate data = com.agendamentos.equadras.util.DataFlexivelUtil.resolverData(dto.data());
         if (data == null) {
-            data = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
+            data = LocalDate.now(clock);
         }
 
         LocalTime horaInicio = parseHora(dto.horaInicio());
@@ -979,7 +978,7 @@ public class AgendamentoService {
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     @Transactional
     public void expirarAgendamentosPendentes() {
-        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        LocalDateTime agora = LocalDateTime.now(clock);
         LocalDateTime limite = agora.minusMinutes(15);
         int cancelados = agendamentoRepository.cancelarPendentesExpirados(
                 StatusAgendamento.PENDENTE,
