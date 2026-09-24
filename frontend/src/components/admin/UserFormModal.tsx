@@ -111,13 +111,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   return (
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
       <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative">
-        <button
+        <Button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+          variant="ghost" size="icon" className="absolute top-5 right-5"
           title="Fechar" aria-label="Fechar"
         >
           <X className="w-5 h-5" />
-        </button>
+        </Button>
 
         <div className="space-y-1">
           <h3 className="text-lg font-semibold text-fg tracking-tight">

@@ -166,15 +166,15 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
     >
       <div className="bg-surface-2 border border-fg/[0.1] rounded-3xl max-w-xl w-full p-6 sm:p-7 space-y-5 shadow-apple-elevated shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] relative my-auto max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         {/* Botão Fechar */}
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+          variant="ghost" size="icon" className="absolute top-5 right-5"
           aria-label="Fechar"
           disabled={loadingAcao}
         >
           <X className="w-5 h-5" />
-        </button>
+        </Button>
 
         {/* Cabeçalho */}
         <div className="space-y-1">
