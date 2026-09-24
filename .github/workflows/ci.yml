@@ -100,7 +100,8 @@ jobs:
             set -e
             echo "==> Conectado ao servidor de produção. Atualizando repositório..."
             cd /home/ubuntu/eQuadras
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
               echo "==> Mudanças no backend detectadas. Compilando pacote Spring Boot..."
