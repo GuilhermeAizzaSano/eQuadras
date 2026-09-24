@@ -332,8 +332,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
   const carregarMeusAgendamentos = async () => {
     if (!user) return;
     try {
-      const data = await agendamentoApi.listar(false);
-      setMeusAgendamentos(data);
+      const response = await agendamentoApi.listarPaginado({ page: 0, size: 10, apenasPendentes: true });
+      setMeusAgendamentos(response.content);
     } catch (err: any) {
       console.error(err);
     }

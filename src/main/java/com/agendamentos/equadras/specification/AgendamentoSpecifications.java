@@ -28,4 +28,17 @@ public final class AgendamentoSpecifications {
             case CANCELADOS -> (root, query, cb) -> cb.equal(root.get("status"), StatusAgendamento.CANCELADO);
         };
     }
+
+    public static Specification<Agendamento> comStatus(StatusAgendamento status) {
+        return (root, query, cb) -> cb.equal(root.get("status"), status);
+    }
+
+    public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {
+        // Pendente e criado há menos de 15 minutos
+        LocalDateTime limite = agora.minusMinutes(15);
+        return (root, query, cb) -> cb.and(
+                cb.equal(root.get("status"), StatusAgendamento.PENDENTE),
+                cb.greaterThan(root.get("criadoEm"), limite)
+        );
+    }
 }

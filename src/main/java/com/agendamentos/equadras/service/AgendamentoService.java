@@ -345,14 +345,24 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarPaginado(Long usuarioId, AbaAgendamento aba, Pageable pageable) {
-        if (aba == null) {
+        return listarPaginado(usuarioId, aba, false, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AgendamentoResponseDTO> listarPaginado(Long usuarioId, AbaAgendamento aba, boolean apenasPendentes, Pageable pageable) {
+        if (!apenasPendentes && aba == null) {
             throw new IllegalArgumentException("Aba de agendamento é obrigatória.");
         }
         LocalDateTime agora = LocalDateTime.now(clock);
-        Specification<Agendamento> spec = AgendamentoSpecifications.doUsuario(usuarioId)
-                .and(AgendamentoSpecifications.daAba(aba, agora));
+        Specification<Agendamento> spec = AgendamentoSpecifications.doUsuario(usuarioId);
 
-        SortPolicy policy = (aba == AbaAgendamento.ATIVOS) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
+        if (apenasPendentes) {
+            spec = spec.and(AgendamentoSpecifications.apenasPendentesValidos(agora));
+        } else {
+            spec = spec.and(AgendamentoSpecifications.daAba(aba, agora));
+        }
+
+        SortPolicy policy = (aba == AbaAgendamento.ATIVOS || apenasPendentes) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
         Pageable pageableComSort = policy.apply(pageable);
 
         Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);

@@ -234,7 +234,7 @@ describe('ClientBookingsList (Server-side Pagination)', () => {
         totalPages: 0,
       });
 
-    const onCancelBookingMock = vi.fn((id: number, onSuccess?: () => void) => {
+    const onCancelBookingMock = vi.fn((_id: number, onSuccess?: () => void) => {
       if (onSuccess) onSuccess();
     });
 

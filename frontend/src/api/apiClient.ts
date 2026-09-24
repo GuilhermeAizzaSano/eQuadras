@@ -343,12 +343,17 @@ export const agendamentoApi = {
   listar: (historico = false) =>
     apiFetch<Agendamento[]>(historico ? '/agendamentos?historico=true' : '/agendamentos'),
 
-  listarPaginado: (params: { page: number; size: number; aba: AbaAgendamento; signal?: AbortSignal }) => {
+  listarPaginado: (params: { page: number; size: number; aba?: AbaAgendamento; apenasPendentes?: boolean; signal?: AbortSignal }) => {
     const query = new URLSearchParams({
       page: params.page.toString(),
       size: params.size.toString(),
-      aba: params.aba,
     });
+    if (params.aba) {
+      query.append('aba', params.aba);
+    }
+    if (params.apenasPendentes) {
+      query.append('apenasPendentes', 'true');
+    }
     return apiFetch<PageResponse<Agendamento>>(`/agendamentos?${query.toString()}`, { signal: params.signal });
   },
 

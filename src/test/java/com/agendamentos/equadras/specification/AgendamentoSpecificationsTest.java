@@ -239,4 +239,36 @@ class AgendamentoSpecificationsTest {
         assertEquals(canceladoNoLimite.getId_agendamento(), cancelados.getFirst().getId_agendamento());
         assertTrue(ativos.isEmpty(), "Cancelado no instante agora nao deve constar em ATIVOS");
     }
+
+    @Test
+    @DisplayName("apenasPendentesValidos: retorna agendamento PENDENTE criado há menos de 15 minutos")
+    void deveRetornarPendenteValidoCriadoHaMenosDe15Minutos() {
+        Agendamento pendenteRecente = agendamentoRepository.save(Agendamento.builder()
+                .usuario(usuario1)
+                .quadra(quadra)
+                .status(StatusAgendamento.PENDENTE)
+                .criadoEm(baseTime.minusMinutes(10))
+                .dataHoraInicio(baseTime.plusHours(2))
+                .dataHoraFim(baseTime.plusHours(3))
+                .valorTotal(BigDecimal.valueOf(100.0))
+                .build());
+
+        Agendamento pendenteExpirado = agendamentoRepository.save(Agendamento.builder()
+                .usuario(usuario1)
+                .quadra(quadra)
+                .status(StatusAgendamento.PENDENTE)
+                .criadoEm(baseTime.minusMinutes(20))
+                .dataHoraInicio(baseTime.plusHours(4))
+                .dataHoraFim(baseTime.plusHours(5))
+                .valorTotal(BigDecimal.valueOf(100.0))
+                .build());
+
+        Specification<Agendamento> spec = Specification.where(AgendamentoSpecifications.doUsuario(usuario1.getId_usuario()))
+                .and(AgendamentoSpecifications.apenasPendentesValidos(baseTime));
+
+        List<Agendamento> resultados = agendamentoRepository.findAll(spec);
+
+        assertEquals(1, resultados.size());
+        assertEquals(pendenteRecente.getId_agendamento(), resultados.getFirst().getId_agendamento());
+    }
 }
