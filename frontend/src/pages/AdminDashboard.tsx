@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { quadraApi, agendamentoApi, getAssetUrl } from '../api/apiClient';
+import { quadraApi, agendamentoApi, getAssetUrl, DashboardMetricas } from '../api/apiClient';
 import { Quadra, Agendamento } from '../types';
 import { FeedbackBanner, ConfirmModal, LoadingOverlay, CourtDetailsModal } from '../components/ui';
 import { useAdminNotifications, useCourtBlocks, useCourtForm } from '../hooks';
@@ -34,6 +34,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { user, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
   const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
+  const [metricas, setMetricas] = useState<DashboardMetricas>({
+    totalQuadras: 0,
+    quadrasAtivas: 0,
+    totalReservas: 0,
+    faturamentoTotal: 0,
+    reservasHoje: 0,
+  });
   const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
   const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
@@ -259,12 +266,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!user) return;
     const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
-      const [quadras, agendamentos] = await Promise.all([
+      const [quadras, agendamentos, metricasRes] = await Promise.all([
         quadraApi.listar(),
         agendamentoApi.listar(deveBuscarHistorico),
+        agendamentoApi.obterMetricasDashboard(),
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
+      setMetricas(metricasRes);
       if (deveBuscarHistorico) {
         setHistoricoAdminCarregado(true);
       }
@@ -349,22 +358,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Métricas / KPIs
-  const metricas = useMemo(() => {
-    const agendamentosValidos = agendamentosAdmin.filter((a) => a.status !== 'CANCELADO');
-    const faturamentoTotal = agendamentosValidos.reduce((acc, a) => acc + Number(a.valorTotal || 0), 0);
-    
-    const hoje = new Date().toISOString().split('T')[0];
-    const agendamentosHoje = agendamentosValidos.filter((a) => a.dataHoraInicio.startsWith(hoje));
 
-    return {
-      totalQuadras: minhasQuadras.length,
-      quadrasAtivas: minhasQuadras.filter((q) => q.ativa).length,
-      totalReservas: agendamentosValidos.length,
-      faturamentoTotal,
-      reservasHoje: agendamentosHoje.length,
-    };
-  }, [minhasQuadras, agendamentosAdmin]);
 
 
 

@@ -418,9 +418,20 @@ export const agendamentoApi = {
     return apiFetch<Record<AbaAgendamento, number>>(`/agendamentos/agenda/contadores?${query.toString()}`, { signal: params.signal });
   },
 
+  obterMetricasDashboard: (signal?: AbortSignal) =>
+    apiFetch<DashboardMetricas>('/agendamentos/dashboard/metricas', { signal }),
+
   cancelar: (agendamentoId: number) =>
     apiFetch<Agendamento>(`/agendamentos/${agendamentoId}/cancelar`, { method: 'PATCH' }),
 };
+
+export interface DashboardMetricas {
+  totalQuadras: number;
+  quadrasAtivas: number;
+  totalReservas: number;
+  faturamentoTotal: number;
+  reservasHoje: number;
+}
 
 // --- Notificações ---
 export const notificacaoApi = {
