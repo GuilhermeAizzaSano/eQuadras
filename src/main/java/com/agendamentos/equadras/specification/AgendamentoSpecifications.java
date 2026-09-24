@@ -49,11 +49,11 @@ public final class AgendamentoSpecifications {
     }
 
     public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {
-        // Pendente e criado há menos de 15 minutos
+        // Pendente criado há no máximo 15 minutos (complementar a cancelarPendentesExpirados: criadoEm < limite)
         LocalDateTime limite = agora.minusMinutes(15);
         return (root, query, cb) -> cb.and(
                 cb.equal(root.get("status"), StatusAgendamento.PENDENTE),
-                cb.greaterThan(root.get("criadoEm"), limite)
+                cb.greaterThanOrEqualTo(root.get("criadoEm"), limite)
         );
     }
 }
