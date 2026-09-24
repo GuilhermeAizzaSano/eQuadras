@@ -41,8 +41,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
   const [horarios, setHorarios] = useState<HorarioDisponivel[]>([]);
   const [slotsSelecionados, setSlotsSelecionados] = useState<HorarioDisponivel[]>([]);
   const [meusAgendamentos, setMeusAgendamentos] = useState<Agendamento[]>([]);
-  const [historicoCarregado, setHistoricoCarregado] = useState(false);
-  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
   const [bloqueiosQuadra, setBloqueiosQuadra] = useState<BloqueioHorario[]>([]);
   const quadraAtual = useMemo(() => quadras.find((q) => q.id_quadra === selectedQuadra), [quadras, selectedQuadra]);
 
@@ -331,32 +329,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     carregarQuadras(paginaAtual);
   }, [paginaAtual, filtroEsporte, buscaNome, buscaEndereco, modoBusca, coordsAtivas]);
 
-  const carregarMeusAgendamentos = async (buscarHistorico?: boolean) => {
+  const carregarMeusAgendamentos = async () => {
     if (!user) return;
-    const deveBuscarHistorico = buscarHistorico ?? historicoCarregado;
     try {
-      const data = await agendamentoApi.listar(deveBuscarHistorico);
+      const data = await agendamentoApi.listar(false);
       setMeusAgendamentos(data);
-      if (deveBuscarHistorico) {
-        setHistoricoCarregado(true);
-      }
     } catch (err: any) {
       console.error(err);
-    }
-  };
-
-  const carregarHistorico = async () => {
-    if (carregandoHistorico) return;
-    setCarregandoHistorico(true);
-    try {
-      const data = await agendamentoApi.listar(true);
-      setMeusAgendamentos(data);
-      setHistoricoCarregado(true);
-    } catch (err: any) {
-      console.error(err);
-      setFeedback({ type: 'error', message: 'Falha ao carregar o histórico de reservas.' });
-    } finally {
-      setCarregandoHistorico(false);
     }
   };
 
@@ -477,7 +456,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     });
   };
 
-  const cancelarAgendamento = (id: number) => {
+  const cancelarAgendamento = (id: number, onSuccess?: () => void) => {
     if (!user) return;
     const ag = meusAgendamentos.find((a) => a.id_agendamento === id);
     if (ag && parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
@@ -499,6 +478,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
         try {
           await agendamentoApi.cancelar(id);
           setFeedback({ type: 'success', message: 'Agendamento cancelado com sucesso.' });
+          if (onSuccess) {
+            onSuccess();
+          }
           await carregarMeusAgendamentos();
           if (selectedQuadra && dataSelecionada) {
             await carregarHorarios(selectedQuadra, dataSelecionada);
@@ -577,10 +559,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       {/* ABA 2: MINHAS RESERVAS */}
       <div className={activeTab === 'AGENDAS' ? 'max-w-4xl mx-auto space-y-6' : 'hidden'}>
         <ClientBookingsList
-          meusAgendamentos={meusAgendamentos}
-          historicoCarregado={historicoCarregado}
-          carregandoHistorico={carregandoHistorico}
-          onCarregarHistorico={carregarHistorico}
           onPayPix={(ag) => setAgendamentoPixModal(ag)}
           onCancelBooking={cancelarAgendamento}
         />

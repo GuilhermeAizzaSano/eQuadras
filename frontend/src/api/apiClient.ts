@@ -1,4 +1,7 @@
 import { Usuario, Role, Quadra, HorarioDisponivel, Agendamento, TipoEsporte, DisponibilidadeDia, Page } from '../types';
+import type { PageResponse } from '../shared/pagination/types';
+
+export type AbaAgendamento = 'ATIVOS' | 'REALIZADOS' | 'CANCELADOS';
 
 export const getBaseUrl = (): string => {
   const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
@@ -339,6 +342,18 @@ export const bloqueioApi = {
 export const agendamentoApi = {
   listar: (historico = false) =>
     apiFetch<Agendamento[]>(historico ? '/agendamentos?historico=true' : '/agendamentos'),
+
+  listarPaginado: (params: { page: number; size: number; aba: AbaAgendamento; signal?: AbortSignal }) => {
+    const query = new URLSearchParams({
+      page: params.page.toString(),
+      size: params.size.toString(),
+      aba: params.aba,
+    });
+    return apiFetch<PageResponse<Agendamento>>(`/agendamentos?${query.toString()}`, { signal: params.signal });
+  },
+
+  obterContadores: (signal?: AbortSignal) =>
+    apiFetch<Record<AbaAgendamento, number>>('/agendamentos/contadores', { signal }),
 
   listarPorQuadra: (quadraId: number) =>
     apiFetch<Agendamento[]>(`/agendamentos/quadra/${quadraId}`),
