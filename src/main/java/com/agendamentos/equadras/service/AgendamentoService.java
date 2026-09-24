@@ -477,13 +477,24 @@ public class AgendamentoService {
         return montarSlotsHorarios(quadra, data, agendamentosDoDia, bloqueios);
     }
 
+    private Specification<Agendamento> escopoListagemPorPerfil(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+        if (usuario.getRole() == Role.ADMIN) {
+            return usuario.isMasterAdmin()
+                    ? (root, query, cb) -> cb.conjunction()
+                    : AgendamentoSpecifications.doAdmin(usuarioId);
+        }
+        return AgendamentoSpecifications.doUsuario(usuarioId);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarPaginado(Long usuarioId, AbaAgendamento aba, boolean apenasPendentes, Pageable pageable) {
         if (!apenasPendentes && aba == null) {
             throw new IllegalArgumentException("Aba de agendamento é obrigatória.");
         }
         LocalDateTime agora = LocalDateTime.now(clock);
-        Specification<Agendamento> spec = AgendamentoSpecifications.doUsuario(usuarioId);
+        Specification<Agendamento> spec = escopoListagemPorPerfil(usuarioId);
 
         if (apenasPendentes) {
             spec = spec.and(AgendamentoSpecifications.apenasPendentesValidos(agora));
@@ -507,7 +518,7 @@ public class AgendamentoService {
     @Transactional(readOnly = true)
     public Map<AbaAgendamento, Long> contarPorAba(Long usuarioId) {
         LocalDateTime agora = LocalDateTime.now(clock);
-        Specification<Agendamento> base = AgendamentoSpecifications.doUsuario(usuarioId);
+        Specification<Agendamento> base = escopoListagemPorPerfil(usuarioId);
         Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
         for (AbaAgendamento aba : AbaAgendamento.values()) {
             contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
