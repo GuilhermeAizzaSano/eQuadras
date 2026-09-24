@@ -192,12 +192,12 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         <div className="p-4 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center justify-between text-xs">
           <div>
             <div className="font-semibold text-fg text-sm tracking-tight">{agendamentoAtivo.nomeQuadra}</div>
-            <div className="text-fg/50 mt-0.5 tracking-tight">
+            <div className="text-fg/60 mt-0.5 tracking-tight">
               {data.split('-').reverse().join('/')} • {horaInicio} às {horaFim}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-fg/40 uppercase tracking-wider text-[10px] font-semibold">Total</div>
+            <div className="text-fg/60 uppercase tracking-wider text-xs font-semibold">Total</div>
             <div className="text-lg font-bold text-fg font-mono tracking-tight">
               R$ {agendamentoAtivo.valorTotal.toFixed(2)}
             </div>
@@ -215,7 +215,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
             <div className="w-44 h-44 flex flex-col items-center justify-center bg-zinc-100 rounded-xl text-center p-4 text-zinc-600 gap-2">
               <AlertTriangle className="w-8 h-8 text-warning" />
               <span className="text-xs font-semibold">Código Pix expirado</span>
-              <span className="text-[10px] text-zinc-500">Gere uma nova reserva para pagar.</span>
+              <span className="text-xs text-zinc-500">Gere uma nova reserva para pagar.</span>
             </div>
           ) : agendamentoAtivo.pixCopiaECola ? (
             <div className="w-44 h-44 flex items-center justify-center bg-fg rounded-xl select-none p-1">
@@ -246,7 +246,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
             </div>
           )}
           {!expirado && !carregandoDados && (
-            <span className="text-[11px] text-zinc-600 font-sans mt-2.5 font-medium tracking-tight">
+            <span className="text-xs text-zinc-600 font-sans mt-2.5 font-medium tracking-tight">
               Abra o app do seu banco e aponte a câmera
             </span>
           )}
@@ -255,7 +255,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
         {/* Pix Copia e Cola */}
         {!expirado && agendamentoAtivo.pixCopiaECola && (
           <div className="space-y-1.5">
-            <label className="text-[10px] font-semibold text-fg/50 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-fg/60 uppercase tracking-wider">
               Chave Pix Copia e Cola
             </label>
             <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ export const ModalPix: React.FC<ModalPixProps> = ({
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="w-full text-fg/50 hover:text-fg"
+            className="w-full text-fg/60 hover:text-fg"
           >
             Fechar janela
           </Button>

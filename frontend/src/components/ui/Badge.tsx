@@ -16,7 +16,7 @@ export const Badge: React.FC<BadgeProps> = ({
   withDot = false,
 }) => {
   const baseClasses =
-    'inline-flex items-center gap-1.5 text-[11px] font-medium tracking-tight px-2.5 py-0.5 rounded-full border transition-all select-none';
+    'inline-flex items-center gap-1.5 text-xs font-medium tracking-tight px-2.5 py-0.5 rounded-full border transition-all select-none';
 
   const variantClasses: Record<BadgeVariant, { container: string; dot: string }> = {
     neutral: {

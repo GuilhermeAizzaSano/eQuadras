@@ -40,7 +40,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-surface-2/80 backdrop-blur-xl p-4 rounded-2xl sm:rounded-3xl border border-fg/[0.1]">
         <div className="flex items-center gap-2.5 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-fg/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Buscar por nome, e-mail ou telefone..."
@@ -66,7 +66,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
             onClick={onRefresh}
             disabled={loading}
             className="p-2.5 rounded-xl border border-fg/[0.1] bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg transition disabled:opacity-40 cursor-pointer"
-            title="Atualizar lista"
+            title="Atualizar lista" aria-label="Atualizar lista"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -93,7 +93,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
               <col className="w-[140px]" />
               <col className="w-[100px]" />
             </colgroup>
-            <thead className="bg-fg/[0.03] text-fg/40 uppercase tracking-wider font-semibold border-b border-fg/[0.06] text-[10px] font-mono">
+            <thead className="bg-fg/[0.03] text-fg/60 uppercase tracking-wider font-semibold border-b border-fg/[0.06] text-xs font-mono">
               <tr>
                 <th className="py-3.5 px-5">Usuário</th>
                 <th className="py-3.5 px-4">E-mail</th>
@@ -105,13 +105,13 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
             <tbody className="divide-y divide-fg/[0.06]">
               {loading && usuarios.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-fg/40 font-mono text-xs">
+                  <td colSpan={5} className="py-20 text-center text-fg/60 font-mono text-xs">
                     Carregando usuários...
                   </td>
                 </tr>
               ) : usuariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-fg/40 font-mono text-xs">
+                  <td colSpan={5} className="py-20 text-center text-fg/60 font-mono text-xs">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
@@ -132,20 +132,20 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                           <div className="flex items-center gap-1.5 font-semibold text-sm truncate">
                             <span className="truncate" title={u.nome_usuario}>{u.nome_usuario}</span>
                             {isMaster && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-info/15 text-info border border-info/30 font-mono font-medium shrink-0">
+                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-info/15 text-info border border-info/30 font-mono font-medium shrink-0">
                                 MASTER
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] text-fg/40 font-mono">ID: #{u.id_usuario}</span>
+                          <span className="text-xs text-fg/60 font-mono">ID: #{u.id_usuario}</span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-fg/70 font-mono text-[11px] truncate" title={u.email_usuario}>
+                      <td className="py-3.5 px-4 text-fg/70 font-mono text-xs truncate" title={u.email_usuario}>
                         {u.email_usuario}
                       </td>
 
-                      <td className="py-3.5 px-4 text-fg/40 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-fg/60 font-mono text-xs">
                         {u.phone_usuario || 'Não informado'}
                       </td>
 
@@ -159,7 +159,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => onEditarUsuario(u)}
-                            className="p-1.5 rounded-lg text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+                            className="p-1.5 rounded-lg text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
                             title="Editar usuário"
                           >
                             <Edit className="w-4 h-4" />
@@ -168,14 +168,14 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                           {!isMaster ? (
                             <button
                               onClick={() => setUsuarioParaExcluir(u)}
-                              className="p-1.5 rounded-lg text-fg/40 hover:text-danger hover:bg-danger/10 transition cursor-pointer"
+                              className="p-1.5 rounded-lg text-fg/60 hover:text-danger hover:bg-danger/10 transition cursor-pointer"
                               title="Excluir usuário"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           ) : (
                             <span className="p-1.5 opacity-20 cursor-not-allowed" title="Conta master não pode ser excluída">
-                              <Trash2 className="w-4 h-4 text-fg/40" />
+                              <Trash2 className="w-4 h-4 text-fg/60" />
                             </span>
                           )}
                         </div>

@@ -11,7 +11,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then((m) => (
 const FallbackSpinner: React.FC = () => (
   <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
     <Loader2 className="w-7 h-7 text-fg/70 animate-spin" />
-    <span className="text-xs text-fg/50 font-medium tracking-tight">Carregando...</span>
+    <span className="text-xs text-fg/60 font-medium tracking-tight">Carregando...</span>
   </div>
 );
 

@@ -101,11 +101,11 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
               </div>
 
               <div className="flex items-baseline gap-1.5 font-mono">
-                <span className="text-xs text-fg/50 font-medium uppercase">Valor:</span>
+                <span className="text-xs text-fg/60 font-medium uppercase">Valor:</span>
                 <span className="text-2xl font-bold text-fg tracking-tight">
                   R$ {quadra.valorHora.toFixed(2)}
                 </span>
-                <span className="text-xs text-fg/50">/ hora</span>
+                <span className="text-xs text-fg/60">/ hora</span>
               </div>
             </div>
 
@@ -146,7 +146,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
               {quadra.descricao ? (
                 quadra.descricao
               ) : (
-                <span className="text-fg/40 italic">
+                <span className="text-fg/60 italic">
                   Esta quadra possui infraestrutura completa para a prática esportiva, iluminação esportiva e ambiente preparado para atletas e visitantes.
                 </span>
               )}
@@ -158,7 +158,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3">
               <Activity className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-fg/40 block uppercase font-medium">Piso</span>
+                <span className="text-xs text-fg/60 block uppercase font-medium">Piso</span>
                 <span className="text-xs text-fg font-medium">Oficial / Padrão</span>
               </div>
             </div>
@@ -166,7 +166,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-fg/40 block uppercase font-medium">Segurança</span>
+                <span className="text-xs text-fg/60 block uppercase font-medium">Segurança</span>
                 <span className="text-xs text-fg font-medium">Ambiente Monitorado</span>
               </div>
             </div>
@@ -174,7 +174,7 @@ export const CourtDetailsModal: React.FC<CourtDetailsModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center gap-3 col-span-2 sm:col-span-1">
               <Calendar className="w-5 h-5 text-fg/70 shrink-0" />
               <div>
-                <span className="text-[10px] text-fg/40 block uppercase font-medium">Agendamento</span>
+                <span className="text-xs text-fg/60 block uppercase font-medium">Agendamento</span>
                 <span className="text-xs text-fg font-medium">Instantâneo via Pix</span>
               </div>
             </div>

@@ -74,7 +74,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-[11px] uppercase font-bold tracking-wider font-mono text-warning">
+                <span className="text-xs uppercase font-bold tracking-wider font-mono text-warning">
                   Pagamento Pendente
                 </span>
                 <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-warning/20 border border-warning/30 text-warning">
@@ -111,7 +111,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[10px] font-mono px-1 text-fg/70">
+                <span className="text-xs font-mono px-1 text-fg/70">
                   {currentIndex + 1}/{pendentesValidos.length}
                 </span>
                 <button

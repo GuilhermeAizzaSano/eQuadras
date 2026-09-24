@@ -32,7 +32,7 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
             Partidas Imediatas (Hoje)
           </span>
         </div>
-        <span className="text-[11px] font-mono text-fg/40 font-medium">
+        <span className="text-xs font-mono text-fg/60 font-medium">
           {proximosJogos.length} {proximosJogos.length === 1 ? 'partida' : 'partidas'}
         </span>
       </div>
@@ -58,28 +58,28 @@ export const UpcomingMatchesBar: React.FC<UpcomingMatchesBarProps> = ({
                     {ag.nomeUsuario}
                   </span>
                   {emAndamento ? (
-                    <Badge variant="success" className="text-[10px] py-0 px-2" withDot>
+                    <Badge variant="success" className="text-xs py-0 px-2" withDot>
                       AGORA
                     </Badge>
                   ) : (
-                    <Badge variant="neutral" className="text-[10px] py-0 px-2">
+                    <Badge variant="neutral" className="text-xs py-0 px-2">
                       EM BREVE
                     </Badge>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-fg/50 font-mono">
+                <div className="flex items-center gap-2 text-xs text-fg/60 font-mono">
                   <Clock className="w-3.5 h-3.5 text-fg/60 shrink-0" />
                   <span>
                     {horaInicio} - {horaFim}
                   </span>
-                  <span className="text-fg/30">•</span>
+                  <span className="text-fg/60">•</span>
                   <span className="text-fg/70 truncate">{quadra?.nome || ag.nomeQuadra}</span>
                 </div>
 
                 {ag.telefoneUsuario && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-fg/40">
-                    <Phone className="w-3 h-3 text-fg/40 shrink-0" />
+                  <div className="flex items-center gap-1.5 text-xs text-fg/60">
+                    <Phone className="w-3 h-3 text-fg/60 shrink-0" />
                     <span>{ag.telefoneUsuario}</span>
                   </div>
                 )}

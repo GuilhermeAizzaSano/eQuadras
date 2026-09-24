@@ -575,12 +575,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <h1 className="text-2xl font-semibold tracking-tight text-fg flex items-center gap-3">
             <span>Painel Administrativo</span>
             {isMasterAdmin && (
-              <span className="text-[10px] uppercase font-mono font-medium tracking-wider px-2.5 py-0.5 rounded-full bg-info/15 border border-info/30 text-info">
+              <span className="text-xs uppercase font-mono font-medium tracking-wider px-2.5 py-0.5 rounded-full bg-info/15 border border-info/30 text-info">
                 Master Admin
               </span>
             )}
           </h1>
-          <p className="text-xs text-fg/50 mt-1">
+          <p className="text-xs text-fg/60 mt-1">
             Gestão operacional em tempo real de quadras, reservas e agenda.
           </p>
         </div>

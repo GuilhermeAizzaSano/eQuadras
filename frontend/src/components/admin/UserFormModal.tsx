@@ -109,12 +109,12 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
       <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl shadow-black/80 relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
-          title="Fechar"
+          className="absolute top-5 right-5 p-2 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+          title="Fechar" aria-label="Fechar"
         >
           <X className="w-5 h-5" />
         </button>
@@ -123,7 +123,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
           <h3 className="text-lg font-semibold text-fg tracking-tight">
             {usuarioParaEditar ? 'Editar Usuário' : 'Cadastrar Novo Usuário'}
           </h3>
-          <p className="text-xs text-fg/50">
+          <p className="text-xs text-fg/60">
             {usuarioParaEditar
               ? 'Atualize as informações do usuário no sistema'
               : 'Preencha os dados para criar uma conta de Atleta ou Administrador'}
@@ -144,7 +144,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             placeholder="Nome do usuário"
-            leftIcon={<User className="w-4 h-4 text-fg/40" />}
+            leftIcon={<User className="w-4 h-4 text-fg/60" />}
           />
 
           <div>
@@ -156,10 +156,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@dominio.com"
-              leftIcon={<Mail className="w-4 h-4 text-fg/40" />}
+              leftIcon={<Mail className="w-4 h-4 text-fg/60" />}
             />
             {isMaster && (
-              <span className="text-[10px] text-fg/40 mt-1 block font-mono">
+              <span className="text-xs text-fg/60 mt-1 block font-mono">
                 O e-mail da conta Master não pode ser alterado.
               </span>
             )}
@@ -172,7 +172,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               value={phone}
               onChange={handlePhoneChange}
               placeholder="(11) 99999-9999"
-              leftIcon={<Phone className="w-4 h-4 text-fg/40" />}
+              leftIcon={<Phone className="w-4 h-4 text-fg/60" />}
             />
 
             <Select
@@ -193,7 +193,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             placeholder={usuarioParaEditar ? 'Deixe em branco para manter a atual' : 'Mínimo 6 caracteres'}
-            leftIcon={<Lock className="w-4 h-4 text-fg/40" />}
+            leftIcon={<Lock className="w-4 h-4 text-fg/60" />}
           />
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-fg/[0.06]">

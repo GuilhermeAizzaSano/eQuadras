@@ -96,7 +96,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
             <button
               type="button"
               onClick={() => navegarDia(-1)}
-              className="p-1.5 rounded-lg text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+              className="p-1.5 rounded-lg text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
               title="Dia anterior"
               aria-label="Dia anterior"
             >
@@ -116,7 +116,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
             <button
               type="button"
               onClick={() => navegarDia(1)}
-              className="p-1.5 rounded-lg text-fg/50 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+              className="p-1.5 rounded-lg text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
               title="Próximo dia"
               aria-label="Próximo dia"
             >
@@ -133,7 +133,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 className="bg-fg/[0.03] border border-fg/[0.1] rounded-xl px-3 py-2 text-xs text-fg font-mono focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition cursor-pointer"
               />
             </div>
-            <span className="text-xs text-fg/50 capitalize hidden sm:inline font-medium">
+            <span className="text-xs text-fg/60 capitalize hidden sm:inline font-medium">
               {formatarDataExtenso(dataSelecionada)}
             </span>
           </div>
@@ -189,7 +189,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 </option>
               ))}
             </select>
-            <Filter className="w-3.5 h-3.5 text-fg/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Filter className="w-3.5 h-3.5 text-fg/60 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* Busca por Nome/Telefone */}
@@ -201,7 +201,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
               onChange={(e) => onBuscaTermoChange(e.target.value)}
               className="w-full bg-fg/[0.03] border border-fg/[0.1] rounded-xl pl-9 pr-3 py-2 text-xs text-fg placeholder-fg/30 focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition"
             />
-            <Search className="w-3.5 h-3.5 text-fg/40 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-fg/60 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
         </div>
 
@@ -214,7 +214,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onStatusFiltroChange(opt.id)}
-                className={`text-[11px] font-medium px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95 ${
+                className={`text-xs font-medium px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95 ${
                   isSelected
                     ? 'bg-fg text-on-accent font-semibold border-fg shadow-sm'
                     : 'bg-fg/[0.03] text-fg/60 border-fg/[0.1] hover:border-fg/20 hover:text-fg'

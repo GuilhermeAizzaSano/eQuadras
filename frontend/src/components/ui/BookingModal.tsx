@@ -83,7 +83,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         <div className="p-5 sm:p-6 border-b border-fg/[0.06] flex items-center justify-between gap-4 bg-surface-1/80 backdrop-blur-xl">
           <div>
             <div className="flex items-center gap-2.5">
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-xs">
                 {quadra.tipoEsporte.replace('_', ' ')}
               </Badge>
               <button
@@ -118,7 +118,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-fg/60">
                 Selecione o Dia
               </label>
-              <span className="text-xs text-fg/40 font-mono font-medium">
+              <span className="text-xs text-fg/60 font-mono font-medium">
                 Próximos 14 dias
               </span>
             </div>
@@ -151,17 +151,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     }
                     className={`shrink-0 w-16 py-3 px-1 rounded-2xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
                       !isDisponivel
-                        ? 'opacity-30 cursor-not-allowed bg-transparent border-fg/[0.03] text-fg/30 select-none'
+                        ? 'opacity-30 cursor-not-allowed bg-transparent border-fg/[0.03] text-fg/60 select-none'
                         : isSelected
                         ? 'bg-fg text-on-accent border-fg shadow-sm font-semibold active:scale-[0.98]'
                         : 'bg-fg/[0.03] border-fg/[0.1] text-fg/70 hover:border-fg/[0.15] hover:bg-fg/[0.1] active:scale-[0.98]'
                     }`}
                   >
-                    <span className="text-[10px] uppercase tracking-wider mb-1 font-semibold">
+                    <span className="text-xs uppercase tracking-wider mb-1 font-semibold">
                       {d.isHoje ? 'Hoje' : d.diaSemana}
                     </span>
                     <span className="text-base font-bold">{d.diaMes}</span>
-                    <span className="text-[11px] mt-0.5 opacity-70">{d.mes}</span>
+                    <span className="text-xs mt-0.5 opacity-70">{d.mes}</span>
                     {!isDisponivel && (
                       <span
                         className={`text-[8px] uppercase tracking-wider font-bold mt-1 px-1 rounded ${
@@ -169,7 +169,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             ? 'text-warning bg-warning/10'
                             : badgeText === 'Bloqueado'
                             ? 'text-danger bg-danger/10'
-                            : 'text-fg/40'
+                            : 'text-fg/60'
                         }`}
                       >
                         {badgeText}
@@ -187,7 +187,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-fg/60">
                 Horários ({dataSelecionada.split('-').reverse().join('/')})
               </label>
-              <div className="flex items-center gap-3 text-xs text-fg/50 font-medium">
+              <div className="flex items-center gap-3 text-xs text-fg/60 font-medium">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-success" />
                   <span>Disponível</span>
@@ -200,7 +200,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </div>
 
             {loading ? (
-              <div className="py-14 text-center text-fg/40 text-xs font-mono">
+              <div className="py-14 text-center text-fg/60 text-xs font-mono">
                 Carregando grade de horários...
               </div>
             ) : horarios.length === 0 ? (
@@ -224,7 +224,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       onClick={() => toggleSlotSelection(slot)}
                       className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all min-h-[76px] cursor-pointer active:scale-[0.98] ${
                         !slot.disponivel
-                          ? 'bg-transparent border-fg/[0.03] opacity-30 cursor-not-allowed text-fg/30'
+                          ? 'bg-transparent border-fg/[0.03] opacity-30 cursor-not-allowed text-fg/60'
                           : isSelected
                           ? 'bg-fg text-on-accent border-fg shadow-sm'
                           : 'bg-fg/[0.03] border-fg/[0.1] text-fg/90 hover:border-fg/[0.15] hover:bg-fg/[0.1]'
@@ -237,12 +237,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         {isSelected && <Check className="w-3.5 h-3.5 text-on-accent stroke-[3]" />}
                       </div>
                       <div
-                        className={`text-[10px] mt-2 font-mono uppercase tracking-wider font-semibold ${
+                        className={`text-xs mt-2 font-mono uppercase tracking-wider font-semibold ${
                           isSelected
                             ? 'text-on-accent/70'
                             : slot.disponivel
                             ? 'text-success'
-                            : 'text-fg/40'
+                            : 'text-fg/60'
                         }`}
                       >
                         {isSelected ? 'Selecionado' : slot.motivo}
@@ -322,7 +322,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 Infos da Quadra
               </Button>
 
-              <div className="text-xs text-fg/50">
+              <div className="text-xs text-fg/60">
                 Selecione um ou mais horários acima para reservar
               </div>
 

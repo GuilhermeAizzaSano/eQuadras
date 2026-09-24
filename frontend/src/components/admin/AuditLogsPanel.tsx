@@ -161,28 +161,28 @@ export const AuditLogsPanel: React.FC = () => {
     switch (tipo) {
       case 'MASTER_ADMIN':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-warning/10 text-warning border border-warning/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
             <ShieldAlert className="w-2.5 h-2.5" />
             Master Admin
           </span>
         );
       case 'ADMIN_QUADRA':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-info/10 text-info border border-info/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-info/10 text-info border border-info/20">
             <ShieldCheck className="w-2.5 h-2.5" />
             Admin Quadra
           </span>
         );
       case 'CLIENTE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/10 text-success border border-success/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
             <User className="w-2.5 h-2.5" />
             Cliente
           </span>
         );
       case 'SISTEMA':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple/10 text-purple border border-purple/20">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple/10 text-purple border border-purple/20">
             <Server className="w-2.5 h-2.5" />
             Sistema / Cron
           </span>
@@ -199,7 +199,7 @@ export const AuditLogsPanel: React.FC = () => {
         {/* Total Logins Hoje */}
         <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
+            <span className="text-xs font-medium text-fg/60 uppercase tracking-wider font-mono">
               Logins Hoje
             </span>
             <div className="w-8 h-8 rounded-xl bg-success/10 flex items-center justify-center text-success">
@@ -209,19 +209,19 @@ export const AuditLogsPanel: React.FC = () => {
           <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalLoginsHoje : '—'}
           </p>
-          <span className="text-[11px] text-success/80 mt-1 block">Sessões autenticadas</span>
+          <span className="text-xs text-success/80 mt-1 block">Sessões autenticadas</span>
         </div>
 
         {/* Falhas de Login Hoje */}
         <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
+            <span className="text-xs font-medium text-fg/60 uppercase tracking-wider font-mono">
               Falhas Login
             </span>
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
               estatisticas && estatisticas.totalFalhasLoginHoje > 0
                 ? 'bg-danger/20 text-danger animate-pulse'
-                : 'bg-fg/[0.06] text-fg/40'
+                : 'bg-fg/[0.06] text-fg/60'
             }`}>
               <AlertTriangle className="w-4 h-4" />
             </div>
@@ -231,13 +231,13 @@ export const AuditLogsPanel: React.FC = () => {
           }`}>
             {estatisticas ? estatisticas.totalFalhasLoginHoje : '—'}
           </p>
-          <span className="text-[11px] text-fg/40 mt-1 block">Tentativas recusadas</span>
+          <span className="text-xs text-fg/60 mt-1 block">Tentativas recusadas</span>
         </div>
 
         {/* Cancelamentos Hoje */}
         <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
+            <span className="text-xs font-medium text-fg/60 uppercase tracking-wider font-mono">
               Cancelamentos
             </span>
             <div className="w-8 h-8 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
@@ -247,13 +247,13 @@ export const AuditLogsPanel: React.FC = () => {
           <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalCancelamentosHoje : '—'}
           </p>
-          <span className="text-[11px] text-warning/80 mt-1 block">Cliente / Admin / Cron</span>
+          <span className="text-xs text-warning/80 mt-1 block">Cliente / Admin / Cron</span>
         </div>
 
         {/* Total Ações Hoje */}
         <div className="bg-surface-2 border border-fg/[0.1] p-4 rounded-2xl relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-fg/50 uppercase tracking-wider font-mono">
+            <span className="text-xs font-medium text-fg/60 uppercase tracking-wider font-mono">
               Ações Auditadas
             </span>
             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
@@ -263,7 +263,7 @@ export const AuditLogsPanel: React.FC = () => {
           <p className="text-2xl font-bold text-fg mt-2 font-mono">
             {estatisticas ? estatisticas.totalAcoesHoje : '—'}
           </p>
-          <span className="text-[11px] text-cyan-400/80 mt-1 block">Total de registros hoje</span>
+          <span className="text-xs text-cyan-400/80 mt-1 block">Total de registros hoje</span>
         </div>
       </div>
 
@@ -273,7 +273,7 @@ export const AuditLogsPanel: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2.5 flex-1">
             {/* Input de Busca Textual */}
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-fg/60 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar por e-mail, nome, detalhes, IP ou recurso..."
@@ -318,7 +318,7 @@ export const AuditLogsPanel: React.FC = () => {
               <button
                 type="button"
                 onClick={handleLimparFiltros}
-                className="text-xs text-fg/50 hover:text-fg underline transition px-2"
+                className="text-xs text-fg/60 hover:text-fg underline transition px-2"
               >
                 Limpar
               </button>
@@ -354,7 +354,7 @@ export const AuditLogsPanel: React.FC = () => {
               <col />
               <col className="w-[150px]" />
             </colgroup>
-            <thead className="bg-fg/[0.03] text-fg/40 uppercase tracking-wider font-semibold border-b border-fg/[0.06] text-[10px] font-mono">
+            <thead className="bg-fg/[0.03] text-fg/60 uppercase tracking-wider font-semibold border-b border-fg/[0.06] text-xs font-mono">
               <tr>
                 <th className="px-5 py-3.5">Data / Hora</th>
                 <th className="px-5 py-3.5">Usuário / Executor</th>
@@ -367,8 +367,8 @@ export const AuditLogsPanel: React.FC = () => {
             <tbody className="divide-y divide-fg/[0.03] font-sans">
               {loading && logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center text-fg/40">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-fg/20" />
+                  <td colSpan={6} className="px-5 py-24 text-center text-fg/60">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-fg/60" />
                     Carregando trilha de auditoria...
                   </td>
                 </tr>
@@ -388,8 +388,8 @@ export const AuditLogsPanel: React.FC = () => {
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-24 text-center text-fg/40">
-                    <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-fg/20" />
+                  <td colSpan={6} className="px-5 py-24 text-center text-fg/60">
+                    <ShieldAlert className="w-8 h-8 mx-auto mb-2 text-fg/60" />
                     Nenhum log de auditoria encontrado para os critérios selecionados.
                   </td>
                 </tr>
@@ -397,7 +397,7 @@ export const AuditLogsPanel: React.FC = () => {
                 logs.map((log) => (
                   <tr key={log.id} className="h-[56px] hover:bg-fg/[0.03] transition">
                     {/* Data / Hora */}
-                    <td className="px-5 py-3.5 whitespace-nowrap text-fg/50 font-mono text-[11px]">
+                    <td className="px-5 py-3.5 whitespace-nowrap text-fg/60 font-mono text-xs">
                       {formatarData(log.criadoEm)}
                     </td>
 
@@ -411,7 +411,7 @@ export const AuditLogsPanel: React.FC = () => {
                           </span>
                         </div>
                         {log.usuarioEmail && log.usuarioNome && (
-                          <div className="text-[11px] text-fg/40 font-mono truncate" title={log.usuarioEmail}>
+                          <div className="text-xs text-fg/60 font-mono truncate" title={log.usuarioEmail}>
                             {log.usuarioEmail}
                           </div>
                         )}
@@ -422,21 +422,21 @@ export const AuditLogsPanel: React.FC = () => {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="space-y-1">
                         <div>{renderBadgeAcao(log.acao)}</div>
-                        <div className="text-[10px] text-fg/40 font-mono uppercase tracking-wider">
+                        <div className="text-xs text-fg/60 font-mono uppercase tracking-wider">
                           {log.categoria}
                         </div>
                       </div>
                     </td>
 
                     {/* Entidade & Recurso */}
-                    <td className="px-5 py-3.5 whitespace-nowrap font-mono text-[11px]">
+                    <td className="px-5 py-3.5 whitespace-nowrap font-mono text-xs">
                       {log.entidade ? (
                         <span className="text-fg/70">
                           {log.entidade}
                           {log.recursoId ? ` #${log.recursoId}` : ''}
                         </span>
                       ) : (
-                        <span className="text-fg/30">—</span>
+                        <span className="text-fg/60">—</span>
                       )}
                     </td>
 
@@ -450,13 +450,13 @@ export const AuditLogsPanel: React.FC = () => {
                     {/* Origem (IP & User-Agent) */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono text-fg/60 bg-fg/[0.03] px-2 py-0.5 rounded border border-fg/[0.06]">
-                          <Globe className="w-2.5 h-2.5 text-fg/40" />
+                        <span className="inline-flex items-center gap-1 text-xs font-mono text-fg/60 bg-fg/[0.03] px-2 py-0.5 rounded border border-fg/[0.06]">
+                          <Globe className="w-2.5 h-2.5 text-fg/60" />
                           {log.ip || '127.0.0.1'}
                         </span>
                         {log.userAgent && (
                           <div
-                            className="text-[10px] text-fg/30 truncate max-w-[130px]"
+                            className="text-xs text-fg/60 truncate max-w-[130px]"
                             title={log.userAgent}
                           >
                             {log.userAgent}
@@ -472,7 +472,7 @@ export const AuditLogsPanel: React.FC = () => {
         </div>
 
         {/* Rodapé com Paginação */}
-        <div className="px-5 py-3.5 border-t border-fg/[0.06] flex items-center justify-between text-xs text-fg/50 bg-fg/[0.03]">
+        <div className="px-5 py-3.5 border-t border-fg/[0.06] flex items-center justify-between text-xs text-fg/60 bg-fg/[0.03]">
           <span>
             Exibindo <strong className="text-fg">{logs.length}</strong> de{' '}
             <strong className="text-fg">{totalLogs}</strong> eventos
@@ -487,7 +487,7 @@ export const AuditLogsPanel: React.FC = () => {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-[11px] font-mono px-2">
+            <span className="text-xs font-mono px-2">
               Página {totalPages > 0 ? page + 1 : 0} de {totalPages}
             </span>
             <button

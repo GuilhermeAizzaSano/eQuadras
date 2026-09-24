@@ -72,7 +72,7 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
               <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
                 <Badge
                   variant="neutral"
-                  className="bg-black/60 backdrop-blur-md border border-white/[0.1] text-white text-[11px]"
+                  className="bg-black/60 backdrop-blur-md border border-white/[0.1] text-white text-xs"
                 >
                   {q.tipoEsporte.replace('_', ' ')}
                 </Badge>
@@ -98,8 +98,8 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
                 </div>
 
                 {q.cidade && q.estado && (
-                  <div className="text-xs text-fg/50 flex items-center gap-1.5 mt-1 tracking-tight">
-                    <MapPin className="w-3.5 h-3.5 text-fg/40 shrink-0" />
+                  <div className="text-xs text-fg/60 flex items-center gap-1.5 mt-1 tracking-tight">
+                    <MapPin className="w-3.5 h-3.5 text-fg/60 shrink-0" />
                     <span className="truncate">
                       {q.bairro ? `${q.bairro}, ` : ''}
                       {q.cidade} - {q.estado}
@@ -110,7 +110,7 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
 
               <div className="pt-3 border-t border-fg/[0.1] flex items-center justify-between gap-2 mt-auto">
                 <div>
-                  <span className="text-[10px] text-fg/40 uppercase tracking-wider font-medium block">
+                  <span className="text-xs text-fg/60 uppercase tracking-wider font-medium block">
                     Valor / hora
                   </span>
                   <span className="text-sm font-semibold text-fg font-mono">
@@ -146,7 +146,7 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
             <ChevronLeft className="w-3.5 h-3.5" />
             <span>Anterior</span>
           </button>
-          <span className="text-[11px] text-fg/50 font-mono">
+          <span className="text-xs text-fg/60 font-mono">
             Página {paginaAtual} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'quadra' : 'quadras'})
           </span>
           <button

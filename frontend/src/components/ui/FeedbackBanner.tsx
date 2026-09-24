@@ -49,7 +49,7 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClos
         </div>
 
         <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-fg/50 mb-1 font-mono">
+          <p className="text-xs font-semibold uppercase tracking-wider text-fg/60 mb-1 font-mono">
             {isSuccess ? 'Sucesso' : 'Atenção'}
           </p>
           <p className="text-xs sm:text-sm text-fg/95 leading-relaxed whitespace-pre-line break-words font-sans">
@@ -61,7 +61,7 @@ export const FeedbackBanner: React.FC<FeedbackBannerProps> = ({ feedback, onClos
           type="button"
           onClick={onClose}
           aria-label="Fechar notificação"
-          className="p-1 rounded-lg text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition shrink-0"
+          className="p-1 rounded-lg text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition shrink-0"
         >
           <X className="w-4 h-4" />
         </button>

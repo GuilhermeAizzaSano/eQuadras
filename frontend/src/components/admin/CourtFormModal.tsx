@@ -107,7 +107,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-2xl animate-in fade-in duration-200">
       <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl w-full max-w-xl p-6 sm:p-7 shadow-2xl shadow-black/80 space-y-6 max-h-[90vh] overflow-y-auto scrollbar-thin">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-fg/[0.06] pb-4">
@@ -119,15 +119,15 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
               <h2 className="text-lg font-semibold text-fg tracking-tight">
                 {editandoId ? 'Editar Quadra' : 'Nova Quadra'}
               </h2>
-              <p className="text-xs text-fg/50">
+              <p className="text-xs text-fg/60">
                 {editandoId ? 'Atualize as configurações e fotos da quadra' : 'Preencha as informações para disponibilizar uma nova arena'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/50 hover:text-fg border border-fg/[0.1] transition cursor-pointer"
-            title="Fechar"
+            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg border border-fg/[0.1] transition cursor-pointer"
+            title="Fechar" aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
@@ -166,7 +166,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
+            <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
               Descrição & Informações da Quadra
             </label>
             <textarea
@@ -179,8 +179,8 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
-              Data Limite de Agendamento <span className="text-fg/40 font-normal font-sans">(Opcional)</span>
+            <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
+              Data Limite de Agendamento <span className="text-fg/60 font-normal font-sans">(Opcional)</span>
             </label>
             <input
               type="date"
@@ -188,7 +188,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
               onChange={(e) => onDataLimiteChange(e.target.value)}
               className="w-full bg-fg/[0.03] border border-fg/[0.1] rounded-xl px-4 py-2 text-xs text-fg focus:outline-none focus:ring-2 focus:ring-fg/20 focus:border-fg/30 transition font-mono [color-scheme:dark]"
             />
-            <p className="text-[11px] text-fg/40 mt-1">
+            <p className="text-xs text-fg/60 mt-1">
               Clientes não poderão agendar datas posteriores a este dia. Deixe em branco para permitir reservas contínuas.
             </p>
           </div>
@@ -206,16 +206,16 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
                 <button
                   type="button"
                   onClick={onCopiarSegParaTodos}
-                  className="text-[11px] font-medium text-fg/80 hover:text-fg bg-fg/[0.06] hover:bg-fg/[0.1] border border-fg/[0.1] px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer font-mono"
-                  title="Copiar horário da Segunda-feira para todos os dias"
+                  className="text-xs font-medium text-fg/80 hover:text-fg bg-fg/[0.06] hover:bg-fg/[0.1] border border-fg/[0.1] px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer font-mono"
+                  title="Copiar horário da Segunda-feira para todos os dias" aria-label="Copiar horário da Segunda-feira para todos os dias"
                 >
                   Copiar Seg p/ Todos
                 </button>
                 <button
                   type="button"
                   onClick={onAplicarPadraoTodos}
-                  className="text-[11px] font-medium text-fg/50 hover:text-fg bg-fg/[0.03] hover:bg-fg/[0.06] border border-fg/[0.1] px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer font-mono"
-                  title="Restaurar padrão (06:00 - 23:00 em todos os dias)"
+                  className="text-xs font-medium text-fg/60 hover:text-fg bg-fg/[0.03] hover:bg-fg/[0.06] border border-fg/[0.1] px-2.5 py-1 rounded-lg transition active:scale-95 cursor-pointer font-mono"
+                  title="Restaurar padrão (06:00 - 23:00 em todos os dias)" aria-label="Restaurar padrão (06:00 - 23:00 em todos os dias)"
                 >
                   Padrão
                 </button>
@@ -253,7 +253,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
                     {diaConfig.ativo ? (
                       <div className="flex items-center gap-2 text-xs">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-fg/40 font-medium font-mono">De:</span>
+                          <span className="text-xs text-fg/60 font-medium font-mono">De:</span>
                           <input
                             type="time"
                             required={diaConfig.ativo}
@@ -262,9 +262,9 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
                             className="bg-surface-3 border border-fg/[0.1] rounded-lg px-2 py-1 text-xs text-fg focus:outline-none focus:ring-2 focus:ring-fg/20 font-mono [color-scheme:dark]"
                           />
                         </div>
-                        <span className="text-fg/40">às</span>
+                        <span className="text-fg/60">às</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] text-fg/40 font-medium font-mono">Até:</span>
+                          <span className="text-xs text-fg/60 font-medium font-mono">Até:</span>
                           <input
                             type="time"
                             required={diaConfig.ativo}
@@ -275,7 +275,7 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <span className="text-[11px] font-medium text-fg/40 italic py-1">
+                      <span className="text-xs font-medium text-fg/60 italic py-1">
                         Fechado neste dia
                       </span>
                     )}
@@ -288,10 +288,10 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
           {/* Seção de Fotos da Quadra */}
           <div className="space-y-2.5 pt-2 border-t border-fg/[0.06]">
             <div className="flex items-center justify-between">
-              <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 font-mono">
+              <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 font-mono">
                 Fotos da Quadra (Máx. 5)
               </label>
-              <span className="text-[11px] font-mono text-fg/40">
+              <span className="text-xs font-mono text-fg/60">
                 {fotosExistentes.length + novasFotosPreviews.length} / 5 fotos
               </span>
             </div>
@@ -334,9 +334,9 @@ export const CourtFormModal: React.FC<CourtFormModalProps> = ({
               ))}
 
               {fotosExistentes.length + novasFotosPreviews.length < 5 && (
-                <label className="aspect-square rounded-2xl border border-dashed border-fg/15 hover:border-fg/40 bg-fg/[0.03] hover:bg-fg/[0.06] flex flex-col items-center justify-center cursor-pointer transition text-fg/40 hover:text-fg group">
+                <label className="aspect-square rounded-2xl border border-dashed border-fg/15 hover:border-fg/40 bg-fg/[0.03] hover:bg-fg/[0.06] flex flex-col items-center justify-center cursor-pointer transition text-fg/60 hover:text-fg group">
                   <Upload className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
-                  <span className="text-[10px] mt-1 font-medium font-mono">Adicionar</span>
+                  <span className="text-xs mt-1 font-medium font-mono">Adicionar</span>
                   <input
                     type="file"
                     multiple

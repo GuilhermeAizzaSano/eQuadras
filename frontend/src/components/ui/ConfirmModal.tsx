@@ -64,7 +64,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="p-1.5 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition shrink-0"
+            className="p-1.5 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition shrink-0"
             aria-label="Fechar modal"
           >
             <X className="w-4 h-4" />

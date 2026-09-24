@@ -34,7 +34,7 @@ export const Pagination: FC<PaginationProps> = ({
       } gap-3 py-3 text-xs sm:text-sm text-fg/70 ${className}`.trim()}
     >
       {totalElements !== undefined && (
-        <span className="text-fg/50 select-none">
+        <span className="text-fg/60 select-none">
           {totalElements} registros
         </span>
       )}

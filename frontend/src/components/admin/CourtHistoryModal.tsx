@@ -159,9 +159,9 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
               <h3 className="text-base sm:text-lg font-semibold text-fg tracking-tight">
                 Histórico de Agendas
               </h3>
-              <p className="text-xs text-fg/50 mt-0.5">
+              <p className="text-xs text-fg/60 mt-0.5">
                 Quadra: <strong className="text-fg font-medium">{quadra.nome}</strong>
-                <span className="ml-2 font-mono text-[10px] text-fg/40 uppercase px-1.5 py-0.5 bg-fg/[0.03] rounded-md border border-fg/[0.06]">
+                <span className="ml-2 font-mono text-xs text-fg/60 uppercase px-1.5 py-0.5 bg-fg/[0.03] rounded-md border border-fg/[0.06]">
                   {quadra.tipoEsporte.replace('_', ' ')}
                 </span>
               </p>
@@ -171,8 +171,8 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/50 hover:text-fg border border-fg/[0.1] transition cursor-pointer active:scale-95"
-            title="Fechar histórico"
+            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg border border-fg/[0.1] transition cursor-pointer active:scale-95"
+            title="Fechar histórico" aria-label="Fechar histórico"
           >
             <X className="w-4 h-4" />
           </button>
@@ -192,7 +192,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Todos</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                   filtroStatus === 'TODOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -211,7 +211,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Ativos</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                   filtroStatus === 'ATIVOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -230,7 +230,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Realizados</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                   filtroStatus === 'REALIZADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -249,7 +249,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Cancelados</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                   filtroStatus === 'CANCELADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -262,7 +262,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         {/* Conteúdo da Modal */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 flex-1 scrollbar-thin">
           {status === 'loading' && agendamentos.length === 0 ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3 text-fg/50 text-xs font-mono">
+            <div className="py-16 flex flex-col items-center justify-center gap-3 text-fg/60 text-xs font-mono">
               <Loader2 className="w-6 h-6 animate-spin text-fg/60" />
               <span>Carregando histórico de agendamentos...</span>
             </div>
@@ -327,36 +327,36 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                           </span>
                           <Badge
                             variant={statusVariant}
-                            className="uppercase tracking-wider text-[10px] font-mono px-2 py-0.5"
+                            className="uppercase tracking-wider text-xs font-mono px-2 py-0.5"
                           >
                             {statusLabel}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 mt-2 text-xs text-fg/80">
-                          <User className="w-3.5 h-3.5 text-fg/40" />
+                          <User className="w-3.5 h-3.5 text-fg/60" />
                           <span className="font-medium text-fg">{ag.nomeUsuario}</span>
                         </div>
                         {ag.telefoneUsuario && (
-                          <div className="flex items-center gap-2 mt-1 text-xs text-fg/50">
-                            <Phone className="w-3.5 h-3.5 text-fg/40" />
-                            <span className="font-mono text-[11px]">{ag.telefoneUsuario}</span>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-fg/60">
+                            <Phone className="w-3.5 h-3.5 text-fg/60" />
+                            <span className="font-mono text-xs">{ag.telefoneUsuario}</span>
                           </div>
                         )}
                       </div>
 
                       <div className="text-right space-y-1">
                         <div className="flex items-center justify-end gap-1.5 text-xs text-fg/90 font-medium">
-                          <Calendar className="w-3.5 h-3.5 text-fg/40" />
+                          <Calendar className="w-3.5 h-3.5 text-fg/60" />
                           <span>{formatarData(ag.dataHoraInicio)}</span>
                         </div>
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/50 font-mono">
-                          <Clock className="w-3 h-3 text-fg/40" />
+                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/60 font-mono">
+                          <Clock className="w-3 h-3 text-fg/60" />
                           <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-fg/[0.03] text-[11px] text-fg/40 font-mono gap-2">
+                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-fg/[0.03] text-xs text-fg/60 font-mono gap-2">
                       <span>Criado em: {formatarDataHoraBr(ag.criadoEm)}</span>
                       {isCancelado && (
                         <span className="text-danger/90">
@@ -366,7 +366,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-fg/[0.06] text-xs">
-                      <span className="text-fg/50 font-mono">Valor Total:</span>
+                      <span className="text-fg/60 font-mono">Valor Total:</span>
                       <span className="text-fg font-mono font-semibold text-sm">
                         R$ {ag.valorTotal.toFixed(2)}
                       </span>

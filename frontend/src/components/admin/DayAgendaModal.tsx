@@ -169,7 +169,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
               <h3 className="text-base sm:text-lg font-semibold text-fg tracking-tight">
                 Agenda do Dia
               </h3>
-              <p className="text-xs text-fg/50 mt-0.5">
+              <p className="text-xs text-fg/60 mt-0.5">
                 Visualizando disponibilidade para <strong className="text-fg font-mono">{dataSelecionada.split('-').reverse().join('/')}</strong>
               </p>
             </div>
@@ -177,8 +177,8 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/50 hover:text-fg border border-fg/[0.1] transition cursor-pointer"
-            title="Fechar janela"
+            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg border border-fg/[0.1] transition cursor-pointer"
+            title="Fechar janela" aria-label="Fechar janela"
           >
             <X className="w-4 h-4" />
           </button>
@@ -188,7 +188,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
         <div className="px-5 sm:px-6 py-3 border-b border-fg/[0.06] bg-fg/[0.03] flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-fg/50 font-medium font-mono">Quadra:</span>
+              <span className="text-xs text-fg/60 font-medium font-mono">Quadra:</span>
               <select
                 value={quadraSelecionadaAgendaId}
                 onChange={(e) => {
@@ -311,7 +311,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     <span className="w-2 h-2 rounded-full bg-warning" />
                     <span>Bloqueado</span>
                   </div>
-                  <div className="flex items-center gap-1.5 font-medium text-fg/40 font-mono">
+                  <div className="flex items-center gap-1.5 font-medium text-fg/60 font-mono">
                     <span className="w-2 h-2 rounded-full bg-fg/30" />
                     <span>Passado</span>
                   </div>
@@ -319,7 +319,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
               </div>
 
               {loadingHorariosModal ? (
-                <div className="py-16 text-center text-fg/40 text-xs font-mono">
+                <div className="py-16 text-center text-fg/60 text-xs font-mono">
                   Carregando horários das quadras...
                 </div>
               ) : (
@@ -344,7 +344,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
 
                   if (quadrasFiltradas.length === 0) {
                     return (
-                      <div className="py-12 text-center text-fg/40 text-xs font-mono bg-fg/[0.03] border border-fg/[0.06] rounded-2xl p-6">
+                      <div className="py-12 text-center text-fg/60 text-xs font-mono bg-fg/[0.03] border border-fg/[0.06] rounded-2xl p-6">
                         Nenhuma quadra encontrada com horários{' '}
                         {statusFiltroModal === 'LIVRES' ? 'disponíveis' : statusFiltroModal === 'AGENDADOS' ? 'agendados' : 'bloqueados'}{' '}
                         para este dia.
@@ -369,11 +369,11 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                           <div>
                             <h4 className="text-sm font-semibold text-fg flex items-center gap-2">
                               <span>{quadra.nome}</span>
-                              <Badge variant={quadra.ativa ? 'success' : 'neutral'} withDot className="text-[9px]">
+                              <Badge variant={quadra.ativa ? 'success' : 'neutral'} withDot className="text-xs">
                                 {quadra.ativa ? 'ATIVA' : 'INATIVA'}
                               </Badge>
                             </h4>
-                            <p className="text-[11px] text-fg/50 font-mono">
+                            <p className="text-xs text-fg/60 font-mono">
                               {quadra.tipoEsporte.replace('_', ' ')} • R$ {quadra.valorHora.toFixed(2)}/h
                             </p>
                           </div>
@@ -391,7 +391,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                               </span>
                             )}
                             {countPassados > 0 && (
-                              <span className="text-fg/40 bg-fg/[0.03] border border-fg/[0.1] px-2 py-0.5 rounded-lg">
+                              <span className="text-fg/60 bg-fg/[0.03] border border-fg/[0.1] px-2 py-0.5 rounded-lg">
                                 {countPassados} passados
                               </span>
                             )}
@@ -401,7 +401,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                         {bloqueiosDestaQuadra.length > 0 && (
                           <div className="p-3 rounded-xl bg-warning/10 border border-warning/20 text-warning text-xs flex items-center gap-2">
                             <Ban className="w-4 h-4 text-warning shrink-0" />
-                            <span className="text-[11px]">
+                            <span className="text-xs">
                               <strong>Bloqueio ativo:</strong>{' '}
                               {bloqueiosDestaQuadra.map((b) => {
                                 const horario = !b.horaInicio || !b.horaFim ? 'Dia todo' : `${b.horaInicio.slice(0, 5)} às ${b.horaFim.slice(0, 5)}`;
@@ -413,7 +413,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                         )}
 
                         {slots.length === 0 ? (
-                          <div className="py-4 text-center text-xs text-fg/40 font-mono">
+                          <div className="py-4 text-center text-xs text-fg/60 font-mono">
                             Sem funcionamento configurado para este dia da semana.
                           </div>
                         ) : (
@@ -456,10 +456,10 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                       : isOcupado
                                       ? 'bg-info/15 border-info/30 text-info hover:border-info/50 hover:bg-info/25 cursor-pointer active:scale-95 group/slot'
                                       : isPassado
-                                      ? 'bg-fg/[0.03] border-fg/[0.03] text-fg/30 opacity-40'
+                                      ? 'bg-fg/[0.03] border-fg/[0.03] text-fg/60 opacity-40'
                                       : isBloqueado
                                       ? 'bg-warning/10 border-warning/20 text-warning'
-                                      : 'bg-fg/[0.03] border-fg/[0.06] text-fg/40'
+                                      : 'bg-fg/[0.03] border-fg/[0.06] text-fg/60'
                                   }`}
                                   title={
                                     isOcupado
@@ -470,11 +470,11 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                   <span className="text-xs font-semibold font-mono">
                                     {slot.inicio.slice(0, 5)} - {slot.fim.slice(0, 5)}
                                   </span>
-                                  <span className={`text-[9px] font-medium uppercase mt-0.5 flex items-center gap-1 font-mono ${
+                                  <span className={`text-xs font-medium uppercase mt-0.5 flex items-center gap-1 font-mono ${
                                     isOcupado ? 'group-hover/slot:underline' : ''
                                   }`}>
                                     <span>{isLivre ? 'Livre' : isOcupado ? 'Agendado' : isPassado ? 'Passado' : isBloqueado ? 'Bloqueado' : 'Indisponível'}</span>
-                                    {isOcupado && <span className="text-[10px]">↗</span>}
+                                    {isOcupado && <span className="text-xs">↗</span>}
                                   </span>
                                 </div>
                               );
@@ -501,7 +501,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   }`}
                 >
                   <span>Ativos</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                  <span className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'ATIVOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                   }`}>
                     {contadores.ATIVOS}
@@ -518,7 +518,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   }`}
                 >
                   <span>Realizados</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                  <span className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'REALIZADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                   }`}>
                     {contadores.REALIZADOS}
@@ -535,7 +535,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   }`}
                 >
                   <span>Cancelados</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                  <span className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'CANCELADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                   }`}>
                     {contadores.CANCELADOS}
@@ -544,7 +544,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
               </div>
 
               {status === 'loading' && agendamentosPaginados.length === 0 ? (
-                <div className="py-16 flex flex-col items-center justify-center gap-3 text-fg/50 text-xs font-mono">
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-fg/60 text-xs font-mono">
                   <Loader2 className="w-6 h-6 animate-spin text-fg/60" />
                   <span>Carregando reservas do dia...</span>
                 </div>
@@ -598,13 +598,13 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                 {ag.nomeQuadra}
                               </div>
 
-                              <div className="text-xs text-fg/50">
+                              <div className="text-xs text-fg/60">
                                 Atleta: <strong className="text-fg/80">{ag.nomeUsuario}</strong>
                               </div>
 
                               {ag.telefoneUsuario && (
-                                <div className="text-xs text-fg/40 flex items-center gap-1.5 font-mono">
-                                  <Phone className="w-3 h-3 text-fg/40" />
+                                <div className="text-xs text-fg/60 flex items-center gap-1.5 font-mono">
+                                  <Phone className="w-3 h-3 text-fg/60" />
                                   <span>{ag.telefoneUsuario}</span>
                                 </div>
                               )}
@@ -612,12 +612,12 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                               {ag.status === 'PENDENTE' && !isPassado && (() => {
                                 const tempo = getTempoRestantePix(ag.criadoEm);
                                 return tempo ? (
-                                  <div className="text-[11px] text-warning font-mono flex items-center gap-1.5 mt-1 font-medium">
+                                  <div className="text-xs text-warning font-mono flex items-center gap-1.5 mt-1 font-medium">
                                     <Clock className="w-3 h-3 animate-pulse text-warning" />
                                     <span>Aguardando Pix ({tempo})</span>
                                   </div>
                                 ) : (
-                                  <div className="text-[11px] text-danger font-mono flex items-center gap-1.5 mt-1 font-medium">
+                                  <div className="text-xs text-danger font-mono flex items-center gap-1.5 mt-1 font-medium">
                                     <Clock className="w-3 h-3 text-danger" />
                                     <span>Pix expirado</span>
                                   </div>
@@ -631,9 +631,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                   type="button"
                                   onClick={() => onVerQuadra(quadraCorrespondente)}
                                   title="Ver fotos e informações completas desta quadra"
-                                  className="p-1 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/70 hover:text-fg border border-fg/[0.1] transition active:scale-95 flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 cursor-pointer font-mono"
+                                  className="p-1 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/70 hover:text-fg border border-fg/[0.1] transition active:scale-95 flex items-center gap-1 text-xs font-medium px-2.5 py-1 cursor-pointer font-mono"
                                 >
-                                  <Info className="w-3.5 h-3.5 text-fg/50" />
+                                  <Info className="w-3.5 h-3.5 text-fg/60" />
                                   <span>Ver Quadra</span>
                                 </button>
                               )}
@@ -645,11 +645,11 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                           </div>
 
                           <div className="flex items-center gap-2 text-xs text-fg/60 font-mono">
-                            <Clock className="w-3.5 h-3.5 text-fg/40" />
+                            <Clock className="w-3.5 h-3.5 text-fg/60" />
                             <span>{horaInicio} às {horaFim}</span>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-fg/40 font-mono">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg/60 font-mono">
                             {ag.criadoEm && (
                               <span>Agendado em: <strong className="text-fg/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
                             )}
@@ -664,7 +664,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                             <span className="text-fg font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
                             {!isCancelado && (
                               isRetroativoOuEmAndamento ? (
-                                <span className="text-[11px] text-fg/40 italic">
+                                <span className="text-xs text-fg/60 italic">
                                   Não é possível cancelar um agendamento que está em andamento ou retroativo.
                                 </span>
                               ) : (

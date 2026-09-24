@@ -55,7 +55,7 @@ export const CourtSearchBar: React.FC<CourtSearchBarProps> = ({
               </option>
             ))}
           </select>
-          <ChevronDown className="w-4 h-4 text-fg/40 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-fg/60 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
 
         {/* Filtro por Esporte (Tipográfico Apple no Desktop) */}
@@ -110,7 +110,7 @@ export const CourtSearchBar: React.FC<CourtSearchBarProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
             {/* Campo 1: Nome da Quadra */}
             <div className="relative w-full sm:flex-1">
-              <Search className="w-3.5 h-3.5 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-fg/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar por nome da quadra..."
@@ -122,7 +122,7 @@ export const CourtSearchBar: React.FC<CourtSearchBarProps> = ({
 
             {/* Campo 2: Endereço (Bairro ou Rua) */}
             <div className="relative w-full sm:flex-1">
-              <MapPin className="w-3.5 h-3.5 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <MapPin className="w-3.5 h-3.5 text-fg/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar por bairro ou rua..."
@@ -147,7 +147,7 @@ export const CourtSearchBar: React.FC<CourtSearchBarProps> = ({
         ) : (
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64">
-              <Navigation className="w-3.5 h-3.5 text-fg/40 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Navigation className="w-3.5 h-3.5 text-fg/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Digite o CEP (ex: 15707-585)"

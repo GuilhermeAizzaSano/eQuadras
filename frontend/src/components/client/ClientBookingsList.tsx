@@ -109,10 +109,10 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         >
           <span>Ativos</span>
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
               filtroStatusReservas === 'ATIVOS'
                 ? 'bg-on-accent/10 text-on-accent'
-                : 'bg-fg/10 text-fg/50'
+                : 'bg-fg/10 text-fg/60'
             }`}
           >
             {contadores.ATIVOS}
@@ -129,10 +129,10 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         >
           <span>Realizados</span>
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
               filtroStatusReservas === 'REALIZADOS'
                 ? 'bg-on-accent/10 text-on-accent'
-                : 'bg-fg/10 text-fg/50'
+                : 'bg-fg/10 text-fg/60'
             }`}
           >
             {contadores.REALIZADOS}
@@ -149,10 +149,10 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         >
           <span>Cancelados</span>
           <span
-            className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
               filtroStatusReservas === 'CANCELADOS'
                 ? 'bg-on-accent/10 text-on-accent'
-                : 'bg-fg/10 text-fg/50'
+                : 'bg-fg/10 text-fg/60'
             }`}
           >
             {contadores.CANCELADOS}
@@ -168,7 +168,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
           </div>
           <div className="space-y-1 max-w-sm">
             <h4 className="text-sm font-semibold text-fg">Falha ao carregar reservas</h4>
-            <p className="text-xs text-fg/50">Não foi possível carregar as reservas desta aba.</p>
+            <p className="text-xs text-fg/60">Não foi possível carregar as reservas desta aba.</p>
           </div>
           <button
             type="button"
@@ -220,16 +220,16 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                       <div className="text-base font-semibold text-fg tracking-tight">
                         {ag.nomeQuadra}
                       </div>
-                      <div className="text-xs text-fg/50 flex items-center gap-1.5 mt-1 tracking-tight">
-                        <CalendarIcon className="w-3.5 h-3.5 text-fg/40" />
+                      <div className="text-xs text-fg/60 flex items-center gap-1.5 mt-1 tracking-tight">
+                        <CalendarIcon className="w-3.5 h-3.5 text-fg/60" />
                         <span>{data.split('-').reverse().join('/')}</span>
-                        <span className="text-fg/30">•</span>
+                        <span className="text-fg/60">•</span>
                         <span>{horaInicio} às {horaFim}</span>
                       </div>
 
                       {ag.status === 'PENDENTE' && (
                         <div className="mt-2 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-warning bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-md">
+                          <span className="inline-flex items-center gap-1 text-xs font-mono font-medium text-warning bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-md">
                             <Clock className="w-3 h-3 animate-spin" />
                             {getTempoRestantePix(ag.criadoEm) ? (
                               <span>Expira em {getTempoRestantePix(ag.criadoEm)}</span>
@@ -251,7 +251,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                           ? 'neutral'
                           : 'success'
                       }
-                      className="self-start sm:self-auto uppercase tracking-wider text-[10px] font-mono px-2.5 py-0.5"
+                      className="self-start sm:self-auto uppercase tracking-wider text-xs font-mono px-2.5 py-0.5"
                     >
                       {isCancelado
                         ? 'Cancelado'
@@ -282,7 +282,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
 
                       {!isCancelado && (
                         isRetroativoOuEmAndamento ? (
-                          <span className="text-[11px] text-fg/40 italic">
+                          <span className="text-xs text-fg/60 italic">
                             Não é possível cancelar um agendamento que está em andamento ou retroativo.
                           </span>
                         ) : (

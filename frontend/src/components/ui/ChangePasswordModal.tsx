@@ -97,7 +97,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
           aria-label="Fechar"
         >
           <X className="w-5 h-5" />
@@ -108,7 +108,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             <Lock className="w-5 h-5 text-fg/80" />
           </div>
           <h3 className="text-lg font-semibold text-fg tracking-tight">Alterar Senha</h3>
-          <p className="text-xs text-fg/50 tracking-tight">
+          <p className="text-xs text-fg/60 tracking-tight">
             Atualize sua senha de acesso definindo uma combinação segura.
           </p>
         </div>
@@ -144,7 +144,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <button
                 type="button"
                 onClick={() => setMostrarSenhaAtual(!mostrarSenhaAtual)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/40 hover:text-fg p-1 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/60 hover:text-fg p-1 cursor-pointer"
                 aria-label="Alternar visualização da senha"
               >
                 {mostrarSenhaAtual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -168,7 +168,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               <button
                 type="button"
                 onClick={() => setMostrarNovaSenha(!mostrarNovaSenha)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/40 hover:text-fg p-1 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/60 hover:text-fg p-1 cursor-pointer"
                 aria-label="Alternar visualização da senha"
               >
                 {mostrarNovaSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -191,31 +191,31 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           </div>
 
           {/* Checklist de Requisitos de Senha */}
-          <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.06] space-y-2 text-[11px]">
-            <span className="font-medium text-fg/50 block">Requisitos de segurança:</span>
+          <div className="p-3.5 rounded-2xl bg-fg/[0.03] border border-fg/[0.06] space-y-2 text-xs">
+            <span className="font-medium text-fg/60 block">Requisitos de segurança:</span>
             <div className="grid grid-cols-2 gap-x-2.5 gap-y-1.5 text-fg/60">
               <div className={`flex items-center gap-1.5 ${temTamanhoMinimo ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${temTamanhoMinimo ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${temTamanhoMinimo ? 'text-success' : 'text-fg/60'}`} />
                 <span>Mínimo 6 caracteres</span>
               </div>
               <div className={`flex items-center gap-1.5 ${temMaiuscula ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${temMaiuscula ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${temMaiuscula ? 'text-success' : 'text-fg/60'}`} />
                 <span>1 letra maiúscula</span>
               </div>
               <div className={`flex items-center gap-1.5 ${temMinuscula ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${temMinuscula ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${temMinuscula ? 'text-success' : 'text-fg/60'}`} />
                 <span>1 letra minúscula</span>
               </div>
               <div className={`flex items-center gap-1.5 ${temNumero ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${temNumero ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${temNumero ? 'text-success' : 'text-fg/60'}`} />
                 <span>1 número</span>
               </div>
               <div className={`flex items-center gap-1.5 ${temSimbolo ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${temSimbolo ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${temSimbolo ? 'text-success' : 'text-fg/60'}`} />
                 <span>1 símbolo especial</span>
               </div>
               <div className={`flex items-center gap-1.5 ${senhasConferem ? 'text-success' : ''}`}>
-                <Check className={`w-3.5 h-3.5 ${senhasConferem ? 'text-success' : 'text-fg/20'}`} />
+                <Check className={`w-3.5 h-3.5 ${senhasConferem ? 'text-success' : 'text-fg/60'}`} />
                 <span>Senhas coincidem</span>
               </div>
             </div>

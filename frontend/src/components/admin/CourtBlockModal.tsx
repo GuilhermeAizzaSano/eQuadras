@@ -52,7 +52,7 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
   if (!quadra) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
         onClick={onClose}
         className="fixed inset-0 bg-black/60 backdrop-blur-2xl transition-opacity animate-in fade-in duration-200"
@@ -69,7 +69,7 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
               <h3 className="text-base sm:text-lg font-semibold text-fg tracking-tight">
                 Bloqueios de Horário e Dias
               </h3>
-              <p className="text-xs text-fg/50">
+              <p className="text-xs text-fg/60">
                 Quadra: <strong className="text-fg/80">{quadra.nome}</strong>
               </p>
             </div>
@@ -77,8 +77,8 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/50 hover:text-fg border border-fg/[0.1] transition active:scale-95 cursor-pointer"
-            title="Fechar"
+            className="p-2 rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/60 hover:text-fg border border-fg/[0.1] transition active:scale-95 cursor-pointer"
+            title="Fechar" aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
@@ -95,7 +95,7 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
+                <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
                   Data *
                 </label>
                 <div className="relative">
@@ -110,8 +110,8 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
-                  Hora Início <span className="text-fg/40 font-normal font-sans">(Opcional)</span>
+                <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
+                  Hora Início <span className="text-fg/60 font-normal font-sans">(Opcional)</span>
                 </label>
                 <input
                   type="time"
@@ -122,8 +122,8 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
-                  Hora Fim <span className="text-fg/40 font-normal font-sans">(Opcional)</span>
+                <label className="block text-xs font-medium uppercase tracking-wider text-fg/60 mb-1.5 font-mono">
+                  Hora Fim <span className="text-fg/60 font-normal font-sans">(Opcional)</span>
                 </label>
                 <input
                   type="time"
@@ -168,16 +168,16 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
 
           {/* Lista de Bloqueios Existentes */}
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-fg/40 flex items-center justify-between font-mono">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-fg/60 flex items-center justify-between font-mono">
               <span>Bloqueios Cadastrados ({bloqueios.length})</span>
             </h4>
 
             {loadingBloqueios ? (
-              <div className="py-8 text-center text-fg/40 text-xs font-mono">
+              <div className="py-8 text-center text-fg/60 text-xs font-mono">
                 Carregando bloqueios...
               </div>
             ) : bloqueios.length === 0 ? (
-              <div className="py-8 text-center text-fg/40 text-xs border border-dashed border-fg/[0.1] rounded-2xl bg-fg/[0.03]">
+              <div className="py-8 text-center text-fg/60 text-xs border border-dashed border-fg/[0.1] rounded-2xl bg-fg/[0.03]">
                 Nenhum bloqueio cadastrado para esta quadra.
               </div>
             ) : (
@@ -194,14 +194,14 @@ export const CourtBlockModal: React.FC<CourtBlockModalProps> = ({
                           <span className="text-xs font-semibold text-fg font-mono">
                             {b.data.split('-').reverse().join('/')}
                           </span>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full font-mono ${
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full font-mono ${
                             isDiaInteiro ? 'bg-danger/15 text-danger border border-danger/30' : 'bg-warning/15 text-warning border border-warning/30'
                           }`}>
                             {isDiaInteiro ? 'Dia Inteiro' : `${b.horaInicio?.slice(0, 5)} às ${b.horaFim?.slice(0, 5)}`}
                           </span>
                         </div>
                         {b.motivo && (
-                          <p className="text-xs text-fg/50">
+                          <p className="text-xs text-fg/60">
                             Motivo: <span className="text-fg/80">{b.motivo}</span>
                           </p>
                         )}

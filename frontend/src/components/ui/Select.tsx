@@ -23,7 +23,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <div className="absolute left-3.5 text-fg/40 pointer-events-none flex items-center justify-center">
+            <div className="absolute left-3.5 text-fg/60 pointer-events-none flex items-center justify-center">
               {leftIcon}
             </div>
           )}
@@ -42,9 +42,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           >
             {children}
           </select>
-          <ChevronDown className="w-4 h-4 text-fg/40 absolute right-3 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-fg/60 absolute right-3 pointer-events-none" />
         </div>
-        {error && <p className="text-[11px] text-danger font-medium tracking-tight">{error}</p>}
+        {error && <p className="text-xs text-danger font-medium tracking-tight">{error}</p>}
       </div>
     );
   }

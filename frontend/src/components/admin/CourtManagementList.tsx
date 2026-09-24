@@ -50,7 +50,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold text-fg tracking-tight">Minhas Quadras Cadastradas</h2>
-          <p className="text-xs text-fg/50 mt-1">
+          <p className="text-xs text-fg/60 mt-1">
             Cadastre novas arenas esportivas, defina valores por hora, edite fotos e gerencie status de disponibilidade.
           </p>
         </div>
@@ -94,7 +94,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-fg/20">
+                    <div className="w-full h-full flex items-center justify-center text-fg/60">
                       <ShieldCheck className="w-12 h-12 stroke-1" />
                     </div>
                   )}
@@ -108,14 +108,14 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                   </div>
 
                   {temBloqueiosAtivos && (
-                    <div className="absolute top-3 left-3 bg-warning/20 backdrop-blur-md border border-warning/30 text-warning text-[10px] font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm font-mono">
+                    <div className="absolute top-3 left-3 bg-warning/20 backdrop-blur-md border border-warning/30 text-warning text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm font-mono">
                       <Ban className="w-3 h-3" />
                       <span>{bloqueiosDesta.length} {bloqueiosDesta.length === 1 ? 'bloqueio' : 'bloqueios'}</span>
                     </div>
                   )}
 
                   <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-white font-mono text-xs font-semibold shadow-sm">
-                    R$ {q.valorHora.toFixed(2)} <span className="text-fg/50 font-normal">/ hora</span>
+                    R$ {q.valorHora.toFixed(2)} <span className="text-fg/60 font-normal">/ hora</span>
                   </div>
                 </div>
 
@@ -124,24 +124,24 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-base font-semibold text-fg truncate">{q.nome}</h3>
-                      <span className="text-[10px] font-medium text-fg/60 uppercase px-2 py-0.5 bg-fg/[0.03] rounded-lg border border-fg/[0.1] shrink-0 font-mono">
+                      <span className="text-xs font-medium text-fg/60 uppercase px-2 py-0.5 bg-fg/[0.03] rounded-lg border border-fg/[0.1] shrink-0 font-mono">
                         {q.tipoEsporte.replace('_', ' ') || 'OUTRO'}
                       </span>
                     </div>
 
-                    <p className="text-xs text-fg/50 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-fg/60 line-clamp-2 leading-relaxed">
                       {q.descricao || 'Sem descrição cadastrada.'}
                     </p>
 
                     {q.dataLimiteAgendamento && (
-                      <div className="text-[11px] text-warning font-mono flex items-center gap-1.5 bg-warning/10 border border-warning/20 px-2.5 py-1 rounded-xl">
+                      <div className="text-xs text-warning font-mono flex items-center gap-1.5 bg-warning/10 border border-warning/20 px-2.5 py-1 rounded-xl">
                         <Clock className="w-3.5 h-3.5 text-warning shrink-0" />
                         <span>Limite reservas: <strong>{q.dataLimiteAgendamento.split('-').reverse().join('/')}</strong></span>
                       </div>
                     )}
 
-                    <div className="text-xs text-fg/40 truncate pt-1 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-fg/30 shrink-0" />
+                    <div className="text-xs text-fg/60 truncate pt-1 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-fg/60 shrink-0" />
                       <span className="truncate">{q.logradouro}, {q.bairro} - {q.cidade}/{q.estado}</span>
                     </div>
                   </div>
@@ -171,7 +171,7 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                       title="Gerenciar bloqueios de horários e datas desta quadra"
                     >
                       <Ban className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">Bloqueios</span>
+                      <span className="text-xs">Bloqueios</span>
                     </button>
 
                     <button

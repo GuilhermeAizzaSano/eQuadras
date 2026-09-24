@@ -26,7 +26,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
           <p className="text-xs sm:text-sm font-semibold text-fg leading-snug tracking-tight">
             {message}
           </p>
-          <span className="text-[11px] text-fg/40 tracking-tight">Aguarde um instante</span>
+          <span className="text-xs text-fg/60 tracking-tight">Aguarde um instante</span>
         </div>
       </div>
     </div>

@@ -66,17 +66,17 @@ const SidebarHeader: React.FC<{ onSelectHome: () => void }> = ({
                   <span className="text-xs font-semibold text-fg tracking-tight truncate">
                     eQuadras
                   </span>
-                  <span className="text-[10px] text-fg/40 truncate">
+                  <span className="text-xs text-fg/60 truncate">
                     Sistema de Gestão
                   </span>
                 </div>
-                <ChevronsUpDown className="size-3.5 shrink-0 text-fg/40 ml-1" />
+                <ChevronsUpDown className="size-3.5 shrink-0 text-fg/60 ml-1" />
               </div>
             )}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48 bg-surface-2 border-fg/10 text-fg">
-          <div className="px-2 py-1.5 text-xs font-medium text-fg/50">
+          <div className="px-2 py-1.5 text-xs font-medium text-fg/60">
             Ambiente Ativo
           </div>
           <DropdownMenuItem
@@ -130,11 +130,11 @@ const SidebarFooter: React.FC<{
                 <span className="text-xs font-medium text-fg truncate">
                   {user?.nome_usuario || 'Usuário'}
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-fg/40 truncate">
+                <span className="text-xs font-mono uppercase tracking-wider text-fg/60 truncate">
                   {isMasterAdmin ? 'Master Admin' : isAdmin ? 'Admin' : 'Cliente'}
                 </span>
               </div>
-              <ChevronsUpDown className="size-3.5 shrink-0 text-fg/40 ml-1" />
+              <ChevronsUpDown className="size-3.5 shrink-0 text-fg/60 ml-1" />
             </div>
           )}
         </button>
@@ -149,7 +149,7 @@ const SidebarFooter: React.FC<{
             <span className="text-xs font-semibold text-fg truncate">
               {user?.nome_usuario}
             </span>
-            <span className="text-[10px] text-fg/50 truncate">
+            <span className="text-xs text-fg/60 truncate">
               {user?.email_usuario}
             </span>
           </div>

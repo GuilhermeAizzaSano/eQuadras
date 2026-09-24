@@ -169,7 +169,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
           aria-label="Fechar"
           disabled={loadingAcao}
         >
@@ -182,7 +182,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
             <KeyRound className="w-5 h-5 text-fg/80" />
           </div>
           <h3 className="text-lg font-semibold text-fg tracking-tight">Chave de API (Integração)</h3>
-          <p className="text-xs text-fg/50 tracking-tight">
+          <p className="text-xs text-fg/60 tracking-tight">
             Credencial opaca de alta entropia para automações, scripts e integração externa ({user?.email_usuario}).
           </p>
         </div>
@@ -207,14 +207,14 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
             <div className="font-semibold text-fg flex items-center gap-2">
               <span>Nível de Acesso: {isAdmin ? 'ADMINISTRADOR' : 'CLIENTE'}</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   isAdmin ? 'bg-success/15 text-success' : 'bg-info/15 text-info'
                 }`}
               >
                 {isAdmin ? 'Total nas rotas de negócio' : 'Consultas nas rotas de negócio'}
               </span>
             </div>
-            <p className="text-[11px] text-fg/60 leading-relaxed tracking-tight">
+            <p className="text-xs text-fg/60 leading-relaxed tracking-tight">
               A API-KEY acessa apenas rotas de negócio permitidas. Gerenciamento de conta, senhas e chaves exigem obrigatoriamente Sessão Web.
             </p>
           </div>
@@ -223,8 +223,8 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         {/* Conteúdo Principal */}
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-6 h-6 text-fg/50 animate-spin" />
-            <span className="text-xs text-fg/40 tracking-tight">Consultando estado da chave...</span>
+            <Loader2 className="w-6 h-6 text-fg/60 animate-spin" />
+            <span className="text-xs text-fg/60 tracking-tight">Consultando estado da chave...</span>
           </div>
         ) : chaveRecemGerada ? (
           /* ESTADO 4: Chave Recém-Gerada (Exibição Única) */
@@ -244,7 +244,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-fg/70">
                 <span className="font-medium">Sua nova Chave de API:</span>
-                <span className="text-[11px] text-success font-mono flex items-center gap-1">
+                <span className="text-xs text-success font-mono flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> Gerada com sucesso
                 </span>
               </div>
@@ -267,11 +267,11 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
 
             {/* Exemplo de uso cURL */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-fg/50 font-medium tracking-tight">
+              <div className="flex items-center gap-1.5 text-xs text-fg/60 font-medium tracking-tight">
                 <Terminal className="w-3.5 h-3.5 text-fg/70" />
                 <span>Exemplo de requisição externa:</span>
               </div>
-              <div className="bg-bg/70 border border-fg/[0.1] rounded-xl p-3 font-mono text-[11px] text-fg/70 overflow-x-auto select-all">
+              <div className="bg-bg/70 border border-fg/[0.1] rounded-xl p-3 font-mono text-xs text-fg/70 overflow-x-auto select-all">
                 <pre className="whitespace-pre-wrap leading-relaxed">
                   {getCurlExemplo(chaveRecemGerada.apiKey)}
                 </pre>
@@ -296,13 +296,13 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-medium text-fg/70">Chave Ativa (Mascarada)</span>
-                <span className="text-[11px] text-success font-medium">● Ativa</span>
+                <span className="text-xs text-success font-medium">● Ativa</span>
               </div>
               <div className="w-full bg-bg/60 border border-fg/[0.1] rounded-xl p-3.5 font-mono text-xs text-fg/70 flex items-center justify-between">
                 <span>eq_••••••••••••••••••••{info.last4}</span>
-                <span className="text-[10px] text-fg/30 uppercase tracking-wider font-sans font-semibold">Oculta</span>
+                <span className="text-xs text-fg/60 uppercase tracking-wider font-sans font-semibold">Oculta</span>
               </div>
-              <p className="text-[11px] text-fg/40 leading-relaxed">
+              <p className="text-xs text-fg/60 leading-relaxed">
                 O token completo foi exibido apenas no momento da criação por segurança.
               </p>
             </div>
@@ -310,17 +310,17 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
             {/* Metadados e Auditoria */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
               <div className="p-3 rounded-xl bg-fg/[0.03] border border-fg/[0.06] flex items-center gap-2.5">
-                <Calendar className="w-4 h-4 text-fg/40 shrink-0" />
+                <Calendar className="w-4 h-4 text-fg/60 shrink-0" />
                 <div className="min-w-0">
-                  <span className="text-[10px] text-fg/40 block uppercase tracking-wider">Criada em</span>
+                  <span className="text-xs text-fg/60 block uppercase tracking-wider">Criada em</span>
                   <span className="text-fg/80 font-medium truncate block">{formatarDataHora(info.criadaEm)}</span>
                 </div>
               </div>
 
               <div className="p-3 rounded-xl bg-fg/[0.03] border border-fg/[0.06] flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-fg/40 shrink-0" />
+                <Clock className="w-4 h-4 text-fg/60 shrink-0" />
                 <div className="min-w-0">
-                  <span className="text-[10px] text-fg/40 block uppercase tracking-wider">Último uso</span>
+                  <span className="text-xs text-fg/60 block uppercase tracking-wider">Último uso</span>
                   <span className="text-fg/80 font-medium truncate block">
                     {info.ultimoUsoEm ? formatarDataHora(info.ultimoUsoEm) : 'Nunca utilizada'}
                   </span>
@@ -330,11 +330,11 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
 
             {/* Exemplo cURL */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-xs text-fg/50 font-medium tracking-tight">
+              <div className="flex items-center gap-1.5 text-xs text-fg/60 font-medium tracking-tight">
                 <Terminal className="w-3.5 h-3.5 text-fg/70" />
                 <span>Como utilizar via Header:</span>
               </div>
-              <div className="bg-bg/70 border border-fg/[0.1] rounded-xl p-3 font-mono text-[11px] text-fg/70 overflow-x-auto select-all">
+              <div className="bg-bg/70 border border-fg/[0.1] rounded-xl p-3 font-mono text-xs text-fg/70 overflow-x-auto select-all">
                 <pre className="whitespace-pre-wrap leading-relaxed">
                   {getCurlExemplo(`eq_••••••••${info.last4}`)}
                 </pre>
@@ -380,12 +380,12 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         ) : (
           /* ESTADO 2: Sem Chave de API Ativa */
           <div className="py-6 flex flex-col items-center text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center justify-center text-fg/50">
+            <div className="w-12 h-12 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] flex items-center justify-center text-fg/60">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div className="space-y-1 max-w-sm">
               <h4 className="text-sm font-semibold text-fg">Nenhuma Chave de API Ativa</h4>
-              <p className="text-xs text-fg/50 leading-relaxed">
+              <p className="text-xs text-fg/60 leading-relaxed">
                 Você ainda não possui uma Chave de API gerada. Gere uma chave para conectar automações, scripts ou acessar as rotas de negócio.
               </p>
             </div>
@@ -403,7 +403,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
         )}
 
         {/* Rodapé Informativo */}
-        <div className="pt-3 border-t border-fg/[0.1] flex items-center justify-between text-[11px] text-fg/40">
+        <div className="pt-3 border-t border-fg/[0.1] flex items-center justify-between text-xs text-fg/60">
           <span>Autenticação segregada</span>
           <span>Header: X-API-KEY ou Bearer</span>
         </div>
@@ -456,7 +456,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => 
                   setModalRevogadoSucesso(false);
                   onClose();
                 }}
-                className="p-1.5 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition shrink-0 cursor-pointer"
+                className="p-1.5 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition shrink-0 cursor-pointer"
                 aria-label="Fechar"
               >
                 <X className="w-4 h-4" />

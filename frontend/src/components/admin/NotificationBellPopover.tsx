@@ -89,14 +89,14 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
               </div>
               <h3 className="text-xs font-semibold text-fg uppercase tracking-wider font-mono">Notificações</h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] bg-fg/10 text-fg border border-fg/20 font-medium px-1.5 py-0.5 rounded-full font-mono">
+                <span className="text-xs bg-fg/10 text-fg border border-fg/20 font-medium px-1.5 py-0.5 rounded-full font-mono">
                   {unreadCount}
                 </span>
               )}
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-xl text-fg/40 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
+              className="p-1.5 rounded-xl text-fg/60 hover:text-fg hover:bg-fg/[0.1] transition cursor-pointer"
               title="Fechar"
             >
               <X className="w-4 h-4" />
@@ -111,31 +111,31 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
                   <button
                     type="button"
                     onClick={onMarcarTodasComoLidas}
-                    className="px-2.5 py-1 text-[11px] font-medium text-info hover:bg-info/10 rounded-lg transition active:scale-95 cursor-pointer"
+                    className="px-2.5 py-1 text-xs font-medium text-info hover:bg-info/10 rounded-lg transition active:scale-95 cursor-pointer"
                   >
                     Marcar tudo lido
                   </button>
                 ) : (
-                  <span className="text-[11px] text-fg/40 font-mono px-1">Todas lidas</span>
+                  <span className="text-xs text-fg/60 font-mono px-1">Todas lidas</span>
                 )}
 
                 <button
                   type="button"
                   onClick={onConfirmarExcluirTodas}
-                  className="px-2.5 py-1 text-[11px] font-medium text-danger hover:bg-danger/10 rounded-lg transition active:scale-95 cursor-pointer"
-                  title="Excluir todas as notificações"
+                  className="px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger/10 rounded-lg transition active:scale-95 cursor-pointer"
+                  title="Excluir todas as notificações" aria-label="Excluir todas as notificações"
                 >
                   Excluir todas
                 </button>
               </>
             ) : (
-              <span className="text-[11px] text-fg/30 font-mono px-1">Nenhuma notificação</span>
+              <span className="text-xs text-fg/60 font-mono px-1">Nenhuma notificação</span>
             )}
           </div>
 
           <div className="h-[250px] min-h-[250px] max-h-[250px] overflow-y-auto divide-y divide-fg/[0.06] scrollbar-thin">
             {notificacoes.length === 0 ? (
-              <div className="h-full flex items-center justify-center p-8 text-center text-fg/40 text-xs">
+              <div className="h-full flex items-center justify-center p-8 text-center text-fg/60 text-xs">
                 Nenhuma notificação por enquanto.
               </div>
             ) : (
@@ -150,7 +150,7 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
                     {notif.mensagem}
                   </div>
                   <div className="flex justify-between items-center pt-2 mt-auto shrink-0 border-t border-fg/[0.03]">
-                    <span className="text-[10px] text-fg/40 font-mono">
+                    <span className="text-xs text-fg/60 font-mono">
                       {formatarDataHora(notif.dataCriacao)}
                     </span>
                     {!notif.lida && (
@@ -160,7 +160,7 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
                           e.stopPropagation();
                           onLerNotificacao(notif.id);
                         }}
-                        className="text-[10px] font-medium text-info hover:underline transition active:scale-95 cursor-pointer"
+                        className="text-xs font-medium text-info hover:underline transition active:scale-95 cursor-pointer"
                       >
                         Marcar como lida
                       </button>
@@ -176,19 +176,19 @@ export const NotificationBellPopover: React.FC<NotificationBellPopoverProps> = (
               type="button"
               disabled={notificacoesPage === 0}
               onClick={() => onCarregarNotificacoes(notificacoesPage - 1)}
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-fg/[0.06] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-fg/[0.06] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Anterior</span>
             </button>
-            <span className="text-[10px] text-fg/50 font-mono">
+            <span className="text-xs text-fg/60 font-mono">
               Página {notificacoesPage + 1} de {Math.max(1, notificacoesTotalPages)}
             </span>
             <button
               type="button"
               disabled={notificacoesTotalPages <= 1 || notificacoesPage >= notificacoesTotalPages - 1}
               onClick={() => onCarregarNotificacoes(notificacoesPage + 1)}
-              className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-fg/[0.06] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-fg/[0.06] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
             >
               <span>Próxima</span>
               <ChevronRight className="w-3.5 h-3.5" />

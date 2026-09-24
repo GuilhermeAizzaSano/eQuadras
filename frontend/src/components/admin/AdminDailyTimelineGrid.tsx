@@ -151,9 +151,9 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
   if (quadrasExibidas.length === 0) {
     return (
       <div className="bg-surface-2 border border-fg/[0.1] rounded-2xl sm:rounded-3xl p-12 text-center space-y-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-        <AlertCircle className="w-10 h-10 text-fg/30 mx-auto" />
+        <AlertCircle className="w-10 h-10 text-fg/60 mx-auto" />
         <h3 className="text-base font-semibold text-fg tracking-tight">Nenhuma quadra selecionada</h3>
-        <p className="text-sm text-fg/50">Selecione outra opção no filtro acima.</p>
+        <p className="text-sm text-fg/60">Selecione outra opção no filtro acima.</p>
         {quadraFiltroId !== 'TODAS' && onQuadraFiltroChange && (
           <button
             type="button"
@@ -177,7 +177,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
           <span className="text-xs font-mono font-medium text-fg/80 bg-fg/[0.06] px-2.5 py-0.5 rounded-full border border-fg/[0.1]">
             {dataSelecionada.split('-').reverse().join('/')}
           </span>
-          <span className="text-xs text-fg/40 font-medium">
+          <span className="text-xs text-fg/60 font-medium">
             ({quadrasExibidas.length} {quadrasExibidas.length === 1 ? 'quadra' : 'quadras'})
           </span>
           {quadraFiltroId !== 'TODAS' && onQuadraFiltroChange && (
@@ -236,7 +236,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
           >
             <div className="w-full border-t-2 border-danger relative">
               <span
-                className="absolute -top-2.5 bg-danger text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-md font-mono"
+                className="absolute -top-2.5 bg-danger text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md font-mono"
                 style={{ left: `${scrollLeft + 8}px` }}
               >
                 AGORA
@@ -247,7 +247,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
 
         <table ref={tableRef} className="w-full text-left border-collapse min-w-[720px]">
           <thead>
-            <tr className="border-b border-fg/[0.1] bg-surface-1 text-xs font-medium text-fg/50">
+            <tr className="border-b border-fg/[0.1] bg-surface-1 text-xs font-medium text-fg/60">
               <th className="p-3.5 w-24 text-center sticky left-0 bg-surface-1 backdrop-blur z-20 border-r border-fg/[0.1] font-mono">
                 Horário
               </th>
@@ -284,7 +284,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[10px] text-fg/40 font-mono tracking-wider uppercase">
+                        <span className="text-xs text-fg/60 font-mono tracking-wider uppercase">
                           {quadra.tipoEsporte.replace('_', ' ')}
                         </span>
 
@@ -295,7 +295,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                               e.stopPropagation();
                               onQuadraFiltroChange('TODAS');
                             }}
-                            className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium text-fg/90 hover:text-fg bg-fg/[0.1] hover:bg-fg/[0.2] border border-fg/[0.15] rounded-lg transition active:scale-95 cursor-pointer font-mono"
+                            className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-fg/90 hover:text-fg bg-fg/[0.1] hover:bg-fg/[0.2] border border-fg/[0.15] rounded-lg transition active:scale-95 cursor-pointer font-mono"
                             title="Remover filtro de quadra"
                           >
                             <X className="w-3 h-3 text-fg/70" />
@@ -321,7 +321,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                   className="hover:bg-fg/[0.03] transition-colors"
                 >
                   {/* Coluna de Horário Fixa */}
-                  <td className="p-3 text-center font-mono text-xs font-semibold text-fg/50 bg-surface-2 sticky left-0 z-10 border-r border-fg/[0.1] select-none">
+                  <td className="p-3 text-center font-mono text-xs font-semibold text-fg/60 bg-surface-2 sticky left-0 z-10 border-r border-fg/[0.1] select-none">
                     {horaStr}
                   </td>
 
@@ -413,13 +413,13 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                           >
                             <div className="flex items-center justify-between gap-1">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <User className="w-3.5 h-3.5 shrink-0 text-fg/50" />
+                                <User className="w-3.5 h-3.5 shrink-0 text-fg/60" />
                                 <span className="text-xs font-semibold truncate text-fg tracking-tight">
                                   {agendamento.nomeUsuario}
                                 </span>
                               </div>
                               <span
-                                className={`text-[9px] font-mono font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                                className={`text-xs font-mono font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
                                   isAgPassado
                                     ? 'bg-purple/20 text-purple'
                                     : agendamento.status === 'CONFIRMADO'
@@ -436,17 +436,17 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                             </div>
 
                             {agendamento.telefoneUsuario && (
-                              <div className="flex items-center gap-1 text-[11px] text-fg/40 mt-1">
-                                <Phone className="w-3 h-3 text-fg/40 shrink-0" />
+                              <div className="flex items-center gap-1 text-xs text-fg/60 mt-1">
+                                <Phone className="w-3 h-3 text-fg/60 shrink-0" />
                                 <span className="truncate">{agendamento.telefoneUsuario}</span>
                               </div>
                             )}
 
-                            <div className="flex items-center justify-between mt-1 text-[10px] text-fg/50 font-mono">
+                            <div className="flex items-center justify-between mt-1 text-xs text-fg/60 font-mono">
                               <span className="font-semibold text-fg">
                                 R$ {agendamento.valorTotal.toFixed(2)}
                               </span>
-                              <span className="text-fg/40 group-hover/card:text-fg transition font-sans text-[11px]">
+                              <span className="text-fg/60 group-hover/card:text-fg transition font-sans text-xs">
                                 Detalhes →
                               </span>
                             </div>
@@ -472,7 +472,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                                 <Ban className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            <span className="text-[10px] text-fg/50 mt-1 font-mono">
+                            <span className="text-xs text-fg/60 mt-1 font-mono">
                               {bloqueio.horaInicio
                                 ? `${bloqueio.horaInicio.slice(0, 5)} - ${bloqueio.horaFim?.slice(0, 2) === '23' && bloqueio.horaFim?.slice(3, 5) === '59' ? '00:00' : bloqueio.horaFim?.slice(0, 5)}`
                                 : 'Dia todo'}
@@ -485,7 +485,7 @@ export const AdminDailyTimelineGrid: React.FC<AdminDailyTimelineGridProps> = ({
                               onClick={() =>
                                 onBloquearSlot(quadra.id_quadra, dataSelecionada, horaStr, proximaHoraStr)
                               }
-                              className="opacity-0 group-hover/slot:opacity-100 inline-flex items-center gap-1 text-[11px] font-medium text-fg/80 hover:text-fg bg-fg/[0.1] hover:bg-fg/[0.15] px-2.5 py-1 rounded-xl border border-fg/[0.1] shadow-sm transition transform scale-95 group-hover/slot:scale-100 cursor-pointer tracking-tight"
+                              className="opacity-0 group-hover/slot:opacity-100 inline-flex items-center gap-1 text-xs font-medium text-fg/80 hover:text-fg bg-fg/[0.1] hover:bg-fg/[0.15] px-2.5 py-1 rounded-xl border border-fg/[0.1] shadow-sm transition transform scale-95 group-hover/slot:scale-100 cursor-pointer tracking-tight"
                             >
                               <Plus className="w-3 h-3" />
                               <span>Bloquear</span>

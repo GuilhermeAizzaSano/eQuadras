@@ -505,7 +505,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
           <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-fg">
             {activeTab === 'QUADRAS' ? 'Quadras' : 'Minhas Agendas'}
           </h1>
-          <p className="text-xs sm:text-sm text-fg/50 mt-1 tracking-tight">
+          <p className="text-xs sm:text-sm text-fg/60 mt-1 tracking-tight">
             {activeTab === 'QUADRAS'
               ? 'Consulte disponibilidades em tempo real e garanta sua partida'
               : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}

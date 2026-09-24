@@ -226,7 +226,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
             </div>
             Calendário Mensal de Ocupação
           </h2>
-          <p className="text-xs text-fg/50 mt-1 tracking-tight">
+          <p className="text-xs text-fg/60 mt-1 tracking-tight">
             Visão consolidada de disponibilidade. Clique em qualquer data para inspecionar a agenda e horários.
           </p>
         </div>
@@ -254,14 +254,14 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
       </div>
 
       {/* Cabeçalho dos Dias da Semana */}
-      <div className="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-fg/40 uppercase tracking-wider pb-2 border-b border-fg/[0.1]">
-        <span className="text-fg/40">Dom</span>
+      <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-fg/60 uppercase tracking-wider pb-2 border-b border-fg/[0.1]">
+        <span className="text-fg/60">Dom</span>
         <span>Seg</span>
         <span>Ter</span>
         <span>Qua</span>
         <span>Qui</span>
         <span>Sex</span>
-        <span className="text-fg/40">Sáb</span>
+        <span className="text-fg/60">Sáb</span>
       </div>
 
       {/* Grade de Dias do Mês Expandida */}
@@ -298,7 +298,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
               }}
               className={`min-h-[110px] sm:min-h-[124px] p-2.5 rounded-2xl border flex flex-col justify-between items-start transition-all group relative ${
                 !day.isCurrentMonth
-                  ? 'opacity-20 bg-transparent border-fg/[0.03] text-fg/30 cursor-default'
+                  ? 'opacity-20 bg-transparent border-fg/[0.03] text-fg/60 cursor-default'
                   : isDimmed
                   ? 'opacity-30 bg-transparent border-fg/[0.03] hover:opacity-75'
                   : isSelected
@@ -331,7 +331,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                 </span>
 
                 {day.isCurrentMonth && (
-                  <span className="text-[10px] text-fg/40 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 font-mono">
+                  <span className="text-xs text-fg/60 opacity-0 group-hover:opacity-100 transition flex items-center gap-0.5 font-mono">
                     <span>abrir</span>
                     <span>→</span>
                   </span>
@@ -343,7 +343,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                 <div className="w-full space-y-1 mt-2">
                   {day.confirmados > 0 && (
                     <div
-                      className={`w-full px-1.5 py-0.5 rounded-lg border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                      className={`w-full px-1.5 py-0.5 rounded-lg border text-xs sm:text-xs font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'AGENDADOS' || statusFiltroCalendar === 'CONFIRMADOS'
                           ? 'bg-info/20 border-info/40 text-info font-semibold'
                           : 'bg-info/10 border-info/25 text-info'
@@ -359,7 +359,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
 
                   {day.realizados > 0 && (
                     <div
-                      className={`w-full px-1.5 py-0.5 rounded-lg border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                      className={`w-full px-1.5 py-0.5 rounded-lg border text-xs sm:text-xs font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'REALIZADOS'
                           ? 'bg-purple/20 border-purple/40 text-purple font-semibold'
                           : 'bg-purple/10 border-purple/25 text-purple'
@@ -375,7 +375,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
 
                   {day.pendentes > 0 && (
                     <div
-                      className={`w-full px-1.5 py-0.5 rounded-lg border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                      className={`w-full px-1.5 py-0.5 rounded-lg border text-xs sm:text-xs font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'PENDENTES'
                           ? 'bg-warning/20 border-warning/40 text-warning font-semibold'
                           : 'bg-warning/10 border-warning/25 text-warning'
@@ -391,7 +391,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
 
                   {day.bloqueados > 0 && (
                     <div
-                      className={`w-full px-1.5 py-0.5 rounded-lg border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                      className={`w-full px-1.5 py-0.5 rounded-lg border text-xs sm:text-xs font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'BLOQUEADOS'
                           ? 'bg-danger/20 border-danger/40 text-danger font-semibold'
                           : 'bg-danger/10 border-danger/25 text-danger'
@@ -406,16 +406,16 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                   )}
 
                   {day.isPassado ? (
-                    <div className="w-full px-1.5 py-0.5 rounded-lg border border-fg/[0.03] bg-fg/[0.03] text-fg/30 text-[10px] sm:text-[11px] font-mono flex items-center justify-between">
+                    <div className="w-full px-1.5 py-0.5 rounded-lg border border-fg/[0.03] bg-fg/[0.03] text-fg/60 text-xs sm:text-xs font-mono flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-fg/20 shrink-0" />
                         <span className="truncate">Encerrado</span>
                       </span>
-                      <span className="text-[9px] uppercase font-semibold">Passado</span>
+                      <span className="text-xs uppercase font-semibold">Passado</span>
                     </div>
                   ) : (
                     <div
-                      className={`w-full px-1.5 py-0.5 rounded-lg border text-[10px] sm:text-[11px] font-mono flex items-center justify-between ${
+                      className={`w-full px-1.5 py-0.5 rounded-lg border text-xs sm:text-xs font-mono flex items-center justify-between ${
                         statusFiltroCalendar === 'LIVRES'
                           ? 'bg-success/20 border-success/40 text-success font-semibold'
                           : 'bg-success/10 border-success/25 text-success'
