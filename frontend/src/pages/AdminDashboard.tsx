@@ -42,6 +42,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     reservasHoje: 0,
   });
   const [proximasPartidas, setProximasPartidas] = useState<Agendamento[]>([]);
+  const [agendamentosTimeline, setAgendamentosTimeline] = useState<Agendamento[]>([]);
   const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
   const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
@@ -295,10 +296,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       // Carregar todos os bloqueios do admin consolidado
       await carregarMapaBloqueios();
+
+      // Atualizar timeline do dia atual selecionado
+      if (dataSelecionada) {
+        await carregarTimelineDia(dataSelecionada);
+      }
     } catch (err: any) {
       console.error(err);
     }
   };
+
+  const carregarTimelineDia = React.useCallback(async (dataIso: string) => {
+    try {
+      const reservas = await agendamentoApi.listarAgendaCompleta({ data: dataIso });
+      setAgendamentosTimeline(reservas);
+    } catch (err) {
+      console.error('Erro ao carregar agenda completa da timeline:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user && dataSelecionada) {
+      carregarTimelineDia(dataSelecionada);
+    }
+  }, [user, dataSelecionada, carregarTimelineDia]);
 
   const carregarUsuarios = async () => {
     if (!isMasterAdmin) return;
@@ -617,7 +638,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <AdminDailyTimelineGrid
               dataSelecionada={dataSelecionada}
               minhasQuadras={minhasQuadras}
-              agendamentosAdmin={agendamentosAdmin}
+              agendamentosAdmin={agendamentosTimeline}
               mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
               quadraFiltroId={quadraFiltroCalendarId}
               statusFiltro={statusFiltroSchedule}

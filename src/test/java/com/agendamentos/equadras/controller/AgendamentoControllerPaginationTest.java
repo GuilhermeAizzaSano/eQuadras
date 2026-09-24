@@ -849,4 +849,74 @@ class AgendamentoControllerPaginationTest {
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries em listarAgenda por intervalo deve ser constante e independente da quantidade de dados");
     }
+
+    @Test
+    @DisplayName("30. GET /agendamentos/agenda/completa com intervalo superior a 24 horas deve ser rejeitado com 400")
+    void deveRejeitarIntervaloSuperiorA24HorasCom400() throws Exception {
+        LocalDateTime inicio = baseTime;
+        LocalDateTime fimMaisDe24h = inicio.plusHours(25);
+
+        mockMvc.perform(get("/agendamentos/agenda/completa")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("inicio", inicio.toString())
+                        .param("fim", fimMaisDe24h.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("31. GET /agendamentos/agenda/completa deve retornar todas as reservas do dia mesmo excedendo page size padrao")
+    void deveRetornarTodasReservasDoDiaSemTruncar() throws Exception {
+        java.time.LocalDate dataAlvo = baseTime.toLocalDate().plusDays(2);
+
+        // Criar 15 reservas no mesmo dia (page size padrão é 10)
+        for (int i = 7; i <= 21; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAlvo.atTime(i, 0), dataAlvo.atTime(i, 50));
+        }
+
+        mockMvc.perform(get("/agendamentos/agenda/completa")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAlvo.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(15));
+    }
+
+    @Test
+    @DisplayName("32. N+1 Safety: contagem de queries para agenda completa não pode variar entre 2 vs 10 registros")
+    void testeN1AusenteEmListarAgendaCompletaComparando2Vs10Itens() throws Exception {
+        java.time.LocalDate dataAlvo = baseTime.toLocalDate().plusDays(3);
+
+        // 1. Cenário com 2 itens
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAlvo.atTime(8, 0), dataAlvo.atTime(9, 0));
+        criarAgendamento(usuarioB, StatusAgendamento.CONFIRMADO, dataAlvo.atTime(9, 0), dataAlvo.atTime(10, 0));
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda/completa")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAlvo.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        long queriesPara2Itens = statistics.getPrepareStatementCount();
+
+        // 2. Adiciona mais 8 itens (total 10)
+        for (int i = 10; i <= 17; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, dataAlvo.atTime(i, 0), dataAlvo.atTime(i + 1, 0));
+        }
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/agenda/completa")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("data", dataAlvo.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(10));
+
+        long queriesPara10Itens = statistics.getPrepareStatementCount();
+
+        assertEquals(queriesPara2Itens, queriesPara10Itens,
+                "Número de queries em listarAgendaCompleta deve ser constante e independente da quantidade de dados");
+    }
 }

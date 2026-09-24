@@ -175,6 +175,21 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
+    @Operation(summary = "Listar agenda completa do dia (Admin)", description = "Retorna todos os agendamentos não cancelados de um único dia (máximo 24h) para visualização na grade operacional da timeline.")
+    @GetMapping("/agenda/completa")
+    public ResponseEntity<List<AgendamentoResponseDTO>> listarAgendaCompleta(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
+            @RequestParam(required = false) Long quadraId,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        if (data == null && (inicio == null || fim == null)) {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
+        }
+        return ResponseEntity.ok(agendamentoService.listarAgendaCompleta(usuarioLogado.id(), data, inicio, fim, quadraId));
+    }
+
     @Operation(
             summary = "Obter métricas agregadas do dashboard admin",
             description = "Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado."
