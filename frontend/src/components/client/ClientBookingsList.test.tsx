@@ -234,7 +234,7 @@ describe('ClientBookingsList (Server-side Pagination)', () => {
         totalPages: 0,
       });
 
-    const onCancelBookingMock = vi.fn((_id: number, onSuccess?: () => void) => {
+    const onCancelBookingMock = vi.fn((_ag: Agendamento, onSuccess?: () => void) => {
       if (onSuccess) onSuccess();
     });
 
@@ -250,7 +250,10 @@ describe('ClientBookingsList (Server-side Pagination)', () => {
     const cancelarBtn = screen.getByRole('button', { name: /cancelar/i });
     fireEvent.click(cancelarBtn);
 
-    expect(onCancelBookingMock).toHaveBeenCalledWith(1, expect.any(Function));
+    expect(onCancelBookingMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id_agendamento: 1 }),
+      expect.any(Function),
+    );
 
     // Após cancelamento bem-sucedido, recarrega e exibe empty state
     expect(await screen.findByText(/nenhuma reserva ativa no momento/i)).toBeDefined();
