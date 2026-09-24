@@ -1815,6 +1815,42 @@ paths:
                 additionalProperties:
                   type: integer
                   format: int64
+  /api/agendamentos/agenda/mensal:
+    get:
+      tags:
+      - Agendamentos - API
+      summary: Listar agenda mensal (Admin)
+      description: "Retorna os agendamentos não cancelados do mês informado para as\
+        \ quadras do admin autenticado, usados no calendário de ocupação."
+      operationId: listarAgendaMensal
+      parameters:
+      - name: ano
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: mes
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+      - name: quadraId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgendamentoResponseDTO"
   /api/agendamentos/agenda/contadores:
     get:
       tags:
@@ -2632,13 +2668,13 @@ components:
         number:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
+        sort:
+          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
@@ -2651,18 +2687,18 @@ components:
         offset:
           type: integer
           format: int64
-        pageSize:
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        pageNumber:
           type: integer
           format: int32
-        pageNumber:
+        pageSize:
           type: integer
           format: int32
         unpaged:
           type: boolean
-        paged:
-          type: boolean
-        sort:
-          $ref: "#/components/schemas/SortObject"
     SortObject:
       type: object
       properties:
@@ -2798,7 +2834,7 @@ components:
           example: 128
         faturamentoTotal:
           type: number
-          description: Faturamento total acumulado em reservas não canceladas
+          description: Faturamento total acumulado em reservas confirmadas (pagas)
           example: 15420.0
         reservasHoje:
           type: integer
@@ -2883,13 +2919,13 @@ components:
         number:
           type: integer
           format: int32
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
+        sort:
+          $ref: "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        sort:
-          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         first:
           type: boolean
         last:
