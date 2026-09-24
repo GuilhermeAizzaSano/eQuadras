@@ -65,7 +65,7 @@ public class AgendamentoController {
     }
 
     @Deprecated
-    @Operation(summary = "Listar agendamentos (legado sem paginação)", description = "Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.")
+    @Operation(summary = "Listar agendamentos (legado sem paginação)", description = "Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.", deprecated = true)
     @GetMapping(params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
             @RequestParam(required = false, defaultValue = "false") boolean historico,
@@ -109,7 +109,7 @@ public class AgendamentoController {
     }
 
     @Deprecated
-    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.")
+    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.", deprecated = true)
     @GetMapping(value = "/quadra/{quadraId}", params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadra(
             @PathVariable Long quadraId,
