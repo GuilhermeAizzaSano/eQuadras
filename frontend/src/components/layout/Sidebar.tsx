@@ -55,36 +55,36 @@ const SidebarHeader: React.FC<{ onSelectHome: () => void }> = ({
         <DropdownMenuTrigger asChild className="w-full">
           <button
             type="button"
-            className="flex w-full items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-white/[0.06] text-left outline-none cursor-pointer"
+            className="flex w-full items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-fg/[0.06] text-left outline-none cursor-pointer"
           >
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.08] border border-white/[0.12]">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-fg/[0.1] border border-fg/[0.15]">
               <Logo size={20} showText={false} />
             </div>
             {!isCollapsed && (
               <div className="flex min-w-0 flex-1 items-center justify-between">
                 <div className="flex flex-col truncate">
-                  <span className="text-xs font-semibold text-white tracking-tight truncate">
+                  <span className="text-xs font-semibold text-fg tracking-tight truncate">
                     eQuadras
                   </span>
-                  <span className="text-[10px] text-white/40 truncate">
+                  <span className="text-[10px] text-fg/40 truncate">
                     Sistema de Gestão
                   </span>
                 </div>
-                <ChevronsUpDown className="size-3.5 shrink-0 text-white/40 ml-1" />
+                <ChevronsUpDown className="size-3.5 shrink-0 text-fg/40 ml-1" />
               </div>
             )}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-[#121214] border-white/10 text-white">
-          <div className="px-2 py-1.5 text-xs font-medium text-white/50">
+        <DropdownMenuContent align="start" className="w-48 bg-surface-2 border-fg/10 text-fg">
+          <div className="px-2 py-1.5 text-xs font-medium text-fg/50">
             Ambiente Ativo
           </div>
           <DropdownMenuItem
-            className="text-xs focus:bg-white/10 focus:text-white cursor-pointer"
+            className="text-xs focus:bg-fg/10 focus:text-fg cursor-pointer"
             onClick={onSelectHome}
           >
             <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-400" />
+              <span className="size-2 rounded-full bg-success" />
               <span>eQuadras Principal</span>
             </div>
           </DropdownMenuItem>
@@ -114,76 +114,76 @@ const SidebarFooter: React.FC<{
       <DropdownMenuTrigger asChild className="w-full">
         <button
           type="button"
-          className="flex h-10 w-full items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-white/[0.06] text-left outline-none cursor-pointer"
+          className="flex h-10 w-full items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-fg/[0.06] text-left outline-none cursor-pointer"
           title={user?.nome_usuario || 'Conta'}
         >
           <div className="relative flex size-7 shrink-0 items-center justify-center">
-            <Avatar className="size-7 bg-white/[0.08] border border-white/[0.12] text-white">
+            <Avatar className="size-7 bg-fg/[0.1] border border-fg/[0.15] text-fg">
               <AvatarFallback>{getInitials(user?.nome_usuario)}</AvatarFallback>
             </Avatar>
-            <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-[#30D158] ring-2 ring-black" />
+            <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-2 ring-bg" />
           </div>
 
           {!isCollapsed && (
             <div className="flex min-w-0 flex-1 items-center justify-between">
               <div className="flex flex-col truncate">
-                <span className="text-xs font-medium text-white truncate">
+                <span className="text-xs font-medium text-fg truncate">
                   {user?.nome_usuario || 'Usuário'}
                 </span>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-white/40 truncate">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-fg/40 truncate">
                   {isMasterAdmin ? 'Master Admin' : isAdmin ? 'Admin' : 'Cliente'}
                 </span>
               </div>
-              <ChevronsUpDown className="size-3.5 shrink-0 text-white/40 ml-1" />
+              <ChevronsUpDown className="size-3.5 shrink-0 text-fg/40 ml-1" />
             </div>
           )}
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent side="right" align="end" sideOffset={10} className="w-56 bg-[#121214] border-white/10 text-white shadow-apple-elevated">
+      <DropdownMenuContent side="right" align="end" sideOffset={10} className="w-56 bg-surface-2 border-fg/10 text-fg shadow-apple-elevated">
         <div className="flex items-center gap-2.5 p-2">
-          <Avatar className="size-8 bg-white/[0.08] border border-white/[0.12] text-white">
+          <Avatar className="size-8 bg-fg/[0.1] border border-fg/[0.15] text-fg">
             <AvatarFallback>{getInitials(user?.nome_usuario)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-white truncate">
+            <span className="text-xs font-semibold text-fg truncate">
               {user?.nome_usuario}
             </span>
-            <span className="text-[10px] text-white/50 truncate">
+            <span className="text-[10px] text-fg/50 truncate">
               {user?.email_usuario}
             </span>
           </div>
         </div>
-        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuSeparator className="bg-fg/10" />
         <DropdownMenuItem
           onClick={onOpenTrocarSenha}
-          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-fg/10 focus:text-fg"
         >
-          <KeyRound className="size-3.5 text-white/60" />
+          <KeyRound className="size-3.5 text-fg/60" />
           <span>Trocar Senha</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={onOpenApiKey}
-          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-fg/10 focus:text-fg"
         >
-          <Terminal className="size-3.5 text-white/60" />
+          <Terminal className="size-3.5 text-fg/60" />
           <span>Gerenciar API-Key</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={alternarTema}
-          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-white/10 focus:text-white"
+          className="text-xs flex items-center gap-2 cursor-pointer focus:bg-fg/10 focus:text-fg"
         >
           {tema === 'claro' ? (
-            <Moon className="size-3.5 text-white/60" />
+            <Moon className="size-3.5 text-fg/60" />
           ) : (
-            <Sun className="size-3.5 text-white/60" />
+            <Sun className="size-3.5 text-fg/60" />
           )}
           <span>{tema === 'claro' ? 'Tema escuro' : 'Tema claro'}</span>
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuSeparator className="bg-fg/10" />
         <DropdownMenuItem
           onClick={logout}
-          className="text-xs flex items-center gap-2 cursor-pointer text-[#FF453A] focus:bg-[#FF453A]/10 focus:text-[#FF453A]"
+          className="text-xs flex items-center gap-2 cursor-pointer text-danger focus:bg-danger/10 focus:text-danger"
         >
           <LogOut className="size-3.5" />
           <span>Sair da conta</span>
@@ -224,8 +224,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                 currentTab === 'QUADRAS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
               )}
               title="Quadras"
             >
@@ -239,8 +239,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                 currentTab === 'AGENDAS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
               )}
               title="Minhas Agendas"
             >
@@ -256,8 +256,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                 currentTab === 'RELATORIOS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
               )}
               title="Relatórios & Agenda"
             >
@@ -271,8 +271,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                 currentTab === 'GESTAO_QUADRAS'
-                  ? 'bg-white text-black font-semibold shadow-sm'
-                  : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                  ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                  : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
               )}
               title="Gestão de Quadras"
             >
@@ -283,7 +283,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isMasterAdmin && (
               <>
                 <div className="py-1">
-                  <Separator className="bg-white/[0.08]" />
+                  <Separator className="bg-fg/[0.1]" />
                 </div>
                 <button
                   type="button"
@@ -291,8 +291,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={cn(
                     'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                     currentTab === 'USUARIOS'
-                      ? 'bg-white text-black font-semibold shadow-sm'
-                      : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                      : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
                   )}
                   title="Gestão de Usuários"
                 >
@@ -306,8 +306,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={cn(
                     'flex h-9 w-full items-center rounded-xl px-2.5 py-2 transition text-xs font-medium cursor-pointer',
                     currentTab === 'AUDITORIA'
-                      ? 'bg-white text-black font-semibold shadow-sm'
-                      : 'text-white/60 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-fg text-on-accent font-semibold shadow-sm'
+                      : 'text-fg/60 hover:text-fg hover:bg-fg/[0.03]'
                   )}
                   title="Auditoria & Logs"
                 >

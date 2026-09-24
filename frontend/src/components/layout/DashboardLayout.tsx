@@ -17,7 +17,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [modalApiKeyOpen, setModalApiKeyOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-black text-white selection:bg-white/20 selection:text-white">
+    <div className="flex h-screen w-screen overflow-hidden bg-bg text-fg selection:bg-fg/20 selection:text-fg">
       {/* Fixed Left Navigation */}
       <Sidebar
         currentTab={currentTab}
@@ -27,7 +27,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       />
 
       {/* Main Content Area com offset para a barra fixa recolhida */}
-      <main className="flex-1 h-screen overflow-y-auto bg-black pl-[3.25rem]">
+      <main className="flex-1 h-screen overflow-y-auto bg-bg pl-[3.25rem]">
         {children}
       </main>
 

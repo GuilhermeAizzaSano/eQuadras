@@ -37,7 +37,7 @@ export const AuthPage: React.FC = () => {
         type="button"
         onClick={alternarTema}
         aria-label="Alternar tema claro/escuro"
-        className="fixed top-4 right-4 z-50 p-2.5 rounded-xl border border-white/[0.12] bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition cursor-pointer"
+        className="fixed top-4 right-4 z-50 p-2.5 rounded-xl border border-fg/[0.15] bg-fg/[0.06] hover:bg-fg/[0.15] text-fg/70 hover:text-fg transition cursor-pointer"
       >
         {tema === 'claro' ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
       </button>
@@ -46,7 +46,7 @@ export const AuthPage: React.FC = () => {
         onClose={() => setError(null)}
       />
       <SignInPage
-        title={<span className="font-semibold text-white tracking-tight">Entrar</span>}
+        title={<span className="font-semibold text-fg tracking-tight">Entrar</span>}
         description="Informe suas credenciais para acessar sua conta no eQuadras"
         heroImageSrc={loginBg}
         email={loginEmail}
