@@ -491,7 +491,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  const cancelarAgendamento = (id: number) => {
+  const cancelarAgendamento = (id: number, onSuccess?: () => void) => {
     if (!user) return;
     const ag =
       agendamentosTimeline.find((a) => a.id_agendamento === id) ||
@@ -516,6 +516,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           await agendamentoApi.cancelar(id);
           setFeedback({ type: 'success', message: 'Agendamento cancelado com sucesso.' });
           await carregarDados();
+          onSuccess?.();
         } catch (err: any) {
           setFeedback({ type: 'error', message: err.message || 'Falha ao cancelar agendamento.' });
         } finally {

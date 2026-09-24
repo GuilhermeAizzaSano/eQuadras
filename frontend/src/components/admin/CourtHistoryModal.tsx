@@ -80,9 +80,9 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
   }, [quadra]);
 
   const filters = useMemo(() => ({
-    quadraId: isOpen && quadra ? quadra.id_quadra : 0,
+    quadraId: quadra?.id_quadra ?? 0,
     aba: filtroStatus === 'TODOS' ? undefined : (filtroStatus as AbaAgendamento),
-  }), [isOpen, quadra, filtroStatus]);
+  }), [quadra, filtroStatus]);
 
   const {
     items: agendamentos,
@@ -93,7 +93,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
     status,
     error,
     isEmpty,
-  } = usePaginatedQuery(fetchCourtAgendamentosPage, filters, { size: ITENS_POR_PAGINA });
+  } = usePaginatedQuery(fetchCourtAgendamentosPage, filters, { size: ITENS_POR_PAGINA, enabled: isOpen && !!quadra });
 
   useEffect(() => {
     if (isOpen && quadra) {
