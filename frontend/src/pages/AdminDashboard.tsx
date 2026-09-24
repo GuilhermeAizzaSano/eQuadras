@@ -270,7 +270,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       // Atualizar timeline do dia atual selecionado
       if (dataSelecionada) {
-        await carregarTimelineDia(dataSelecionada);
+        if (dataSelecionada === getHojeLocalIso()) {
+          // Mesma data ja buscada acima para "hoje": reaproveita a resposta
+          // em vez de refazer a mesma requisicao de agenda completa.
+          setAgendamentosTimeline(agendaHojeRes);
+        } else {
+          await carregarTimelineDia(dataSelecionada);
+        }
       }
     } catch (err: any) {
       console.error(err);
