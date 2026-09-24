@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Quadra, Agendamento, HorarioDisponivel, BloqueioHorario } from '../../types';
 import { Badge, EmptyState, Button } from '../ui';
@@ -11,18 +11,17 @@ import {
   ShieldCheck,
   Phone,
   Info,
-  History,
-  ChevronLeft,
-  ChevronRight,
   Loader2
 } from 'lucide-react';
 import { parseDataHoraLocal, formatarDataHoraBr, getAgoraBrasilia } from '../../utils/dateUtils';
+import { agendamentoApi, AbaAgendamento } from '../../api/apiClient';
+import { usePaginatedQuery, PageFetcher, Pagination } from '../../shared/pagination';
 
 interface DayAgendaModalProps {
   isOpen: boolean;
   dataSelecionada: string;
   minhasQuadras: Quadra[];
-  agendamentosAdmin: Agendamento[];
+  agendamentosAdmin?: Agendamento[];
   mapaBloqueiosPorQuadra: Record<number, BloqueioHorario[]>;
   horariosDisponiveisPorQuadra: Record<number, HorarioDisponivel[]>;
   loadingHorariosModal: boolean;
@@ -45,11 +44,29 @@ interface DayAgendaModalProps {
   getTempoRestantePix: (criadoEm: string) => string | null;
 }
 
+const ITENS_POR_PAGINA = 5;
+
+const fetchAgendaPage: PageFetcher<Agendamento, { data: string; quadraId?: number; aba: AbaAgendamento }> = ({
+  page,
+  size,
+  filters,
+  signal,
+}) => {
+  return agendamentoApi.listarAgendaDoDiaPaginado({
+    data: filters.data,
+    page,
+    size,
+    quadraId: filters.quadraId,
+    aba: filters.aba,
+    signal,
+  });
+};
+
 export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   isOpen,
   dataSelecionada,
   minhasQuadras,
-  agendamentosAdmin,
+  agendamentosAdmin = [],
   mapaBloqueiosPorQuadra,
   horariosDisponiveisPorQuadra,
   loadingHorariosModal,
@@ -58,9 +75,6 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   visualizacaoAgendaAba,
   filtroAgendaAdmin,
   highlightedAgendamentoId,
-  historicoCarregado = false,
-  carregandoHistorico = false,
-  onCarregarHistorico,
   onClose,
   onQuadraChange,
   onStatusFiltroChange,
@@ -71,21 +85,53 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
   onVerQuadra,
   getTempoRestantePix,
 }) => {
-  const ITENS_POR_PAGINA = 5;
-  const [paginaAtual, setPaginaAtual] = React.useState(1);
-  const [realizadosCarregados, setRealizadosCarregados] = React.useState(false);
-  const [canceladosCarregados, setCanceladosCarregados] = React.useState(false);
+  const filters = useMemo(() => ({
+    data: dataSelecionada,
+    quadraId: quadraSelecionadaAgendaId === 'TODAS' ? undefined : quadraSelecionadaAgendaId,
+    aba: filtroAgendaAdmin as AbaAgendamento,
+  }), [dataSelecionada, quadraSelecionadaAgendaId, filtroAgendaAdmin]);
 
-  React.useEffect(() => {
-    setRealizadosCarregados(false);
-    setCanceladosCarregados(false);
-  }, [dataSelecionada]);
+  const {
+    items: agendamentosPaginados,
+    page,
+    setPage,
+    totalPages,
+    totalElements,
+    status,
+    error,
+    isEmpty,
+  } = usePaginatedQuery(fetchAgendaPage, filters, { size: ITENS_POR_PAGINA });
 
-  React.useEffect(() => {
-    setPaginaAtual(1);
-  }, [dataSelecionada, quadraSelecionadaAgendaId, filtroAgendaAdmin, isOpen]);
+  const [contadores, setContadores] = useState<Record<AbaAgendamento, number>>({
+    ATIVOS: 0,
+    REALIZADOS: 0,
+    CANCELADOS: 0,
+  });
 
-  React.useEffect(() => {
+  const totalReservasDia = (contadores.ATIVOS || 0) + (contadores.REALIZADOS || 0) + (contadores.CANCELADOS || 0);
+
+  const carregarContadores = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const res = await agendamentoApi.obterContadoresAgendaDoDia({
+        data: dataSelecionada,
+        quadraId: quadraSelecionadaAgendaId === 'TODAS' ? undefined : quadraSelecionadaAgendaId,
+        signal,
+      });
+      setContadores(res);
+    } catch {
+      // Falha silenciosa para contadores
+    }
+  }, [dataSelecionada, quadraSelecionadaAgendaId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const controller = new AbortController();
+      carregarContadores(controller.signal);
+      return () => controller.abort();
+    }
+  }, [isOpen, carregarContadores]);
+
+  useEffect(() => {
     if (isOpen) {
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
@@ -95,67 +141,8 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
     }
   }, [isOpen]);
 
-  const agoraLocal = new Date();
-
-  const agendamentosDoDia = React.useMemo(() => {
-    return agendamentosAdmin
-      .filter((a) => {
-        const matchData = a.dataHoraInicio.startsWith(dataSelecionada);
-        const matchQuadra = quadraSelecionadaAgendaId === 'TODAS' || a.quadraId === quadraSelecionadaAgendaId;
-        return matchData && matchQuadra;
-      })
-      .sort((a, b) => a.dataHoraInicio.localeCompare(b.dataHoraInicio));
-  }, [agendamentosAdmin, dataSelecionada, quadraSelecionadaAgendaId]);
-
-  const agendamentosDoDiaFiltrados = React.useMemo(() => {
-    return agendamentosDoDia
-      .filter((ag) => {
-        const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-        const isCancelado = ag.status === 'CANCELADO';
-        const isPassado = dataFim < agoraLocal;
-
-        if (filtroAgendaAdmin === 'CANCELADOS') return isCancelado;
-        if (filtroAgendaAdmin === 'REALIZADOS') return !isCancelado && isPassado;
-        return !isCancelado && !isPassado;
-      })
-      .sort((a, b) => {
-        const tempoA = parseDataHoraLocal(a.dataHoraInicio).getTime();
-        const tempoB = parseDataHoraLocal(b.dataHoraInicio).getTime();
-        if (filtroAgendaAdmin === 'ATIVOS') {
-          return tempoA - tempoB;
-        }
-        return tempoB - tempoA;
-      });
-  }, [agendamentosDoDia, filtroAgendaAdmin, agoraLocal]);
-
-  const totalItens = agendamentosDoDiaFiltrados.length;
-  const totalPaginas = Math.max(1, Math.ceil(totalItens / ITENS_POR_PAGINA));
-  const paginaValida = Math.min(Math.max(1, paginaAtual), totalPaginas);
-  const indiceInicio = (paginaValida - 1) * ITENS_POR_PAGINA;
-  const agendamentosPaginados = agendamentosDoDiaFiltrados.slice(
-    indiceInicio,
-    indiceInicio + ITENS_POR_PAGINA
-  );
-
-  React.useEffect(() => {
+  useEffect(() => {
     if (highlightedAgendamentoId && isOpen) {
-      const ag = agendamentosAdmin.find((a) => a.id_agendamento === highlightedAgendamentoId);
-      if (ag) {
-        const isCancelado = ag.status === 'CANCELADO';
-        const isPassado = parseDataHoraLocal(ag.dataHoraFim) < new Date();
-        if (isCancelado) {
-          setCanceladosCarregados(true);
-        } else if (isPassado) {
-          setRealizadosCarregados(true);
-        }
-      }
-
-      const index = agendamentosDoDiaFiltrados.findIndex((a) => a.id_agendamento === highlightedAgendamentoId);
-      if (index !== -1) {
-        const targetPage = Math.floor(index / ITENS_POR_PAGINA) + 1;
-        setPaginaAtual(targetPage);
-      }
-
       const timer = setTimeout(() => {
         const el = document.getElementById(`agendamento-card-${highlightedAgendamentoId}`);
         const container = el?.closest('.overflow-y-auto');
@@ -167,36 +154,9 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba, filtroAgendaAdmin, agendamentosAdmin, agendamentosDoDiaFiltrados]);
-
-  const handleCarregarRealizados = async () => {
-    if (!historicoCarregado && onCarregarHistorico) {
-      await onCarregarHistorico();
-    }
-    setRealizadosCarregados(true);
-  };
-
-  const handleCarregarCancelados = async () => {
-    if (!historicoCarregado && onCarregarHistorico) {
-      await onCarregarHistorico();
-    }
-    setCanceladosCarregados(true);
-  };
+  }, [highlightedAgendamentoId, isOpen, visualizacaoAgendaAba]);
 
   if (!isOpen) return null;
-
-  let contadoresAtivos = 0;
-  let contadoresCancelados = 0;
-  let contadoresRealizados = 0;
-
-  agendamentosDoDia.forEach((ag) => {
-    const dataFim = parseDataHoraLocal(ag.dataHoraFim);
-    const isCancelado = ag.status === 'CANCELADO';
-    const isPassado = dataFim < agoraLocal;
-    if (isCancelado) contadoresCancelados++;
-    else if (isPassado) contadoresRealizados++;
-    else contadoresAtivos++;
-  });
 
   return createPortal(
     <div role="dialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-2xl animate-in fade-in duration-200">
@@ -329,7 +289,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Reservas ({agendamentosDoDiaFiltrados.length})</span>
+              <span>Reservas ({totalReservasDia})</span>
             </button>
           </div>
         </div>
@@ -483,9 +443,6 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                   onSelectHighlightedAgendamento(agendamentoCorrespondente.id_agendamento);
                                   
                                   const isAgPassado = parseDataHoraLocal(agendamentoCorrespondente.dataHoraFim) < new Date();
-                                  if (isAgPassado) {
-                                    setRealizadosCarregados(true);
-                                  }
                                   onFiltroAgendaAdminChange(isAgPassado ? 'REALIZADOS' : 'ATIVOS');
                                   onVisualizacaoAbaChange('LISTA_RESERVAS');
                                 }
@@ -549,7 +506,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'ATIVOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
                   }`}>
-                    {contadoresAtivos}
+                    {contadores.ATIVOS}
                   </span>
                 </button>
 
@@ -566,7 +523,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'REALIZADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
                   }`}>
-                    {historicoCarregado ? contadoresRealizados : '—'}
+                    {contadores.REALIZADOS}
                   </span>
                 </button>
 
@@ -583,84 +540,23 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium ${
                     filtroAgendaAdmin === 'CANCELADOS' ? 'bg-black/10 text-black' : 'bg-white/[0.06] text-white/60'
                   }`}>
-                    {historicoCarregado ? contadoresCancelados : '—'}
+                    {contadores.CANCELADOS}
                   </span>
                 </button>
               </div>
 
-              {filtroAgendaAdmin === 'REALIZADOS' && (!realizadosCarregados || !historicoCarregado) ? (
-                historicoCarregado && contadoresRealizados === 0 ? (
-                  <EmptyState
-                    icon={CalendarIcon}
-                    title="Nenhum jogo finalizado para este dia"
-                    description="Nenhuma reserva localizada com este status para o dia selecionado."
-                    className="py-12"
-                  />
-                ) : (
-                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-white/[0.08] rounded-2xl sm:rounded-3xl bg-white/[0.02]">
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-white mb-3">
-                      <History className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-white">Jogos Finalizados</h4>
-                    <p className="text-xs text-white/50 max-w-sm mt-1 mb-4">
-                      {historicoCarregado
-                        ? `Existem ${contadoresRealizados} ${contadoresRealizados === 1 ? 'reserva concluída' : 'reservas concluídas'} neste dia. Clique abaixo para visualizar os detalhes.`
-                        : 'O histórico de reservas concluídas é carregado sob demanda. Clique abaixo para buscar os dados.'}
-                    </p>
-                    <button
-                      type="button"
-                      disabled={carregandoHistorico}
-                      onClick={handleCarregarRealizados}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 disabled:opacity-50 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono inline-flex items-center gap-2"
-                    >
-                      {carregandoHistorico ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Carregando...</span>
-                        </>
-                      ) : (
-                        <span>Carregar Realizados {historicoCarregado ? `(${contadoresRealizados})` : ''}</span>
-                      )}
-                    </button>
-                  </div>
-                )
-              ) : filtroAgendaAdmin === 'CANCELADOS' && (!canceladosCarregados || !historicoCarregado) ? (
-                historicoCarregado && contadoresCancelados === 0 ? (
-                  <EmptyState
-                    icon={CalendarIcon}
-                    title="Nenhum jogo cancelado para este dia"
-                    description="Nenhuma reserva localizada com este status para o dia selecionado."
-                    className="py-12"
-                  />
-                ) : (
-                  <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-white/[0.08] rounded-2xl sm:rounded-3xl bg-white/[0.02]">
-                    <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-[#FF453A] mb-3">
-                      <Ban className="w-6 h-6" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-white">Reservas Canceladas</h4>
-                    <p className="text-xs text-white/50 max-w-sm mt-1 mb-4">
-                      {historicoCarregado
-                        ? `Existem ${contadoresCancelados} ${contadoresCancelados === 1 ? 'reserva cancelada' : 'reservas canceladas'} neste dia. Clique abaixo para visualizar os detalhes.`
-                        : 'O histórico de reservas canceladas é carregado sob demanda. Clique abaixo para buscar os dados.'}
-                    </p>
-                    <button
-                      type="button"
-                      disabled={carregandoHistorico}
-                      onClick={handleCarregarCancelados}
-                      className="px-4 py-2 bg-white text-black hover:bg-white/90 disabled:opacity-50 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer font-mono inline-flex items-center gap-2"
-                    >
-                      {carregandoHistorico ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Carregando...</span>
-                        </>
-                      ) : (
-                        <span>Carregar Cancelados {historicoCarregado ? `(${contadoresCancelados})` : ''}</span>
-                      )}
-                    </button>
-                  </div>
-                )
-              ) : agendamentosDoDiaFiltrados.length === 0 ? (
+              {status === 'loading' && agendamentosPaginados.length === 0 ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-white/50 text-xs font-mono">
+                  <Loader2 className="w-6 h-6 animate-spin text-white/60" />
+                  <span>Carregando reservas do dia...</span>
+                </div>
+              ) : status === 'error' && agendamentosPaginados.length === 0 ? (
+                <div className="py-12 px-4 flex flex-col items-center justify-center text-center border border-[#FF453A]/20 rounded-2xl bg-[#FF453A]/5">
+                  <p className="text-xs text-[#FF453A] font-medium">
+                    {error instanceof Error ? error.message : 'Falha ao carregar reservas.'}
+                  </p>
+                </div>
+              ) : isEmpty ? (
                 <EmptyState
                   icon={CalendarIcon}
                   title={
@@ -789,31 +685,13 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                     })}
                   </div>
 
-                  {totalPaginas > 1 && (
-                    <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between text-xs bg-white/[0.01] px-1 rounded-xl">
-                      <button
-                        type="button"
-                        disabled={paginaValida <= 1}
-                        onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                        <span>Anterior</span>
-                      </button>
-                      <span className="text-[11px] text-white/50 font-mono">
-                        Página {paginaValida} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'reserva' : 'reservas'})
-                      </span>
-                      <button
-                        type="button"
-                        disabled={paginaValida >= totalPaginas}
-                        onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer"
-                      >
-                        <span>Próxima</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalElements={totalElements}
+                    isLoading={status === 'loading'}
+                    onPageChange={setPage}
+                  />
                 </div>
               )}
             </div>
