@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import com.agendamentos.equadras.model.enums.AbaAgendamento;
+import com.agendamentos.equadras.shared.pagination.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 @Tag(name = "Agendamentos e Reservas", description = "Endpoints para agendamento concorrente com lock pessimista, verificação de slots e cancelamento de reservas.")
 @RestController
@@ -39,8 +43,27 @@ public class AgendamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
-    @Operation(summary = "Listar agendamentos do usuário autenticado", description = "Retorna os agendamentos do atleta logado (ativos por padrão, ou histórico completo com historico=true) ou pelas quadras do admin.")
-    @GetMapping
+    @Operation(summary = "Listar agendamentos paginados por aba", description = "Retorna os agendamentos paginados do atleta autenticado por aba (ATIVOS, REALIZADOS, CANCELADOS).")
+    @GetMapping(params = "page")
+    public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPaginado(
+            @RequestParam AbaAgendamento aba,
+            Pageable pageable,
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.listarPaginado(usuarioLogado.id(), aba, pageable));
+    }
+
+    @Operation(summary = "Contadores de agendamentos por aba", description = "Retorna o total de agendamentos do atleta por aba (ATIVOS, REALIZADOS, CANCELADOS).")
+    @GetMapping("/contadores")
+    public ResponseEntity<Map<AbaAgendamento, Long>> obterContadores(
+            @UsuarioLogado UsuarioAutenticado usuarioLogado
+    ) {
+        return ResponseEntity.ok(agendamentoService.contarPorAba(usuarioLogado.id()));
+    }
+
+    @Deprecated
+    @Operation(summary = "Listar agendamentos (legado sem paginação)", description = "Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.")
+    @GetMapping(params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
             @RequestParam(required = false, defaultValue = "false") boolean historico,
             @UsuarioLogado UsuarioAutenticado usuarioLogado

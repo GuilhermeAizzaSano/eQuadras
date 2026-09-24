@@ -125,11 +125,11 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     java.util.Optional<Agendamento> findById(Long id);
 
     @EntityGraph(attributePaths = {"usuario", "quadra", "quadra.admin"})
-    @Query("SELECT a FROM Agendamento a WHERE a.id_agendamento = :id")
+    @Query("SELECT a FROM Agendamento a WHERE a.id = :id")
     java.util.Optional<Agendamento> buscarComAdminEUsuarioPorId(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
-    @Query("SELECT a FROM Agendamento a WHERE a.id_agendamento = :id AND (a.usuario.id_usuario = :userId OR a.quadra.admin.id_usuario = :userId)")
+    @Query("SELECT a FROM Agendamento a WHERE a.id = :id AND (a.usuario.id_usuario = :userId OR a.quadra.admin.id_usuario = :userId)")
     java.util.Optional<Agendamento> buscarPorIdEEscopo(@Param("id") Long id, @Param("userId") Long userId);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
@@ -161,7 +161,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
         UPDATE Agendamento a 
         SET a.status = :statusConfirmado, 
             a.transacaoPagamentoId = COALESCE(:transacaoId, a.transacaoPagamentoId) 
-        WHERE a.id_agendamento = :id 
+        WHERE a.id = :id 
           AND a.status = :statusPendente
     """)
     int confirmarPagamentoPendente(

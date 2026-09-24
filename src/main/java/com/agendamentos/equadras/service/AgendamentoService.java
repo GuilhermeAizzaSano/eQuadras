@@ -27,7 +27,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import com.agendamentos.equadras.model.enums.AbaAgendamento;
+import com.agendamentos.equadras.shared.pagination.PageResponse;
+import com.agendamentos.equadras.shared.pagination.SortPolicy;
+import com.agendamentos.equadras.specification.AgendamentoSpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 @Service
 public class AgendamentoService {
@@ -36,6 +47,18 @@ public class AgendamentoService {
 
     private static final LocalTime HORARIO_ABERTURA = LocalTime.of(6, 0);
     private static final LocalTime HORARIO_FECHAMENTO = LocalTime.of(23, 0);
+
+    private static final SortPolicy SORT_POLICY_ATIVOS = SortPolicy.of(
+            Set.of("dataHoraInicio", "id", "dataHora", "id_agendamento"),
+            Sort.by(Sort.Direction.ASC, "dataHoraInicio"),
+            "id"
+    );
+
+    private static final SortPolicy SORT_POLICY_DESC = SortPolicy.of(
+            Set.of("dataHoraInicio", "id", "dataHora", "id_agendamento"),
+            Sort.by(Sort.Direction.DESC, "dataHoraInicio"),
+            "id"
+    );
 
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioRepository usuarioRepository;
@@ -315,6 +338,39 @@ public class AgendamentoService {
 
         List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
         return montarSlotsHorarios(quadra, data, agendamentosDoDia, bloqueios);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<AgendamentoResponseDTO> listarPaginado(Long usuarioId, AbaAgendamento aba, Pageable pageable) {
+        if (aba == null) {
+            throw new IllegalArgumentException("Aba de agendamento é obrigatória.");
+        }
+        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        Specification<Agendamento> spec = AgendamentoSpecifications.doUsuario(usuarioId)
+                .and(AgendamentoSpecifications.daAba(aba, agora));
+
+        SortPolicy policy = (aba == AbaAgendamento.ATIVOS) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
+        Pageable pageableComSort = policy.apply(pageable);
+
+        Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
+
+        return PageResponse.of(pagina, a -> {
+            if (a.getStatus() == StatusAgendamento.PENDENTE && a.getUsuario() != null && usuarioId.equals(a.getUsuario().getId_usuario())) {
+                return AgendamentoResponseDTO.fromEntity(a);
+            }
+            return AgendamentoResponseDTO.fromEntitySemPix(a);
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public Map<AbaAgendamento, Long> contarPorAba(Long usuarioId) {
+        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        Specification<Agendamento> base = AgendamentoSpecifications.doUsuario(usuarioId);
+        Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
+        for (AbaAgendamento aba : AbaAgendamento.values()) {
+            contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
+        }
+        return contagens;
     }
 
     @Transactional(readOnly = true)
