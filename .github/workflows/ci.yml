@@ -110,6 +110,8 @@ jobs:
             fi
 
             if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
+              echo "==> Garantindo que o frontend pertence ao usuário do deploy (evita EACCES no build)..."
+              sudo chown -R "$(id -un):$(id -gn)" /home/ubuntu/eQuadras/frontend
               echo "==> Mudanças no frontend detectadas. Reconstruindo bundle SPA..."
               /home/ubuntu/rebuild_frontend.sh
               echo "==> Recarregando Nginx..."
