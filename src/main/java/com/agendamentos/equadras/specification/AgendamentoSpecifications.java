@@ -42,7 +42,10 @@ public final class AgendamentoSpecifications {
     }
 
     public static Specification<Agendamento> comInicioEntre(LocalDateTime inicio, LocalDateTime fim) {
-        return (root, query, cb) -> cb.between(root.get("dataHoraInicio"), inicio, fim);
+        return (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.get("dataHoraInicio"), inicio),
+                cb.lessThan(root.get("dataHoraInicio"), fim)
+        );
     }
 
     public static Specification<Agendamento> apenasPendentesValidos(LocalDateTime agora) {

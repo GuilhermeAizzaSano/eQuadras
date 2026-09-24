@@ -41,6 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     faturamentoTotal: 0,
     reservasHoje: 0,
   });
+  const [proximasPartidas, setProximasPartidas] = useState<Agendamento[]>([]);
   const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
   const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
@@ -266,14 +267,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!user) return;
     const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
-      const [quadras, agendamentos, metricasRes] = await Promise.all([
+      const { agora: agoraBrasilia } = getAgoraBrasilia();
+      const fimBrasilia = new Date(agoraBrasilia.getTime() + 4 * 60 * 60 * 1000);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const formatIsoLocal = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+      const [quadras, agendamentos, metricasRes, proximasRes] = await Promise.all([
         quadraApi.listar(),
         agendamentoApi.listar(deveBuscarHistorico),
         agendamentoApi.obterMetricasDashboard(),
+        agendamentoApi.listarAgendaDoDiaPaginado({
+          inicio: formatIsoLocal(agoraBrasilia),
+          fim: formatIsoLocal(fimBrasilia),
+          aba: 'ATIVOS',
+          page: 0,
+          size: 20,
+        }),
       ]);
       setMinhasQuadras(quadras);
       setAgendamentosAdmin(agendamentos);
       setMetricas(metricasRes);
+      setProximasPartidas(proximasRes.content);
       if (deveBuscarHistorico) {
         setHistoricoAdminCarregado(true);
       }
@@ -568,7 +583,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Próximas Partidas de Hoje (Próximas 4 horas) */}
           <UpcomingMatchesBar
-            agendamentosAdmin={agendamentosAdmin}
+            proximosJogos={proximasPartidas}
             minhasQuadras={minhasQuadras}
             onAbrirAgendamento={handleAbrirAgendamentoDetalhe}
           />

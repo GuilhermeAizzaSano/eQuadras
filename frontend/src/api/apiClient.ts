@@ -389,7 +389,9 @@ export const agendamentoApi = {
     apiFetch<Record<number, HorarioDisponivel[]>>(`/agendamentos/dia?data=${dataIso}`),
 
   listarAgendaDoDiaPaginado: (params: {
-    data: string;
+    data?: string;
+    inicio?: string;
+    fim?: string;
     page: number;
     size: number;
     quadraId?: number;
@@ -397,10 +399,12 @@ export const agendamentoApi = {
     signal?: AbortSignal;
   }) => {
     const query = new URLSearchParams({
-      data: params.data,
       page: params.page.toString(),
       size: params.size.toString(),
     });
+    if (params.data) query.append('data', params.data);
+    if (params.inicio) query.append('inicio', params.inicio);
+    if (params.fim) query.append('fim', params.fim);
     if (params.quadraId !== undefined) {
       query.append('quadraId', params.quadraId.toString());
     }
@@ -410,8 +414,11 @@ export const agendamentoApi = {
     return apiFetch<PageResponse<Agendamento>>(`/agendamentos/agenda?${query.toString()}`, { signal: params.signal });
   },
 
-  obterContadoresAgendaDoDia: (params: { data: string; quadraId?: number; signal?: AbortSignal }) => {
-    const query = new URLSearchParams({ data: params.data });
+  obterContadoresAgendaDoDia: (params: { data?: string; inicio?: string; fim?: string; quadraId?: number; signal?: AbortSignal }) => {
+    const query = new URLSearchParams();
+    if (params.data) query.append('data', params.data);
+    if (params.inicio) query.append('inicio', params.inicio);
+    if (params.fim) query.append('fim', params.fim);
     if (params.quadraId !== undefined) {
       query.append('quadraId', params.quadraId.toString());
     }

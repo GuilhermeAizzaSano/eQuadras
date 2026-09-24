@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import com.agendamentos.equadras.model.enums.AbaAgendamento;
@@ -142,26 +143,36 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Listar reservas da agenda do dia paginadas (Admin)", description = "Retorna agendamentos paginados do dia informado para as quadras do admin autenticado, com filtro opcional por quadra e aba.")
+    @Operation(summary = "Listar reservas da agenda do dia ou intervalo paginadas (Admin)", description = "Retorna agendamentos paginados do dia informado ou intervalo [inicio, fim) para as quadras do admin autenticado, com filtro opcional por quadra e aba.")
     @GetMapping("/agenda")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarAgendaDoDia(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @RequestParam(required = false) Long quadraId,
             @RequestParam(required = false) AbaAgendamento aba,
             Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
-        return ResponseEntity.ok(agendamentoService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, quadraId, aba, pageable));
+        if (data == null && (inicio == null || fim == null)) {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
+        }
+        return ResponseEntity.ok(agendamentoService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, inicio, fim, quadraId, aba, pageable));
     }
 
-    @Operation(summary = "Contadores de reservas da agenda do dia por aba (Admin)", description = "Retorna contadores de agendamentos por aba para a data e quadra(s) do admin autenticado.")
+    @Operation(summary = "Contadores de reservas da agenda por aba (Admin)", description = "Retorna contadores de agendamentos por aba para a data ou intervalo informado e quadra(s) do admin autenticado.")
     @GetMapping("/agenda/contadores")
     public ResponseEntity<Map<AbaAgendamento, Long>> obterContadoresAgendaDoDia(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @RequestParam(required = false) Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
-        return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, quadraId));
+        if (data == null && (inicio == null || fim == null)) {
+            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
+        }
+        return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
     @Operation(
