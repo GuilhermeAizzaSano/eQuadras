@@ -20,7 +20,7 @@ import {
   Sidebar as SidebarPrimitive,
   SidebarItemText,
   useSidebar,
-} from '../ui/sidebar';
+} from '../ui/SidebarPrimitives';
 import {
   Avatar,
   AvatarFallback,

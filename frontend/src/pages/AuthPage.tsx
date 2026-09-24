@@ -3,7 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usuarioApi } from '../api/apiClient';
 import { FeedbackBanner } from '../components/ui/FeedbackBanner';
-import { SignInPage } from '../components/ui/sign-in';
+import { SignInPage } from '../components/ui/SignIn';
 import { useTema } from '../shared/theme/useTema';
 import loginBg from '../assets/login-bg.jpg';
 
