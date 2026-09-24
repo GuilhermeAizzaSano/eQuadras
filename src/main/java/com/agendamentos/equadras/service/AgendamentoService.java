@@ -305,6 +305,43 @@ public class AgendamentoService {
         }
     }
 
+    private record IntervaloAgenda(LocalDateTime inicio, LocalDateTime fim) {}
+
+    private IntervaloAgenda resolverIntervalo(LocalDate data, LocalDateTime inicio, LocalDateTime fim) {
+        if (inicio != null && fim != null) {
+            return new IntervaloAgenda(inicio, fim);
+        }
+        if (data != null) {
+            return new IntervaloAgenda(data.atStartOfDay(), data.plusDays(1).atStartOfDay());
+        }
+        throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
+    }
+
+    private Specification<Agendamento> escopoAgendaAdmin(Long usuarioId, IntervaloAgenda intervalo, Long quadraId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(intervalo.inicio(), intervalo.fim());
+        if (!usuario.isMasterAdmin()) {
+            spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
+        }
+        if (quadraId != null) {
+            Quadra quadra = quadraRepository.findById(quadraId)
+                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
+            validarAcessoQuadra(quadra, usuarioId);
+            spec = spec.and(AgendamentoSpecifications.daQuadra(quadraId));
+        }
+        return spec;
+    }
+
+    private List<AgendamentoResponseDTO> listarNaoCancelados(Specification<Agendamento> escopo) {
+        Specification<Agendamento> spec = escopo.and((root, query, cb) -> cb.notEqual(root.get("status"), StatusAgendamento.CANCELADO));
+        return agendamentoRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "dataHoraInicio", "id"))
+                .stream()
+                .map(AgendamentoResponseDTO::fromEntitySemPix)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarPorQuadra(Long quadraId, Long usuarioId) {
         Quadra quadra = quadraRepository.findById(quadraId)
@@ -359,169 +396,33 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarAgendaDoDiaPaginado(
-            Long usuarioId,
-            LocalDate data,
-            Long quadraId,
-            AbaAgendamento aba,
-            Pageable pageable
-    ) {
-        return listarAgendaDoDiaPaginado(usuarioId, data, null, null, quadraId, aba, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<AgendamentoResponseDTO> listarAgendaDoDiaPaginado(
-            Long usuarioId,
-            LocalDate data,
-            LocalDateTime inicio,
-            LocalDateTime fim,
-            Long quadraId,
-            AbaAgendamento aba,
-            Pageable pageable
-    ) {
-        LocalDateTime dataInicio;
-        LocalDateTime dataFim;
-        if (inicio != null && fim != null) {
-            dataInicio = inicio;
-            dataFim = fim;
-        } else if (data != null) {
-            dataInicio = data.atStartOfDay();
-            dataFim = data.plusDays(1).atStartOfDay();
-        } else {
-            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
-        }
-
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
-
-        LocalDateTime agora = LocalDateTime.now(clock);
-        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
-
-        if (!usuario.isMasterAdmin()) {
-            spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
-        }
-
-        if (quadraId != null) {
-            Quadra quadra = quadraRepository.findById(quadraId)
-                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
-            validarAcessoQuadra(quadra, usuarioId);
-            spec = spec.and(AgendamentoSpecifications.daQuadra(quadraId));
-        }
-
+            Long usuarioId, LocalDate data, LocalDateTime inicio, LocalDateTime fim,
+            Long quadraId, AbaAgendamento aba, Pageable pageable) {
+        Specification<Agendamento> spec = escopoAgendaAdmin(usuarioId, resolverIntervalo(data, inicio, fim), quadraId);
         if (aba != null) {
-            spec = spec.and(AgendamentoSpecifications.daAba(aba, agora));
+            spec = spec.and(AgendamentoSpecifications.daAba(aba, LocalDateTime.now(clock)));
         }
-
         SortPolicy policy = (aba == AbaAgendamento.ATIVOS || aba == null) ? SORT_POLICY_ATIVOS : SORT_POLICY_DESC;
-        Pageable pageableComSort = policy.apply(pageable);
-
-        Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
-
+        Page<Agendamento> pagina = agendamentoRepository.findAll(spec, policy.apply(pageable));
         return PageResponse.of(pagina, AgendamentoResponseDTO::fromEntitySemPix);
     }
 
-    public List<AgendamentoResponseDTO> listarAgendaCompleta(
-            Long usuarioId,
-            LocalDate data,
-            Long quadraId
-    ) {
-        return listarAgendaCompleta(usuarioId, data, null, null, quadraId);
-    }
-
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarAgendaCompleta(
-            Long usuarioId,
-            LocalDate data,
-            LocalDateTime inicio,
-            LocalDateTime fim,
-            Long quadraId
-    ) {
-        LocalDateTime dataInicio;
-        LocalDateTime dataFim;
-        if (inicio != null && fim != null) {
-            dataInicio = inicio;
-            dataFim = fim;
-        } else if (data != null) {
-            dataInicio = data.atStartOfDay();
-            dataFim = data.plusDays(1).atStartOfDay();
-        } else {
-            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
-        }
-
-        if (Duration.between(dataInicio, dataFim).toSeconds() > 86400 || dataFim.isBefore(dataInicio)) {
+            Long usuarioId, LocalDate data, LocalDateTime inicio, LocalDateTime fim, Long quadraId) {
+        IntervaloAgenda intervalo = resolverIntervalo(data, inicio, fim);
+        if (intervalo.fim().isBefore(intervalo.inicio())
+                || Duration.between(intervalo.inicio(), intervalo.fim()).toSeconds() > 86400) {
             throw new IllegalArgumentException("O intervalo não pode ser superior a 24 horas.");
         }
-
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
-
-        Specification<Agendamento> spec = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
-
-        if (!usuario.isMasterAdmin()) {
-            spec = spec.and(AgendamentoSpecifications.doAdmin(usuarioId));
-        }
-
-        if (quadraId != null) {
-            Quadra quadra = quadraRepository.findById(quadraId)
-                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
-            validarAcessoQuadra(quadra, usuarioId);
-            spec = spec.and(AgendamentoSpecifications.daQuadra(quadraId));
-        }
-
-        spec = spec.and((root, query, cb) -> cb.notEqual(root.get("status"), StatusAgendamento.CANCELADO));
-
-        List<Agendamento> agendamentos = agendamentoRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "dataHoraInicio", "id"));
-
-        return agendamentos.stream()
-                .map(AgendamentoResponseDTO::fromEntitySemPix)
-                .toList();
+        return listarNaoCancelados(escopoAgendaAdmin(usuarioId, intervalo, quadraId));
     }
 
     @Transactional(readOnly = true)
     public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
-            Long usuarioId,
-            LocalDate data,
-            Long quadraId
-    ) {
-        return contarAgendaDoDiaPorAba(usuarioId, data, null, null, quadraId);
-    }
-
-    @Transactional(readOnly = true)
-    public Map<AbaAgendamento, Long> contarAgendaDoDiaPorAba(
-            Long usuarioId,
-            LocalDate data,
-            LocalDateTime inicio,
-            LocalDateTime fim,
-            Long quadraId
-    ) {
-        LocalDateTime dataInicio;
-        LocalDateTime dataFim;
-        if (inicio != null && fim != null) {
-            dataInicio = inicio;
-            dataFim = fim;
-        } else if (data != null) {
-            dataInicio = data.atStartOfDay();
-            dataFim = data.plusDays(1).atStartOfDay();
-        } else {
-            throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
-        }
-
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
-
+            Long usuarioId, LocalDate data, LocalDateTime inicio, LocalDateTime fim, Long quadraId) {
+        Specification<Agendamento> base = escopoAgendaAdmin(usuarioId, resolverIntervalo(data, inicio, fim), quadraId);
         LocalDateTime agora = LocalDateTime.now(clock);
-        Specification<Agendamento> base = AgendamentoSpecifications.comInicioEntre(dataInicio, dataFim);
-
-        if (!usuario.isMasterAdmin()) {
-            base = base.and(AgendamentoSpecifications.doAdmin(usuarioId));
-        }
-
-        if (quadraId != null) {
-            Quadra quadra = quadraRepository.findById(quadraId)
-                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
-            validarAcessoQuadra(quadra, usuarioId);
-            base = base.and(AgendamentoSpecifications.daQuadra(quadraId));
-        }
-
         Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
         for (AbaAgendamento aba : AbaAgendamento.values()) {
             contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
@@ -559,11 +460,6 @@ public class AgendamentoService {
 
         List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
         return montarSlotsHorarios(quadra, data, agendamentosDoDia, bloqueios);
-    }
-
-    @Transactional(readOnly = true)
-    public PageResponse<AgendamentoResponseDTO> listarPaginado(Long usuarioId, AbaAgendamento aba, Pageable pageable) {
-        return listarPaginado(usuarioId, aba, false, pageable);
     }
 
     @Transactional(readOnly = true)
