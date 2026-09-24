@@ -16,7 +16,8 @@ public class Agendamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id_agendamento;
+    @Column(name = "id_agendamento")
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
@@ -61,7 +62,7 @@ public class Agendamento {
     }
 
     public Agendamento(Long id_agendamento, Usuario usuario, Quadra quadra, LocalDateTime dataHoraInicio, LocalDateTime dataHoraFim, BigDecimal valorTotal, StatusAgendamento status, String transacaoPagamentoId, String pixCopiaECola, String qrCodeBase64, LocalDateTime criadoEm, LocalDateTime canceladoEm) {
-        this.id_agendamento = id_agendamento;
+        this.id = id_agendamento;
         this.usuario = usuario;
         this.quadra = quadra;
         this.dataHoraInicio = dataHoraInicio;
@@ -85,8 +86,11 @@ public class Agendamento {
         }
     }
 
-    public Long getId_agendamento() { return id_agendamento; }
-    public void setId_agendamento(Long id_agendamento) { this.id_agendamento = id_agendamento; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getId_agendamento() { return id; }
+    public void setId_agendamento(Long id_agendamento) { this.id = id_agendamento; }
 
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
@@ -126,12 +130,12 @@ public class Agendamento {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Agendamento that = (Agendamento) o;
-        return Objects.equals(id_agendamento, that.id_agendamento);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id_agendamento);
+        return Objects.hash(id);
     }
 
     public static AgendamentoBuilder builder() {
