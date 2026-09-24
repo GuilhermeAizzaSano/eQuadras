@@ -170,4 +170,30 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
             @Param("statusConfirmado") StatusAgendamento statusConfirmado,
             @Param("statusPendente") StatusAgendamento statusPendente
     );
+
+    @Query("""
+        SELECT COUNT(a),
+               SUM(a.valorTotal),
+               COUNT(CASE WHEN a.dataHoraInicio >= :inicioHoje AND a.dataHoraInicio < :inicioAmanha THEN 1 END)
+        FROM Agendamento a
+        WHERE a.status != com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
+          AND a.quadra.admin.id_usuario = :adminId
+    """)
+    List<Object[]> obterMetricasAgendamentosPorAdminId(
+            @Param("adminId") Long adminId,
+            @Param("inicioHoje") LocalDateTime inicioHoje,
+            @Param("inicioAmanha") LocalDateTime inicioAmanha
+    );
+
+    @Query("""
+        SELECT COUNT(a),
+               SUM(a.valorTotal),
+               COUNT(CASE WHEN a.dataHoraInicio >= :inicioHoje AND a.dataHoraInicio < :inicioAmanha THEN 1 END)
+        FROM Agendamento a
+        WHERE a.status != com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
+    """)
+    List<Object[]> obterMetricasAgendamentosMasterAdmin(
+            @Param("inicioHoje") LocalDateTime inicioHoje,
+            @Param("inicioAmanha") LocalDateTime inicioAmanha
+    );
 }

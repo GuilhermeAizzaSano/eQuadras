@@ -2,6 +2,7 @@ package com.agendamentos.equadras.controller;
 
 import com.agendamentos.equadras.dto.request.AgendamentoCriacaoDTO;
 import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
+import com.agendamentos.equadras.dto.response.DashboardMetricasDTO;
 import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
@@ -161,6 +162,18 @@ public class AgendamentoController {
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, quadraId));
+    }
+
+    @Operation(
+            summary = "Obter métricas agregadas do dashboard admin",
+            description = "Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado."
+    )
+    @GetMapping("/dashboard/metricas")
+    public ResponseEntity<DashboardMetricasDTO> obterMetricasDashboard(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        if (usuarioLogado == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Usuário não autenticado.");
+        }
+        return ResponseEntity.ok(agendamentoService.obterMetricasDashboard(usuarioLogado.id()));
     }
 
     @Operation(

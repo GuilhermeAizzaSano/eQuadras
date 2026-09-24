@@ -24,6 +24,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -611,5 +612,158 @@ class AgendamentoControllerPaginationTest {
 
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries em listarAgendaDoDia não pode variar com a quantidade de itens retornados");
+    }
+
+    @Test
+    @DisplayName("23. GET /agendamentos/dashboard/metricas deve retornar 200 com métricas para admin comum")
+    void deveRetornarMetricasDashboardParaAdminComum() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(10, 0), hoje.atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, hoje.atTime(14, 0), hoje.atTime(15, 0));
+
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalQuadras").value(1))
+                .andExpect(jsonPath("$.quadrasAtivas").value(1))
+                .andExpect(jsonPath("$.totalReservas").value(1))
+                .andExpect(jsonPath("$.faturamentoTotal").value(120.0))
+                .andExpect(jsonPath("$.reservasHoje").value(1));
+    }
+
+    @Test
+    @DisplayName("24. Isolamento: GET /agendamentos/dashboard/metricas por admin sem quadras deve retornar zeros, não null")
+    void outroAdminSemQuadrasDeveReceberZerosNasMetricas() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(10, 0), hoje.atTime(11, 0));
+
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalQuadras").value(0))
+                .andExpect(jsonPath("$.quadrasAtivas").value(0))
+                .andExpect(jsonPath("$.totalReservas").value(0))
+                .andExpect(jsonPath("$.faturamentoTotal").value(0))
+                .andExpect(jsonPath("$.reservasHoje").value(0));
+    }
+
+    @Test
+    @DisplayName("25. Master Admin: GET /agendamentos/dashboard/metricas deve consolidar quadras e reservas de todos os admins")
+    void masterAdminDeveVerMetricasConsolidadasDeTodosOsAdmins() throws Exception {
+        Usuario master = usuarioRepository.save(Usuario.builder()
+                .nome_usuario("Master Admin")
+                .email_usuario("gui@gmail.com")
+                .senha_usuario("senha123")
+                .phone_usuario("11999990099")
+                .role(Role.ADMIN)
+                .ativo(true)
+                .build());
+        String tokenMaster = jwtService.gerarToken(master);
+
+        // Cria quadra para master
+        Quadra quadra2 = quadraRepository.save(Quadra.builder()
+                .nome("Arena Secundária")
+                .tipoEsporte(TipoEsporte.BEACH_TENNIS)
+                .valorHora(BigDecimal.valueOf(150.0))
+                .ativa(true)
+                .admin(master)
+                .build());
+
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(10, 0), hoje.atTime(11, 0));
+
+        Agendamento ag2 = Agendamento.builder()
+                .usuario(usuarioB)
+                .quadra(quadra2)
+                .status(StatusAgendamento.CONFIRMADO)
+                .dataHoraInicio(hoje.atTime(16, 0))
+                .dataHoraFim(hoje.atTime(17, 0))
+                .valorTotal(BigDecimal.valueOf(150.0))
+                .criadoEm(hoje.atTime(8, 0))
+                .build();
+        agendamentoRepository.save(ag2);
+
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenMaster))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalQuadras").value(2))
+                .andExpect(jsonPath("$.quadrasAtivas").value(2))
+                .andExpect(jsonPath("$.totalReservas").value(2))
+                .andExpect(jsonPath("$.faturamentoTotal").value(270.0))
+                .andExpect(jsonPath("$.reservasHoje").value(2));
+    }
+
+    @Test
+    @DisplayName("26. Caracterização: métricas retornadas batem exatamente com as regras em memória do frontend")
+    void testeDeCaracterizacaoMetricasDashboardMesmosNumerosQueCalculoEmMemoria() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        java.time.LocalDate amanha = hoje.plusDays(1);
+        java.time.LocalDate ontem = hoje.minusDays(1);
+
+        // Agendamentos diversos para o mesmo admin
+        Agendamento a1 = criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(9, 0), hoje.atTime(10, 0)); // R$ 120
+        Agendamento a2 = criarAgendamento(usuarioB, StatusAgendamento.PENDENTE, hoje.atTime(15, 0), hoje.atTime(16, 0));   // R$ 120
+        Agendamento a3 = criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, hoje.atTime(18, 0), hoje.atTime(19, 0));  // cancelado (ignorado)
+        Agendamento a4 = criarAgendamento(usuarioB, StatusAgendamento.CONFIRMADO, amanha.atTime(10, 0), amanha.atTime(11, 0)); // R$ 120 (outro dia)
+        Agendamento a5 = criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, ontem.atTime(10, 0), ontem.atTime(11, 0));   // R$ 120 (ontem)
+
+        List<Agendamento> listaCompleta = List.of(a1, a2, a3, a4, a5);
+
+        // Simulação EXATA do cálculo do frontend em AdminDashboard.tsx:353-367
+        List<Agendamento> agendamentosValidosFront = listaCompleta.stream()
+                .filter(a -> a.getStatus() != StatusAgendamento.CANCELADO)
+                .toList();
+        BigDecimal faturamentoTotalEsperado = agendamentosValidosFront.stream()
+                .map(Agendamento::getValorTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalReservasEsperado = agendamentosValidosFront.size();
+        long reservasHojeEsperado = agendamentosValidosFront.stream()
+                .filter(a -> a.getDataHoraInicio().toLocalDate().equals(hoje))
+                .count();
+
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalReservas").value((int) totalReservasEsperado))
+                .andExpect(jsonPath("$.faturamentoTotal").value(faturamentoTotalEsperado.doubleValue()))
+                .andExpect(jsonPath("$.reservasHoje").value((int) reservasHojeEsperado));
+    }
+
+    @Test
+    @DisplayName("27. N+1 Safety: contagem de queries para métricas não pode variar entre 2 vs 10 registros")
+    void testeN1AusenteEmMetricasDashboardComparando2Vs10Itens() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+
+        // 1. Cenário com 2 itens
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(8, 0), hoje.atTime(9, 0));
+        criarAgendamento(usuarioB, StatusAgendamento.CONFIRMADO, hoje.atTime(9, 0), hoje.atTime(10, 0));
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        long queriesPara2Itens = statistics.getPrepareStatementCount();
+
+        // 2. Adiciona mais 8 itens (total 10)
+        for (int i = 10; i <= 17; i++) {
+            criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.atTime(i, 0), hoje.atTime(i + 1, 0));
+        }
+
+        statistics.clear();
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        long queriesPara10Itens = statistics.getPrepareStatementCount();
+
+        assertEquals(queriesPara2Itens, queriesPara10Itens,
+                "Número de queries em obterMetricasDashboard deve ser constante e independente da quantidade de dados");
     }
 }

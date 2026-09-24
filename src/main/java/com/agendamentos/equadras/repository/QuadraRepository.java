@@ -51,4 +51,10 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long> {
             @Param("maxLat") Double maxLat,
             @Param("minLng") Double minLng,
             @Param("maxLng") Double maxLng);
+
+    @Query("SELECT COUNT(q), COUNT(CASE WHEN q.ativa = true THEN 1 END) FROM Quadra q WHERE q.admin.id_usuario = :adminId")
+    List<Object[]> obterMetricasQuadrasPorAdminId(@Param("adminId") Long adminId);
+
+    @Query("SELECT COUNT(q), COUNT(CASE WHEN q.ativa = true THEN 1 END) FROM Quadra q")
+    List<Object[]> obterMetricasQuadrasMasterAdmin();
 }
