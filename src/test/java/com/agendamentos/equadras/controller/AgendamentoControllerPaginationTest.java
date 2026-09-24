@@ -951,4 +951,41 @@ class AgendamentoControllerPaginationTest {
         assertEquals(queriesPara2Itens, queriesPara10Itens,
                 "Número de queries em listarAgendaCompleta deve ser constante e independente da quantidade de dados");
     }
+
+    @Test
+    @DisplayName("33. GET /agendamentos/agenda/mensal retorna reservas não canceladas do mês inteiro")
+    void deveRetornarAgendaMensalSemCanceladas() throws Exception {
+        java.time.YearMonth mes = java.time.YearMonth.from(baseTime).plusMonths(1);
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, mes.atDay(3).atTime(10, 0), mes.atDay(3).atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.PENDENTE, mes.atDay(20).atTime(10, 0), mes.atDay(20).atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CANCELADO, mes.atDay(21).atTime(10, 0), mes.atDay(21).atTime(11, 0));
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, mes.plusMonths(1).atDay(1).atTime(10, 0), mes.plusMonths(1).atDay(1).atTime(11, 0));
+
+        mockMvc.perform(get("/agendamentos/agenda/mensal")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("ano", String.valueOf(mes.getYear()))
+                        .param("mes", String.valueOf(mes.getMonthValue()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        mockMvc.perform(get("/agendamentos/agenda/mensal")
+                        .cookie(new Cookie("equadras_session", tokenOutroAdmin))
+                        .param("ano", String.valueOf(mes.getYear()))
+                        .param("mes", String.valueOf(mes.getMonthValue()))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("34. GET /agendamentos/agenda/mensal com mês inválido retorna 400")
+    void agendaMensalComMesInvalidoDeveRetornar400() throws Exception {
+        mockMvc.perform(get("/agendamentos/agenda/mensal")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .param("ano", "2026")
+                        .param("mes", "13")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
 }
