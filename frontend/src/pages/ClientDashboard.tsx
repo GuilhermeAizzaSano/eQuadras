@@ -456,10 +456,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
     });
   };
 
-  const cancelarAgendamento = (id: number, onSuccess?: () => void) => {
+  const cancelarAgendamento = (ag: Agendamento, onSuccess?: () => void) => {
     if (!user) return;
-    const ag = meusAgendamentos.find((a) => a.id_agendamento === id);
-    if (ag && parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
+    if (parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
       setFeedback({
         type: 'error',
         message: 'Não é possível cancelar um agendamento que está em andamento ou retroativo.',
@@ -476,7 +475,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
         setLoadingMessage('Cancelando reserva...');
         setLoading(true);
         try {
-          await agendamentoApi.cancelar(id);
+          await agendamentoApi.cancelar(ag.id_agendamento);
           setFeedback({ type: 'success', message: 'Agendamento cancelado com sucesso.' });
           if (onSuccess) {
             onSuccess();

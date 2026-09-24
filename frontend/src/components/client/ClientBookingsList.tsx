@@ -9,7 +9,7 @@ import { Pagination } from '../../shared/pagination/Pagination';
 
 interface ClientBookingsListProps {
   onPayPix: (agendamento: Agendamento) => void;
-  onCancelBooking: (idAgendamento: number, onSuccess?: () => void) => void;
+  onCancelBooking: (agendamento: Agendamento, onSuccess?: () => void) => void;
 }
 
 const ITENS_POR_PAGINA_RESERVAS = 5;
@@ -88,8 +88,8 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  const handleCancel = (id: number) => {
-    onCancelBooking(id, () => {
+  const handleCancel = (agendamento: Agendamento) => {
+    onCancelBooking(agendamento, () => {
       reload();
       carregarContadores();
     });
@@ -288,7 +288,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleCancel(ag.id_agendamento)}
+                            onClick={() => handleCancel(ag)}
                             className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
                           >
                             Cancelar
