@@ -53,10 +53,10 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
           <div
             key={q.id_quadra}
             onClick={() => onSelectCourtDetails(q)}
-            className="group relative rounded-2xl sm:rounded-3xl border border-white/[0.06] hover:border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.04] overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between active:scale-[0.99]"
+            className="group relative rounded-2xl sm:rounded-3xl border border-fg/[0.06] hover:border-fg/[0.15] bg-fg/[0.03] hover:bg-fg/[0.03] overflow-hidden transition-all duration-200 cursor-pointer flex flex-col justify-between active:scale-[0.99]"
           >
             {/* Foto de Capa da Quadra */}
-            <div className="relative aspect-video w-full overflow-hidden bg-black">
+            <div className="relative aspect-video w-full overflow-hidden bg-bg">
               <img
                 src={primeiraFoto}
                 alt={q.nome}
@@ -77,14 +77,14 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
                   {q.tipoEsporte.replace('_', ' ')}
                 </Badge>
 
-                <span className="p-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/[0.12] text-white/70 group-hover:text-white transition shadow-sm">
+                <span className="p-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/[0.15] text-white/70 group-hover:text-white transition shadow-sm">
                   <Info className="w-3.5 h-3.5" />
                 </span>
               </div>
 
               <div className="absolute bottom-2.5 left-3.5 right-3.5 flex items-end justify-between">
                 <div
-                  className="w-2 h-2 rounded-full bg-[#30D158]"
+                  className="w-2 h-2 rounded-full bg-success"
                   title="Quadra Ativa"
                 />
               </div>
@@ -93,13 +93,13 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
             {/* Informações da Quadra */}
             <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
               <div>
-                <div className="text-base font-semibold text-white tracking-tight">
+                <div className="text-base font-semibold text-fg tracking-tight">
                   {q.nome}
                 </div>
 
                 {q.cidade && q.estado && (
-                  <div className="text-xs text-white/50 flex items-center gap-1.5 mt-1 tracking-tight">
-                    <MapPin className="w-3.5 h-3.5 text-white/40 shrink-0" />
+                  <div className="text-xs text-fg/50 flex items-center gap-1.5 mt-1 tracking-tight">
+                    <MapPin className="w-3.5 h-3.5 text-fg/40 shrink-0" />
                     <span className="truncate">
                       {q.bairro ? `${q.bairro}, ` : ''}
                       {q.cidade} - {q.estado}
@@ -108,12 +108,12 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
                 )}
               </div>
 
-              <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between gap-2 mt-auto">
+              <div className="pt-3 border-t border-fg/[0.1] flex items-center justify-between gap-2 mt-auto">
                 <div>
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-medium block">
+                  <span className="text-[10px] text-fg/40 uppercase tracking-wider font-medium block">
                     Valor / hora
                   </span>
-                  <span className="text-sm font-semibold text-white font-mono">
+                  <span className="text-sm font-semibold text-fg font-mono">
                     R$ {q.valorHora.toFixed(2)}
                   </span>
                 </div>
@@ -124,9 +124,9 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
                     e.stopPropagation();
                     onOpenBookingModal(q.id_quadra);
                   }}
-                  className="text-xs px-3.5 py-2 rounded-xl transition-all font-medium flex items-center gap-1.5 active:scale-95 text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] shadow-sm cursor-pointer tracking-tight"
+                  className="text-xs px-3.5 py-2 rounded-xl transition-all font-medium flex items-center gap-1.5 active:scale-95 text-fg bg-fg/[0.1] hover:bg-fg/[0.15] border border-fg/[0.15] shadow-sm cursor-pointer tracking-tight"
                 >
-                  <CalendarIcon className="w-3.5 h-3.5 text-white/70" />
+                  <CalendarIcon className="w-3.5 h-3.5 text-fg/70" />
                   <span>Ver Horários</span>
                 </button>
               </div>
@@ -136,24 +136,24 @@ export const CourtCardGrid: React.FC<CourtCardGridProps> = ({
       })}
 
       {totalPaginas > 1 && (
-        <div className="col-span-full pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">
+        <div className="col-span-full pt-4 border-t border-fg/[0.1] flex items-center justify-between text-xs">
           <button
             type="button"
             disabled={paginaAtual <= 1}
             onClick={() => onMudarPagina?.(Math.max(1, paginaAtual - 1))}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-fg/[0.06] cursor-pointer active:scale-95"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             <span>Anterior</span>
           </button>
-          <span className="text-[11px] text-white/50 font-mono">
+          <span className="text-[11px] text-fg/50 font-mono">
             Página {paginaAtual} de {totalPaginas} ({totalItens} {totalItens === 1 ? 'quadra' : 'quadras'})
           </span>
           <button
             type="button"
             disabled={paginaAtual >= totalPaginas}
             onClick={() => onMudarPagina?.(Math.min(totalPaginas, paginaAtual + 1))}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-fg/[0.03] hover:bg-fg/[0.1] text-fg/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-fg/[0.06] cursor-pointer active:scale-95"
           >
             <span>Próxima</span>
             <ChevronRight className="w-3.5 h-3.5" />

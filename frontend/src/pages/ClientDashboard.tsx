@@ -500,12 +500,12 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       <FeedbackBanner feedback={feedback} onClose={() => setFeedback(null)} />
 
       {/* Top Header */}
-      <div className="border-b border-white/[0.08] pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="border-b border-fg/[0.1] pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.03em] text-fg">
             {activeTab === 'QUADRAS' ? 'Quadras' : 'Minhas Agendas'}
           </h1>
-          <p className="text-xs sm:text-sm text-white/50 mt-1 tracking-tight">
+          <p className="text-xs sm:text-sm text-fg/50 mt-1 tracking-tight">
             {activeTab === 'QUADRAS'
               ? 'Consulte disponibilidades em tempo real e garanta sua partida'
               : 'Acompanhe o status dos seus jogos e pagamentos Pix instantâneos'}

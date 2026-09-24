@@ -62,30 +62,30 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
 
   return (
     <div className="w-full max-w-2xl animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="relative overflow-hidden rounded-2xl border border-[#FF9F0A]/30 bg-[#FF9F0A]/[0.08] backdrop-blur-xl p-4 sm:p-5 shadow-apple-card min-h-[108px] sm:h-[108px] flex items-center">
+      <div className="relative overflow-hidden rounded-2xl border border-warning/30 bg-warning/[0.08] backdrop-blur-xl p-4 sm:p-5 shadow-apple-card min-h-[108px] sm:h-[108px] flex items-center">
         {/* Glow de fundo sutil */}
-        <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#FF9F0A]/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -right-8 -top-8 w-32 h-32 bg-warning/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex items-center justify-between gap-4 relative z-10 w-full">
           <div className="flex items-center gap-3.5 min-w-0 flex-1">
-            <div className="p-2.5 rounded-xl bg-[#FF9F0A]/15 border border-[#FF9F0A]/30 text-[#FF9F0A] shrink-0">
+            <div className="p-2.5 rounded-xl bg-warning/15 border border-warning/30 text-warning shrink-0">
               <Clock className="w-5 h-5 animate-pulse" />
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-[11px] uppercase font-bold tracking-wider font-mono text-[#FF9F0A]">
+                <span className="text-[11px] uppercase font-bold tracking-wider font-mono text-warning">
                   Pagamento Pendente
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#FF9F0A]/20 border border-[#FF9F0A]/30 text-[#FF9F0A]">
+                <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-warning/20 border border-warning/30 text-warning">
                   Expira em {tempoFormatado}
                 </span>
               </div>
 
-              <p className="text-xs sm:text-[13px] text-white/90 leading-relaxed line-clamp-2">
+              <p className="text-xs sm:text-[13px] text-fg/90 leading-relaxed line-clamp-2">
                 Confirme o pagamento da sua reserva na{' '}
-                <span className="font-semibold text-white">{agendamentoAtual.nomeQuadra}</span> em até{' '}
-                <span className="font-mono font-bold text-[#FF9F0A]">{tempoFormatado}</span> ou ela será cancelada automaticamente.
+                <span className="font-semibold text-fg">{agendamentoAtual.nomeQuadra}</span> em até{' '}
+                <span className="font-mono font-bold text-warning">{tempoFormatado}</span> ou ela será cancelada automaticamente.
               </p>
             </div>
           </div>
@@ -94,30 +94,30 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
             <button
               type="button"
               onClick={() => onPayPix(agendamentoAtual)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#FF9F0A] hover:bg-[#FF9F0A]/90 text-black font-semibold text-xs transition active:scale-95 flex items-center gap-1.5 shadow-sm shadow-[#FF9F0A]/20 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-warning hover:bg-warning/90 text-black font-semibold text-xs transition active:scale-95 flex items-center gap-1.5 shadow-sm shadow-warning/20 cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>Pagar Pix</span>
             </button>
 
             {pendentesValidos.length > 1 && (
-              <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded-xl p-0.5">
+              <div className="flex items-center gap-1 bg-bg/40 border border-fg/10 rounded-xl p-0.5">
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="p-1 text-white/60 hover:text-white rounded-lg hover:bg-white/10 transition cursor-pointer"
+                  className="p-1 text-fg/60 hover:text-fg rounded-lg hover:bg-fg/10 transition cursor-pointer"
                   title="Agendamento pendente anterior"
                   aria-label="Anterior"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[10px] font-mono px-1 text-white/70">
+                <span className="text-[10px] font-mono px-1 text-fg/70">
                   {currentIndex + 1}/{pendentesValidos.length}
                 </span>
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="p-1 text-white/60 hover:text-white rounded-lg hover:bg-white/10 transition cursor-pointer"
+                  className="p-1 text-fg/60 hover:text-fg rounded-lg hover:bg-fg/10 transition cursor-pointer"
                   title="Próximo agendamento pendente"
                   aria-label="Próximo"
                 >
