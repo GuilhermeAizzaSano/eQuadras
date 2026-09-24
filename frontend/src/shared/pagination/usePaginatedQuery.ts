@@ -10,10 +10,12 @@ export interface PageFetchParams<F> {
 
 export type PageFetcher<T, F> = (params: PageFetchParams<F>) => Promise<PageResponse<T>>;
 
-export type PaginatedStatus = 'loading' | 'success' | 'error';
+export type PaginatedStatus = 'idle' | 'loading' | 'success' | 'error';
 
 interface Options {
   size: number;
+  /** Quando false, não busca (ex.: modal fechado). Padrão: true. */
+  enabled?: boolean;
 }
 
 /**
@@ -22,8 +24,9 @@ interface Options {
  * - Trocar filtros volta para a página 0.
  * - Respostas obsoletas são descartadas (AbortController + checagem de abort).
  * - Dados anteriores permanecem visíveis durante o carregamento e em caso de erro.
+ * - enabled=false suspende a busca.
  */
-export function usePaginatedQuery<T, F>(fetcher: PageFetcher<T, F>, filters: F, { size }: Options) {
+export function usePaginatedQuery<T, F>(fetcher: PageFetcher<T, F>, filters: F, { size, enabled = true }: Options) {
   const filtersKey = JSON.stringify(filters);
 
   // Página vinculada à chave de filtros: trocar filtro zera a página no mesmo render (sem fetch intermediário).
@@ -31,7 +34,7 @@ export function usePaginatedQuery<T, F>(fetcher: PageFetcher<T, F>, filters: F, 
   const page = pageState.key === filtersKey ? pageState.page : 0;
 
   const [data, setData] = useState<PageResponse<T> | null>(null);
-  const [status, setStatus] = useState<PaginatedStatus>('loading');
+  const [status, setStatus] = useState<PaginatedStatus>(enabled ? 'loading' : 'idle');
   const [error, setError] = useState<unknown>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -50,6 +53,10 @@ export function usePaginatedQuery<T, F>(fetcher: PageFetcher<T, F>, filters: F, 
   const reload = useCallback(() => setReloadToken((t) => t + 1), []);
 
   useEffect(() => {
+    if (!enabled) {
+      setStatus('idle');
+      return;
+    }
     const controller = new AbortController();
     setStatus('loading');
 
@@ -73,7 +80,7 @@ export function usePaginatedQuery<T, F>(fetcher: PageFetcher<T, F>, filters: F, 
       });
 
     return () => controller.abort();
-  }, [page, size, filtersKey, reloadToken]);
+  }, [page, size, filtersKey, reloadToken, enabled]);
 
   return {
     items: data?.content ?? [],

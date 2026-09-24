@@ -18,6 +18,22 @@ describe('usePaginatedQuery', () => {
     expect(fetcher).toHaveBeenCalledWith(expect.objectContaining({ page: 0, size: 5, filters: { aba: 'ATIVOS' } }));
   });
 
+  it('não busca enquanto enabled=false e busca ao habilitar', async () => {
+    const fetcher = vi.fn().mockResolvedValue(page([1], 0, 1));
+    const { result, rerender } = renderHook(
+      ({ enabled }) => usePaginatedQuery(fetcher, {}, { size: 5, enabled }),
+      { initialProps: { enabled: false } },
+    );
+
+    expect(result.current.status).toBe('idle');
+    expect(fetcher).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it('volta para a página 0 ao trocar o filtro, sem buscar a página antiga com o filtro novo', async () => {
     const fetcher = vi.fn().mockImplementation(({ page: p }) => Promise.resolve(page([p], p, 20)));
     const { result, rerender } = renderHook(({ f }) => usePaginatedQuery(fetcher, f, { size: 5 }), {
