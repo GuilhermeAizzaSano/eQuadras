@@ -988,4 +988,24 @@ class AgendamentoControllerPaginationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("35. CLIENT não acessa rotas administrativas de agenda, métricas e contadores de quadra (403)")
+    void clienteNaoDeveAcessarRotasAdministrativas() throws Exception {
+        String hoje = baseTime.toLocalDate().toString();
+        Cookie cookieCliente = new Cookie("equadras_session", tokenA);
+
+        mockMvc.perform(get("/agendamentos/agenda").cookie(cookieCliente).param("data", hoje).param("page", "0").param("size", "5"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/agendamentos/agenda/contadores").cookie(cookieCliente).param("data", hoje))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/agendamentos/agenda/completa").cookie(cookieCliente).param("data", hoje))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/agendamentos/agenda/mensal").cookie(cookieCliente).param("ano", "2026").param("mes", "9"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/agendamentos/dashboard/metricas").cookie(cookieCliente))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/agendamentos/quadra/" + quadra.getId_quadra() + "/contadores").cookie(cookieCliente))
+                .andExpect(status().isForbidden());
+    }
 }
