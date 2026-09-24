@@ -713,6 +713,21 @@ class AgendamentoControllerPaginationTest {
     }
 
     @Test
+    @DisplayName("25.5. Métricas: faturamento soma apenas CONFIRMADO; totalReservas conta PENDENTE e CONFIRMADO")
+    void faturamentoDeveSomarApenasReservasConfirmadas() throws Exception {
+        java.time.LocalDate hoje = baseTime.toLocalDate();
+        criarAgendamento(usuarioA, StatusAgendamento.CONFIRMADO, hoje.plusDays(1).atTime(10, 0), hoje.plusDays(1).atTime(11, 0));
+        criarAgendamento(usuarioB, StatusAgendamento.PENDENTE, hoje.plusDays(1).atTime(12, 0), hoje.plusDays(1).atTime(13, 0));
+
+        mockMvc.perform(get("/agendamentos/dashboard/metricas")
+                        .cookie(new Cookie("equadras_session", tokenAdmin))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalReservas").value(2))
+                .andExpect(jsonPath("$.faturamentoTotal").value(120.0));
+    }
+
+    @Test
     @DisplayName("26. Caracterização: métricas retornadas batem exatamente com as regras em memória do frontend")
     void testeDeCaracterizacaoMetricasDashboardMesmosNumerosQueCalculoEmMemoria() throws Exception {
         java.time.LocalDate hoje = baseTime.toLocalDate();
@@ -728,11 +743,12 @@ class AgendamentoControllerPaginationTest {
 
         List<Agendamento> listaCompleta = List.of(a1, a2, a3, a4, a5);
 
-        // Simulação EXATA do cálculo do frontend em AdminDashboard.tsx:353-367
+        // Regra: faturamento considera apenas reservas CONFIRMADAS (pagas)
         List<Agendamento> agendamentosValidosFront = listaCompleta.stream()
                 .filter(a -> a.getStatus() != StatusAgendamento.CANCELADO)
                 .toList();
         BigDecimal faturamentoTotalEsperado = agendamentosValidosFront.stream()
+                .filter(a -> a.getStatus() == StatusAgendamento.CONFIRMADO)
                 .map(Agendamento::getValorTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         long totalReservasEsperado = agendamentosValidosFront.size();
