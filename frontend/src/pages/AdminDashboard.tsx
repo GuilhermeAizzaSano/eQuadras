@@ -33,7 +33,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const { user, isMasterAdmin } = useAuth();
   const [minhasQuadras, setMinhasQuadras] = useState<Quadra[]>([]);
-  const [agendamentosAdmin, setAgendamentosAdmin] = useState<Agendamento[]>([]);
   const [metricas, setMetricas] = useState<DashboardMetricas>({
     totalQuadras: 0,
     quadrasAtivas: 0,
@@ -43,8 +42,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   });
   const [proximasPartidas, setProximasPartidas] = useState<Agendamento[]>([]);
   const [agendamentosTimeline, setAgendamentosTimeline] = useState<Agendamento[]>([]);
-  const [historicoAdminCarregado, setHistoricoAdminCarregado] = useState(false);
-  const [carregandoHistoricoAdmin, setCarregandoHistoricoAdmin] = useState(false);
   const [quadraDetalhes, setQuadraDetalhes] = useState<Quadra | null>(null);
   
   // Controle de Abas
@@ -79,11 +76,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Intervalo de tick para atualizar contadores de tempo real
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
-    const hasPendente = agendamentosAdmin.some((a) => a.status === 'PENDENTE');
+    const hasPendente =
+      proximasPartidas.some((a) => a.status === 'PENDENTE') ||
+      agendamentosTimeline.some((a) => a.status === 'PENDENTE');
     if (!hasPendente) return;
     const timer = setInterval(() => setAgora(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [agendamentosAdmin]);
+  }, [proximasPartidas, agendamentosTimeline]);
 
   const getTempoRestantePix = (criadoEm: string) => {
     const criadoMs = new Date(criadoEm).getTime();
@@ -118,23 +117,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onConfirm: () => {},
   });
 
-  const carregarAgendamentos = React.useCallback(async (buscarHistorico?: boolean) => {
-    const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
-    try {
-      const agendamentos = await agendamentoApi.listar(deveBuscarHistorico);
-      setAgendamentosAdmin(agendamentos);
-      if (deveBuscarHistorico) {
-        setHistoricoAdminCarregado(true);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [historicoAdminCarregado]);
+  const carregarDadosRef = React.useRef<() => void>();
 
   const handleNotificationReceived = React.useCallback((novaNotificacao: import('../types').Notificacao) => {
     setFeedback({ type: 'success', message: novaNotificacao.mensagem });
-    carregarAgendamentos();
-  }, [carregarAgendamentos]);
+    carregarDadosRef.current?.();
+  }, []);
 
   const {
     notificacoes,
@@ -229,21 +217,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     carregarDados();
   }, [user]);
 
-  const carregarHistoricoAdmin = async () => {
-    if (carregandoHistoricoAdmin) return;
-    setCarregandoHistoricoAdmin(true);
-    try {
-      const agendamentos = await agendamentoApi.listar(true);
-      setAgendamentosAdmin(agendamentos);
-      setHistoricoAdminCarregado(true);
-    } catch (err: any) {
-      console.error(err);
-      setFeedback({ type: 'error', message: 'Falha ao carregar o histórico de agendamentos.' });
-    } finally {
-      setCarregandoHistoricoAdmin(false);
-    }
-  };
-
   const confirmarExcluirTodasNotificacoes = () => {
     setConfirmModal({
       isOpen: true,
@@ -264,9 +237,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  const carregarDados = async (buscarHistorico?: boolean) => {
+  const carregarTimelineDia = React.useCallback(async (dataIso: string) => {
+    try {
+      const reservas = await agendamentoApi.listarAgendaCompleta({ data: dataIso });
+      setAgendamentosTimeline(reservas);
+    } catch (err) {
+      console.error('Erro ao carregar agenda completa da timeline:', err);
+    }
+  }, []);
+
+  const carregarDados = async () => {
     if (!user) return;
-    const deveBuscarHistorico = buscarHistorico ?? historicoAdminCarregado;
     try {
       const { agora: agoraBrasilia } = getAgoraBrasilia();
       const fimBrasilia = new Date(agoraBrasilia.getTime() + 4 * 60 * 60 * 1000);
@@ -274,9 +255,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const formatIsoLocal = (d: Date) =>
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
-      const [quadras, agendamentos, metricasRes, proximasRes] = await Promise.all([
+      const [quadras, metricasRes, proximasRes] = await Promise.all([
         quadraApi.listar(),
-        agendamentoApi.listar(deveBuscarHistorico),
         agendamentoApi.obterMetricasDashboard(),
         agendamentoApi.listarAgendaDoDiaPaginado({
           inicio: formatIsoLocal(agoraBrasilia),
@@ -287,12 +267,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         }),
       ]);
       setMinhasQuadras(quadras);
-      setAgendamentosAdmin(agendamentos);
       setMetricas(metricasRes);
       setProximasPartidas(proximasRes.content);
-      if (deveBuscarHistorico) {
-        setHistoricoAdminCarregado(true);
-      }
 
       // Carregar todos os bloqueios do admin consolidado
       await carregarMapaBloqueios();
@@ -305,15 +281,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       console.error(err);
     }
   };
-
-  const carregarTimelineDia = React.useCallback(async (dataIso: string) => {
-    try {
-      const reservas = await agendamentoApi.listarAgendaCompleta({ data: dataIso });
-      setAgendamentosTimeline(reservas);
-    } catch (err) {
-      console.error('Erro ao carregar agenda completa da timeline:', err);
-    }
-  }, []);
+  carregarDadosRef.current = carregarDados;
 
   useEffect(() => {
     if (user && dataSelecionada) {
@@ -525,7 +493,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const cancelarAgendamento = (id: number) => {
     if (!user) return;
-    const ag = agendamentosAdmin.find((a) => a.id_agendamento === id);
+    const ag =
+      agendamentosTimeline.find((a) => a.id_agendamento === id) ||
+      proximasPartidas.find((a) => a.id_agendamento === id);
     if (ag && parseDataHoraLocal(ag.dataHoraInicio) <= getAgoraBrasilia().agora) {
       setFeedback({
         type: 'error',
@@ -655,7 +625,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               quadraFiltroCalendarId={quadraFiltroCalendarId}
               statusFiltroCalendar={statusFiltroSchedule}
               minhasQuadras={minhasQuadras}
-              agendamentosAdmin={agendamentosAdmin}
+              agendamentosAdmin={agendamentosTimeline}
               mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
               onMudarMes={(offset) =>
                 setCurrentMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1))
@@ -769,7 +739,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         isOpen={modalAgendaDiaOpen}
         dataSelecionada={dataSelecionada}
         minhasQuadras={minhasQuadras}
-        agendamentosAdmin={agendamentosAdmin}
+        agendamentosAdmin={agendamentosTimeline}
         mapaBloqueiosPorQuadra={mapaBloqueiosPorQuadra}
         horariosDisponiveisPorQuadra={horariosDisponiveisPorQuadra}
         loadingHorariosModal={loadingHorariosModal}
@@ -778,9 +748,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         visualizacaoAgendaAba={visualizacaoAgendaAba}
         filtroAgendaAdmin={filtroAgendaAdmin}
         highlightedAgendamentoId={highlightedAgendamentoId}
-        historicoCarregado={historicoAdminCarregado}
-        carregandoHistorico={carregandoHistoricoAdmin}
-        onCarregarHistorico={carregarHistoricoAdmin}
         onClose={() => setModalAgendaDiaOpen(false)}
         onQuadraChange={setQuadraSelecionadaAgendaId}
         onStatusFiltroChange={setStatusFiltroModal}

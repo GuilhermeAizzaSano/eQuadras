@@ -340,6 +340,9 @@ export const bloqueioApi = {
 
 // --- Agendamentos ---
 export const agendamentoApi = {
+  /**
+   * @deprecated Endpoint legado não paginado. Use listarPaginado, listarAgendaDoDiaPaginado ou listarAgendaCompleta.
+   */
   listar: (historico = false) =>
     apiFetch<Agendamento[]>(historico ? '/agendamentos?historico=true' : '/agendamentos'),
 
@@ -360,6 +363,9 @@ export const agendamentoApi = {
   obterContadores: (signal?: AbortSignal) =>
     apiFetch<Record<AbaAgendamento, number>>('/agendamentos/contadores', { signal }),
 
+  /**
+   * @deprecated Endpoint legado não paginado. Use listarPorQuadraPaginado.
+   */
   listarPorQuadra: (quadraId: number) =>
     apiFetch<Agendamento[]>(`/agendamentos/quadra/${quadraId}`),
 
