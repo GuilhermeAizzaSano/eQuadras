@@ -1,44 +1,82 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Agendamento } from '../../types';
 import { EmptyState, Badge } from '../ui';
-import { Calendar as CalendarIcon, Clock, QrCode, History, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatarDataHoraBr, getAgoraBrasilia, parseDataHoraLocal } from '../../utils/dateUtils';
+import { Calendar as CalendarIcon, Clock, QrCode, AlertCircle, RefreshCw } from 'lucide-react';
+import { getAgoraBrasilia, parseDataHoraLocal } from '../../utils/dateUtils';
+import { agendamentoApi, AbaAgendamento } from '../../api/apiClient';
+import { usePaginatedQuery, PageFetcher } from '../../shared/pagination/usePaginatedQuery';
+import { Pagination } from '../../shared/pagination/Pagination';
 
 interface ClientBookingsListProps {
-  meusAgendamentos: Agendamento[];
-  historicoCarregado: boolean;
-  carregandoHistorico: boolean;
-  onCarregarHistorico: () => void;
   onPayPix: (agendamento: Agendamento) => void;
-  onCancelBooking: (idAgendamento: number) => void;
+  onCancelBooking: (idAgendamento: number, onSuccess?: () => void) => void;
 }
 
 const ITENS_POR_PAGINA_RESERVAS = 5;
 
+const fetchAgendamentosPage: PageFetcher<Agendamento, { aba: AbaAgendamento }> = ({
+  page,
+  size,
+  filters,
+  signal,
+}) => {
+  return agendamentoApi.listarPaginado({
+    page,
+    size,
+    aba: filters.aba,
+    signal,
+  });
+};
+
 export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
-  meusAgendamentos,
-  historicoCarregado,
-  carregandoHistorico,
-  onCarregarHistorico,
   onPayPix,
   onCancelBooking,
 }) => {
-  const [filtroStatusReservas, setFiltroStatusReservas] = useState<'ATIVOS' | 'CANCELADOS' | 'REALIZADOS'>('ATIVOS');
-  const [paginaAtualReservas, setPaginaAtualReservas] = useState(1);
+  const [filtroStatusReservas, setFiltroStatusReservas] = useState<AbaAgendamento>('ATIVOS');
+  const [contadores, setContadores] = useState<Record<AbaAgendamento, number>>({
+    ATIVOS: 0,
+    REALIZADOS: 0,
+    CANCELADOS: 0,
+  });
 
-  // Resetar página ao mudar filtro de status
+  const carregarContadores = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const dados = await agendamentoApi.obterContadores(signal);
+      setContadores(dados);
+    } catch {
+      // Falha silenciosa para contadores se abortado
+    }
+  }, []);
+
   useEffect(() => {
-    setPaginaAtualReservas(1);
-  }, [filtroStatusReservas]);
+    const controller = new AbortController();
+    carregarContadores(controller.signal);
+    return () => controller.abort();
+  }, [carregarContadores]);
 
-  // Intervalo de tick para atualizar contadores de tempo real
+  const {
+    items: agendamentos,
+    page,
+    totalPages,
+    totalElements,
+    status,
+    isEmpty,
+    setPage,
+    reload,
+  } = usePaginatedQuery(
+    fetchAgendamentosPage,
+    { aba: filtroStatusReservas },
+    { size: ITENS_POR_PAGINA_RESERVAS }
+  );
+
+  // Intervalo de tick para atualizar contadores de tempo real Pix
   const [agora, setAgora] = useState(() => Date.now());
   useEffect(() => {
-    const hasPendente = meusAgendamentos.some((a) => a.status === 'PENDENTE');
+    const hasPendente = agendamentos.some((a) => a.status === 'PENDENTE');
     if (!hasPendente) return;
     const timer = setInterval(() => setAgora(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [meusAgendamentos]);
+  }, [agendamentos]);
 
   const getTempoRestantePix = (criadoEm: string) => {
     const criadoMs = new Date(criadoEm).getTime();
@@ -50,68 +88,12 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
     return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
   };
 
-  // Filtragem dinâmica e ordenação cronológica de agendamentos do cliente
-  const agendamentosFiltrados = useMemo(() => {
-    const agoraLocal = new Date();
-    return meusAgendamentos
-      .filter((ag) => {
-        const dataFim = new Date(ag.dataHoraFim);
-        const isCancelado = ag.status === 'CANCELADO';
-        const isPassado = dataFim < agoraLocal;
-
-        if (filtroStatusReservas === 'CANCELADOS') {
-          return isCancelado;
-        }
-        if (filtroStatusReservas === 'REALIZADOS') {
-          return !isCancelado && isPassado;
-        }
-        // 'ATIVOS' (Futuros/Em andamento que não foram cancelados)
-        return !isCancelado && !isPassado;
-      })
-      .sort((a, b) => {
-        const tempoA = new Date(a.dataHoraInicio).getTime();
-        const tempoB = new Date(b.dataHoraInicio).getTime();
-        // Para ativos: partidas mais próximas primeiro (ordem crescente)
-        // Para realizados e cancelados: mais recentes primeiro (ordem decrescente)
-        if (filtroStatusReservas === 'ATIVOS') {
-          return tempoA - tempoB;
-        }
-        return tempoB - tempoA;
-      });
-  }, [meusAgendamentos, filtroStatusReservas]);
-
-  const totalItensReservas = agendamentosFiltrados.length;
-  const totalPaginasReservas = Math.max(1, Math.ceil(totalItensReservas / ITENS_POR_PAGINA_RESERVAS));
-  const paginaValidaReservas = Math.min(Math.max(1, paginaAtualReservas), totalPaginasReservas);
-  const indiceInicioReservas = (paginaValidaReservas - 1) * ITENS_POR_PAGINA_RESERVAS;
-  const agendamentosPaginados = agendamentosFiltrados.slice(
-    indiceInicioReservas,
-    indiceInicioReservas + ITENS_POR_PAGINA_RESERVAS
-  );
-
-  // Contadores para as abas
-  const contadoresReservas = useMemo(() => {
-    const agoraLocal = new Date();
-    let ativos = 0;
-    let cancelados = 0;
-    let realizados = 0;
-
-    meusAgendamentos.forEach((ag) => {
-      const dataFim = new Date(ag.dataHoraFim);
-      const isCancelado = ag.status === 'CANCELADO';
-      const isPassado = dataFim < agoraLocal;
-
-      if (isCancelado) {
-        cancelados++;
-      } else if (isPassado) {
-        realizados++;
-      } else {
-        ativos++;
-      }
+  const handleCancel = (id: number) => {
+    onCancelBooking(id, () => {
+      reload();
+      carregarContadores();
     });
-
-    return { ativos, cancelados, realizados };
-  }, [meusAgendamentos]);
+  };
 
   return (
     <div className="bg-white/[0.02] border border-white/[0.06] rounded-3xl p-5 sm:p-7 space-y-6">
@@ -133,7 +115,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                 : 'bg-white/10 text-white/50'
             }`}
           >
-            {contadoresReservas.ativos}
+            {contadores.ATIVOS}
           </span>
         </button>
 
@@ -153,7 +135,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                 : 'bg-white/10 text-white/50'
             }`}
           >
-            {historicoCarregado ? contadoresReservas.realizados : '—'}
+            {contadores.REALIZADOS}
           </span>
         </button>
 
@@ -173,44 +155,31 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                 : 'bg-white/10 text-white/50'
             }`}
           >
-            {historicoCarregado ? contadoresReservas.cancelados : '—'}
+            {contadores.CANCELADOS}
           </span>
         </button>
       </div>
 
-      {/* Listagem de Reservas ou Botão de Carregar Histórico */}
-      {filtroStatusReservas !== 'ATIVOS' && !historicoCarregado ? (
+      {/* Estados de Interface: Erro, Carregando Inicial, Vazio ou Lista */}
+      {status === 'error' && agendamentos.length === 0 ? (
         <div className="py-12 px-6 flex flex-col items-center justify-center text-center bg-white/[0.02] border border-white/[0.06] rounded-2xl space-y-4">
-          <div className="w-13 h-13 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-white/60 shadow-sm">
-            <History className="w-6 h-6 text-white/80" />
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+            <AlertCircle className="w-6 h-6" />
           </div>
-          <div className="space-y-1.5 max-w-md">
-            <h4 className="text-sm font-semibold text-white tracking-tight">
-              Histórico não carregado
-            </h4>
-            <p className="text-xs text-white/50 leading-relaxed tracking-tight">
-              Por padrão carregamos apenas suas reservas ativas para maior rapidez. Clique abaixo para carregar todo o seu histórico.
-            </p>
+          <div className="space-y-1 max-w-sm">
+            <h4 className="text-sm font-semibold text-white">Falha ao carregar reservas</h4>
+            <p className="text-xs text-white/50">Não foi possível carregar as reservas desta aba.</p>
           </div>
           <button
-            onClick={onCarregarHistorico}
-            disabled={carregandoHistorico}
-            className="mt-2 inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-white hover:bg-white/90 disabled:opacity-40 text-black font-semibold text-xs shadow-sm transition active:scale-[0.98] cursor-pointer tracking-tight"
+            type="button"
+            onClick={reload}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-white/90 text-black font-semibold text-xs transition active:scale-95 cursor-pointer"
           >
-            {carregandoHistorico ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-                <span>Carregando histórico...</span>
-              </>
-            ) : (
-              <>
-                <History className="w-4 h-4" />
-                <span>Carregar histórico de reservas</span>
-              </>
-            )}
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Tentar novamente</span>
           </button>
         </div>
-      ) : agendamentosFiltrados.length === 0 ? (
+      ) : isEmpty ? (
         <EmptyState
           icon={Clock}
           title={
@@ -229,13 +198,13 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         />
       ) : (
         <div className="space-y-4">
-          <div className="space-y-3.5 min-h-[580px]">
-            {agendamentosPaginados.map((ag) => {
-              const agora = getAgoraBrasilia().agora;
+          <div className={`space-y-3.5 min-h-[480px] transition-opacity duration-200 ${status === 'loading' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {agendamentos.map((ag) => {
+              const agoraBr = getAgoraBrasilia().agora;
               const isCancelado = ag.status === 'CANCELADO';
               const dataInicio = parseDataHoraLocal(ag.dataHoraInicio);
-              const isRetroativoOuEmAndamento = dataInicio <= agora;
-              const isPassado = parseDataHoraLocal(ag.dataHoraFim) < agora;
+              const isRetroativoOuEmAndamento = dataInicio <= agoraBr;
+              const isPassado = parseDataHoraLocal(ag.dataHoraFim) < agoraBr;
               const [data, tempoInicio] = ag.dataHoraInicio.split('T');
               const [, tempoFim] = ag.dataHoraFim.split('T');
               const horaInicio = tempoInicio ? tempoInicio.substring(0, 5) : '';
@@ -258,45 +227,39 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                         <span>{horaInicio} às {horaFim}</span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-white/40 font-mono">
-                        {ag.criadoEm && (
-                          <span>Agendado em: <strong className="text-white/60 font-normal">{formatarDataHoraBr(ag.criadoEm)}</strong></span>
-                        )}
-                        {isCancelado && (
-                          <span className="text-[#FF453A]/90">
-                            Cancelado em: <strong className="text-[#FF453A] font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
+                      {ag.status === 'PENDENTE' && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#FF9F0A] bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 px-2 py-0.5 rounded-md">
+                            <Clock className="w-3 h-3 animate-spin" />
+                            {getTempoRestantePix(ag.criadoEm) ? (
+                              <span>Expira em {getTempoRestantePix(ag.criadoEm)}</span>
+                            ) : (
+                              <span>Expirando...</span>
+                            )}
                           </span>
-                        )}
-                      </div>
-                      {ag.status === 'PENDENTE' && !isPassado && (() => {
-                        const tempo = getTempoRestantePix(ag.criadoEm);
-                        return tempo ? (
-                          <div className="text-xs text-[#FF9F0A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF9F0A]/10 border border-[#FF9F0A]/20 px-2.5 py-1 rounded-full w-fit">
-                            <Clock className="w-3.5 h-3.5 animate-pulse text-[#FF9F0A]" />
-                            <span>Pague via Pix em até {tempo}</span>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-[#FF453A] font-mono flex items-center gap-1.5 mt-2 font-medium bg-[#FF453A]/10 border border-[#FF453A]/20 px-2.5 py-1 rounded-full w-fit">
-                            <Clock className="w-3.5 h-3.5 text-[#FF453A]" />
-                            <span>Tempo de pagamento expirado</span>
-                          </div>
-                        );
-                      })()}
+                        </div>
+                      )}
                     </div>
 
                     <Badge
                       variant={
                         isCancelado
-                          ? 'outline'
-                          : isPassado
-                          ? 'neutral'
+                          ? 'danger'
                           : ag.status === 'PENDENTE'
                           ? 'warning'
+                          : isPassado
+                          ? 'neutral'
                           : 'success'
                       }
-                      withDot
+                      className="self-start sm:self-auto uppercase tracking-wider text-[10px] font-mono px-2.5 py-0.5"
                     >
-                      {isCancelado ? 'CANCELADO' : isPassado ? 'REALIZADO' : ag.status}
+                      {isCancelado
+                        ? 'Cancelado'
+                        : ag.status === 'PENDENTE'
+                        ? 'Pendente Pix'
+                        : isPassado
+                        ? 'Realizado'
+                        : 'Confirmado'}
                     </Badge>
                   </div>
 
@@ -308,6 +271,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                     <div className="flex items-center gap-3">
                       {ag.status === 'PENDENTE' && (
                         <button
+                          type="button"
                           onClick={() => onPayPix(ag)}
                           className="text-xs bg-white hover:bg-white/90 text-black font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer tracking-tight"
                         >
@@ -323,7 +287,8 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                           </span>
                         ) : (
                           <button
-                            onClick={() => onCancelBooking(ag.id_agendamento)}
+                            type="button"
+                            onClick={() => handleCancel(ag.id_agendamento)}
                             className="text-xs text-[#FF453A] hover:text-[#FF453A]/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
                           >
                             Cancelar
@@ -337,31 +302,13 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
             })}
           </div>
 
-          {totalPaginasReservas > 1 && (
-            <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs">
-              <button
-                type="button"
-                disabled={paginaValidaReservas <= 1}
-                onClick={() => setPaginaAtualReservas((p) => Math.max(1, p - 1))}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Anterior</span>
-              </button>
-              <span className="text-[11px] text-white/50 font-mono">
-                Página {paginaValidaReservas} de {totalPaginasReservas} ({totalItensReservas} {totalItensReservas === 1 ? 'reserva' : 'reservas'})
-              </span>
-              <button
-                type="button"
-                disabled={paginaValidaReservas >= totalPaginasReservas}
-                onClick={() => setPaginaAtualReservas((p) => Math.min(totalPaginasReservas, p + 1))}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/80 disabled:opacity-30 disabled:cursor-not-allowed transition border border-white/[0.06] cursor-pointer active:scale-95"
-              >
-                <span>Próxima</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            onPageChange={setPage}
+            isLoading={status === 'loading'}
+          />
         </div>
       )}
     </div>
