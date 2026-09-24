@@ -50,14 +50,16 @@ public class AgendamentoService {
     private static final LocalTime HORARIO_ABERTURA = LocalTime.of(6, 0);
     private static final LocalTime HORARIO_FECHAMENTO = LocalTime.of(23, 0);
 
+    private static final Set<String> ORDENACOES_PERMITIDAS_AGENDAMENTO = Set.of("dataHoraInicio", "id");
+
     private static final SortPolicy SORT_POLICY_ATIVOS = SortPolicy.of(
-            Set.of("dataHoraInicio", "id", "dataHora", "id_agendamento"),
+            ORDENACOES_PERMITIDAS_AGENDAMENTO,
             Sort.by(Sort.Direction.ASC, "dataHoraInicio"),
             "id"
     );
 
     private static final SortPolicy SORT_POLICY_DESC = SortPolicy.of(
-            Set.of("dataHoraInicio", "id", "dataHora", "id_agendamento"),
+            ORDENACOES_PERMITIDAS_AGENDAMENTO,
             Sort.by(Sort.Direction.DESC, "dataHoraInicio"),
             "id"
     );
