@@ -155,4 +155,106 @@ describe('ClientBookingsList (Server-side Pagination)', () => {
 
     expect(await screen.findByText('Quadra 1')).toBeDefined();
   });
+
+  it('paginação fica desabilitada durante o carregamento', async () => {
+    vi.mocked(agendamentoApi.obterContadores).mockResolvedValue({
+      ATIVOS: 10,
+      REALIZADOS: 0,
+      CANCELADOS: 0,
+    });
+
+    let resolvePromise: (val: any) => void;
+    const promise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+
+    vi.mocked(agendamentoApi.listarPaginado)
+      .mockResolvedValueOnce({
+        content: [mockAgendamento(1), mockAgendamento(2)],
+        page: 0,
+        size: 2,
+        totalElements: 10,
+        totalPages: 5,
+      })
+      .mockReturnValueOnce(promise as any);
+
+    render(
+      <ClientBookingsList
+        onPayPix={vi.fn()}
+        onCancelBooking={vi.fn()}
+      />
+    );
+
+    // Aguarda carregar primeira página
+    expect(await screen.findByText('Quadra 1')).toBeDefined();
+
+    const proximaBtn = screen.getByRole('button', { name: /próxima página/i }) as HTMLButtonElement;
+    expect(proximaBtn.disabled).toBe(false);
+
+    // Clica para próxima página (dispara loading pendente)
+    fireEvent.click(proximaBtn);
+
+    // O botão deve estar desabilitado durante o carregamento
+    await waitFor(() => {
+      expect(proximaBtn.disabled).toBe(true);
+    });
+
+    // Resolve a requisição pendente
+    resolvePromise!({
+      content: [mockAgendamento(3), mockAgendamento(4)],
+      page: 1,
+      size: 2,
+      totalElements: 10,
+      totalPages: 5,
+    });
+
+    await waitFor(() => {
+      expect(proximaBtn.disabled).toBe(false);
+    });
+  });
+
+  it('após cancelar agendamento com sucesso: recarrega a lista e os contadores', async () => {
+    vi.mocked(agendamentoApi.obterContadores)
+      .mockResolvedValueOnce({ ATIVOS: 1, REALIZADOS: 0, CANCELADOS: 0 })
+      .mockResolvedValueOnce({ ATIVOS: 0, REALIZADOS: 0, CANCELADOS: 1 });
+
+    vi.mocked(agendamentoApi.listarPaginado)
+      .mockResolvedValueOnce({
+        content: [mockAgendamento(1)],
+        page: 0,
+        size: 5,
+        totalElements: 1,
+        totalPages: 1,
+      })
+      .mockResolvedValueOnce({
+        content: [],
+        page: 0,
+        size: 5,
+        totalElements: 0,
+        totalPages: 0,
+      });
+
+    const onCancelBookingMock = vi.fn((id: number, onSuccess?: () => void) => {
+      if (onSuccess) onSuccess();
+    });
+
+    render(
+      <ClientBookingsList
+        onPayPix={vi.fn()}
+        onCancelBooking={onCancelBookingMock}
+      />
+    );
+
+    expect(await screen.findByText('Quadra 1')).toBeDefined();
+
+    const cancelarBtn = screen.getByRole('button', { name: /cancelar/i });
+    fireEvent.click(cancelarBtn);
+
+    expect(onCancelBookingMock).toHaveBeenCalledWith(1, expect.any(Function));
+
+    // Após cancelamento bem-sucedido, recarrega e exibe empty state
+    expect(await screen.findByText(/nenhuma reserva ativa no momento/i)).toBeDefined();
+    expect(agendamentoApi.obterContadores).toHaveBeenCalledTimes(2);
+    expect(agendamentoApi.listarPaginado).toHaveBeenCalledTimes(2);
+  });
 });
