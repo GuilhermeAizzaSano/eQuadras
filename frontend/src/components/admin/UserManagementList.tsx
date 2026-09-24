@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Usuario, Role } from '../../types';
 import { UserPlus, Edit, Trash2, Shield, User, Search, RefreshCw } from 'lucide-react';
-import { Badge, ConfirmModal, Button } from '../ui';
+import { ConfirmModal, Button } from '../ui';
 
 interface UserManagementListProps {
   usuarios: Usuario[];
@@ -150,9 +150,7 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <Badge variant={u.role === 'ADMIN' ? 'warning' : 'neutral'} withDot>
-                          {u.role === 'ADMIN' ? 'Administrador' : 'Cliente'}
-                        </Badge>
+                        <span className="text-xs text-fg/80">{u.role === 'ADMIN' ? 'Administrador' : 'Cliente'}</span>
                       </td>
 
                       <td className="py-3.5 px-5 text-right">

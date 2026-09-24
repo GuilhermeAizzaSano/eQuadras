@@ -94,7 +94,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
             <button
               type="button"
               onClick={() => onPayPix(agendamentoAtual)}
-              className="px-3.5 py-1.5 rounded-xl bg-warning hover:bg-warning/90 text-black font-semibold text-xs transition active:scale-95 flex items-center gap-1.5 shadow-sm shadow-warning/20 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-warning hover:bg-warning/90 text-on-accent font-semibold text-xs transition active:scale-95 flex items-center gap-1.5 shadow-sm shadow-warning/20 cursor-pointer"
             >
               <QrCode className="w-3.5 h-3.5" />
               <span>Pagar Pix</span>

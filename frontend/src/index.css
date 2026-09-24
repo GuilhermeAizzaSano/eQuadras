@@ -21,16 +21,17 @@
 
   :root.light {
     /* Tema claro */
+    /* Cores de estado nas variantes de alto contraste da Apple (legíveis sobre branco) */
     --bg: 255 255 255;
     --fg: 0 0 0;
     --surface-1: 242 242 247;
     --surface-2: 255 255 255;
     --surface-3: 229 229 234;
-    --success: 52 199 89;
-    --danger: 255 59 48;
-    --warning: 255 149 0;
-    --info: 0 122 255;
-    --purple: 175 82 222;
+    --success: 30 120 52;
+    --danger: 196 0 20;
+    --warning: 168 72 0;
+    --info: 0 64 221;
+    --purple: 137 68 171;
     --on-accent: 255 255 255;
     color-scheme: light;
   }

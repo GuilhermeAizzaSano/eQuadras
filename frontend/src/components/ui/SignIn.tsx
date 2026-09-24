@@ -94,7 +94,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full rounded-2xl bg-success hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed py-4 font-semibold text-black transition-colors duration-200 cursor-pointer shadow-lg shadow-success/20 active:scale-[0.99]"
+                className="w-full rounded-2xl bg-success hover:bg-success disabled:opacity-50 disabled:cursor-not-allowed py-4 font-semibold text-on-accent transition-colors duration-200 cursor-pointer shadow-lg shadow-success/20 active:scale-[0.99]"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>

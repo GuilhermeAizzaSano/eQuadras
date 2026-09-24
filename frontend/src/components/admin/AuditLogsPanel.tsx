@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auditoriaApi, FiltrosAuditoria } from '../../api/apiClient';
-import { LogAuditoria, EstatisticasAuditoria, CategoriaAuditoria, TipoExecutor } from '../../types';
+import { LogAuditoria, EstatisticasAuditoria, CategoriaAuditoria } from '../../types';
 import { Badge, Button } from '../ui';
 import {
   ShieldAlert,
@@ -14,9 +14,6 @@ import {
   ChevronRight,
   Filter,
   Globe,
-  User,
-  ShieldCheck,
-  Server
 } from 'lucide-react';
 
 const CATEGORIAS: { label: string; value: CategoriaAuditoria | 'TODAS' }[] = [
@@ -155,41 +152,6 @@ export const AuditLogsPanel: React.FC = () => {
       return <Badge variant="neutral">STATUS</Badge>;
     }
     return <Badge variant="outline">{acaoStr}</Badge>;
-  };
-
-  const renderBadgeExecutor = (tipo: TipoExecutor) => {
-    switch (tipo) {
-      case 'MASTER_ADMIN':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-warning/10 text-warning border border-warning/20">
-            <ShieldAlert className="w-2.5 h-2.5" />
-            Master Admin
-          </span>
-        );
-      case 'ADMIN_QUADRA':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-info/10 text-info border border-info/20">
-            <ShieldCheck className="w-2.5 h-2.5" />
-            Admin Quadra
-          </span>
-        );
-      case 'CLIENTE':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
-            <User className="w-2.5 h-2.5" />
-            Cliente
-          </span>
-        );
-      case 'SISTEMA':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple/10 text-purple border border-purple/20">
-            <Server className="w-2.5 h-2.5" />
-            Sistema / Cron
-          </span>
-        );
-      default:
-        return null;
-    }
   };
 
   return (
@@ -405,7 +367,6 @@ export const AuditLogsPanel: React.FC = () => {
                     <td className="px-5 py-3.5 truncate">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 truncate">
-                          {renderBadgeExecutor(log.tipoExecutor)}
                           <span className="font-medium text-fg text-xs truncate" title={log.usuarioNome || log.usuarioEmail || 'Sistema'}>
                             {log.usuarioNome || log.usuarioEmail || 'Sistema'}
                           </span>

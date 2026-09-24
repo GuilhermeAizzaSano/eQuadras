@@ -102,20 +102,20 @@ export const CourtManagementList: React.FC<CourtManagementListProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-surface-2 via-transparent to-black/40 pointer-events-none" />
 
                   <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                    <Badge variant={q.ativa ? 'success' : 'neutral'} withDot>
+                    <Badge variant={q.ativa ? 'success' : 'neutral'} withDot className="bg-surface-2/90 backdrop-blur-md">
                       {q.ativa ? 'ATIVA' : 'INATIVA'}
                     </Badge>
                   </div>
 
                   {temBloqueiosAtivos && (
-                    <div className="absolute top-3 left-3 bg-warning/20 backdrop-blur-md border border-warning/30 text-warning text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm font-mono">
+                    <div className="absolute top-3 left-3 bg-surface-2/90 backdrop-blur-md border border-warning/30 text-warning text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm font-mono">
                       <Ban className="w-3 h-3" />
                       <span>{bloqueiosDesta.length} {bloqueiosDesta.length === 1 ? 'bloqueio' : 'bloqueios'}</span>
                     </div>
                   )}
 
                   <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-white font-mono text-xs font-semibold shadow-sm">
-                    R$ {q.valorHora.toFixed(2)} <span className="text-fg/60 font-normal">/ hora</span>
+                    R$ {q.valorHora.toFixed(2)} <span className="text-white/60 font-normal">/ hora</span>
                   </div>
                 </div>
 

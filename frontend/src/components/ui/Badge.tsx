@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '../../lib/utils';
 
 export type BadgeVariant = 'neutral' | 'active' | 'success' | 'danger' | 'warning' | 'outline' | 'info';
 
@@ -52,7 +53,7 @@ export const Badge: React.FC<BadgeProps> = ({
   const selected = variantClasses[variant] || variantClasses.neutral;
 
   return (
-    <span className={`${baseClasses} ${selected.container} ${className}`}>
+    <span className={cn(baseClasses, selected.container, className)}>
       {withDot && (
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${selected.dot}`} />
       )}

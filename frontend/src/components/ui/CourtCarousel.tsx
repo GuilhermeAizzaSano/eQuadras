@@ -103,7 +103,7 @@ export const CourtCarousel: React.FC<CourtCarouselProps> = ({
 
       {/* Contador numérico de fotos */}
       <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/[0.1] text-xs font-medium text-white/80 flex items-center gap-1.5 shadow-sm">
-        <ImageIcon className="w-3.5 h-3.5 text-fg/70" />
+        <ImageIcon className="w-3.5 h-3.5 text-white/70" />
         <span>
           {currentIndex + 1} / {listaFotos.length}
         </span>
