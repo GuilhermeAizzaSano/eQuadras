@@ -209,4 +209,51 @@ class QuadraControllerCharacterizationTest {
         assertEquals(queriesPara2Quadras, queriesPara10Quadras,
                 "Número de queries em listarQuadras não pode variar com a quantidade de quadras retornadas");
     }
+
+    private org.springframework.test.web.servlet.ResultActions buscarPaginado(String parametro, String valor) throws Exception {
+        return mockMvc.perform(get("/quadras")
+                .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenClient))
+                .param("page", "0")
+                .param("size", "6")
+                .param(parametro, valor)
+                .contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    @DisplayName("Busca paginada: CEP só com dígitos encontra quadra gravada com hífen")
+    void buscaPaginadaPorCepSemHifen() throws Exception {
+        criarQuadra("Arena CEP", true);
+        buscarPaginado("cep", "15000000").andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+        buscarPaginado("cep", "15000").andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("Busca paginada: cidade sem acento encontra cidade acentuada")
+    void buscaPaginadaIgnoraAcentos() throws Exception {
+        criarQuadra("Arena Acento", true);
+        buscarPaginado("cidade", "sao jose").andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("Busca paginada: '%' e '_' são literais, não curingas")
+    void buscaPaginadaTrataCuringasComoLiterais() throws Exception {
+        criarQuadra("Arena Principal", true);
+        buscarPaginado("nome", "%").andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+        buscarPaginado("nome", "_").andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("Busca paginada: ordenação determinística por nome")
+    void buscaPaginadaOrdenaPorNome() throws Exception {
+        criarQuadra("Zeta", true);
+        criarQuadra("Alfa", true);
+        criarQuadra("Beta", true);
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenClient))
+                        .param("page", "0").param("size", "6"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].nome").value("Alfa"))
+                .andExpect(jsonPath("$.content[1].nome").value("Beta"))
+                .andExpect(jsonPath("$.content[2].nome").value("Zeta"));
+    }
 }
