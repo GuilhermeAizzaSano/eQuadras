@@ -69,6 +69,7 @@ public class AgendamentoService {
     private final QuadraService quadraService;
     private final UsuarioService usuarioService;
     private final ApplicationEventPublisher eventPublisher;
+    private final java.time.Clock clock;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioRepository usuarioRepository,
@@ -78,7 +79,8 @@ public class AgendamentoService {
                               com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
                               @org.springframework.context.annotation.Lazy QuadraService quadraService,
                               UsuarioService usuarioService,
-                              ApplicationEventPublisher eventPublisher) {
+                              ApplicationEventPublisher eventPublisher,
+                              java.time.Clock clock) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioRepository = usuarioRepository;
         this.quadraRepository = quadraRepository;
@@ -88,6 +90,7 @@ public class AgendamentoService {
         this.quadraService = quadraService;
         this.usuarioService = usuarioService;
         this.eventPublisher = eventPublisher;
+        this.clock = clock;
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
@@ -345,7 +348,7 @@ public class AgendamentoService {
         if (aba == null) {
             throw new IllegalArgumentException("Aba de agendamento é obrigatória.");
         }
-        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        LocalDateTime agora = LocalDateTime.now(clock);
         Specification<Agendamento> spec = AgendamentoSpecifications.doUsuario(usuarioId)
                 .and(AgendamentoSpecifications.daAba(aba, agora));
 
@@ -364,7 +367,7 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public Map<AbaAgendamento, Long> contarPorAba(Long usuarioId) {
-        LocalDateTime agora = LocalDateTime.now(DataFlexivelUtil.ZONE_BRASIL);
+        LocalDateTime agora = LocalDateTime.now(clock);
         Specification<Agendamento> base = AgendamentoSpecifications.doUsuario(usuarioId);
         Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
         for (AbaAgendamento aba : AbaAgendamento.values()) {
