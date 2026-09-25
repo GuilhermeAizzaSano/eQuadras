@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
@@ -44,6 +45,9 @@ class QuadraServiceTest {
 
     @Mock
     private QuadraFotoService quadraFotoService;
+
+    @Mock
+    private QuadraBuscaService quadraBuscaService;
 
     @Mock
     private AuditoriaService auditoriaService;
@@ -84,29 +88,14 @@ class QuadraServiceTest {
     }
 
     @Test
-    @DisplayName("Master Admin deve listar todas as quadras do sistema")
-    void deveListarTodasAsQuadrasQuandoMasterAdmin() {
-        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
-        when(quadraRepository.findAllWithAdminEFotos()).thenReturn(List.of(quadraAdminComum));
-
-        List<QuadraResponseDTO> resultado = quadraService.listar(99L, null, null, null);
-
-        assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findAllWithAdminEFotos();
-        verify(quadraRepository, never()).findByAdminId(99L);
-    }
-
-    @Test
-    @DisplayName("Admin comum deve listar apenas suas próprias quadras")
-    void deveListarApenasSuasQuadrasQuandoAdminComum() {
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
-        when(quadraRepository.findByAdminId(1L)).thenReturn(List.of(quadraAdminComum));
+    @DisplayName("Deve delegar listar para QuadraBuscaService")
+    void deveDelegarListarParaQuadraBuscaService() {
+        when(quadraBuscaService.listar(1L, null, null, null)).thenReturn(List.of(QuadraResponseDTO.fromEntity(quadraAdminComum)));
 
         List<QuadraResponseDTO> resultado = quadraService.listar(1L, null, null, null);
 
         assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findByAdminId(1L);
-        verify(quadraRepository, never()).findAllWithAdminEFotos();
+        verify(quadraBuscaService, times(1)).listar(1L, null, null, null);
     }
 
     @Test
@@ -175,131 +164,29 @@ class QuadraServiceTest {
     }
 
     @Test
-    @DisplayName("Deve filtrar quadras por proximidade calculando os limites de Bounding Box corretamente")
-    void deveFiltrarQuadrasPorProximidadeComBoundingBox() {
-        Double lat = -23.5505;
-        Double lng = -46.6333;
-        Double raioKm = 5.0;
+    @DisplayName("Deve delegar filtrarQuadrasEntidades para QuadraBuscaService")
+    void deveDelegarFiltrarQuadrasEntidadesParaQuadraBuscaService() {
+        when(quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null))
+                .thenReturn(List.of(quadraAdminComum));
 
-        when(quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
-                eq(lat), eq(lng), eq(raioKm),
-                anyDouble(), anyDouble(), anyDouble(), anyDouble()
-        )).thenReturn(List.of(quadraAdminComum));
-
-        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, lat, lng, raioKm, null, null, null, null, null);
-
-        assertNotNull(resultado);
-        assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findByAtivaTrueAndProximidadeMenorQue(
-                eq(lat), eq(lng), eq(raioKm),
-                anyDouble(), anyDouble(), anyDouble(), anyDouble()
-        );
-    }
-
-    @Test
-    @DisplayName("Deve filtrar quadras por nome ignorando maiúsculas e acentos")
-    void deveFiltrarQuadrasPorNome() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Sunset Vôlei").logradouro("Rua 13").bairro("Samambaia").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Complexo Esportivo do Bosque").logradouro("Av Brasil").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null, null);
+        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null);
 
         assertEquals(1, resultado.size());
-        assertEquals("Arena Sunset Vôlei", resultado.get(0).getNome());
+        verify(quadraBuscaService, times(1)).filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null);
     }
 
     @Test
-    @DisplayName("Deve filtrar quadras por endereço casando com logradouro ou bairro")
-    void deveFiltrarQuadrasPorEndereco() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra A").logradouro("Rua dos Aviadores, 120").bairro("Jardim Municipal").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra B").logradouro("Av. Brasília, 934").bairro("JACB II").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        // Busca por logradouro
-        List<Quadra> resLogradouro = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, null, "aviadores", null, null, null);
-        assertEquals(1, resLogradouro.size());
-        assertEquals("Quadra A", resLogradouro.get(0).getNome());
-
-        // Busca por bairro
-        List<Quadra> resBairro = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, null, "jacb", null, null, null);
-        assertEquals(1, resBairro.size());
-        assertEquals("Quadra B", resBairro.get(0).getNome());
-    }
-
-    @Test
-    @DisplayName("Deve combinar filtros de nome e endereço simultaneamente")
-    void deveCombinarFiltroNomeEEndereco() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Beach").logradouro("Rua das Rosas").bairro("Jardim Oiti").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Arena Gol").logradouro("Rua das Rosas").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "Beach", "oiti", null, null, null);
-        assertEquals(1, resultado.size());
-        assertEquals("Arena Beach", resultado.get(0).getNome());
-    }
-
-    @Test
-    @DisplayName("Deve listar quadras de forma paginada respeitando limite por página")
-    void deveListarQuadrasPaginadas() {
-        List<Quadra> quadras = new ArrayList<>();
-        for (long i = 1; i <= 14; i++) {
-            quadras.add(Quadra.builder()
-                    .id_quadra(i)
-                    .nome("Quadra " + i)
-                    .ativa(true)
-                    .fotos(new ArrayList<>())
-                    .disponibilidades(new ArrayList<>())
-                    .build());
-        }
-
-        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
-                .thenAnswer(invocation -> {
-                    Pageable p = invocation.getArgument(1);
-                    int start = (int) p.getOffset();
-                    int end = Math.min(start + p.getPageSize(), quadras.size());
-                    List<Quadra> sub = start >= quadras.size() ? List.of() : quadras.subList(start, end);
-                    return new org.springframework.data.domain.PageImpl<>(sub, p, quadras.size());
-                });
-
+    @DisplayName("Deve delegar listar paginado para QuadraBuscaService")
+    void deveDelegarListarPaginadoParaQuadraBuscaService() {
         Pageable pageable = PageRequest.of(0, 6);
-        Page<QuadraResponseDTO> primeiraPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
+        Page<QuadraResponseDTO> pageMock = new PageImpl<>(List.of(QuadraResponseDTO.fromEntity(quadraAdminComum)));
+        when(quadraBuscaService.listar(null, null, null, null, null, null, null, null, null, null, pageable))
+                .thenReturn(pageMock);
 
-        assertEquals(6, primeiraPagina.getContent().size());
-        assertEquals(14, primeiraPagina.getTotalElements());
-        assertEquals(3, primeiraPagina.getTotalPages());
-        assertEquals(0, primeiraPagina.getNumber());
-        assertEquals("Quadra 1", primeiraPagina.getContent().get(0).nome());
+        Page<QuadraResponseDTO> pagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
 
-        Pageable pageableSegunda = PageRequest.of(1, 6);
-        Page<QuadraResponseDTO> segundaPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageableSegunda);
-        assertEquals(6, segundaPagina.getContent().size());
-        assertEquals("Quadra 7", segundaPagina.getContent().get(0).nome());
-
-        Pageable pageableTerceira = PageRequest.of(2, 6);
-        Page<QuadraResponseDTO> terceiraPagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageableTerceira);
-        assertEquals(2, terceiraPagina.getContent().size());
-        assertEquals("Quadra 13", terceiraPagina.getContent().get(0).nome());
-    }
-
-    @Test
-    @DisplayName("Deve aplicar paginação sobre os resultados dos filtros de CEP/endereço")
-    void deveAplicarPaginacaoAposFiltros() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra Centro 1").logradouro("Rua Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q3 = Quadra.builder().id_quadra(3L).nome("Quadra Centro 2").logradouro("Av Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
-                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(q1, q3), PageRequest.of(0, 6), 2));
-
-        Pageable pageable = PageRequest.of(0, 6);
-        Page<QuadraResponseDTO> pagina = quadraService.listar(null, null, null, null, null, null, "Centro", null, null, null, pageable);
-
-        assertEquals(2, pagina.getTotalElements());
-        assertEquals(1, pagina.getTotalPages());
-        assertEquals(2, pagina.getContent().size());
+        assertEquals(1, pagina.getContent().size());
+        verify(quadraBuscaService, times(1)).listar(null, null, null, null, null, null, null, null, null, null, pageable);
     }
 
     @Test
