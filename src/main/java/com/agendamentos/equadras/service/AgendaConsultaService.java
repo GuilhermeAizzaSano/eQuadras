@@ -50,17 +50,20 @@ public class AgendaConsultaService {
     private final AgendamentoRepository agendamentoRepository;
     private final QuadraRepository quadraRepository;
     private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
     private final Clock clock;
 
     public AgendaConsultaService(
             AgendamentoRepository agendamentoRepository,
             QuadraRepository quadraRepository,
             UsuarioRepository usuarioRepository,
+            UsuarioService usuarioService,
             Clock clock
     ) {
         this.agendamentoRepository = agendamentoRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioRepository = usuarioRepository;
+        this.usuarioService = usuarioService;
         this.clock = clock;
     }
 
@@ -76,14 +79,9 @@ public class AgendaConsultaService {
         throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
     }
 
+    // A existência do usuário já é garantida por escopoAgendaAdmin, único chamador
     private void validarAcessoQuadra(Quadra quadra, Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
-
-        boolean ehMasterAdmin = usuario.isMasterAdmin();
-        boolean ehDonoQuadra = quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(usuarioId);
-
-        if (!ehMasterAdmin && !ehDonoQuadra) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, usuarioId)) {
             throw new AccessDeniedException("Você não tem permissão para visualizar o histórico desta quadra.");
         }
     }

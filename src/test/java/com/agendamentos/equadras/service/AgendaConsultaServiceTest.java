@@ -55,6 +55,9 @@ class AgendaConsultaServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
+    private UsuarioService usuarioService;
+
+    @Mock
     private Clock clock;
 
     @InjectMocks
@@ -98,6 +101,7 @@ class AgendaConsultaServiceTest {
         LocalDate data = LocalDate.now(clock).plusDays(1);
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
         when(quadraRepository.findById(10L)).thenReturn(Optional.of(quadra));
+        when(usuarioService.podeGerenciarQuadra(quadra, 1L)).thenReturn(true);
 
         Agendamento ag = Agendamento.builder()
                 .id_agendamento(100L)
@@ -193,5 +197,18 @@ class AgendaConsultaServiceTest {
         assertThrows(AccessDeniedException.class, () ->
                 agendaConsultaService.listarAgendaCompleta(99L, data, null, null, 10L)
         );
+    }
+
+    @Test
+    @DisplayName("Deve permitir ao master filtrar a agenda por quadra de outro admin via regra central")
+    void devePermitirMasterFiltrarAgendaPorQuadra() {
+        LocalDate data = LocalDate.now(clock).plusDays(1);
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(masterAdmin));
+        when(quadraRepository.findById(10L)).thenReturn(Optional.of(quadra));
+        when(usuarioService.podeGerenciarQuadra(quadra, 2L)).thenReturn(true);
+        when(agendamentoRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of());
+
+        assertTrue(agendaConsultaService.listarAgendaCompleta(2L, data, null, null, 10L).isEmpty());
+        verify(usuarioService).podeGerenciarQuadra(quadra, 2L);
     }
 }
