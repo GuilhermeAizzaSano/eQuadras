@@ -254,15 +254,22 @@ class QuadraBuscaSqlIntegrationTest {
         assertEquals(List.of("Sunset Arena"), nomesDaPagina(doDono));
         assertEquals(1, doDono.getTotalElements());
 
-        Page<QuadraResponseDTO> pagina0 = quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
+        // O H2 é compartilhado: outras classes podem deixar quadras no raio. Percorre todas as páginas
+        // e confere a ordem só das semeadas; o total deve bater com a mesma busca sem paginação.
+        int totalSemPaginacao = quadraBuscaService.filtrarQuadrasEntidades(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
+                null, "arena", null, null, null, null).size();
+        Page<QuadraResponseDTO> pagina = quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
                 null, "arena", null, null, null, null, PageRequest.of(0, 2));
-        Page<QuadraResponseDTO> pagina1 = quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
-                null, "arena", null, null, null, null, PageRequest.of(1, 2));
+        List<String> semeadasEmOrdem = new ArrayList<>(nomesDaPagina(pagina));
+        for (int p = 1; p < pagina.getTotalPages(); p++) {
+            semeadasEmOrdem.addAll(nomesDaPagina(quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
+                    null, "arena", null, null, null, null, PageRequest.of(p, 2))));
+        }
 
-        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesDaPagina(pagina0));
-        assertEquals(List.of("Arena Sul"), nomesDaPagina(pagina1));
-        assertEquals(3, pagina0.getTotalElements());
-        assertEquals(2, pagina0.getTotalPages());
+        assertEquals(List.of("Sunset Arena", "Arena Norte", "Arena Sul"), semeadasEmOrdem);
+        assertEquals(totalSemPaginacao, pagina.getTotalElements());
+        assertEquals((totalSemPaginacao + 1) / 2, pagina.getTotalPages());
+        assertEquals(2, pagina.getContent().size());
     }
 
     @Test
