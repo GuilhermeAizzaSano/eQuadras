@@ -10,7 +10,6 @@ import com.agendamentos.equadras.model.enums.TipoEsporte;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
-import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class BloqueioHorarioServiceTest {
     private QuadraRepository quadraRepository;
 
     @Mock
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     @Mock
     private AgendamentoRepository agendamentoRepository;
@@ -71,7 +70,7 @@ class BloqueioHorarioServiceTest {
                 .admin(admin)
                 .build();
 
-        lenient().when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
+        lenient().when(usuarioService.isMasterAdmin(1L)).thenReturn(false);
     }
 
     @Test
@@ -269,13 +268,7 @@ class BloqueioHorarioServiceTest {
     @Test
     @DisplayName("Deve listar todos os bloqueios de todas as quadras quando for Master Admin")
     void deveListarTodosQuandoMasterAdmin() {
-        Usuario masterAdmin = Usuario.builder()
-                .id_usuario(99L)
-                .nome_usuario("Admin Master")
-                .email_usuario("gui@gmail.com")
-                .role(Role.ADMIN)
-                .build();
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.isMasterAdmin(99L)).thenReturn(true);
 
         BloqueioHorario bGlobal = new BloqueioHorario(51L, quadra, LocalDate.now().plusDays(1), null, null, "Global", null);
         when(bloqueioHorarioRepository.findAllOrdered(any(LocalDate.class))).thenReturn(List.of(bGlobal));
@@ -291,13 +284,7 @@ class BloqueioHorarioServiceTest {
     @Test
     @DisplayName("Deve permitir ao Master Admin remover bloqueio de quadra de outro admin")
     void devePermitirMasterAdminRemoverBloqueio() {
-        Usuario masterAdmin = Usuario.builder()
-                .id_usuario(99L)
-                .nome_usuario("Admin Master")
-                .email_usuario("gui@gmail.com")
-                .role(Role.ADMIN)
-                .build();
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.isMasterAdmin(99L)).thenReturn(true);
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
         BloqueioHorario bloqueio = new BloqueioHorario(200L, quadra, LocalDate.now().plusDays(2), null, null, "Motivo", null);

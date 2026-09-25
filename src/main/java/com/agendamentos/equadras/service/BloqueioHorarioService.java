@@ -9,7 +9,6 @@ import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
-import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,27 +23,25 @@ public class BloqueioHorarioService {
 
     private final BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraRepository quadraRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
     private final AgendamentoRepository agendamentoRepository;
     private final AuditoriaService auditoriaService;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
-                                  UsuarioRepository usuarioRepository,
+                                  UsuarioService usuarioService,
                                   AgendamentoRepository agendamentoRepository,
                                   AuditoriaService auditoriaService) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.usuarioService = usuarioService;
         this.agendamentoRepository = agendamentoRepository;
         this.auditoriaService = auditoriaService;
     }
 
     private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
         if (adminId == null) return false;
-        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
-        if (admin == null) return false;
-        if (admin.isMasterAdmin()) return true;
+        if (usuarioService.isMasterAdmin(adminId)) return true;
         return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
     }
 
@@ -142,8 +139,7 @@ public class BloqueioHorarioService {
     @Transactional(readOnly = true)
     public List<BloqueioHorarioResponseDTO> listarTodosDoAdmin(Long adminId) {
         LocalDate hoje = LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL);
-        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
-        if (admin != null && admin.isMasterAdmin()) {
+        if (usuarioService.isMasterAdmin(adminId)) {
             return bloqueioHorarioRepository.findAllOrdered(hoje)
                     .stream()
                     .map(BloqueioHorarioResponseDTO::fromEntity)
