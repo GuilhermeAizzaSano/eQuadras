@@ -29,8 +29,7 @@ import java.util.Set;
 public class QuadraBuscaService {
 
     private static final String PROPRIEDADE_ID_QUADRA_ORDENACAO = "id_quadra";
-    private static final double RAIO_PADRAO_KM = 2.0;
-    private static final double RAIO_MAXIMO_KM = 50.0;
+    private static final double RAIO_MAXIMO_KM = 2.0;
 
     private static final com.agendamentos.equadras.shared.pagination.SortPolicy SORT_POLICY_QUADRAS =
             com.agendamentos.equadras.shared.pagination.SortPolicy.of(
@@ -160,10 +159,10 @@ public class QuadraBuscaService {
         return quadraRepository.findAll(spec.get());
     }
 
-    // Regra de negócio: raio ausente/inválido usa o padrão; acima do máximo é limitado para não varrer a base.
+    // Regra de negócio: a busca por proximidade cobre no máximo 2 km; raio ausente/inválido usa o máximo.
     private static double raioEfetivo(Double raioKm) {
         if (raioKm == null || raioKm <= 0) {
-            return RAIO_PADRAO_KM;
+            return RAIO_MAXIMO_KM;
         }
         return Math.min(raioKm, RAIO_MAXIMO_KM);
     }

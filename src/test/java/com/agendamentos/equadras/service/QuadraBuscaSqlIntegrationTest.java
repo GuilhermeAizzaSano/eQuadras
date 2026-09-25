@@ -287,18 +287,19 @@ class QuadraBuscaSqlIntegrationTest {
     }
 
     @Test
-    @DisplayName("Deve limitar o raio a 50 km e usar 2 km quando ausente ou inválido")
+    @DisplayName("Deve buscar no máximo em 2 km: raio maior, ausente ou inválido vira 2 km; raio menor é respeitado")
     void deveLimitarRaioDaBusca() {
         // ~111 km e ~3,3 km do ponto de busca
         salvarQuadra("Arena Distante", TipoEsporte.FUTEBOL, "Rua Longe", "Centro", "Jundiaí", "13200-000", true, outroAdmin, -22.5500, -46.6300);
         salvarQuadra("Arena Tres Km", TipoEsporte.FUTEBOL, "Rua Tres", "Centro", "São Paulo", "01005-000", true, outroAdmin, -23.5800, -46.6300);
         limparContexto();
 
-        List<String> raioEnorme = nomesComRaio(500.0);
-        assertTrue(!raioEnorme.contains("Arena Distante"), "Raio acima de 50 km deve ser limitado");
-        assertTrue(raioEnorme.contains("Arena Tres Km"));
-        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesComRaio(0.0));
-        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesComRaio(null));
+        List<String> dentroDe2Km = List.of("Sunset Arena", "Arena Norte");
+        assertEquals(dentroDe2Km, nomesComRaio(500.0), "Raio acima de 2 km deve ser limitado a 2 km");
+        assertEquals(dentroDe2Km, nomesComRaio(0.0));
+        assertEquals(dentroDe2Km, nomesComRaio(null));
+        // Arena Norte fica a ~0,3 km: um raio menor que 2 km continua valendo
+        assertEquals(List.of("Sunset Arena"), nomesComRaio(0.1));
     }
 
     @Test
