@@ -5,6 +5,7 @@ import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver;
+import com.agendamentos.equadras.service.QuadraBuscaService;
 import com.agendamentos.equadras.service.QuadraFotoService;
 import com.agendamentos.equadras.service.QuadraService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,10 +27,12 @@ public class QuadraController {
 
     private final QuadraService quadraService;
     private final QuadraFotoService quadraFotoService;
+    private final QuadraBuscaService quadraBuscaService;
 
-    public QuadraController(QuadraService quadraService, QuadraFotoService quadraFotoService) {
+    public QuadraController(QuadraService quadraService, QuadraFotoService quadraFotoService, QuadraBuscaService quadraBuscaService) {
         this.quadraService = quadraService;
         this.quadraFotoService = quadraFotoService;
+        this.quadraBuscaService = quadraBuscaService;
     }
 
     @Operation(
@@ -85,17 +88,17 @@ public class QuadraController {
         }
 
         if (querResumido) {
-            return ResponseEntity.ok(quadraService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
+            return ResponseEntity.ok(quadraBuscaService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
         }
 
         // Rota /quadras (frontend) com paginação
         if (page != null) {
             int tamanhoPagina = (size != null && size > 0) ? Math.min(size, 50) : 6;
             Pageable pageable = PageRequest.of(page, tamanhoPagina);
-            return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep, pageable));
+            return ResponseEntity.ok(quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep, pageable));
         }
 
-        return ResponseEntity.ok(quadraService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
+        return ResponseEntity.ok(quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
     }
 
     @Operation(summary = "Buscar quadra por ID", description = "Retorna os detalhes completos, fotos e horários de funcionamento de uma quadra específica.")
@@ -171,7 +174,7 @@ public class QuadraController {
 
         if (temFiltro) {
             java.util.List<com.agendamentos.equadras.model.entity.Quadra> quadras =
-                    quadraService.filtrarQuadrasEntidades(null, null, null, null, esporteBuscado, nomeBuscado, cidade, bairro, null);
+                    quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, esporteBuscado, nomeBuscado, cidade, bairro, null);
             if (quadras.size() == 1) {
                 return ResponseEntity.ok(mapQuadraFotos(quadras.get(0)));
             } else if (!quadras.isEmpty()) {
@@ -181,7 +184,7 @@ public class QuadraController {
         }
 
         // Se não passou id, nome nem esporte, lista todas as quadras ativas com suas fotos organizadas por quadra
-        java.util.List<java.util.Map<String, Object>> todas = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, null, null, null, null)
+        java.util.List<java.util.Map<String, Object>> todas = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, null, null, null)
                 .stream()
                 .map(this::mapQuadraFotos)
                 .toList();
