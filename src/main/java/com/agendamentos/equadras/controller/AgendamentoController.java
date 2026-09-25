@@ -7,6 +7,7 @@ import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoService;
+import com.agendamentos.equadras.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,9 +30,11 @@ import org.springframework.data.domain.Pageable;
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
+    private final DashboardService dashboardService;
 
-    public AgendamentoController(AgendamentoService agendamentoService) {
+    public AgendamentoController(AgendamentoService agendamentoService, DashboardService dashboardService) {
         this.agendamentoService = agendamentoService;
+        this.dashboardService = dashboardService;
     }
 
     @Operation(
@@ -210,7 +213,7 @@ public class AgendamentoController {
         if (usuarioLogado == null) {
             throw new org.springframework.security.access.AccessDeniedException("Usuário não autenticado.");
         }
-        return ResponseEntity.ok(agendamentoService.obterMetricasDashboard(usuarioLogado.id()));
+        return ResponseEntity.ok(dashboardService.obterMetricasDashboard(usuarioLogado.id()));
     }
 
     @Operation(
