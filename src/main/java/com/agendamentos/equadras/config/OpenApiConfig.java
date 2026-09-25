@@ -83,6 +83,21 @@ public class OpenApiConfig {
                         );
     }
 
+    // Ordena as propriedades dos schemas para que o documento gerado seja determinístico entre execuções
+    @Bean
+    public OpenApiCustomizer ordenarPropriedadesDosSchemasCustomizer() {
+        return openApi -> {
+            if (openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+                return;
+            }
+            openApi.getComponents().getSchemas().values().forEach(schema -> {
+                if (schema.getProperties() != null) {
+                    schema.setProperties(new java.util.TreeMap<>(schema.getProperties()));
+                }
+            });
+        };
+    }
+
     @Bean
     public OpenApiCustomizer filterExternalApiRoutesCustomizer() {
         return openApi -> {
