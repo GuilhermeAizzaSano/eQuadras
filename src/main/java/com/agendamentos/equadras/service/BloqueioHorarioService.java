@@ -6,7 +6,6 @@ import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
-import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import org.springframework.stereotype.Service;
@@ -24,18 +23,18 @@ public class BloqueioHorarioService {
     private final BloqueioHorarioRepository bloqueioHorarioRepository;
     private final QuadraRepository quadraRepository;
     private final UsuarioService usuarioService;
-    private final AgendamentoRepository agendamentoRepository;
+    private final AgendamentoService agendamentoService;
     private final AuditoriaService auditoriaService;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
                                   UsuarioService usuarioService,
-                                  AgendamentoRepository agendamentoRepository,
+                                  AgendamentoService agendamentoService,
                                   AuditoriaService auditoriaService) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
-        this.agendamentoRepository = agendamentoRepository;
+        this.agendamentoService = agendamentoService;
         this.auditoriaService = auditoriaService;
     }
 
@@ -62,11 +61,10 @@ public class BloqueioHorarioService {
         LocalDateTime inicioBloqueio = dto.horaInicio() != null ? dto.data().atTime(dto.horaInicio()) : dto.data().atStartOfDay();
         LocalDateTime fimBloqueio = dto.horaFim() != null ? dto.data().atTime(dto.horaFim()) : dto.data().atTime(LocalTime.MAX);
 
-        boolean conflitoComReserva = agendamentoRepository.existeConflitoHorario(
+        boolean conflitoComReserva = agendamentoService.existeConflitoHorario(
                 quadraId,
                 inicioBloqueio,
-                fimBloqueio,
-                com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
+                fimBloqueio
         );
         if (conflitoComReserva) {
             throw new IllegalArgumentException("Não é possível bloquear este horário pois já existem reservas ativas no período.");

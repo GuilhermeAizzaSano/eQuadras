@@ -7,7 +7,6 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
-import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +40,7 @@ class BloqueioHorarioServiceTest {
     private UsuarioService usuarioService;
 
     @Mock
-    private AgendamentoRepository agendamentoRepository;
+    private AgendamentoService agendamentoService;
 
     @Mock
     private AuditoriaService auditoriaService;
@@ -304,7 +303,7 @@ class BloqueioHorarioServiceTest {
         BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(dataBloqueio, inicio, fim, "Manutenção");
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.existeConflitoHorario(eq(10L), any(), any(), any())).thenReturn(true);
+        when(agendamentoService.existeConflitoHorario(eq(10L), any(), any())).thenReturn(true);
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 bloqueioHorarioService.criarBloqueio(10L, dto, 1L));
@@ -320,7 +319,7 @@ class BloqueioHorarioServiceTest {
         BloqueioHorarioCriacaoDTO dto = new BloqueioHorarioCriacaoDTO(dataBloqueio, null, null, "Torneio");
 
         when(quadraRepository.buscarComLockParaAgendamento(10L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.existeConflitoHorario(eq(10L), any(), any(), any())).thenReturn(false);
+        when(agendamentoService.existeConflitoHorario(eq(10L), any(), any())).thenReturn(false);
 
         BloqueioHorario existente = new BloqueioHorario(201L, quadra, dataBloqueio, null, null, "Já bloqueado", null);
         when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, dataBloqueio)).thenReturn(List.of(existente));
