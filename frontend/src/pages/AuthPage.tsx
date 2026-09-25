@@ -37,7 +37,7 @@ export const AuthPage: React.FC = () => {
         type="button"
         onClick={alternarTema}
         aria-label="Alternar tema claro/escuro"
-        className="fixed top-4 right-4 z-50 p-2.5 rounded-xl border border-fg/20 bg-bg/80 backdrop-blur-md hover:bg-fg/10 text-fg shadow-lg transition cursor-pointer"
+        className="fixed top-4 left-4 z-50 p-2.5 rounded-xl border border-fg/20 bg-bg/80 backdrop-blur-md hover:bg-fg/10 text-fg shadow-lg transition cursor-pointer"
       >
         {tema === 'claro' ? <Moon className="size-4" aria-hidden="true" /> : <Sun className="size-4" aria-hidden="true" />}
       </button>
