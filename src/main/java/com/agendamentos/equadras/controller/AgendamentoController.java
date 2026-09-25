@@ -6,6 +6,7 @@ import com.agendamentos.equadras.dto.response.DashboardMetricasDTO;
 import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
+import com.agendamentos.equadras.service.AgendamentoBotService;
 import com.agendamentos.equadras.service.AgendamentoService;
 import com.agendamentos.equadras.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +32,14 @@ public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
     private final DashboardService dashboardService;
+    private final AgendamentoBotService agendamentoBotService;
 
-    public AgendamentoController(AgendamentoService agendamentoService, DashboardService dashboardService) {
+    public AgendamentoController(AgendamentoService agendamentoService,
+                                 DashboardService dashboardService,
+                                 AgendamentoBotService agendamentoBotService) {
         this.agendamentoService = agendamentoService;
         this.dashboardService = dashboardService;
+        this.agendamentoBotService = agendamentoBotService;
     }
 
     @Operation(
@@ -223,7 +228,7 @@ public class AgendamentoController {
     @PostMapping("/bot")
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(
             @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
-        AgendamentoResponseDTO resposta = agendamentoService.agendarViaBot(dto);
+        AgendamentoResponseDTO resposta = agendamentoBotService.agendarViaBot(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 

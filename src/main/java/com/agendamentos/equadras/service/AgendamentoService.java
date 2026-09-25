@@ -72,7 +72,6 @@ public class AgendamentoService {
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
     private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
-    private final UsuarioService usuarioService;
     private final ApplicationEventPublisher eventPublisher;
     private final java.time.Clock clock;
 
@@ -82,7 +81,6 @@ public class AgendamentoService {
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
                               com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
-                              UsuarioService usuarioService,
                               ApplicationEventPublisher eventPublisher,
                               java.time.Clock clock) {
         this.agendamentoRepository = agendamentoRepository;
@@ -91,7 +89,6 @@ public class AgendamentoService {
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
-        this.usuarioService = usuarioService;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -806,66 +803,6 @@ public class AgendamentoService {
         }
         
         return resultadoFinal;
-    }
-
-    public AgendamentoResponseDTO agendarViaBot(com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
-        Long quadraId = dto.quadraId();
-        if (quadraId == null) {
-            List<Quadra> quadras = buscarQuadrasAtivas(null, dto.tipoEsporte(), dto.nomeQuadra());
-            if (quadras.isEmpty()) {
-                throw new IllegalArgumentException("Nenhuma quadra encontrada para o esporte ou nome informado.");
-            }
-            quadraId = quadras.get(0).getId_quadra();
-        }
-
-        LocalDate data = com.agendamentos.equadras.util.DataFlexivelUtil.resolverData(dto.data());
-        if (data == null) {
-            data = LocalDate.now(clock);
-        }
-
-        LocalTime horaInicio = parseHora(dto.horaInicio());
-        LocalTime horaFim;
-        if (dto.horaFim() != null && !dto.horaFim().isBlank()) {
-            horaFim = parseHora(dto.horaFim());
-        } else {
-            horaFim = horaInicio.plusHours(1);
-        }
-
-        if (!horaInicio.isBefore(horaFim)) {
-            throw new IllegalArgumentException("Hora de início deve ser anterior à hora de término.");
-        }
-
-        Usuario usuario = usuarioService.obterOuCriarUsuarioBot(dto.nomeCliente(), dto.telefoneCliente());
-
-        AgendamentoCriacaoDTO criacaoDTO = new AgendamentoCriacaoDTO(
-                usuario.getId_usuario(),
-                quadraId,
-                data.atTime(horaInicio),
-                data.atTime(horaFim)
-        );
-
-        return agendar(criacaoDTO, usuario.getId_usuario());
-    }
-
-    private LocalTime parseHora(String horaStr) {
-        if (horaStr == null || horaStr.isBlank()) {
-            throw new IllegalArgumentException("Hora não pode ser vazia.");
-        }
-        try {
-            if (horaStr.length() == 5 && horaStr.contains(":")) {
-                return LocalTime.parse(horaStr);
-            }
-            if (horaStr.length() <= 2) {
-                return LocalTime.of(Integer.parseInt(horaStr), 0);
-            }
-            String limpo = horaStr.replaceAll("[^0-9]", "");
-            if (limpo.length() >= 4) {
-                return LocalTime.of(Integer.parseInt(limpo.substring(0, 2)), Integer.parseInt(limpo.substring(2, 4)));
-            }
-            throw new IllegalArgumentException("Formato de hora inválido: " + horaStr);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Não foi possível entender a hora: " + horaStr);
-        }
     }
 
     private List<Quadra> buscarQuadrasAtivas(Long quadraId, String tipoEsporte, String nomeQuadra) {
