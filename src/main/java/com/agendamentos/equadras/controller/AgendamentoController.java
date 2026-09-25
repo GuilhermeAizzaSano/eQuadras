@@ -6,6 +6,7 @@ import com.agendamentos.equadras.dto.response.DashboardMetricasDTO;
 import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
+import com.agendamentos.equadras.service.AgendaConsultaService;
 import com.agendamentos.equadras.service.AgendamentoBotService;
 import com.agendamentos.equadras.service.AgendamentoService;
 import com.agendamentos.equadras.service.DashboardService;
@@ -35,15 +36,18 @@ public class AgendamentoController {
     private final DashboardService dashboardService;
     private final AgendamentoBotService agendamentoBotService;
     private final GradeHorariosService gradeHorariosService;
+    private final AgendaConsultaService agendaConsultaService;
 
     public AgendamentoController(AgendamentoService agendamentoService,
                                  DashboardService dashboardService,
                                  AgendamentoBotService agendamentoBotService,
-                                 GradeHorariosService gradeHorariosService) {
+                                 GradeHorariosService gradeHorariosService,
+                                 AgendaConsultaService agendaConsultaService) {
         this.agendamentoService = agendamentoService;
         this.dashboardService = dashboardService;
         this.agendamentoBotService = agendamentoBotService;
         this.gradeHorariosService = gradeHorariosService;
+        this.agendaConsultaService = agendaConsultaService;
     }
 
     @Operation(
@@ -169,7 +173,7 @@ public class AgendamentoController {
         if (data == null && (inicio == null || fim == null)) {
             throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
         }
-        return ResponseEntity.ok(agendamentoService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, inicio, fim, quadraId, aba, pageable));
+        return ResponseEntity.ok(agendaConsultaService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, inicio, fim, quadraId, aba, pageable));
     }
 
     @Operation(summary = "Contadores de reservas da agenda por aba (Admin)", description = "Retorna contadores de agendamentos por aba para a data ou intervalo informado e quadra(s) do admin autenticado.")
@@ -184,7 +188,7 @@ public class AgendamentoController {
         if (data == null && (inicio == null || fim == null)) {
             throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
         }
-        return ResponseEntity.ok(agendamentoService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, inicio, fim, quadraId));
+        return ResponseEntity.ok(agendaConsultaService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
     @Operation(summary = "Listar agenda completa do dia (Admin)", description = "Retorna todos os agendamentos não cancelados de um único dia (máximo 24h) para visualização na grade operacional da timeline.")
@@ -199,7 +203,7 @@ public class AgendamentoController {
         if (data == null && (inicio == null || fim == null)) {
             throw new IllegalArgumentException("Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.");
         }
-        return ResponseEntity.ok(agendamentoService.listarAgendaCompleta(usuarioLogado.id(), data, inicio, fim, quadraId));
+        return ResponseEntity.ok(agendaConsultaService.listarAgendaCompleta(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
     @Operation(summary = "Listar agenda mensal (Admin)", description = "Retorna os agendamentos não cancelados do mês informado para as quadras do admin autenticado, usados no calendário de ocupação.")
@@ -210,7 +214,7 @@ public class AgendamentoController {
             @RequestParam(required = false) Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
-        return ResponseEntity.ok(agendamentoService.listarAgendaMensal(usuarioLogado.id(), ano, mes, quadraId));
+        return ResponseEntity.ok(agendaConsultaService.listarAgendaMensal(usuarioLogado.id(), ano, mes, quadraId));
     }
 
     @Operation(
