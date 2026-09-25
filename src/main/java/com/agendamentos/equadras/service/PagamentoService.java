@@ -1,9 +1,9 @@
 package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.model.entity.Agendamento;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,15 +25,15 @@ public class PagamentoService {
 
     private final String mercadoPagoAccessToken;
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
 
     public PagamentoService(
             @Value("${mercadopago.access.token:}") String mercadoPagoAccessToken,
             HttpClient httpClient,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) ObjectMapper objectMapper) {
+            JsonMapper objectMapper) {
         this.mercadoPagoAccessToken = mercadoPagoAccessToken;
         this.httpClient = httpClient;
-        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     public record PixDados(String transacaoId, String pixCopiaECola, String qrCodeBase64) {}

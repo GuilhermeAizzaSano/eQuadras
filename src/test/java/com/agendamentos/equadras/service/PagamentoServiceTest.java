@@ -5,7 +5,7 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,12 +34,12 @@ class PagamentoServiceTest {
     @Mock
     private HttpResponse<String> httpResponse;
 
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
     private Agendamento agendamento;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
+        objectMapper = JsonMapper.builder().build();
 
         Usuario usuario = Usuario.builder()
                 .id_usuario(1L)
