@@ -254,4 +254,21 @@ class QuadraBuscaServiceTest {
         assertEquals(1, resultado.size());
         assertEquals("Quadra do Admin", resultado.get(0).nome());
     }
+
+    @Test
+    @DisplayName("Deve aplicar paginação sobre os resultados dos filtros de CEP/endereço")
+    void deveAplicarPaginacaoAposFiltros() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra Centro 1").logradouro("Rua Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q3 = Quadra.builder().id_quadra(3L).nome("Quadra Centro 2").logradouro("Av Central").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(q1, q3), PageRequest.of(0, 6), 2));
+
+        Pageable pageable = PageRequest.of(0, 6);
+        Page<QuadraResponseDTO> pagina = quadraBuscaService.listar(null, null, null, null, null, null, "Centro", null, null, null, pageable);
+
+        assertEquals(2, pagina.getTotalElements());
+        assertEquals(1, pagina.getTotalPages());
+        assertEquals(2, pagina.getContent().size());
+    }
 }

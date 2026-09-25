@@ -199,4 +199,80 @@ class GradeHorariosServiceTest {
         assertTrue(resultado.containsKey(1L));
         assertFalse(resultado.get(1L).isEmpty());
     }
+
+    @Test
+    @DisplayName("Deve retornar lista vazia quando a quadra não funcionar no dia da semana selecionado")
+    void deveRetornarListaVaziaQuandoQuadraFechadaNoDia() {
+        quadra.setDisponibilidades(List.of(
+                new com.agendamentos.equadras.model.entity.DisponibilidadeDia(java.time.DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))
+        ));
+
+        // Encontrar uma data que não seja MONDAY
+        LocalDate dataFechada = LocalDate.now();
+        while (dataFechada.getDayOfWeek() == java.time.DayOfWeek.MONDAY) {
+            dataFechada = dataFechada.plusDays(1);
+        }
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+
+        List<HorarioDisponivelDTO> slots = gradeHorariosService.listarHorariosDisponiveis(1L, dataFechada);
+
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve marcar todos os slots como indisponíveis quando data for após dataLimiteAgendamento")
+    void deveMarcarSlotsIndisponiveisQuandoAposDataLimite() {
+        LocalDate limite = LocalDate.now().plusDays(2);
+        quadra.setDataLimiteAgendamento(limite);
+        LocalDate dataConsulta = limite.plusDays(1);
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of());
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, dataConsulta))
+                .thenReturn(List.of());
+
+        List<HorarioDisponivelDTO> slots = gradeHorariosService.listarHorariosDisponiveis(1L, dataConsulta);
+
+        assertFalse(slots.isEmpty());
+        assertTrue(slots.stream().noneMatch(HorarioDisponivelDTO::disponivel));
+        assertTrue(slots.stream().allMatch(s -> "Data limite de agendamento encerrada".equals(s.motivo())));
+    }
+
+    @Test
+    @DisplayName("Deve marcar apenas slots colidentes como indisponíveis quando houver bloqueio parcial")
+    void deveBloquearApenasSlotsColidentesNoBloqueioParcial() {
+        LocalDate dataConsulta = LocalDate.now().plusDays(3);
+        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueio = new com.agendamentos.equadras.model.entity.BloqueioHorario(
+                quadra,
+                dataConsulta,
+                LocalTime.of(14, 0),
+                LocalTime.of(16, 0),
+                "Manutenção da rede"
+        );
+
+        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of());
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, dataConsulta))
+                .thenReturn(List.of(bloqueio));
+
+        List<HorarioDisponivelDTO> slots = gradeHorariosService.listarHorariosDisponiveis(1L, dataConsulta);
+
+        HorarioDisponivelDTO slot14 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(14, 0))).findFirst().orElseThrow();
+        HorarioDisponivelDTO slot15 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(15, 0))).findFirst().orElseThrow();
+        HorarioDisponivelDTO slot10 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(10, 0))).findFirst().orElseThrow();
+
+        assertFalse(slot14.disponivel());
+        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO, slot14.status());
+        assertEquals("Bloqueado: Manutenção da rede", slot14.motivo());
+
+        assertFalse(slot15.disponivel());
+        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO, slot15.status());
+        assertEquals("Bloqueado: Manutenção da rede", slot15.motivo());
+
+        assertTrue(slot10.disponivel());
+        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.DISPONIVEL, slot10.status());
+    }
 }
