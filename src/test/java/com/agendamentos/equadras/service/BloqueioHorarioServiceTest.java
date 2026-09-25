@@ -73,6 +73,7 @@ class BloqueioHorarioServiceTest {
                 .build();
 
         lenient().when(usuarioService.isMasterAdmin(1L)).thenReturn(false);
+        lenient().when(usuarioService.podeGerenciarQuadra(any(), any())).thenCallRealMethod();
     }
 
     @Test

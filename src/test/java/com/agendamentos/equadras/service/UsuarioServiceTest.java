@@ -2,6 +2,7 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
+import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.UsuarioRepository;
@@ -184,5 +185,39 @@ class UsuarioServiceTest {
         assertEquals("Mariana", resultado.get().getNome_usuario());
         verify(usuarioRepository, times(1)).findById(1L);
     }
-}
 
+    @Test
+    @DisplayName("Deve permitir ao dono gerenciar a própria quadra")
+    void devePermitirDonoGerenciarQuadra() {
+        Usuario dono = Usuario.builder().id_usuario(5L).email_usuario("dono@x.com").role(Role.ADMIN).build();
+        Quadra quadra = Quadra.builder().id_quadra(1L).admin(dono).build();
+        when(usuarioRepository.findById(5L)).thenReturn(Optional.of(dono));
+
+        assertTrue(usuarioService.podeGerenciarQuadra(quadra, 5L));
+    }
+
+    @Test
+    @DisplayName("Deve permitir ao Master Admin gerenciar quadra de outro administrador")
+    void devePermitirMasterAdminGerenciarQuadra() {
+        Usuario dono = Usuario.builder().id_usuario(5L).role(Role.ADMIN).build();
+        Usuario master = Usuario.builder().id_usuario(99L).email_usuario("gui@gmail.com").role(Role.ADMIN).build();
+        Quadra quadra = Quadra.builder().id_quadra(1L).admin(dono).build();
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(master));
+
+        assertTrue(usuarioService.podeGerenciarQuadra(quadra, 99L));
+    }
+
+    @Test
+    @DisplayName("Deve negar gerenciar quadra a outro admin, a id nulo e a quadra sem dono")
+    void deveNegarGerenciarQuadraSemPermissao() {
+        Usuario dono = Usuario.builder().id_usuario(5L).role(Role.ADMIN).build();
+        Usuario outro = Usuario.builder().id_usuario(6L).email_usuario("outro@x.com").role(Role.ADMIN).build();
+        Quadra quadra = Quadra.builder().id_quadra(1L).admin(dono).build();
+        Quadra semDono = Quadra.builder().id_quadra(2L).build();
+        when(usuarioRepository.findById(6L)).thenReturn(Optional.of(outro));
+
+        assertFalse(usuarioService.podeGerenciarQuadra(quadra, 6L));
+        assertFalse(usuarioService.podeGerenciarQuadra(semDono, 6L));
+        assertFalse(usuarioService.podeGerenciarQuadra(quadra, null));
+    }
+}

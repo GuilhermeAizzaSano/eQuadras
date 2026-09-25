@@ -100,20 +100,12 @@ public class QuadraService {
         return QuadraResponseDTO.fromEntity(quadraSalva);
     }
 
-    private boolean podeGerenciarQuadra(Quadra quadra, Long adminId) {
-        if (adminId == null) return false;
-        Usuario admin = usuarioService.buscarPorIdEntidade(adminId).orElse(null);
-        if (admin == null) return false;
-        if (admin.isMasterAdmin()) return true;
-        return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
-    }
-
     @Transactional
     public QuadraResponseDTO editar(Long id, QuadraCriacaoDTO dto, Long adminId) {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (quadra.getAdmin() == null || !podeGerenciarQuadra(quadra, adminId)) {
+        if (quadra.getAdmin() == null || !usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 
@@ -170,7 +162,7 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (!podeGerenciarQuadra(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.");
         }
 
@@ -213,7 +205,7 @@ public class QuadraService {
         Quadra quadra = quadraRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (!podeGerenciarQuadra(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode alterar seu status.");
         }
 

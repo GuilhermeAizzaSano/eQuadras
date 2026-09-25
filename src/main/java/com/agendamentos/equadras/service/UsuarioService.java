@@ -4,6 +4,7 @@ import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
 import com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO;
 import com.agendamentos.equadras.dto.response.LoginResponseDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
+import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.Role;
@@ -55,6 +56,12 @@ public class UsuarioService {
         return usuarioRepository.findById(usuarioId)
                 .map(u -> u.isMasterAdmin(this.masterAdminEmail))
                 .orElse(false);
+    }
+
+    public boolean podeGerenciarQuadra(Quadra quadra, Long adminId) {
+        if (adminId == null) return false;
+        if (isMasterAdmin(adminId)) return true;
+        return quadra.getAdmin() != null && adminId.equals(quadra.getAdmin().getId_usuario());
     }
 
     public void validarAcessoMasterAdmin(Long usuarioLogadoId) {

@@ -42,19 +42,13 @@ public class BloqueioHorarioService {
         this.intervaloCalculator = intervaloCalculator != null ? intervaloCalculator : new BloqueioIntervaloCalculator();
     }
 
-    private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
-        if (adminId == null) return false;
-        if (usuarioService.isMasterAdmin(adminId)) return true;
-        return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
-    }
-
     @Transactional
     public BloqueioHorarioResponseDTO criarBloqueio(Long quadraId, BloqueioHorarioCriacaoDTO dto, Long adminId) {
         Quadra quadra = quadraRepository.buscarComLockParaAgendamento(quadraId)
                 .or(() -> quadraRepository.findByIdWithAdmin(quadraId))
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (!podeGerenciarBloqueio(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.");
         }
 
@@ -163,7 +157,7 @@ public class BloqueioHorarioService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (!podeGerenciarBloqueio(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 
@@ -214,7 +208,7 @@ public class BloqueioHorarioService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        if (!podeGerenciarBloqueio(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.");
         }
 

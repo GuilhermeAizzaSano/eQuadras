@@ -2,7 +2,6 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
 import com.agendamentos.equadras.model.entity.Quadra;
-import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,20 +25,12 @@ public class QuadraFotoService {
         this.fileStorageService = fileStorageService;
     }
 
-    private boolean podeGerenciarQuadra(Quadra quadra, Long adminId) {
-        if (adminId == null) return false;
-        Usuario admin = usuarioService.buscarPorIdEntidade(adminId).orElse(null);
-        if (admin == null) return false;
-        if (admin.isMasterAdmin()) return true;
-        return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
-    }
-
     @Transactional
     public QuadraResponseDTO uploadFotos(Long id, List<MultipartFile> arquivos, Long adminId) {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (!podeGerenciarQuadra(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.");
         }
 
@@ -65,7 +56,7 @@ public class QuadraFotoService {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
-        if (!podeGerenciarQuadra(quadra, adminId)) {
+        if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.");
         }
 

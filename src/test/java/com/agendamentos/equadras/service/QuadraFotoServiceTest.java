@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,7 +73,7 @@ class QuadraFotoServiceTest {
     @DisplayName("Deve fazer upload de fotos com sucesso respeitando o limite de 5 fotos")
     void deveFazerUploadDeFotosComSucesso() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(admin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
         when(fileStorageService.salvarArquivo(any())).thenReturn("http://foto2.jpg");
         when(quadraRepository.save(any(Quadra.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -91,7 +92,7 @@ class QuadraFotoServiceTest {
     void deveRejeitarUploadAcimaDoLimite() {
         quadra.setFotos(new ArrayList<>(List.of("f1", "f2", "f3", "f4", "f5")));
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(admin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
 
         MockMultipartFile file = new MockMultipartFile("fotos", "nova.jpg", "image/jpeg", "bytes".getBytes());
         List<MultipartFile> arquivos = List.of(file);
@@ -113,7 +114,7 @@ class QuadraFotoServiceTest {
                 .build();
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
-        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(outroAdmin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(99L))).thenReturn(false);
 
         MockMultipartFile file = new MockMultipartFile("fotos", "foto.jpg", "image/jpeg", "bytes".getBytes());
         List<MultipartFile> arquivos = List.of(file);
@@ -127,7 +128,7 @@ class QuadraFotoServiceTest {
     @DisplayName("Deve remover foto da quadra e excluir arquivo físico")
     void deveRemoverFotoComSucesso() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(admin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
         when(quadraRepository.save(any(Quadra.class))).thenAnswer(inv -> inv.getArgument(0));
 
         QuadraResponseDTO resposta = quadraFotoService.removerFoto(10L, "http://foto1.jpg", 1L);

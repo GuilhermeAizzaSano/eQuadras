@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,7 +86,7 @@ class QuadraServiceTest {
     @DisplayName("Master Admin deve conseguir editar quadra pertencente a outro administrador")
     void devePermitirMasterAdminEditarQuadraDeOutroAdmin() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(99L))).thenReturn(true);
         when(quadraRepository.save(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
 
         QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
@@ -123,7 +124,7 @@ class QuadraServiceTest {
                 .build();
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(outroAdmin));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(2L))).thenReturn(false);
 
         QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
                 "Tentativa Hacker",
@@ -150,7 +151,7 @@ class QuadraServiceTest {
     @DisplayName("Deve barrar exclusão de quadra quando houver agendamentos vinculados")
     void deveBarrarExclusaoComAgendamentosVinculados() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
         when(agendamentoService.possuiAgendamentos(10L)).thenReturn(true);
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
@@ -164,7 +165,7 @@ class QuadraServiceTest {
     @DisplayName("Deve excluir quadra com sucesso quando não houver agendamentos vinculados")
     void deveExcluirQuadraSemAgendamentos() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
         when(agendamentoService.possuiAgendamentos(10L)).thenReturn(false);
 
         assertDoesNotThrow(() -> quadraService.excluir(10L, 1L));
