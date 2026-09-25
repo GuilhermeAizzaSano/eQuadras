@@ -43,7 +43,7 @@ class BloqueioHorarioServiceTest {
     private AgendamentoService agendamentoService;
 
     @Mock
-    private AuditoriaService auditoriaService;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @org.mockito.Spy
     private BloqueioIntervaloCalculator intervaloCalculator = new BloqueioIntervaloCalculator();

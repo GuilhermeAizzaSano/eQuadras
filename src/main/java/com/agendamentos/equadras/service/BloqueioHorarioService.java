@@ -5,9 +5,10 @@ import com.agendamentos.equadras.dto.response.BloqueioHorarioResponseDTO;
 import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
-import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
+import com.agendamentos.equadras.event.BloqueioHorarioAlteradoEvent;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,20 +25,20 @@ public class BloqueioHorarioService {
     private final QuadraRepository quadraRepository;
     private final UsuarioService usuarioService;
     private final AgendamentoService agendamentoService;
-    private final AuditoriaService auditoriaService;
+    private final ApplicationEventPublisher eventPublisher;
     private final BloqueioIntervaloCalculator intervaloCalculator;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
                                   UsuarioService usuarioService,
                                   AgendamentoService agendamentoService,
-                                  AuditoriaService auditoriaService,
+                                  ApplicationEventPublisher eventPublisher,
                                   BloqueioIntervaloCalculator intervaloCalculator) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
-        this.auditoriaService = auditoriaService;
+        this.eventPublisher = eventPublisher;
         this.intervaloCalculator = intervaloCalculator != null ? intervaloCalculator : new BloqueioIntervaloCalculator();
     }
 
@@ -118,12 +119,16 @@ public class BloqueioHorarioService {
 
         BloqueioHorario bloqueio = new BloqueioHorario(quadra, dto.data(), dto.horaInicio(), dto.horaFim(), dto.motivo());
         BloqueioHorario salvo = bloqueioHorarioRepository.save(bloqueio);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "CRIAR", "BLOQUEIO",
+        if (eventPublisher != null) {
+            String detalhes = "Bloqueio criado na quadra " + quadra.getNome() + " em " + dto.data()
+                    + (dto.horaInicio() != null ? " (" + dto.horaInicio() + " - " + dto.horaFim() + ")" : " (Dia inteiro)")
+                    + (dto.motivo() != null && !dto.motivo().isBlank() ? ". Motivo: " + dto.motivo() : "");
+            eventPublisher.publishEvent(new BloqueioHorarioAlteradoEvent(
+                    adminId,
+                    "CRIAR",
                     salvo.getId().toString(),
-                    "Bloqueio criado na quadra " + quadra.getNome() + " em " + dto.data()
-                            + (dto.horaInicio() != null ? " (" + dto.horaInicio() + " - " + dto.horaFim() + ")" : " (Dia inteiro)")
-                            + (dto.motivo() != null && !dto.motivo().isBlank() ? ". Motivo: " + dto.motivo() : ""));
+                    detalhes
+            ));
         }
         return BloqueioHorarioResponseDTO.fromEntity(salvo);
     }
@@ -194,10 +199,13 @@ public class BloqueioHorarioService {
             bloqueioHorarioRepository.deleteAll(paraRemover);
         }
 
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new BloqueioHorarioAlteradoEvent(
+                    adminId,
+                    "EXCLUIR",
                     bloqueioId.toString(),
-                    "Bloqueio removido da quadra " + quadra.getNome() + " referente à data " + bloqueio.getData());
+                    "Bloqueio removido da quadra " + quadra.getNome() + " referente à data " + bloqueio.getData()
+            ));
         }
     }
 
@@ -232,10 +240,13 @@ public class BloqueioHorarioService {
                 return 0;
             }
             bloqueioHorarioRepository.deleteAll(bloqueios);
-            if (auditoriaService != null) {
-                auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+            if (eventPublisher != null) {
+                eventPublisher.publishEvent(new BloqueioHorarioAlteradoEvent(
+                        adminId,
+                        "EXCLUIR",
                         quadraId.toString(),
-                        "Todos os bloqueios removidos da quadra " + quadra.getNome() + " referente à data " + data);
+                        "Todos os bloqueios removidos da quadra " + quadra.getNome() + " referente à data " + data
+                ));
             }
             return bloqueios.size();
         }
@@ -300,10 +311,13 @@ public class BloqueioHorarioService {
             bloqueioHorarioRepository.saveAll(novosBloqueios);
         }
 
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.BLOQUEIO, "EXCLUIR", "BLOQUEIO",
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new BloqueioHorarioAlteradoEvent(
+                    adminId,
+                    "EXCLUIR",
                     quadraId.toString(),
-                    "Horário das " + slotInicio + " às " + slotFim + " desbloqueado na quadra " + quadra.getNome() + " em " + data);
+                    "Horário das " + slotInicio + " às " + slotFim + " desbloqueado na quadra " + quadra.getNome() + " em " + data
+            ));
         }
 
         return sobrepostos.size();
