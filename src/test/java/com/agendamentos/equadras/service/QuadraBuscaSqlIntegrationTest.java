@@ -1,5 +1,6 @@
 package com.agendamentos.equadras.service;
 
+import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
 import com.agendamentos.equadras.model.entity.DisponibilidadeDia;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -231,5 +234,87 @@ class QuadraBuscaSqlIntegrationTest {
 
         assertEquals(queriesCom2, queriesCom10,
                 "A busca por proximidade não pode executar uma consulta por quadra (N+1)");
+    }
+
+    private List<String> nomesDaPagina(Page<QuadraResponseDTO> pagina) {
+        return pagina.getContent().stream()
+                .map(QuadraResponseDTO::nome)
+                .filter(semeadas::contains)
+                .toList();
+    }
+
+    @Test
+    @DisplayName("Deve paginar a busca por proximidade no SQL mantendo a ordem por distância")
+    void devePaginarBuscaPorProximidadeNoSql() {
+        salvarQuadra("Arena Sul", TipoEsporte.FUTEBOL, "Rua Sul", "Centro", "São Paulo", "01004-000", true, outroAdmin, -23.5550, -46.6330);
+        limparContexto();
+
+        Page<QuadraResponseDTO> doDono = quadraBuscaService.listar(adminDono.getId_usuario(), -23.5500, -46.6300, 5.0,
+                null, null, null, null, null, null, PageRequest.of(0, 1));
+        assertEquals(List.of("Sunset Arena"), nomesDaPagina(doDono));
+        assertEquals(1, doDono.getTotalElements());
+
+        Page<QuadraResponseDTO> pagina0 = quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
+                null, "arena", null, null, null, null, PageRequest.of(0, 2));
+        Page<QuadraResponseDTO> pagina1 = quadraBuscaService.listar(cliente.getId_usuario(), -23.5500, -46.6300, 5.0,
+                null, "arena", null, null, null, null, PageRequest.of(1, 2));
+
+        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesDaPagina(pagina0));
+        assertEquals(List.of("Arena Sul"), nomesDaPagina(pagina1));
+        assertEquals(3, pagina0.getTotalElements());
+        assertEquals(2, pagina0.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Não deve retornar quadra inativa na busca por proximidade nem para o admin dono")
+    void naoDeveRetornarInativaNaBuscaPorProximidade() {
+        assertTrue(nomesPorProximidade(adminDono.getId_usuario(), "inativa").isEmpty());
+    }
+
+    private List<String> nomesComRaio(Double raioKm) {
+        return quadraBuscaService.filtrarQuadrasEntidades(null, -23.5500, -46.6300, raioKm, null, null, null, null, null, null)
+                .stream()
+                .map(Quadra::getNome)
+                .filter(semeadas::contains)
+                .toList();
+    }
+
+    @Test
+    @DisplayName("Deve limitar o raio a 50 km e usar 2 km quando ausente ou inválido")
+    void deveLimitarRaioDaBusca() {
+        // ~111 km e ~3,3 km do ponto de busca
+        salvarQuadra("Arena Distante", TipoEsporte.FUTEBOL, "Rua Longe", "Centro", "Jundiaí", "13200-000", true, outroAdmin, -22.5500, -46.6300);
+        salvarQuadra("Arena Tres Km", TipoEsporte.FUTEBOL, "Rua Tres", "Centro", "São Paulo", "01005-000", true, outroAdmin, -23.5800, -46.6300);
+        limparContexto();
+
+        List<String> raioEnorme = nomesComRaio(500.0);
+        assertTrue(!raioEnorme.contains("Arena Distante"), "Raio acima de 50 km deve ser limitado");
+        assertTrue(raioEnorme.contains("Arena Tres Km"));
+        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesComRaio(0.0));
+        assertEquals(List.of("Sunset Arena", "Arena Norte"), nomesComRaio(null));
+    }
+
+    @Test
+    @DisplayName("Número de queries da busca por proximidade paginada não deve crescer com a quantidade de quadras")
+    void naoDeveVariarQueriesNaBuscaPorProximidadePaginada() {
+        Statistics statistics = entityManager.getEntityManagerFactory().unwrap(SessionFactory.class).getStatistics();
+        statistics.setStatisticsEnabled(true);
+
+        statistics.clear();
+        quadraBuscaService.listar(null, -23.5500, -46.6300, 5.0, null, null, null, null, null, null, PageRequest.of(0, 2));
+        long queriesAntes = statistics.getPrepareStatementCount();
+
+        for (int i = 0; i < 8; i++) {
+            salvarQuadra("Pagina " + i, TipoEsporte.FUTEBOL, "Rua Pagina", "Centro", "São Paulo", "01006-00" + i, true, adminDono, -23.5540 - i * 0.0001, -46.6340);
+        }
+        limparContexto();
+
+        statistics.clear();
+        Page<QuadraResponseDTO> pagina = quadraBuscaService.listar(null, -23.5500, -46.6300, 5.0, null, null, null, null, null, null, PageRequest.of(0, 2));
+        long queriesDepois = statistics.getPrepareStatementCount();
+
+        assertEquals(2, pagina.getContent().size());
+        assertEquals(queriesAntes, queriesDepois,
+                "A paginação geográfica não pode carregar nem consultar por quadra");
     }
 }
