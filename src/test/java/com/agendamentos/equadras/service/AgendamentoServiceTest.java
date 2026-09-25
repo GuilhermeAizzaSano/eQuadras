@@ -531,4 +531,17 @@ class AgendamentoServiceTest {
         verify(agendamentoRepository, times(1)).existsByQuadraId(2L);
         verify(agendamentoRepository, never()).existsByQuadraId(null);
     }
+
+    @Test
+    @DisplayName("Deve verificar se existe conflito de horário para reservas da quadra")
+    void deveVerificarSeExisteConflitoHorario() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(14).withMinute(0);
+        LocalDateTime fim = inicio.plusHours(1);
+        when(agendamentoRepository.existeConflitoHorario(1L, inicio, fim, StatusAgendamento.CANCELADO)).thenReturn(true);
+
+        boolean conflito = agendamentoService.existeConflitoHorario(1L, inicio, fim);
+
+        assertTrue(conflito);
+        verify(agendamentoRepository).existeConflitoHorario(1L, inicio, fim, StatusAgendamento.CANCELADO);
+    }
 }

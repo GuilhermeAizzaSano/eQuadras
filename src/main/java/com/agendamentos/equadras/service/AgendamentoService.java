@@ -334,6 +334,16 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
+    public boolean existeConflitoHorario(Long quadraId, LocalDateTime inicio, LocalDateTime fim) {
+        return agendamentoRepository.existeConflitoHorario(
+                quadraId,
+                inicio,
+                fim,
+                com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO
+        );
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarPorQuadraPaginado(Long quadraId, AbaAgendamento aba, Pageable pageable, Long usuarioId) {
         Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
