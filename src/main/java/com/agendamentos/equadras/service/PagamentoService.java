@@ -1,5 +1,6 @@
 package com.agendamentos.equadras.service;
 
+import com.agendamentos.equadras.config.HttpClientConfig;
 import com.agendamentos.equadras.model.entity.Agendamento;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -14,7 +15,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,7 +49,7 @@ public class PagamentoService {
             try {
                 return gerarPixMercadoPagoApi(agendamento);
             } catch (HttpTimeoutException e) {
-                log.error("Timeout de 4s excedido ao chamar API do Mercado Pago para agendamento {}.", agendamento.getId_agendamento(), e);
+                log.error("Timeout de {} ms excedido ao chamar API do Mercado Pago para agendamento {}.", HttpClientConfig.TIMEOUT.toMillis(), agendamento.getId_agendamento(), e);
                 if (mercadoPagoAccessToken.startsWith("TEST-")) {
                     log.warn("Mercado Pago Sandbox indisponível (timeout). Acionando fallback resiliente para Pix mock.");
                     return gerarPixMock(agendamento);
@@ -111,7 +111,7 @@ public class PagamentoService {
                 .header("Authorization", "Bearer " + mercadoPagoAccessToken)
                 .header("Content-Type", "application/json")
                 .header("X-Idempotency-Key", idempotencyKey)
-                .timeout(Duration.ofMillis(4000))
+                .timeout(HttpClientConfig.TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
                 .build();
 
@@ -157,7 +157,7 @@ public class PagamentoService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.mercadopago.com/v1/payments/" + paymentId.trim()))
                     .header("Authorization", "Bearer " + mercadoPagoAccessToken)
-                    .timeout(Duration.ofMillis(4000))
+                    .timeout(HttpClientConfig.TIMEOUT)
                     .GET()
                     .build();
 
@@ -179,7 +179,7 @@ public class PagamentoService {
                 log.warn("Falha ao consultar pagamento {} no MP. Status: {}", paymentId, response.statusCode());
             }
         } catch (HttpTimeoutException e) {
-            log.error("Timeout de 4s excedido ao consultar pagamento no Mercado Pago: {}", paymentId, e);
+            log.error("Timeout de {} ms excedido ao consultar pagamento no Mercado Pago: {}", HttpClientConfig.TIMEOUT.toMillis(), paymentId, e);
         } catch (Exception e) {
             log.error("Erro ao consultar pagamento no Mercado Pago: {}", paymentId, e);
         }

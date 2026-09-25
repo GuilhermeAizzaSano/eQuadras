@@ -9,10 +9,12 @@ import java.time.Duration;
 @Configuration
 public class HttpClientConfig {
 
+    public static final Duration TIMEOUT = Duration.ofMillis(4000);
+
     @Bean
     public HttpClient httpClient() {
         return HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(4000))
+                .connectTimeout(TIMEOUT)
                 .build();
     }
 }
