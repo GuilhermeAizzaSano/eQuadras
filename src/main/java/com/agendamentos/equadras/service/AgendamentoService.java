@@ -17,7 +17,6 @@ import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
 import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
-import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,7 +66,7 @@ public class AgendamentoService {
     );
 
     private final AgendamentoRepository agendamentoRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
     private final QuadraRepository quadraRepository;
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
@@ -75,14 +74,14 @@ public class AgendamentoService {
     private final java.time.Clock clock;
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
-                              UsuarioRepository usuarioRepository,
+                              UsuarioService usuarioService,
                               QuadraRepository quadraRepository,
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
                               ApplicationEventPublisher eventPublisher,
                               java.time.Clock clock) {
         this.agendamentoRepository = agendamentoRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.usuarioService = usuarioService;
         this.quadraRepository = quadraRepository;
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
@@ -129,7 +128,7 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
 
-        Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
+        Usuario usuarioAutenticado = usuarioService.buscarPorIdEntidade(usuarioIdAutenticado).orElse(null);
         boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
         boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
         boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
@@ -216,7 +215,7 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public AgendamentoResponseDTO buscarPorId(Long idAgendamento, Long usuarioIdAutenticado) {
-        Usuario usuarioAutenticado = usuarioRepository.findById(usuarioIdAutenticado).orElse(null);
+        Usuario usuarioAutenticado = usuarioService.buscarPorIdEntidade(usuarioIdAutenticado).orElse(null);
         boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
 
         Agendamento agendamento;
@@ -236,7 +235,7 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado para o ID: " + id));
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
 
         if (usuario.isMasterAdmin()) {
@@ -303,7 +302,7 @@ public class AgendamentoService {
     }
 
     private void validarAcessoQuadra(Quadra quadra, Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
         boolean ehMasterAdmin = usuario.isMasterAdmin();
@@ -387,7 +386,7 @@ public class AgendamentoService {
 
 
     private Specification<Agendamento> escopoListagemPorPerfil(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
         if (usuario.getRole() == Role.ADMIN) {
             return usuario.isMasterAdmin()
@@ -443,7 +442,7 @@ public class AgendamentoService {
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarTodos(Long usuarioId, boolean historico) {
         List<Agendamento> agendamentos;
-        Usuario usuario = (usuarioId != null) ? usuarioRepository.findById(usuarioId).orElse(null) : null;
+        Usuario usuario = (usuarioId != null) ? usuarioService.buscarPorIdEntidade(usuarioId).orElse(null) : null;
 
         if (usuario != null) {
             if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {

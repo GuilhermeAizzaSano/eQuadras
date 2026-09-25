@@ -11,7 +11,6 @@ import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
-import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ class AgendamentoServiceTest {
     private AgendamentoRepository agendamentoRepository;
 
     @Mock
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     @Mock
     private QuadraRepository quadraRepository;
@@ -173,7 +172,7 @@ class AgendamentoServiceTest {
                 .qrCodeBase64("base64-pesado")
                 .build();
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
         when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
                 .thenReturn(List.of(agendamento));
 
@@ -208,7 +207,7 @@ class AgendamentoServiceTest {
                 .qrCodeBase64("base64-pesado")
                 .build();
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
         when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
                 .thenReturn(List.of(agendamento));
 
@@ -234,7 +233,7 @@ class AgendamentoServiceTest {
                 .status(StatusAgendamento.CONFIRMADO)
                 .build();
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
         when(agendamentoRepository.findByUsuarioId(1L)).thenReturn(List.of(agendamento));
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L, true);
@@ -338,7 +337,7 @@ class AgendamentoServiceTest {
                 .email_usuario("gui@gmail.com")
                 .role(Role.ADMIN)
                 .build();
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
 
         Agendamento a1 = Agendamento.builder()
                 .id_agendamento(1L)
@@ -368,7 +367,7 @@ class AgendamentoServiceTest {
                 .email_usuario("gui@gmail.com")
                 .role(Role.ADMIN)
                 .build();
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
 
         Agendamento agendamento = Agendamento.builder()
                 .id_agendamento(50L)
@@ -398,7 +397,7 @@ class AgendamentoServiceTest {
         LocalDateTime inicioReserva = LocalDateTime.of(2020, 1, 1, 10, 0);
         LocalDateTime agoraFixo = inicioReserva.minusHours(2);
         when(clock.instant()).thenReturn(agoraFixo.atZone(com.agendamentos.equadras.config.ClockConfig.ZONE_BRASIL).toInstant());
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
 
         Agendamento agendamento = Agendamento.builder()
                 .id_agendamento(60L)
@@ -429,7 +428,7 @@ class AgendamentoServiceTest {
         quadra.setAdmin(admin);
 
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(admin));
+        when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(admin));
 
         Agendamento ag = Agendamento.builder()
                 .id_agendamento(100L)
@@ -462,7 +461,7 @@ class AgendamentoServiceTest {
                 .build();
 
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
         when(agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(1L)).thenReturn(List.of());
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarPorQuadra(1L, 99L);
@@ -491,7 +490,7 @@ class AgendamentoServiceTest {
         quadra.setAdmin(adminDono);
 
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(usuarioRepository.findById(3L)).thenReturn(Optional.of(outroAdmin));
+        when(usuarioService.buscarPorIdEntidade(3L)).thenReturn(Optional.of(outroAdmin));
 
         org.springframework.security.access.AccessDeniedException ex = assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
                 agendamentoService.listarPorQuadra(1L, 3L)
