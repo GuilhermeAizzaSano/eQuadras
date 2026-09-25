@@ -44,7 +44,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Administrador não encontrado."));
                 
         if (admin.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("Apenas administradores podem cadastrar quadras.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas administradores podem cadastrar quadras.");
         }
 
         java.util.List<String> fotosIniciais = dto.fotos() != null ? new java.util.ArrayList<>(dto.fotos()) : new java.util.ArrayList<>();
@@ -206,7 +206,7 @@ public class QuadraService {
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
 
         if (!usuarioService.podeGerenciarQuadra(quadra, adminId)) {
-            throw new IllegalArgumentException("Apenas o administrador dono da quadra ou o Master Admin pode alterar seu status.");
+            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode alterar seu status.");
         }
 
         quadra.setAtiva(status);

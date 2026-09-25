@@ -148,6 +148,45 @@ class QuadraServiceTest {
     }
 
     @Test
+    @DisplayName("Deve lançar AccessDeniedException ao alternar status de quadra de outro administrador")
+    void deveNegarAlternarStatusDeQuadraAlheia() {
+        when(quadraRepository.findById(10L)).thenReturn(Optional.of(quadraAdminComum));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(2L))).thenReturn(false);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> quadraService.alternarStatus(10L, false, 2L));
+        verify(quadraRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Deve lançar AccessDeniedException ao cadastrar quadra sem perfil ADMIN")
+    void deveNegarCadastroPorNaoAdmin() {
+        Usuario cliente = Usuario.builder().id_usuario(3L).role(Role.CLIENT).build();
+        when(usuarioService.buscarPorIdEntidade(3L)).thenReturn(Optional.of(cliente));
+
+        QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
+                "Quadra Nova",
+                TipoEsporte.FUTEBOL,
+                BigDecimal.valueOf(100.00),
+                "01001-000",
+                "Rua A",
+                "Centro",
+                "SP",
+                "SP",
+                -23.55,
+                -46.63,
+                "Descrição",
+                null,
+                List.of(),
+                List.of()
+        );
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> quadraService.cadastrar(dto, 3L));
+        verify(quadraRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("Deve barrar exclusão de quadra quando houver agendamentos vinculados")
     void deveBarrarExclusaoComAgendamentosVinculados() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
