@@ -33,9 +33,6 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long>, JpaSpecif
     Optional<Quadra> buscarComLockParaAgendamento(@Param("id") Long id);
 
     @EntityGraph(attributePaths = {"fotos"})
-    List<Quadra> findByAtivaTrue();
-
-    @EntityGraph(attributePaths = {"fotos"})
     Page<Quadra> findByAtivaTrue(Pageable pageable);
 
     @Override

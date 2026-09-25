@@ -22,9 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 @Service
 public class QuadraBuscaService {
@@ -107,48 +107,9 @@ public class QuadraBuscaService {
             return new PageImpl<>(todas.subList(start, end), pageable, total);
         }
 
-        Specification<Quadra> spec = (root, query, cb) -> cb.conjunction();
-
-        if (usuarioId != null) {
-            Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
-            if (usuario != null && usuario.getRole() == Role.ADMIN) {
-                if (!usuario.isMasterAdmin()) {
-                    spec = spec.and(QuadraSpecifications.doAdmin(usuarioId));
-                }
-            } else {
-                spec = spec.and(QuadraSpecifications.ativa());
-            }
-        } else {
-            spec = spec.and(QuadraSpecifications.ativa());
-        }
-
-        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
-            TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
-            if (esporteEnum != null) {
-                spec = spec.and(QuadraSpecifications.comTipoEsporte(esporteEnum));
-            } else {
-                return new PageImpl<>(List.of(), pageable != null ? pageable : Pageable.unpaged(), 0);
-            }
-        }
-
-        if (nome != null && !nome.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comNome(nome));
-        }
-
-        if (endereco != null && !endereco.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comEndereco(endereco));
-        }
-
-        if (cidade != null && !cidade.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comCidade(cidade));
-        }
-
-        if (bairro != null && !bairro.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comBairro(bairro));
-        }
-
-        if (cep != null && !cep.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comCep(cep));
+        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, tipoEsporte, nome, endereco, cidade, bairro, cep);
+        if (spec.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable != null ? pageable : Pageable.unpaged(), 0);
         }
 
         Pageable pageableEfetivo = (pageable != null && pageable.isPaged()) ? pageable : PageRequest.of(0, 10);
@@ -157,7 +118,7 @@ public class QuadraBuscaService {
                 pageableOrdenado.getPageNumber(),
                 pageableOrdenado.getPageSize(),
                 comOrdenacaoIdQuadraSegura(pageableOrdenado.getSort()));
-        Page<Quadra> paginaQuadras = quadraRepository.findAll(spec, pageableOrdenadoSeguro);
+        Page<Quadra> paginaQuadras = quadraRepository.findAll(spec.get(), pageableOrdenadoSeguro);
 
         return paginaQuadras.map(QuadraResponseDTO::fromEntity);
     }
@@ -185,48 +146,29 @@ public class QuadraBuscaService {
         return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, null, cidade, bairro, cep);
     }
 
+    @Transactional(readOnly = true)
     public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                 String tipoEsporte,
                                                 String nome, String endereco, String cidade, String bairro, String cep) {
-        List<Quadra> quadras;
-        double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
+        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, tipoEsporte, nome, endereco, cidade, bairro, cep);
+        if (spec.isEmpty()) {
+            return List.of();
+        }
 
-        BiFunction<Double, Double, List<Quadra>> buscarPorProximidade = (lat, lng) -> {
+        List<Quadra> quadras;
+        if (latitude != null && longitude != null) {
+            double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
             double deltaLat = raio / 111.0;
-            double cosLat = Math.cos(Math.toRadians(lat));
+            double cosLat = Math.cos(Math.toRadians(latitude));
             double deltaLng = (Math.abs(cosLat) > 0.0001) ? raio / (111.0 * Math.abs(cosLat)) : deltaLat;
 
-            double minLat = lat - deltaLat;
-            double maxLat = lat + deltaLat;
-            double minLng = lng - deltaLng;
-            double maxLng = lng + deltaLng;
-
-            return quadraRepository.findByAtivaTrueAndProximidadeMenorQue(lat, lng, raio, minLat, maxLat, minLng, maxLng);
-        };
-
-        if (latitude != null && longitude != null) {
-            quadras = buscarPorProximidade.apply(latitude, longitude);
-            if (usuarioId != null) {
-                Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
-                if (usuario != null && usuario.getRole() == Role.ADMIN && !usuario.isMasterAdmin()) {
-                    quadras = quadras.stream()
-                            .filter(q -> q.getAdmin() != null && usuarioId.equals(q.getAdmin().getId_usuario()))
-                            .toList();
-                }
-            }
-        } else if (usuarioId != null) {
-            Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
-            if (usuario != null && usuario.getRole() == Role.ADMIN) {
-                if (usuario.isMasterAdmin()) {
-                    quadras = quadraRepository.findAllWithAdminEFotos();
-                } else {
-                    quadras = quadraRepository.findByAdminId(usuarioId);
-                }
-            } else {
-                quadras = quadraRepository.findByAtivaTrue();
-            }
+            List<Quadra> proximas = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
+                    latitude, longitude, raio,
+                    latitude - deltaLat, latitude + deltaLat,
+                    longitude - deltaLng, longitude + deltaLng);
+            quadras = filtrarMantendoOrdemPorDistancia(proximas, spec.get());
         } else {
-            quadras = quadraRepository.findByAtivaTrue();
+            quadras = quadraRepository.findAll(spec.get());
         }
 
         quadras.forEach(q -> {
@@ -238,46 +180,71 @@ public class QuadraBuscaService {
             }
         });
 
-        Stream<Quadra> stream = quadras.stream();
+        return quadras;
+    }
+
+    // A busca geográfica é SQL nativo; os filtros rodam em SQL sobre os ids encontrados e a ordem por distância é preservada.
+    private List<Quadra> filtrarMantendoOrdemPorDistancia(List<Quadra> proximas, Specification<Quadra> spec) {
+        if (proximas.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = proximas.stream().map(Quadra::getId_quadra).toList();
+        Set<Long> idsFiltrados = quadraRepository.findAll(spec.and(QuadraSpecifications.comIds(ids)))
+                .stream()
+                .map(Quadra::getId_quadra)
+                .collect(Collectors.toSet());
+        return proximas.stream()
+                .filter(q -> idsFiltrados.contains(q.getId_quadra()))
+                .toList();
+    }
+
+    // Escopo por perfil (regra de negócio) + filtros (executados no SQL). Vazio quando o esporte não é reconhecido.
+    private Optional<Specification<Quadra>> montarSpecification(Long usuarioId, String tipoEsporte, String nome,
+                                                                String endereco, String cidade, String bairro, String cep) {
+        Specification<Quadra> spec = (root, query, cb) -> cb.conjunction();
+
+        if (usuarioId != null) {
+            Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
+            if (usuario != null && usuario.getRole() == Role.ADMIN) {
+                if (!usuario.isMasterAdmin()) {
+                    spec = spec.and(QuadraSpecifications.doAdmin(usuarioId));
+                }
+            } else {
+                spec = spec.and(QuadraSpecifications.ativa());
+            }
+        } else {
+            spec = spec.and(QuadraSpecifications.ativa());
+        }
 
         if (tipoEsporte != null && !tipoEsporte.isBlank()) {
             TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
-            if (esporteEnum != null) {
-                stream = stream.filter(q -> q.getTipoEsporte() == esporteEnum);
-            } else {
-                stream = stream.filter(q -> false);
+            if (esporteEnum == null) {
+                return Optional.empty();
             }
+            spec = spec.and(QuadraSpecifications.comTipoEsporte(esporteEnum));
         }
 
         if (nome != null && !nome.isBlank()) {
-            String nomeNorm = normalizarTexto(nome);
-            stream = stream.filter(q -> q.getNome() != null && normalizarTexto(q.getNome()).contains(nomeNorm));
+            spec = spec.and(QuadraSpecifications.comNome(nome));
         }
 
         if (endereco != null && !endereco.isBlank()) {
-            String enderecoNorm = normalizarTexto(endereco);
-            stream = stream.filter(q ->
-                    (q.getLogradouro() != null && normalizarTexto(q.getLogradouro()).contains(enderecoNorm)) ||
-                            (q.getBairro() != null && normalizarTexto(q.getBairro()).contains(enderecoNorm))
-            );
+            spec = spec.and(QuadraSpecifications.comEndereco(endereco));
         }
 
         if (cidade != null && !cidade.isBlank()) {
-            String cidadeNorm = normalizarTexto(cidade);
-            stream = stream.filter(q -> q.getCidade() != null && normalizarTexto(q.getCidade()).contains(cidadeNorm));
+            spec = spec.and(QuadraSpecifications.comCidade(cidade));
         }
 
         if (bairro != null && !bairro.isBlank()) {
-            String bairroNorm = normalizarTexto(bairro);
-            stream = stream.filter(q -> q.getBairro() != null && normalizarTexto(q.getBairro()).contains(bairroNorm));
+            spec = spec.and(QuadraSpecifications.comBairro(bairro));
         }
 
         if (cep != null && !cep.isBlank()) {
-            String cepLimpo = cep.replaceAll("[^0-9]", "");
-            stream = stream.filter(q -> q.getCep() != null && q.getCep().replaceAll("[^0-9]", "").equals(cepLimpo));
+            spec = spec.and(QuadraSpecifications.comCep(cep));
         }
 
-        return stream.toList();
+        return Optional.of(spec);
     }
 
     @Transactional(readOnly = true)

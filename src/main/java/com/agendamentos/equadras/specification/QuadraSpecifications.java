@@ -25,6 +25,10 @@ public final class QuadraSpecifications {
         return (root, query, cb) -> cb.equal(root.get("admin").get("id_usuario"), adminId);
     }
 
+    public static Specification<Quadra> comIds(java.util.Collection<Long> ids) {
+        return (root, query, cb) -> root.get("id_quadra").in(ids);
+    }
+
     public static Specification<Quadra> comTipoEsporte(TipoEsporte tipoEsporte) {
         if (tipoEsporte == null) return null;
         return (root, query, cb) -> cb.equal(root.get("tipoEsporte"), tipoEsporte);

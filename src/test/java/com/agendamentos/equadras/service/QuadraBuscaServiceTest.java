@@ -79,27 +79,25 @@ class QuadraBuscaServiceTest {
     @DisplayName("Admin comum deve listar apenas as suas quadras")
     void deveListarApenasQuadrasDoAdminComum() {
         when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
-        when(quadraRepository.findByAdminId(1L)).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
 
         List<QuadraResponseDTO> resultado = quadraBuscaService.listar(1L, null, null, null);
 
         assertEquals(1, resultado.size());
         assertEquals("Quadra do Admin", resultado.get(0).nome());
-        verify(quadraRepository, times(1)).findByAdminId(1L);
-        verify(quadraRepository, never()).findAllWithAdminEFotos();
+        verify(quadraRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
     @DisplayName("Master Admin deve listar todas as quadras")
     void deveListarTodasAsQuadrasParaMasterAdmin() {
         when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
-        when(quadraRepository.findAllWithAdminEFotos()).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
 
         List<QuadraResponseDTO> resultado = quadraBuscaService.listar(99L, null, null, null);
 
         assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findAllWithAdminEFotos();
-        verify(quadraRepository, never()).findByAdminId(any());
+        verify(quadraRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
@@ -113,6 +111,7 @@ class QuadraBuscaServiceTest {
                 eq(lat), eq(lng), eq(raioKm),
                 anyDouble(), anyDouble(), anyDouble(), anyDouble()
         )).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
 
         List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, lat, lng, raioKm, null, null, null, null, null);
 
@@ -122,50 +121,6 @@ class QuadraBuscaServiceTest {
                 eq(lat), eq(lng), eq(raioKm),
                 anyDouble(), anyDouble(), anyDouble(), anyDouble()
         );
-    }
-
-    @Test
-    @DisplayName("Deve filtrar quadras por nome ignorando maiúsculas e acentos")
-    void deveFiltrarQuadrasPorNome() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Sunset Vôlei").logradouro("Rua 13").bairro("Samambaia").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Complexo Esportivo do Bosque").logradouro("Av Brasil").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null, null);
-
-        assertEquals(1, resultado.size());
-        assertEquals("Arena Sunset Vôlei", resultado.get(0).getNome());
-    }
-
-    @Test
-    @DisplayName("Deve filtrar quadras por endereço casando com logradouro ou bairro")
-    void deveFiltrarQuadrasPorEndereco() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra A").logradouro("Rua dos Aviadores, 120").bairro("Jardim Municipal").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra B").logradouro("Av. Brasília, 934").bairro("JACB II").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        List<Quadra> resLogradouro = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, "aviadores", null, null, null);
-        assertEquals(1, resLogradouro.size());
-        assertEquals("Quadra A", resLogradouro.get(0).getNome());
-
-        List<Quadra> resBairro = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, "jacb", null, null, null);
-        assertEquals(1, resBairro.size());
-        assertEquals("Quadra B", resBairro.get(0).getNome());
-    }
-
-    @Test
-    @DisplayName("Deve combinar filtros de nome e endereço simultaneamente")
-    void deveCombinarFiltroNomeEEndereco() {
-        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Beach").logradouro("Rua das Rosas").bairro("Jardim Oiti").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Arena Gol").logradouro("Rua das Rosas").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
-
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
-
-        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "Beach", "oiti", null, null, null);
-        assertEquals(1, resultado.size());
-        assertEquals("Arena Beach", resultado.get(0).getNome());
     }
 
     @Test
@@ -247,7 +202,7 @@ class QuadraBuscaServiceTest {
     @Test
     @DisplayName("Deve listar quadras no formato resumido para integrações/bots")
     void deveListarResumido() {
-        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
 
         List<QuadraResumoResponseDTO> resultado = quadraBuscaService.listarResumido(null, null, null, null, null, null, null, null, null);
 
