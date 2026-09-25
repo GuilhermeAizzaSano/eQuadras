@@ -6,7 +6,8 @@ import com.agendamentos.equadras.repository.NotificacaoRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,11 +27,12 @@ public class NotificacaoService {
     // Mapa para armazenar os emissores SSE ativos por ID do Admin
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final JsonMapper objectMapper;
 
-    public NotificacaoService(NotificacaoRepository notificacaoRepository, UsuarioRepository usuarioRepository) {
+    public NotificacaoService(NotificacaoRepository notificacaoRepository, UsuarioRepository usuarioRepository, JsonMapper objectMapper) {
         this.notificacaoRepository = notificacaoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.objectMapper = objectMapper;
     }
 
     public SseEmitter assinar(Long usuarioId) {
@@ -73,7 +75,7 @@ public class NotificacaoService {
                 payload.put("dataCriacao", salva.getDataCriacao() != null ? salva.getDataCriacao().toString() : java.time.LocalDateTime.now().toString());
                 String json = objectMapper.writeValueAsString(payload);
                 emitter.send(SseEmitter.event().name("notificacao").data(json));
-            } catch (IOException e) {
+            } catch (IOException | JacksonException e) {
                 // Se falhar o envio, a conexão foi perdida
                 emitters.remove(adminId);
             }

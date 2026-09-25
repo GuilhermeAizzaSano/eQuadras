@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -17,10 +18,18 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.model.enums.Role;
+import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +40,9 @@ class NotificacaoServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Spy
+    private JsonMapper objectMapper = JsonMapper.builder().build();
 
     @InjectMocks
     private NotificacaoService notificacaoService;
@@ -105,5 +117,35 @@ class NotificacaoServiceTest {
         notificacaoService.excluirTodas(adminId);
 
         verify(notificacaoRepository, times(1)).marcarTodasComoExcluidas(adminId);
+    }
+
+    @Test
+    @DisplayName("Deve enviar payload SSE com id, mensagem, lida e dataCriacao em JSON")
+    void deveEnviarPayloadSseEmJson() throws Exception {
+        Long adminId = 1L;
+        Usuario admin = Usuario.builder().id_usuario(adminId).role(Role.ADMIN).build();
+        when(usuarioRepository.findById(adminId)).thenReturn(Optional.of(admin));
+        when(notificacaoRepository.save(any(Notificacao.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SseEmitter emitter = mock(SseEmitter.class);
+        @SuppressWarnings("unchecked")
+        Map<Long, SseEmitter> emitters = (Map<Long, SseEmitter>) ReflectionTestUtils.getField(notificacaoService, "emitters");
+        emitters.put(adminId, emitter);
+
+        notificacaoService.enviarNotificacao(adminId, "Nova reserva");
+
+        ArgumentCaptor<SseEmitter.SseEventBuilder> captor = ArgumentCaptor.forClass(SseEmitter.SseEventBuilder.class);
+        verify(emitter).send(captor.capture());
+        String json = captor.getValue().build().stream()
+                .map(d -> d.getData().toString())
+                .filter(s -> s.startsWith("{"))
+                .findFirst()
+                .orElseThrow();
+        JsonNode node = JsonMapper.builder().build().readTree(json);
+        assertEquals("Nova reserva", node.path("mensagem").asText());
+        assertFalse(node.path("lida").asBoolean());
+        assertTrue(node.has("id"));
+        assertTrue(node.path("dataCriacao").isString());
+        assertEquals(4, node.size());
     }
 }
