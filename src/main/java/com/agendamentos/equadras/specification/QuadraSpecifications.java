@@ -13,6 +13,8 @@ public final class QuadraSpecifications {
     private static final String COM_ACENTO = "áàâãäéèêëíìîïóòôõöúùûüçñ";
     private static final String SEM_ACENTO = "aaaaaeeeeiiiiooooouuuucn";
     private static final char ESCAPE_LIKE = '\\';
+    private static final double RAIO_TERRA_KM = 6371.0;
+    private static final double KM_POR_GRAU = 111.0;
 
     private QuadraSpecifications() {}
 
@@ -25,8 +27,48 @@ public final class QuadraSpecifications {
         return (root, query, cb) -> cb.equal(root.get("admin").get("id_usuario"), adminId);
     }
 
-    public static Specification<Quadra> comIds(java.util.Collection<Long> ids) {
-        return (root, query, cb) -> root.get("id_quadra").in(ids);
+    /**
+     * Quadras dentro do raio, ordenadas da mais próxima para a mais distante.
+     * A bounding box usa o índice idx_quadras_lat_lng; o Haversine refina no próprio SQL.
+     * A ordem só é aplicada na consulta de dados, nunca na de contagem da paginação.
+     */
+    public static Specification<Quadra> dentroDoRaio(double latitude, double longitude, double raioKm) {
+        double deltaLat = raioKm / KM_POR_GRAU;
+        double cosLat = Math.cos(Math.toRadians(latitude));
+        double deltaLng = (Math.abs(cosLat) > 0.0001) ? raioKm / (KM_POR_GRAU * Math.abs(cosLat)) : deltaLat;
+
+        return (root, query, cb) -> {
+            Expression<Double> lat = root.get("latitude");
+            Expression<Double> lng = root.get("longitude");
+            Expression<Double> distancia = distanciaKm(cb, lat, lng, latitude, longitude);
+
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                query.orderBy(cb.asc(distancia), cb.asc(root.get("id_quadra")));
+            }
+
+            return cb.and(
+                    cb.isNotNull(lat),
+                    cb.isNotNull(lng),
+                    cb.between(lat, latitude - deltaLat, latitude + deltaLat),
+                    cb.between(lng, longitude - deltaLng, longitude + deltaLng),
+                    cb.le(distancia, raioKm)
+            );
+        };
+    }
+
+    // Haversine (lei dos cossenos esférica), limitada a [-1, 1] para evitar NaN no acos.
+    private static Expression<Double> distanciaKm(CriteriaBuilder cb, Expression<Double> lat, Expression<Double> lng,
+                                                  double latitude, double longitude) {
+        Expression<Double> latRad = cb.function("radians", Double.class, lat);
+        Expression<Double> lngRad = cb.function("radians", Double.class, lng);
+        Expression<Double> termoCos = cb.prod(
+                cb.prod(cb.literal(Math.cos(Math.toRadians(latitude))), cb.function("cos", Double.class, latRad)),
+                // soma com o valor negado: diff com literal negativo vira "--" (comentário SQL) quando o Hibernate inlina o literal
+                cb.function("cos", Double.class, cb.sum(lngRad, cb.literal(-Math.toRadians(longitude)))));
+        Expression<Double> termoSin = cb.prod(cb.literal(Math.sin(Math.toRadians(latitude))), cb.function("sin", Double.class, latRad));
+        Expression<Double> cosseno = cb.function("least", Double.class, cb.literal(1.0),
+                cb.function("greatest", Double.class, cb.literal(-1.0), cb.sum(termoCos, termoSin)));
+        return cb.prod(cb.literal(RAIO_TERRA_KM), cb.function("acos", Double.class, cosseno));
     }
 
     public static Specification<Quadra> comTipoEsporte(TipoEsporte tipoEsporte) {

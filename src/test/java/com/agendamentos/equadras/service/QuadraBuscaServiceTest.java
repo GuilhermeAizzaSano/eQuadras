@@ -27,8 +27,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,26 +99,15 @@ class QuadraBuscaServiceTest {
     }
 
     @Test
-    @DisplayName("Deve filtrar quadras por proximidade calculando os limites de Bounding Box corretamente")
-    void deveFiltrarQuadrasPorProximidadeComBoundingBox() {
-        Double lat = -23.5505;
-        Double lng = -46.6333;
-        Double raioKm = 5.0;
-
-        when(quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
-                eq(lat), eq(lng), eq(raioKm),
-                anyDouble(), anyDouble(), anyDouble(), anyDouble()
-        )).thenReturn(List.of(quadraAdminComum));
+    @DisplayName("Deve buscar por proximidade via Specification, sem consulta nativa")
+    void deveFiltrarQuadrasPorProximidadeViaSpecification() {
         when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
 
-        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, lat, lng, raioKm, null, null, null, null, null);
+        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, -23.5505, -46.6333, 5.0, null, null, null, null, null);
 
-        assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findByAtivaTrueAndProximidadeMenorQue(
-                eq(lat), eq(lng), eq(raioKm),
-                anyDouble(), anyDouble(), anyDouble(), anyDouble()
-        );
+        verify(quadraRepository, times(1)).findAll(any(Specification.class));
+        verifyNoMoreInteractions(quadraRepository);
     }
 
     @Test

@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class QuadraBuscaService {
 
     private static final String PROPRIEDADE_ID_QUADRA_ORDENACAO = "id_quadra";
+    private static final double RAIO_PADRAO_KM = 2.0;
+    private static final double RAIO_MAXIMO_KM = 50.0;
 
     private static final com.agendamentos.equadras.shared.pagination.SortPolicy SORT_POLICY_QUADRAS =
             com.agendamentos.equadras.shared.pagination.SortPolicy.of(
@@ -93,23 +94,19 @@ public class QuadraBuscaService {
                                           String tipoEsporte,
                                           String nome, String endereco, String cidade, String bairro, String cep,
                                           Pageable pageable) {
-        if (latitude != null && longitude != null) {
-            List<QuadraResponseDTO> todas = listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
-            if (pageable == null || pageable.isUnpaged()) {
-                return new PageImpl<>(todas);
-            }
-            int total = todas.size();
-            int start = (int) pageable.getOffset();
-            if (start >= total) {
-                return new PageImpl<>(List.of(), pageable, total);
-            }
-            int end = Math.min(start + pageable.getPageSize(), total);
-            return new PageImpl<>(todas.subList(start, end), pageable, total);
-        }
-
-        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, tipoEsporte, nome, endereco, cidade, bairro, cep);
+        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, latitude, longitude, raioKm,
+                tipoEsporte, nome, endereco, cidade, bairro, cep);
         if (spec.isEmpty()) {
             return new PageImpl<>(List.of(), pageable != null ? pageable : Pageable.unpaged(), 0);
+        }
+
+        if (latitude != null && longitude != null) {
+            if (pageable == null || pageable.isUnpaged()) {
+                return new PageImpl<>(listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
+            }
+            // Sem Sort: a ordem por distância definida em dentroDoRaio prevalece
+            return quadraRepository.findAll(spec.get(), PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
+                    .map(QuadraResponseDTO::fromEntity);
         }
 
         Pageable pageableEfetivo = (pageable != null && pageable.isPaged()) ? pageable : PageRequest.of(0, 10);
@@ -150,26 +147,13 @@ public class QuadraBuscaService {
     public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                 String tipoEsporte,
                                                 String nome, String endereco, String cidade, String bairro, String cep) {
-        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, tipoEsporte, nome, endereco, cidade, bairro, cep);
+        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, latitude, longitude, raioKm,
+                tipoEsporte, nome, endereco, cidade, bairro, cep);
         if (spec.isEmpty()) {
             return List.of();
         }
 
-        List<Quadra> quadras;
-        if (latitude != null && longitude != null) {
-            double raio = (raioKm != null && raioKm > 0) ? raioKm : 2.0;
-            double deltaLat = raio / 111.0;
-            double cosLat = Math.cos(Math.toRadians(latitude));
-            double deltaLng = (Math.abs(cosLat) > 0.0001) ? raio / (111.0 * Math.abs(cosLat)) : deltaLat;
-
-            List<Quadra> proximas = quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
-                    latitude, longitude, raio,
-                    latitude - deltaLat, latitude + deltaLat,
-                    longitude - deltaLng, longitude + deltaLng);
-            quadras = filtrarMantendoOrdemPorDistancia(proximas, spec.get());
-        } else {
-            quadras = quadraRepository.findAll(spec.get());
-        }
+        List<Quadra> quadras = quadraRepository.findAll(spec.get());
 
         quadras.forEach(q -> {
             if (q.getFotos() != null) {
@@ -183,23 +167,17 @@ public class QuadraBuscaService {
         return quadras;
     }
 
-    // A busca geográfica é SQL nativo; os filtros rodam em SQL sobre os ids encontrados e a ordem por distância é preservada.
-    private List<Quadra> filtrarMantendoOrdemPorDistancia(List<Quadra> proximas, Specification<Quadra> spec) {
-        if (proximas.isEmpty()) {
-            return List.of();
+    // Regra de negócio: raio ausente/inválido usa o padrão; acima do máximo é limitado para não varrer a base.
+    private static double raioEfetivo(Double raioKm) {
+        if (raioKm == null || raioKm <= 0) {
+            return RAIO_PADRAO_KM;
         }
-        List<Long> ids = proximas.stream().map(Quadra::getId_quadra).toList();
-        Set<Long> idsFiltrados = quadraRepository.findAll(spec.and(QuadraSpecifications.comIds(ids)))
-                .stream()
-                .map(Quadra::getId_quadra)
-                .collect(Collectors.toSet());
-        return proximas.stream()
-                .filter(q -> idsFiltrados.contains(q.getId_quadra()))
-                .toList();
+        return Math.min(raioKm, RAIO_MAXIMO_KM);
     }
 
     // Escopo por perfil (regra de negócio) + filtros (executados no SQL). Vazio quando o esporte não é reconhecido.
-    private Optional<Specification<Quadra>> montarSpecification(Long usuarioId, String tipoEsporte, String nome,
+    private Optional<Specification<Quadra>> montarSpecification(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                                                String tipoEsporte, String nome,
                                                                 String endereco, String cidade, String bairro, String cep) {
         Specification<Quadra> spec = (root, query, cb) -> cb.conjunction();
 
@@ -242,6 +220,12 @@ public class QuadraBuscaService {
 
         if (cep != null && !cep.isBlank()) {
             spec = spec.and(QuadraSpecifications.comCep(cep));
+        }
+
+        // A busca por proximidade sempre considera só quadras ativas (comportamento da consulta nativa anterior)
+        if (latitude != null && longitude != null) {
+            spec = spec.and(QuadraSpecifications.ativa())
+                    .and(QuadraSpecifications.dentroDoRaio(latitude, longitude, raioEfetivo(raioKm)));
         }
 
         return Optional.of(spec);

@@ -46,24 +46,6 @@ public interface QuadraRepository extends JpaRepository<Quadra, Long>, JpaSpecif
     @EntityGraph(attributePaths = {"admin", "fotos"})
     Optional<Quadra> findById(Long id);
 
-    @Query(value = "SELECT q.* FROM quadras q WHERE q.ativa = true AND q.latitude IS NOT NULL AND q.longitude IS NOT NULL " +
-           "AND q.latitude BETWEEN :minLat AND :maxLat " +
-           "AND q.longitude BETWEEN :minLng AND :maxLng " +
-           "AND (6371 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(:latitude)) * cos(radians(q.latitude)) * " +
-           "cos(radians(q.longitude) - radians(:longitude)) + sin(radians(:latitude)) * " +
-           "sin(radians(q.latitude)))))) <= :raioKm " +
-           "ORDER BY (6371 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(:latitude)) * cos(radians(q.latitude)) * " +
-           "cos(radians(q.longitude) - radians(:longitude)) + sin(radians(:latitude)) * " +
-           "sin(radians(q.latitude)))))) ASC", nativeQuery = true)
-    List<Quadra> findByAtivaTrueAndProximidadeMenorQue(
-            @Param("latitude") Double latitude, 
-            @Param("longitude") Double longitude, 
-            @Param("raioKm") Double raioKm,
-            @Param("minLat") Double minLat,
-            @Param("maxLat") Double maxLat,
-            @Param("minLng") Double minLng,
-            @Param("maxLng") Double maxLng);
-
     @Query("SELECT COUNT(q), COUNT(CASE WHEN q.ativa = true THEN 1 END) FROM Quadra q WHERE q.admin.id_usuario = :adminId")
     List<Object[]> obterMetricasQuadrasPorAdminId(@Param("adminId") Long adminId);
 
