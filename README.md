@@ -72,15 +72,15 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 ## Destaques da Plataforma
 
-1. **Paginação Eficiente no Backend com Suporte a Filtros Globais:**
-   - Listagem de quadras paginada de 6 em 6 registros (`Pageable`) diretamente no backend para o frontend (`/quadras`).
-   - Consultas dinâmicas por **CEP/raio de proximidade**, **Nome** ou **Endereço/Bairro** continuam pesquisando em toda a base de quadras antes de paginar.
-   - Rota `/api/quadras` preservada sem paginação para integrações automatizadas e bots.
+1. **Busca Geográfica Otimizada no SQL com Raio Restrito:**
+   - Busca por geolocalização e proximidade filtrada, ordenada e paginada diretamente a nível de banco de dados (fórmula Haversine via SQL nativo), eliminando carregamentos pesados em memória.
+   - Restrição estrita de raio para até **2 km**, assegurando precisão local para praticantes.
+   - Listagem paginada (`Pageable`) de 6 em 6 quadras (`/quadras`) e rota `/api/quadras` sem paginação para integrações externas.
 
-2. **Grade Diária Visual (Timeline Grid):**
+2. **Grade Diária Visual (Timeline Grid) com Carregamento em Lote:**
    - Visualização horizontal interativa das 06:00 às 23:00 para todas as quadras.
+   - Otimização com batch loading de agendamentos e bloqueios em lote para renderização instantânea sem queries N+1.
    - Identificação cromática de status: **Livre** (verde), **Agendado** (azul), **Bloqueado** (âmbar) e **Passado/Realizado** (cinza).
-   - Linha do tempo atual com atualização em tempo real e atalho rápido para bloqueio/detalhes.
 
 3. **Calendário Mensal de Ocupação e Agenda do Dia Sob Demanda (`DayAgendaModal`):**
    - Visão mensal com barras diárias de ocupação percentual e status de reservas.
@@ -88,10 +88,11 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 4. **Autenticação Unificada (Sessão Web & API Key com RBAC):**
    - Sessão Web por cookie seguro com atributos `HttpOnly`, `SameSite=Lax` e `Secure=true` (`equadras_session`).
+   - Módulo desacoplado `UsuarioAuthService` dedicado à autenticação, sessões e rate limiting contra força bruta.
    - Suporte padronizado a chaves de integração externas (API Key no cabeçalho `X-API-KEY` ou `Authorization: Bearer eq_...`) com hash SHA-256 no banco e suporte a todas as rotas da API respeitando os papéis (`ROLE_CLIENT` e `ROLE_ADMIN`).
 
-5. **Trilha de Auditoria Completa:**
-   - Registro automático e imutável de ações sensíveis (logins, alterações cadastrais, bloqueios, agendamentos e cancelamentos) com IP, User-Agent e categoria.
+5. **Trilha de Auditoria com Eventos de Domínio:**
+   - Registro automático e imutável de ações sensíveis (logins, alterações cadastrais, bloqueios, agendamentos e cancelamentos) desacoplado via eventos Spring (`Domain Events`).
    - Painel exclusivo para consulta e métricas no Master Admin.
 
 6. **Central de Notificações em Tempo Real:**
@@ -103,24 +104,25 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 ## Módulos da Plataforma
 
 ### 4.1 Portal do Atleta (Cliente)
-- **Busca por Geolocalização & CEP:** Integração com ViaCEP e OpenStreetMap/Nominatim com cálculo de distância por raio em KM (Fórmula de Haversine).
+- **Busca por Geolocalização & CEP:** Integração com ViaCEP e OpenStreetMap/Nominatim com cálculo nativo de distância e raio máximo de 2 km.
 - **Filtros por Modalidade:** Futebol Society, Beach Tennis, Tênis, Futsal, Vôlei e Basquete.
 - **Catálogo Paginado (6 por página):** Visualização de quadras com galeria de fotos, valores/hora, endereço e status de disponibilidade.
+- **Alerta de Pagamento Pendente Intuitivo:** Card com contagem regressiva, navegação rápida entre reservas pendentes e atalho instantâneo para pagamento Pix.
 - **Seletor de Agendamento Inteligente (`BookingModal`):** Carrossel dos próximos 14 dias calculando horários vagos e respeitando dias fechados e data limite de agendamento da quadra.
 - **Seleção de Slots Contíguos:** Seleção de múltiplos horários consecutivos com cálculo automático do valor proporcional.
 - **Pagamento Pix em Tempo Real:** Geração instantânea de QR Code base64 e chave Copia e Cola Mercado Pago, com contador regressivo de 15 minutos.
 - **Gestão de Reservas:** Painel com reservas ativas paginadas, histórico de partidas realizadas e cancelamento facilitado.
 
 ### 4.2 Painel Administrativo (Gestor de Quadras)
-- **Dashboard Operacional:** KPIs de faturamento diário/total, taxa de ocupação e barra de próximas partidas nas próximas 4 horas.
+- **Dashboard Operacional:** KPIs de faturamento diário/total, taxa de ocupação e barra de próximas partidas nas próximas 4 horas (isolado no `DashboardService`).
 - **Alternância Grade Diária / Calendário Mensal:** Controle total dos horários do complexo esportivo em diferentes perspectivas de visualização.
 - **Gestão de Quadras:** Cadastro e edição com upload de até 5 fotos por quadra, data limite de agendamento, endereço e grade de horários semanais.
-- **Bloqueios de Horários e Dias:** Bloqueio pontual de slots ou dias completos para manutenções, reformas e eventos privados.
+- **Bloqueios de Horários e Dias:** Bloqueio pontual de slots ou dias completos para manutenções, reformas e eventos privados, com cálculo puro em `BloqueioIntervaloCalculator`.
 - **Histórico de Agendas por Quadra:** Modal de auditoria rápida das reservas passadas e futuras de cada espaço esportivo.
 - **Sino de Notificações:** Notificações em tempo real com contador de não lidas e marcação em lote.
 
 ### 4.3 Painel Master Admin
-- **Gestão de Usuários:** Cadastro, edição de perfis (`ROLE_CLIENT` e `ROLE_ADMIN`) e redefinição de senhas com proteção de conta Master.
+- **Gestão de Usuários:** Cadastro, edição de perfis (`ROLE_CLIENT` e `ROLE_ADMIN`), listagem com suporte a paginação opcional (`?page=...`) e proteção de conta Master.
 - **Painel de Auditoria de Logs:** Consulta de eventos operacionais com filtros por usuário, categoria, data e busca de texto.
 - **Gerenciamento de API Keys:** Painel para geração, consulta de prefixo e revogação de chaves de integração.
 
@@ -128,21 +130,39 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
 
 ## Arquitetura do Sistema e Código
 
-O backend adota o padrão em camadas desacopladas (Clean Architecture / Domain-Driven Design pragmático):
+O backend adota o padrão em camadas desacopladas (Clean Architecture / Domain-Driven Design pragmático), com serviços especialistas altamente coesos e sem acoplamento cíclico:
 
 ```text
 equadras/
 ├── src/main/java/com/agendamentos/equadras/
-│   ├── config/              # Security, CORS, Swagger/OpenAPI, ThreadPool e Mappers
+│   ├── config/              # Security, CORS, Swagger/OpenAPI, HttpClient gerenciado e Mappers
 │   ├── controller/          # Controllers REST (Quadras, Agendamentos, Notificações, Usuários, Auditoria, Pagamentos)
 │   ├── dto/                 # DTOs de Entrada e Saída (Jakarta Validation)
 │   ├── exception/           # Global Exception Handler (RFC 7807 Problem Details)
 │   ├── model/
 │   │   ├── entity/          # Entidades JPA (Usuario, Quadra, Agendamento, Notificacao, BloqueioHorario, LogAuditoria, ApiKey)
-│   │   └── enums/           # Role, StatusAgendamento, TipoEsporte, DiaSemana, CategoriaAuditoria
-│   ├── repository/          # Repositórios Spring Data JPA com queries nativas e Lock Pessimista
+│   │   ├── enums/           # Role, StatusAgendamento, TipoEsporte, DiaSemana, CategoriaAuditoria
+│   │   └── events/          # Eventos de domínio (QuadraAlteradaEvent, BloqueioAlteradoEvent)
+│   ├── repository/          # Repositórios Spring Data JPA com queries nativas otimizadas e Lock Pessimista
 │   ├── security/            # Filtros JWT, autenticação de API Key, Rate Limiting e anotações customizadas
-│   └── service/             # Regras de negócio, transações, integração Pix e mensageria SSE
+│   └── service/             # Serviços especializados:
+│       ├── AgendaConsultaService.java          # Consultas consolidadas da agenda
+│       ├── AgendamentoBotService.java          # Integração para agendamentos via Bot
+│       ├── AgendamentoExpiracaoScheduler.java  # Rotina agendada de expiração de Pix
+│       ├── AgendamentoLockService.java         # Concorrência e lock pessimista
+│       ├── AgendamentoService.java             # Gestão do ciclo de vida das reservas
+│       ├── AuditoriaService.java               # Persistência e consulta da trilha de auditoria
+│       ├── BloqueioHorarioService.java         # Gestão de bloqueios administrativos
+│       ├── BloqueioIntervaloCalculator.java    # Cálculo puro de interseções de horários
+│       ├── DashboardService.java               # Métricas e KPIs do dashboard
+│       ├── GradeHorariosService.java           # Montagem e validação da grade de horários
+│       ├── NotificacaoService.java             # Mensageria e push via SSE
+│       ├── PagamentoService.java               # Gateway Mercado Pago com HttpClient resiliente
+│       ├── QuadraBuscaService.java             # Motor de busca por proximidade e filtros SQL
+│       ├── QuadraFotoService.java              # Armazenamento e consulta de fotos
+│       ├── QuadraService.java                  # CRUD e regras de negócio de quadras
+│       ├── UsuarioAuthService.java             # Autenticação, rate limit e sessões
+│       └── UsuarioService.java                 # CRUD e regras de autorização de usuários
 ├── frontend/
 │   ├── src/
 │   │   ├── api/             # Camada de comunicação HTTP desacoplada (apiClient.ts)
@@ -174,7 +194,7 @@ equadras/
 | **Tempo Real** | Server-Sent Events (SSE) | HTTP/1.1 | Notificações push sem overhead de polling |
 | **Frontend Framework** | React | 18.3.x | Componentes modulares, estado reativo e hooks customizados |
 | **Linguagem Frontend**| TypeScript | 5.x | Tipagem estrita ponta a ponta |
-| **Estilização** | Tailwind CSS | 3.4.x | Design dark mode elegante no estilo Apple/Zinc com alta legibilidade |
+| **Estilização** | Tailwind CSS | 3.4.x | Design dark/light mode elegante com suporte de tema |
 | **Build Tool** | Vite | 5.4.x | Code-splitting, minificação e build ultrarrápido |
 | **Proxy / Servidor Web**| Nginx | 1.24+ | Proxy reverso, gzip, suporte a SSE sem buffer e SSL Let's Encrypt |
 | **Edge / DNS / WAF**   | Cloudflare | Managed | Proxy Anycast, proteção DDoS e mitigação de ameaças |
@@ -302,12 +322,12 @@ erDiagram
    - Requisições autenticadas pelo navegador utilizam cookie seguro assinado `equadras_session` contendo autoridade `SCOPE_SESSION`.
    - Rotas administrativas de usuários (`/usuarios/**`) exigem estritamente `SCOPE_SESSION`. API Keys externas só conseguem interagir com rotas de negócio permitidas (`/quadras/**`, `/agendamentos/**`, `/pagamentos/**`).
 3. **Resiliência do Gateway de Pagamento:**
-   - A chamada de criação de Pix no Mercado Pago é realizada fora da transação de banco de dados, liberando a conexão de pool enquanto aguarda a resposta do gateway.
+   - A chamada de criação de Pix no Mercado Pago é realizada com `HttpClient` gerenciado, timeouts explícitos e fora da transação de banco de dados, liberando a conexão de pool enquanto aguarda a resposta do gateway.
    - Suporte a chave de idempotência para evitar cobranças duplicadas.
 4. **Limpeza Automática de Pix Expirados:**
-   - Job agendado (`@Scheduled`) roda a cada minuto no Spring Boot e cancela automaticamente reservas pendentes após 15 minutos, liberando os horários instantaneamente.
+   - Job agendado (`@Scheduled`) no `AgendamentoExpiracaoScheduler` roda a cada minuto no Spring Boot e cancela automaticamente reservas pendentes após 15 minutos, liberando os horários instantaneamente.
 5. **Rate Limiting em Memória:**
-   - Proteção de endpoints contra abuso e tentativas excessivas de requisições.
+   - Proteção de endpoints de login e regeneração de API Key contra abuso e tentativas de força bruta.
 
 ---
 
@@ -315,7 +335,7 @@ erDiagram
 
 - **Mercado Pago Payments API (`v1/payments`):** Emissão de cobranças Pix com QR Code e chave copia-e-cola.
 - **ViaCEP API (`viacep.com.br/ws/{cep}/json`):** Busca e preenchimento automático de endereço por CEP.
-- **OpenStreetMap / Nominatim API:** Geocodificação de endereços para cálculo de raio de proximidade.
+- **OpenStreetMap / Nominatim API:** Geocodificação de endereços para cálculo de raio de proximidade (até 2 km).
 - **Google Maps:** Deep link direto para navegação até o local da quadra.
 
 ---
@@ -397,7 +417,7 @@ O frontend estará acessível em `http://localhost:5173`.
 | `POST` | `/usuarios/login` | Público | Autenticação e emissão de sessão web / token |
 | `POST` | `/usuarios/logout` | Público | Encerramento de sessão e invalidação de cookies |
 | `GET` | `/usuarios/me` | Autenticado | Dados do perfil autenticado |
-| `GET` | `/usuarios` | `ROLE_ADMIN` (Master) | Listagem de usuários do sistema |
+| `GET` | `/usuarios` | `ROLE_ADMIN` (Master) | Listagem de usuários do sistema (suporta paginação `?page=...`) |
 | `GET` | `/quadras` | Autenticado | Listar quadras completas (suporta paginação `page`, `size` e filtros) |
 | `GET` | `/api/quadras` | Autenticado | Listar quadras no formato resumido sem paginação (para bots e terceiros) |
 | `POST` | `/quadras` | `ROLE_ADMIN` | Cadastrar nova quadra com grade de horários e fotos |
