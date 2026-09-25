@@ -472,10 +472,10 @@ public class AgendamentoService {
                     );
                 }
             } else {
-                agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
+                agendamentos = List.of();
             }
         } else {
-            agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
+            agendamentos = List.of();
         }
 
         return agendamentos.stream()

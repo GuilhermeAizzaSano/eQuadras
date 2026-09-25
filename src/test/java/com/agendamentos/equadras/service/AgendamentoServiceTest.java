@@ -543,4 +543,14 @@ class AgendamentoServiceTest {
         assertTrue(conflito);
         verify(agendamentoRepository).existeConflitoHorario(1L, inicio, fim, StatusAgendamento.CANCELADO);
     }
+
+    @Test
+    @DisplayName("Não deve listar agendamentos de ninguém quando o usuário não existir")
+    void naoDeveListarTodosQuandoUsuarioDesconhecido() {
+        when(usuarioService.buscarPorIdEntidade(404L)).thenReturn(Optional.empty());
+
+        assertTrue(agendamentoService.listarTodos(404L, true).isEmpty());
+        assertTrue(agendamentoService.listarTodos(404L, false).isEmpty());
+        verifyNoInteractions(agendamentoRepository);
+    }
 }
