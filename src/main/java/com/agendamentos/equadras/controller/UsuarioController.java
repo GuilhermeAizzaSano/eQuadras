@@ -6,6 +6,7 @@ import com.agendamentos.equadras.dto.request.UsuarioLoginDTO;
 import com.agendamentos.equadras.dto.response.ApiKeyCriadaDTO;
 import com.agendamentos.equadras.dto.response.ApiKeyInfoDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
+import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.security.ApiKeyRateLimiter;
 import com.agendamentos.equadras.security.ApiKeyService;
 import com.agendamentos.equadras.security.JwtService;
@@ -105,7 +106,7 @@ public class UsuarioController {
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
                     .body(resposta.usuario());
-        } catch (IllegalArgumentException e) {
+        } catch (RegraNegocioException e) {
             loginRateLimiter.registrarFalha(email);
             throw e;
         }
