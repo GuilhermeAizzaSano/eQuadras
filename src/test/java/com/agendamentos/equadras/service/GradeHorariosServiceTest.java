@@ -169,12 +169,11 @@ class GradeHorariosServiceTest {
     @DisplayName("Deve consultar grade de horários por quadraId")
     void deveConsultarGradeHorariosPorQuadraId() {
         when(quadraBuscaService.buscarQuadrasAtivas(1L, null, null)).thenReturn(List.of(quadra));
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
         LocalDate amanha = LocalDate.now(clock).plusDays(1);
 
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
+        when(agendamentoRepository.buscarPorQuadrasEDataLote(eq(List.of(1L)), eq(StatusAgendamento.CANCELADO), any(), any()))
                 .thenReturn(List.of());
-        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, amanha)).thenReturn(List.of());
+        when(bloqueioHorarioRepository.findByQuadraIdsAndData(List.of(1L), amanha)).thenReturn(List.of());
 
         List<GradeHorariosResponseDTO> grade =
                 gradeHorariosService.consultarGradeHorarios(amanha, 1L, null, null, false);
@@ -182,6 +181,46 @@ class GradeHorariosServiceTest {
         assertNotNull(grade);
         assertEquals(1, grade.size());
         assertEquals("Quadra Central", grade.get(0).nome_quadra());
+    }
+
+    @Test
+    @DisplayName("Deve carregar agendamentos e bloqueios de todas as quadras da grade em lote")
+    void deveConsultarGradeDeVariasQuadrasEmLote() {
+        Quadra outra = Quadra.builder()
+                .id_quadra(2L)
+                .nome("Quadra Norte")
+                .tipoEsporte(TipoEsporte.FUTEBOL)
+                .valorHora(BigDecimal.valueOf(80.00))
+                .ativa(true)
+                .admin(admin)
+                .disponibilidades(new ArrayList<>(quadra.getDisponibilidades()))
+                .build();
+        LocalDate amanha = LocalDate.now(clock).plusDays(1);
+        Agendamento reservaNaOutra = Agendamento.builder()
+                .quadra(outra)
+                .dataHoraInicio(amanha.atTime(10, 0))
+                .dataHoraFim(amanha.atTime(11, 0))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+
+        when(quadraBuscaService.buscarQuadrasAtivas(null, "futebol", null)).thenReturn(List.of(quadra, outra));
+        when(agendamentoRepository.buscarPorQuadrasEDataLote(eq(List.of(1L, 2L)), eq(StatusAgendamento.CANCELADO), any(), any()))
+                .thenReturn(List.of(reservaNaOutra));
+        when(bloqueioHorarioRepository.findByQuadraIdsAndData(List.of(1L, 2L), amanha)).thenReturn(List.of());
+
+        List<GradeHorariosResponseDTO> grade =
+                gradeHorariosService.consultarGradeHorarios(amanha, null, "futebol", null, false);
+
+        assertEquals(2, grade.size());
+        HorarioDisponivelDTO dezHorasNaCentral = grade.get(0).horarios().stream()
+                .filter(h -> h.inicio().equals(LocalTime.of(10, 0))).findFirst().orElseThrow();
+        HorarioDisponivelDTO dezHorasNaNorte = grade.get(1).horarios().stream()
+                .filter(h -> h.inicio().equals(LocalTime.of(10, 0))).findFirst().orElseThrow();
+        assertTrue(dezHorasNaCentral.disponivel());
+        assertFalse(dezHorasNaNorte.disponivel());
+        verify(agendamentoRepository, never()).buscarPorQuadraEData(any(), any(), any(), any());
+        verify(bloqueioHorarioRepository, never()).findByQuadraIdAndData(any(), any());
+        verify(quadraRepository, never()).findById(any());
     }
 
     @Test

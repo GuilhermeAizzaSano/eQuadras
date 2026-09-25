@@ -107,24 +107,8 @@ public class GradeHorariosService {
         }
 
         List<Long> quadraIdsAtivas = quadrasAtivas.stream().map(Quadra::getId_quadra).toList();
-        LocalDateTime inicioDoDia = data.atStartOfDay();
-        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
-
-        List<Agendamento> agendamentosEmLote = agendamentoRepository.buscarPorQuadrasEDataLote(
-                quadraIdsAtivas,
-                StatusAgendamento.CANCELADO,
-                inicioDoDia,
-                fimDoDia
-        );
-
-        List<BloqueioHorario> bloqueiosEmLote =
-                bloqueioHorarioRepository.findByQuadraIdsAndData(quadraIdsAtivas, data);
-
-        Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosEmLote.stream()
-                .collect(Collectors.groupingBy(a -> a.getQuadra().getId_quadra()));
-
-        Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra = bloqueiosEmLote.stream()
-                .collect(Collectors.groupingBy(b -> b.getQuadra().getId_quadra()));
+        Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosPorQuadra(quadraIdsAtivas, data);
+        Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra = bloqueiosPorQuadra(quadraIdsAtivas, data);
 
         for (Quadra quadra : quadrasDoAdmin) {
             if (quadra.isAtiva()) {
@@ -145,10 +129,21 @@ public class GradeHorariosService {
             LocalDate data, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
 
         List<Quadra> quadras = quadraBuscaService.buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
+        if (quadras.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> quadraIds = quadras.stream().map(Quadra::getId_quadra).toList();
+        Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosPorQuadra(quadraIds, data);
+        Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra = bloqueiosPorQuadra(quadraIds, data);
 
         List<GradeHorariosResponseDTO> resultado = new ArrayList<>();
         for (Quadra q : quadras) {
-            List<HorarioDisponivelDTO> slots = listarHorariosDisponiveis(q.getId_quadra(), data);
+            List<HorarioDisponivelDTO> slots = montarSlotsHorarios(
+                    q,
+                    data,
+                    agendamentosPorQuadra.getOrDefault(q.getId_quadra(), List.of()),
+                    bloqueiosPorQuadra.getOrDefault(q.getId_quadra(), List.of()));
             if (apenasDisponiveis) {
                 slots = slots.stream().filter(HorarioDisponivelDTO::disponivel).toList();
             }
@@ -191,6 +186,22 @@ public class GradeHorariosService {
         }
 
         return resultadoFinal;
+    }
+
+    private Map<Long, List<Agendamento>> agendamentosPorQuadra(List<Long> quadraIds, LocalDate data) {
+        return agendamentoRepository.buscarPorQuadrasEDataLote(
+                        quadraIds,
+                        StatusAgendamento.CANCELADO,
+                        data.atStartOfDay(),
+                        data.atTime(LocalTime.MAX))
+                .stream()
+                .collect(Collectors.groupingBy(a -> a.getQuadra().getId_quadra()));
+    }
+
+    private Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra(List<Long> quadraIds, LocalDate data) {
+        return bloqueioHorarioRepository.findByQuadraIdsAndData(quadraIds, data)
+                .stream()
+                .collect(Collectors.groupingBy(b -> b.getQuadra().getId_quadra()));
     }
 
     private List<HorarioDisponivelDTO> montarSlotsHorarios(
