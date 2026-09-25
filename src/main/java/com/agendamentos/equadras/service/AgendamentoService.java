@@ -15,6 +15,7 @@ import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
 import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
+import com.agendamentos.equadras.repository.QuadraRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -65,7 +66,7 @@ public class AgendamentoService {
 
     private final AgendamentoRepository agendamentoRepository;
     private final UsuarioService usuarioService;
-    private final QuadraService quadraService;
+    private final QuadraRepository quadraRepository;
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
     private final ApplicationEventPublisher eventPublisher;
@@ -73,14 +74,14 @@ public class AgendamentoService {
 
     public AgendamentoService(AgendamentoRepository agendamentoRepository,
                               UsuarioService usuarioService,
-                              QuadraService quadraService,
+                              QuadraRepository quadraRepository,
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
                               ApplicationEventPublisher eventPublisher,
                               java.time.Clock clock) {
         this.agendamentoRepository = agendamentoRepository;
         this.usuarioService = usuarioService;
-        this.quadraService = quadraService;
+        this.quadraRepository = quadraRepository;
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
         this.eventPublisher = eventPublisher;
@@ -313,7 +314,7 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public List<AgendamentoResponseDTO> listarPorQuadra(Long quadraId, Long usuarioId) {
-        Quadra quadra = quadraService.buscarPorIdEntidade(quadraId)
+        Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         validarAcessoQuadra(quadra, usuarioId);
@@ -342,7 +343,7 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarPorQuadraPaginado(Long quadraId, AbaAgendamento aba, Pageable pageable, Long usuarioId) {
-        Quadra quadra = quadraService.buscarPorIdEntidade(quadraId)
+        Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         validarAcessoQuadra(quadra, usuarioId);
@@ -363,7 +364,7 @@ public class AgendamentoService {
 
     @Transactional(readOnly = true)
     public Map<String, Long> contarPorAbaEQuadra(Long quadraId, Long usuarioId) {
-        Quadra quadra = quadraService.buscarPorIdEntidade(quadraId)
+        Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
         validarAcessoQuadra(quadra, usuarioId);
