@@ -25,17 +25,20 @@ public class BloqueioHorarioService {
     private final UsuarioService usuarioService;
     private final AgendamentoService agendamentoService;
     private final AuditoriaService auditoriaService;
+    private final BloqueioIntervaloCalculator intervaloCalculator;
 
     public BloqueioHorarioService(BloqueioHorarioRepository bloqueioHorarioRepository,
                                   QuadraRepository quadraRepository,
                                   UsuarioService usuarioService,
                                   AgendamentoService agendamentoService,
-                                  AuditoriaService auditoriaService) {
+                                  AuditoriaService auditoriaService,
+                                  BloqueioIntervaloCalculator intervaloCalculator) {
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
         this.auditoriaService = auditoriaService;
+        this.intervaloCalculator = intervaloCalculator != null ? intervaloCalculator : new BloqueioIntervaloCalculator();
     }
 
     private boolean podeGerenciarBloqueio(Quadra quadra, Long adminId) {
@@ -241,6 +244,7 @@ public class BloqueioHorarioService {
         if (data == null) {
             throw new IllegalArgumentException("Informe a data a ser desbloqueada.");
         }
+        final LocalDate dataFinal = data;
 
         LocalTime slotInicio = dto.horaInicio();
         LocalTime slotFim = dto.horaFim();
@@ -283,37 +287,13 @@ public class BloqueioHorarioService {
             return 0;
         }
 
-        boolean jaProcessouDiaInteiro = false;
-        List<BloqueioHorario> novosBloqueios = new ArrayList<>();
-        for (BloqueioHorario b : sobrepostos) {
-            boolean isDiaInteiro = (b.getHoraInicio() == null || b.getHoraFim() == null);
-            if (isDiaInteiro) {
-                if (jaProcessouDiaInteiro) {
-                    continue; // previne duplicatas residuais
-                }
-                jaProcessouDiaInteiro = true;
-            }
+        var residuos = intervaloCalculator.calcularResiduosDesbloqueio(
+                sobrepostos, slotInicio, slotFim, quadraAbertura, quadraFechamento
+        );
 
-            LocalTime bInicio;
-            LocalTime bFim;
-            if (isDiaInteiro) {
-                bInicio = slotInicio.isBefore(quadraAbertura) ? slotInicio : quadraAbertura;
-                bFim = (slotFim.isAfter(quadraFechamento) && !slotFim.equals(LocalTime.of(23, 59, 59))) ? slotFim : quadraFechamento;
-            } else {
-                bInicio = b.getHoraInicio();
-                bFim = b.getHoraFim();
-            }
-
-            // Intervalo residual anterior ao slot
-            if (bInicio.isBefore(slotInicio)) {
-                novosBloqueios.add(new BloqueioHorario(quadra, data, bInicio, slotInicio, b.getMotivo()));
-            }
-
-            // Intervalo residual posterior ao slot
-            if (slotFim.isBefore(bFim)) {
-                novosBloqueios.add(new BloqueioHorario(quadra, data, slotFim, bFim, b.getMotivo()));
-            }
-        }
+        List<BloqueioHorario> novosBloqueios = residuos.stream()
+                .map(r -> new BloqueioHorario(quadra, dataFinal, r.inicio(), r.fim(), r.motivo()))
+                .toList();
 
         bloqueioHorarioRepository.deleteAll(sobrepostos);
         if (!novosBloqueios.isEmpty()) {

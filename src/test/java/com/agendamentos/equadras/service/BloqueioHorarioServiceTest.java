@@ -45,6 +45,9 @@ class BloqueioHorarioServiceTest {
     @Mock
     private AuditoriaService auditoriaService;
 
+    @org.mockito.Spy
+    private BloqueioIntervaloCalculator intervaloCalculator = new BloqueioIntervaloCalculator();
+
     @InjectMocks
     private BloqueioHorarioService bloqueioHorarioService;
 
