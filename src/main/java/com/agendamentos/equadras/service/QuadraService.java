@@ -7,8 +7,6 @@ import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.QuadraRepository;
-import com.agendamentos.equadras.repository.UsuarioRepository;
-import com.agendamentos.equadras.repository.AgendamentoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
@@ -53,19 +51,19 @@ public class QuadraService {
     }
 
     private final QuadraRepository quadraRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final AgendamentoRepository agendamentoRepository;
+    private final UsuarioService usuarioService;
+    private final AgendamentoService agendamentoService;
     private final FileStorageService fileStorageService;
     private final AuditoriaService auditoriaService;
 
     public QuadraService(QuadraRepository quadraRepository, 
-                         UsuarioRepository usuarioRepository,
-                         AgendamentoRepository agendamentoRepository,
+                         UsuarioService usuarioService,
+                         AgendamentoService agendamentoService,
                          FileStorageService fileStorageService,
                          AuditoriaService auditoriaService) {
         this.quadraRepository = quadraRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.agendamentoRepository = agendamentoRepository;
+        this.usuarioService = usuarioService;
+        this.agendamentoService = agendamentoService;
         this.fileStorageService = fileStorageService;
         this.auditoriaService = auditoriaService;
     }
@@ -76,7 +74,7 @@ public class QuadraService {
             throw new IllegalArgumentException("ID do administrador é obrigatório.");
         }
         
-        Usuario admin = usuarioRepository.findById(adminId)
+        Usuario admin = usuarioService.buscarPorIdEntidade(adminId)
                 .orElseThrow(() -> new IllegalArgumentException("Administrador não encontrado."));
                 
         if (admin.getRole() != Role.ADMIN) {
@@ -132,7 +130,7 @@ public class QuadraService {
 
     private boolean podeGerenciarQuadra(Quadra quadra, Long adminId) {
         if (adminId == null) return false;
-        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
+        Usuario admin = usuarioService.buscarPorIdEntidade(adminId).orElse(null);
         if (admin == null) return false;
         if (admin.isMasterAdmin()) return true;
         return quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(adminId);
@@ -241,7 +239,7 @@ public class QuadraService {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.");
         }
 
-        if (agendamentoRepository.existsByQuadraId(id)) {
+        if (agendamentoService.possuiAgendamentos(id)) {
             throw new IllegalStateException("Esta quadra não pode ser excluída porque possui agendamentos vinculados (histórico de reservas). Recomendamos inativar a quadra.");
         }
 
@@ -309,7 +307,7 @@ public class QuadraService {
         Specification<Quadra> spec = (root, query, cb) -> cb.conjunction();
 
         if (usuarioId != null) {
-            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+            Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == Role.ADMIN) {
                 if (!usuario.isMasterAdmin()) {
                     spec = spec.and(QuadraSpecifications.doAdmin(usuarioId));
@@ -406,7 +404,7 @@ public class QuadraService {
         if (latitude != null && longitude != null) {
             quadras = buscarPorProximidade.apply(latitude, longitude);
             if (usuarioId != null) {
-                Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+                Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
                 if (usuario != null && usuario.getRole() == Role.ADMIN && !usuario.isMasterAdmin()) {
                     quadras = quadras.stream()
                             .filter(q -> q.getAdmin() != null && usuarioId.equals(q.getAdmin().getId_usuario()))
@@ -414,7 +412,7 @@ public class QuadraService {
                 }
             }
         } else if (usuarioId != null) {
-            Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+            Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId).orElse(null);
             if (usuario != null && usuario.getRole() == Role.ADMIN) {
                 if (usuario.isMasterAdmin()) {
                     quadras = quadraRepository.findAllWithAdminEFotos();

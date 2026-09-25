@@ -753,4 +753,19 @@ class AgendamentoServiceTest {
         assertEquals(50L, resposta.id_agendamento());
         verify(quadraRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class));
     }
+
+    @Test
+    @DisplayName("Deve verificar se quadra possui agendamentos delegando para o repository")
+    void deveVerificarSePossuiAgendamentos() {
+        when(agendamentoRepository.existsByQuadraId(1L)).thenReturn(true);
+        when(agendamentoRepository.existsByQuadraId(2L)).thenReturn(false);
+
+        assertTrue(agendamentoService.possuiAgendamentos(1L));
+        assertFalse(agendamentoService.possuiAgendamentos(2L));
+        assertFalse(agendamentoService.possuiAgendamentos(null));
+
+        verify(agendamentoRepository, times(1)).existsByQuadraId(1L);
+        verify(agendamentoRepository, times(1)).existsByQuadraId(2L);
+        verify(agendamentoRepository, never()).existsByQuadraId(null);
+    }
 }

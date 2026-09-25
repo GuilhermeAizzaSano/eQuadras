@@ -260,5 +260,17 @@ class UsuarioServiceTest {
         assertEquals("E-mail ou senha incorretos.", ex.getMessage());
         verify(passwordEncoder, times(1)).matches("senhaErrada", usuario.getSenha_usuario());
     }
+
+    @Test
+    @DisplayName("Deve buscar entidade usuário por ID com sucesso")
+    void deveBuscarPorIdEntidadeComSucesso() {
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        Optional<Usuario> resultado = usuarioService.buscarPorIdEntidade(1L);
+
+        assertTrue(resultado.isPresent());
+        assertEquals("Mariana", resultado.get().getNome_usuario());
+        verify(usuarioRepository, times(1)).findById(1L);
+    }
 }
 

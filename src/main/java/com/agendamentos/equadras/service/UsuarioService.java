@@ -64,6 +64,12 @@ public class UsuarioService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public java.util.Optional<Usuario> buscarPorIdEntidade(Long id) {
+        if (id == null) return java.util.Optional.empty();
+        return usuarioRepository.findById(id);
+    }
+
     @Transactional
     public UsuarioResponseDTO cadastrarPorAdmin(UsuarioCriacaoDTO dto, Long usuarioLogadoId) {
         validarAcessoMasterAdmin(usuarioLogadoId);

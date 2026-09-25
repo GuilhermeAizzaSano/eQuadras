@@ -37,10 +37,10 @@ class QuadraServiceTest {
     private QuadraRepository quadraRepository;
 
     @Mock
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     @Mock
-    private AgendamentoRepository agendamentoRepository;
+    private AgendamentoService agendamentoService;
 
     @Mock
     private FileStorageService fileStorageService;
@@ -86,7 +86,7 @@ class QuadraServiceTest {
     @Test
     @DisplayName("Master Admin deve listar todas as quadras do sistema")
     void deveListarTodasAsQuadrasQuandoMasterAdmin() {
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
         when(quadraRepository.findAllWithAdminEFotos()).thenReturn(List.of(quadraAdminComum));
 
         List<QuadraResponseDTO> resultado = quadraService.listar(99L, null, null, null);
@@ -99,7 +99,7 @@ class QuadraServiceTest {
     @Test
     @DisplayName("Admin comum deve listar apenas suas próprias quadras")
     void deveListarApenasSuasQuadrasQuandoAdminComum() {
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(adminComum));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
         when(quadraRepository.findByAdminId(1L)).thenReturn(List.of(quadraAdminComum));
 
         List<QuadraResponseDTO> resultado = quadraService.listar(1L, null, null, null);
@@ -113,7 +113,7 @@ class QuadraServiceTest {
     @DisplayName("Master Admin deve conseguir editar quadra pertencente a outro administrador")
     void devePermitirMasterAdminEditarQuadraDeOutroAdmin() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
         when(quadraRepository.save(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
 
         QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
@@ -151,7 +151,7 @@ class QuadraServiceTest {
                 .build();
 
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
-        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(outroAdmin));
+        when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(outroAdmin));
 
         QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
                 "Tentativa Hacker",
@@ -300,5 +300,31 @@ class QuadraServiceTest {
         assertEquals(2, pagina.getTotalElements());
         assertEquals(1, pagina.getTotalPages());
         assertEquals(2, pagina.getContent().size());
+    }
+
+    @Test
+    @DisplayName("Deve barrar exclusão de quadra quando houver agendamentos vinculados")
+    void deveBarrarExclusaoComAgendamentosVinculados() {
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+        when(agendamentoService.possuiAgendamentos(10L)).thenReturn(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                quadraService.excluir(10L, 1L));
+
+        assertTrue(ex.getMessage().contains("possui agendamentos vinculados"));
+        verify(quadraRepository, never()).delete(any(Quadra.class));
+    }
+
+    @Test
+    @DisplayName("Deve excluir quadra com sucesso quando não houver agendamentos vinculados")
+    void deveExcluirQuadraSemAgendamentos() {
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+        when(agendamentoService.possuiAgendamentos(10L)).thenReturn(false);
+
+        assertDoesNotThrow(() -> quadraService.excluir(10L, 1L));
+
+        verify(quadraRepository, times(1)).delete(quadraAdminComum);
     }
 }

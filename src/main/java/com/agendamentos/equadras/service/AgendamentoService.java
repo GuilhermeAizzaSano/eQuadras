@@ -372,6 +372,12 @@ public class AgendamentoService {
     }
 
     @Transactional(readOnly = true)
+    public boolean possuiAgendamentos(Long quadraId) {
+        if (quadraId == null) return false;
+        return agendamentoRepository.existsByQuadraId(quadraId);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<AgendamentoResponseDTO> listarPorQuadraPaginado(Long quadraId, AbaAgendamento aba, Pageable pageable, Long usuarioId) {
         Quadra quadra = quadraRepository.findById(quadraId)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
