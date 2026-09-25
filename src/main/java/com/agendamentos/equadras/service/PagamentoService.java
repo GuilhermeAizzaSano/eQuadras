@@ -30,10 +30,10 @@ public class PagamentoService {
     public PagamentoService(
             @Value("${mercadopago.access.token:}") String mercadoPagoAccessToken,
             HttpClient httpClient,
-            ObjectMapper objectMapper) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ObjectMapper objectMapper) {
         this.mercadoPagoAccessToken = mercadoPagoAccessToken;
         this.httpClient = httpClient;
-        this.objectMapper = objectMapper;
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
     }
 
     public record PixDados(String transacaoId, String pixCopiaECola, String qrCodeBase64) {}
