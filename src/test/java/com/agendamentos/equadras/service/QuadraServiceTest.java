@@ -17,10 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -45,9 +42,6 @@ class QuadraServiceTest {
 
     @Mock
     private QuadraFotoService quadraFotoService;
-
-    @Mock
-    private QuadraBuscaService quadraBuscaService;
 
     @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
@@ -85,17 +79,6 @@ class QuadraServiceTest {
                 .fotos(new ArrayList<>())
                 .disponibilidades(new ArrayList<>())
                 .build();
-    }
-
-    @Test
-    @DisplayName("Deve delegar listar para QuadraBuscaService")
-    void deveDelegarListarParaQuadraBuscaService() {
-        when(quadraBuscaService.listar(1L, null, null, null)).thenReturn(List.of(QuadraResponseDTO.fromEntity(quadraAdminComum)));
-
-        List<QuadraResponseDTO> resultado = quadraService.listar(1L, null, null, null);
-
-        assertEquals(1, resultado.size());
-        verify(quadraBuscaService, times(1)).listar(1L, null, null, null);
     }
 
     @Test
@@ -161,32 +144,6 @@ class QuadraServiceTest {
 
         assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> quadraService.editar(10L, dto, 2L));
         verify(quadraRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Deve delegar filtrarQuadrasEntidades para QuadraBuscaService")
-    void deveDelegarFiltrarQuadrasEntidadesParaQuadraBuscaService() {
-        when(quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null))
-                .thenReturn(List.of(quadraAdminComum));
-
-        List<Quadra> resultado = quadraService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null);
-
-        assertEquals(1, resultado.size());
-        verify(quadraBuscaService, times(1)).filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null);
-    }
-
-    @Test
-    @DisplayName("Deve delegar listar paginado para QuadraBuscaService")
-    void deveDelegarListarPaginadoParaQuadraBuscaService() {
-        Pageable pageable = PageRequest.of(0, 6);
-        Page<QuadraResponseDTO> pageMock = new PageImpl<>(List.of(QuadraResponseDTO.fromEntity(quadraAdminComum)));
-        when(quadraBuscaService.listar(null, null, null, null, null, null, null, null, null, null, pageable))
-                .thenReturn(pageMock);
-
-        Page<QuadraResponseDTO> pagina = quadraService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
-
-        assertEquals(1, pagina.getContent().size());
-        verify(quadraBuscaService, times(1)).listar(null, null, null, null, null, null, null, null, null, null, pageable);
     }
 
     @Test

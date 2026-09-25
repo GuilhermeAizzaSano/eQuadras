@@ -10,8 +10,6 @@ import com.agendamentos.equadras.repository.QuadraRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -22,20 +20,17 @@ public class QuadraService {
     private final UsuarioService usuarioService;
     private final AgendamentoService agendamentoService;
     private final QuadraFotoService quadraFotoService;
-    private final QuadraBuscaService quadraBuscaService;
     private final ApplicationEventPublisher eventPublisher;
 
     public QuadraService(QuadraRepository quadraRepository, 
                          UsuarioService usuarioService,
                          AgendamentoService agendamentoService,
                          QuadraFotoService quadraFotoService,
-                         QuadraBuscaService quadraBuscaService,
                          ApplicationEventPublisher eventPublisher) {
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
         this.quadraFotoService = quadraFotoService;
-        this.quadraBuscaService = quadraBuscaService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -198,66 +193,6 @@ public class QuadraService {
                     "Quadra excluída: " + quadra.getNome()
             ));
         }
-    }
-
-    @Transactional(readOnly = true)
-    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm) {
-        return quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm);
-    }
-
-    @Transactional(readOnly = true)
-    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                          com.agendamentos.equadras.model.enums.TipoEsporte tipoEsporte,
-                                          String nome, String cidade, String bairro, String cep) {
-        return quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep);
-    }
-
-    @Transactional(readOnly = true)
-    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                          String tipoEsporte,
-                                          String nome, String cidade, String bairro, String cep) {
-        return quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep);
-    }
-
-    @Transactional(readOnly = true)
-    public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                          String tipoEsporte,
-                                          String nome, String endereco, String cidade, String bairro, String cep) {
-        return quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                          String tipoEsporte,
-                                          String nome, String endereco, String cidade, String bairro, String cep,
-                                          Pageable pageable) {
-        return quadraBuscaService.listar(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public List<com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                                        String tipoEsporte,
-                                                        String nome, String cidade, String bairro, String cep) {
-        return quadraBuscaService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep);
-    }
-
-    @Transactional(readOnly = true)
-    public List<com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                                        String tipoEsporte,
-                                                        String nome, String endereco, String cidade, String bairro, String cep) {
-        return quadraBuscaService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
-    }
-
-    public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                                String tipoEsporte,
-                                                String nome, String cidade, String bairro, String cep) {
-        return quadraBuscaService.filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, cidade, bairro, cep);
-    }
-
-    public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
-                                                String tipoEsporte,
-                                                String nome, String endereco, String cidade, String bairro, String cep) {
-        return quadraBuscaService.filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep);
     }
 
     @Transactional(readOnly = true)
