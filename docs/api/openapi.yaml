@@ -398,16 +398,24 @@ paths:
       summary: Listar todos os usuários (Apenas Admin Geral)
       description: Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT).
         Apenas o Administrador Geral possui permissão.
-      operationId: listarTodos
+      operationId: listarUsuariosPaginado
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Lista de usuários cadastrados
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UsuarioResponseDTO"
+                oneOf:
+                - type: array
+                  items:
+                    $ref: "#/components/schemas/UsuarioResponseDTO"
+                - $ref: "#/components/schemas/PageResponseUsuarioResponseDTO"
               example:
               - id_usuario: 10
                 nome_usuario: Arthur Prado
@@ -2628,6 +2636,40 @@ components:
         ultimoUsoEm:
           type: string
           format: date-time
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageResponseUsuarioResponseDTO:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/UsuarioResponseDTO"
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
     SseEmitter:
       type: object
       properties:
@@ -2740,21 +2782,6 @@ components:
           - AGENDADO
           - INDISPONIVEL
           example: DISPONIVEL
-    Pageable:
-      type: object
-      properties:
-        page:
-          type: integer
-          format: int32
-          minimum: 0
-        size:
-          type: integer
-          format: int32
-          minimum: 1
-        sort:
-          type: array
-          items:
-            type: string
     PageResponseAgendamentoResponseDTO:
       type: object
       properties:

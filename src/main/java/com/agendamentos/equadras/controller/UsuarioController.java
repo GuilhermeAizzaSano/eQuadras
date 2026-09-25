@@ -216,7 +216,7 @@ public class UsuarioController {
     @Operation(summary = "Listar usuários paginados (Apenas Admin Geral)", description = "Versão paginada da listagem de usuários. Informe page (e opcionalmente size, máx. 50). Apenas o Administrador Geral possui permissão.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "page")
-    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarPaginado(Pageable pageable,
+    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarUsuariosPaginado(Pageable pageable,
                                                                           @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         usuarioService.validarAcessoMasterAdmin(usuarioLogado.id());
         return ResponseEntity.ok(usuarioService.listarPaginado(pageable));
