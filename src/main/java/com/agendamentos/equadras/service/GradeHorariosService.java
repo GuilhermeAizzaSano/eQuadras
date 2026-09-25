@@ -9,15 +9,11 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.model.enums.StatusHorario;
-import com.agendamentos.equadras.model.enums.TipoEsporte;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
-import com.agendamentos.equadras.specification.QuadraSpecifications;
 import com.agendamentos.equadras.util.DataFlexivelUtil;
-import com.agendamentos.equadras.util.TextoUtil;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +25,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -40,6 +35,7 @@ public class GradeHorariosService {
     private final AgendamentoRepository agendamentoRepository;
     private final BloqueioHorarioRepository bloqueioHorarioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final QuadraBuscaService quadraBuscaService;
     private final Clock clock;
 
     public GradeHorariosService(
@@ -47,12 +43,14 @@ public class GradeHorariosService {
             AgendamentoRepository agendamentoRepository,
             BloqueioHorarioRepository bloqueioHorarioRepository,
             UsuarioRepository usuarioRepository,
+            QuadraBuscaService quadraBuscaService,
             Clock clock
     ) {
         this.quadraRepository = quadraRepository;
         this.agendamentoRepository = agendamentoRepository;
         this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.usuarioRepository = usuarioRepository;
+        this.quadraBuscaService = quadraBuscaService;
         this.clock = clock;
     }
 
@@ -146,7 +144,7 @@ public class GradeHorariosService {
     public List<GradeHorariosResponseDTO> consultarGradeHorarios(
             LocalDate data, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
 
-        List<Quadra> quadras = buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
+        List<Quadra> quadras = quadraBuscaService.buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
 
         List<GradeHorariosResponseDTO> resultado = new ArrayList<>();
         for (Quadra q : quadras) {
@@ -283,66 +281,5 @@ public class GradeHorariosService {
         }
 
         return slots;
-    }
-
-    private List<Quadra> buscarQuadrasAtivas(Long quadraId, String tipoEsporte, String nomeQuadra) {
-        if (quadraId != null) {
-            return quadraRepository.findById(quadraId)
-                    .filter(Quadra::isAtiva)
-                    .map(List::of)
-                    .orElse(List.of());
-        }
-
-        Specification<Quadra> spec = QuadraSpecifications.ativa();
-
-        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
-            TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
-            if (esporteEnum != null) {
-                spec = spec.and(QuadraSpecifications.comTipoEsporte(esporteEnum));
-            } else {
-                return List.of();
-            }
-        }
-
-        if (nomeQuadra != null && !nomeQuadra.isBlank()) {
-            spec = spec.and(QuadraSpecifications.comNome(nomeQuadra));
-        }
-
-        return quadraRepository.findAll(spec);
-    }
-
-    private TipoEsporte parseTipoEsporte(String valor) {
-        if (valor == null || valor.isBlank()) {
-            return null;
-        }
-        String normalizado = TextoUtil.normalizar(valor)
-                .toUpperCase(Locale.ROOT).replace("-", "_").replace(" ", "_");
-
-        for (TipoEsporte t : TipoEsporte.values()) {
-            if (t.name().equals(normalizado)) {
-                return t;
-            }
-        }
-
-        if (normalizado.contains("SOCIETY") || normalizado.contains("CAMPO") || normalizado.contains("FUT")) {
-            return TipoEsporte.FUTEBOL;
-        }
-        if (normalizado.contains("SALAO")) {
-            return TipoEsporte.FUTSAL;
-        }
-        if (normalizado.contains("BEACH") || normalizado.contains("AREIA") || normalizado.contains("FUTEVOLEI") || normalizado.contains("BIT")) {
-            return TipoEsporte.BEACH_TENNIS;
-        }
-        if (normalizado.contains("BASQUET")) {
-            return TipoEsporte.BASQUETE;
-        }
-        if (normalizado.contains("TENIS")) {
-            return TipoEsporte.TENIS;
-        }
-        if (normalizado.contains("VOLEI")) {
-            return TipoEsporte.VOLEI;
-        }
-
-        return null;
     }
 }

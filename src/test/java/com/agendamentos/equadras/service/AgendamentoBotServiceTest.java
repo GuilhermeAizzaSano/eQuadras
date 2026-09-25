@@ -7,7 +7,6 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
-import com.agendamentos.equadras.repository.QuadraRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -31,7 +29,7 @@ import static org.mockito.Mockito.*;
 class AgendamentoBotServiceTest {
 
     @Mock
-    private QuadraRepository quadraRepository;
+    private QuadraBuscaService quadraBuscaService;
 
     @Mock
     private UsuarioService usuarioService;
@@ -91,13 +89,13 @@ class AgendamentoBotServiceTest {
         assertNotNull(resultado);
         assertEquals(100L, resultado.id_agendamento());
         verify(agendamentoService, times(1)).agendar(any(AgendamentoCriacaoDTO.class), eq(1L));
-        verify(quadraRepository, never()).findAll(any(Specification.class));
+        verify(quadraBuscaService, never()).buscarQuadrasAtivas(any(), any(), any());
     }
 
     @Test
     @DisplayName("Deve resolver quadra ativa via specification quando quadraId for nulo")
     void deveResolverQuadraPorNomeOuEsporte() {
-        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadra));
+        when(quadraBuscaService.buscarQuadrasAtivas(null, "Futebol", "Society")).thenReturn(List.of(quadra));
         when(usuarioService.obterOuCriarUsuarioBot("Robson", "11999998888")).thenReturn(usuario);
 
         AgendamentoResponseDTO esperado = new AgendamentoResponseDTO(
@@ -117,13 +115,13 @@ class AgendamentoBotServiceTest {
 
         assertNotNull(resultado);
         assertEquals(101L, resultado.id_agendamento());
-        verify(quadraRepository, times(1)).findAll(any(Specification.class));
+        verify(quadraBuscaService, times(1)).buscarQuadrasAtivas(null, "Futebol", "Society");
     }
 
     @Test
     @DisplayName("Deve lançar exceção quando nenhuma quadra for encontrada")
     void deveFalharSeNenhumaQuadraEncontrada() {
-        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(quadraBuscaService.buscarQuadrasAtivas(null, null, "Inexistente")).thenReturn(List.of());
 
         AgendamentoBotRequestDTO dto = new AgendamentoBotRequestDTO(
                 null, "Inexistente", null, "2026-09-26", "19:00", null, "Robson", "11999998888"

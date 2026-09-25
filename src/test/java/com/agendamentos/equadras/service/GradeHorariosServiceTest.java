@@ -58,6 +58,9 @@ class GradeHorariosServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
+    private QuadraBuscaService quadraBuscaService;
+
+    @Mock
     private Clock clock;
 
     @InjectMocks
@@ -165,6 +168,7 @@ class GradeHorariosServiceTest {
     @Test
     @DisplayName("Deve consultar grade de horários por quadraId")
     void deveConsultarGradeHorariosPorQuadraId() {
+        when(quadraBuscaService.buscarQuadrasAtivas(1L, null, null)).thenReturn(List.of(quadra));
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
         LocalDate amanha = LocalDate.now(clock).plusDays(1);
 

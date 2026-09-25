@@ -202,6 +202,34 @@ class QuadraBuscaServiceTest {
     }
 
     @Test
+    @DisplayName("Deve buscar quadras ativas por especificação quando esporte for 'futebol de salão'")
+    void deveBuscarQuadrasAtivasComFutsal() {
+        Quadra futsal = Quadra.builder().id_quadra(7L).nome("Salão").tipoEsporte(TipoEsporte.FUTSAL).ativa(true).build();
+        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(futsal));
+
+        List<Quadra> resultado = quadraBuscaService.buscarQuadrasAtivas(null, "futebol de salão", null);
+
+        assertEquals(List.of(futsal), resultado);
+        verify(quadraRepository).findAll(any(Specification.class));
+    }
+
+    @Test
+    @DisplayName("Deve retornar vazio sem consultar o banco quando esporte não for reconhecido")
+    void deveRetornarVazioParaEsporteDesconhecido() {
+        assertTrue(quadraBuscaService.buscarQuadrasAtivas(null, "xadrez", null).isEmpty());
+        verifyNoInteractions(quadraRepository);
+    }
+
+    @Test
+    @DisplayName("Deve buscar por quadraId retornando apenas quadra ativa")
+    void deveBuscarQuadraAtivaPorId() {
+        Quadra inativa = Quadra.builder().id_quadra(8L).ativa(false).build();
+        when(quadraRepository.findById(8L)).thenReturn(Optional.of(inativa));
+
+        assertTrue(quadraBuscaService.buscarQuadrasAtivas(8L, null, null).isEmpty());
+    }
+
+    @Test
     @DisplayName("Deve realizar parse de tipos de esportes de forma resiliente")
     void deveFazerParseTipoEsporteResiliente() {
         assertEquals(TipoEsporte.FUTEBOL, quadraBuscaService.parseTipoEsporte("society"));

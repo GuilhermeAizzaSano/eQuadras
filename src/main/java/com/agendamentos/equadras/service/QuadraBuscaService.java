@@ -280,6 +280,33 @@ public class QuadraBuscaService {
         return stream.toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<Quadra> buscarQuadrasAtivas(Long quadraId, String tipoEsporte, String nomeQuadra) {
+        if (quadraId != null) {
+            return quadraRepository.findById(quadraId)
+                    .filter(Quadra::isAtiva)
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        Specification<Quadra> spec = QuadraSpecifications.ativa();
+
+        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
+            TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
+            if (esporteEnum != null) {
+                spec = spec.and(QuadraSpecifications.comTipoEsporte(esporteEnum));
+            } else {
+                return List.of();
+            }
+        }
+
+        if (nomeQuadra != null && !nomeQuadra.isBlank()) {
+            spec = spec.and(QuadraSpecifications.comNome(nomeQuadra));
+        }
+
+        return quadraRepository.findAll(spec);
+    }
+
     public TipoEsporte parseTipoEsporte(String valor) {
         if (valor == null || valor.isBlank()) {
             return null;
