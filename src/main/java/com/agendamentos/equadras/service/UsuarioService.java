@@ -16,11 +16,18 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.agendamentos.equadras.shared.pagination.PageResponse;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.JpaSort;
 
 import java.util.List;
 
 @Service
 public class UsuarioService {
+
+    private static final int TAMANHO_MAXIMO_PAGINA_USUARIOS = 50;
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -192,6 +199,17 @@ public class UsuarioService {
                 .stream()
                 .map(u -> UsuarioResponseDTO.fromEntity(u, u.isMasterAdmin(this.masterAdminEmail)))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<UsuarioResponseDTO> listarPaginado(Pageable pageable) {
+        // Ordenação fixa: o Sort do cliente é ignorado para não ordenar por campo arbitrário.
+        // JpaSort.unsafe: Spring Data interpretaria "id_usuario" como o caminho id.usuario
+        Pageable seguro = PageRequest.of(pageable.getPageNumber(),
+                Math.min(pageable.getPageSize(), TAMANHO_MAXIMO_PAGINA_USUARIOS),
+                JpaSort.unsafe(Sort.Direction.ASC, "id_usuario"));
+        return PageResponse.of(usuarioRepository.findAll(seguro),
+                u -> UsuarioResponseDTO.fromEntity(u, u.isMasterAdmin(this.masterAdminEmail)));
     }
 
     @Transactional(readOnly = true)

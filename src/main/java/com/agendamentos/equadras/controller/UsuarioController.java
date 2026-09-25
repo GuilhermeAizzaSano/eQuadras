@@ -28,6 +28,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.agendamentos.equadras.shared.pagination.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
 import java.util.List;
@@ -211,9 +213,18 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Listar usuários paginados (Apenas Admin Geral)", description = "Versão paginada da listagem de usuários. Informe page (e opcionalmente size, máx. 50). Apenas o Administrador Geral possui permissão.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping(params = "page")
+    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarPaginado(Pageable pageable,
+                                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
+        usuarioService.validarAcessoMasterAdmin(usuarioLogado.id());
+        return ResponseEntity.ok(usuarioService.listarPaginado(pageable));
+    }
+
     @Operation(summary = "Listar todos os usuários (Apenas Admin Geral)", description = "Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.")
     @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping
+    @GetMapping(params = "!page")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
         usuarioService.validarAcessoMasterAdmin(usuarioLogado.id());
         return ResponseEntity.ok(usuarioService.listarTodos());
