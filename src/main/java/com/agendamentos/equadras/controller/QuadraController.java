@@ -5,6 +5,7 @@ import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver;
+import com.agendamentos.equadras.service.QuadraFotoService;
 import com.agendamentos.equadras.service.QuadraService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,9 +25,11 @@ import java.util.List;
 public class QuadraController {
 
     private final QuadraService quadraService;
+    private final QuadraFotoService quadraFotoService;
 
-    public QuadraController(QuadraService quadraService) {
+    public QuadraController(QuadraService quadraService, QuadraFotoService quadraFotoService) {
         this.quadraService = quadraService;
+        this.quadraFotoService = quadraFotoService;
     }
 
     @Operation(
@@ -129,7 +132,7 @@ public class QuadraController {
     public ResponseEntity<QuadraResponseDTO> uploadFotos(@PathVariable Long id,
                                                          @RequestParam("fotos") List<org.springframework.web.multipart.MultipartFile> fotos,
                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        return ResponseEntity.ok(quadraService.uploadFotos(id, fotos, usuarioLogado.id()));
+        return ResponseEntity.ok(quadraFotoService.uploadFotos(id, fotos, usuarioLogado.id()));
     }
 
     @Operation(summary = "Remover foto da quadra (Admin)", description = "Exclui uma foto específica da galeria e do armazenamento de disco.")
@@ -137,7 +140,7 @@ public class QuadraController {
     public ResponseEntity<QuadraResponseDTO> removerFoto(@PathVariable Long id,
                                                          @RequestParam("fotoUrl") String fotoUrl,
                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        return ResponseEntity.ok(quadraService.removerFoto(id, fotoUrl, usuarioLogado.id()));
+        return ResponseEntity.ok(quadraFotoService.removerFoto(id, fotoUrl, usuarioLogado.id()));
     }
 
     @Operation(summary = "Consultar fotos da quadra", description = "Retorna a galeria de fotos de uma quadra específica por ID, Nome, Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos se nenhum parâmetro for informado.")

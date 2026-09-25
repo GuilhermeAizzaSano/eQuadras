@@ -53,18 +53,18 @@ public class QuadraService {
     private final QuadraRepository quadraRepository;
     private final UsuarioService usuarioService;
     private final AgendamentoService agendamentoService;
-    private final FileStorageService fileStorageService;
+    private final QuadraFotoService quadraFotoService;
     private final AuditoriaService auditoriaService;
 
     public QuadraService(QuadraRepository quadraRepository, 
                          UsuarioService usuarioService,
                          AgendamentoService agendamentoService,
-                         FileStorageService fileStorageService,
+                         QuadraFotoService quadraFotoService,
                          AuditoriaService auditoriaService) {
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
-        this.fileStorageService = fileStorageService;
+        this.quadraFotoService = quadraFotoService;
         this.auditoriaService = auditoriaService;
     }
 
@@ -188,49 +188,6 @@ public class QuadraService {
     }
 
     @Transactional
-    public QuadraResponseDTO uploadFotos(Long id, java.util.List<org.springframework.web.multipart.MultipartFile> arquivos, Long adminId) {
-        Quadra quadra = quadraRepository.findByIdWithAdmin(id)
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
-
-        if (!podeGerenciarQuadra(quadra, adminId)) {
-            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.");
-        }
-
-        if (arquivos == null || arquivos.isEmpty()) {
-            throw new IllegalArgumentException("Nenhum arquivo enviado.");
-        }
-
-        if (quadra.getFotos().size() + arquivos.size() > 5) {
-            throw new IllegalArgumentException("Limite de 5 fotos por quadra atingido. Remova fotos existentes antes de enviar novas.");
-        }
-
-        for (org.springframework.web.multipart.MultipartFile file : arquivos) {
-            String url = fileStorageService.salvarArquivo(file);
-            quadra.getFotos().add(url);
-        }
-
-        Quadra quadraSalva = quadraRepository.save(quadra);
-        return QuadraResponseDTO.fromEntity(quadraSalva);
-    }
-
-    @Transactional
-    public QuadraResponseDTO removerFoto(Long id, String fotoUrl, Long adminId) {
-        Quadra quadra = quadraRepository.findByIdWithAdmin(id)
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
-
-        if (!podeGerenciarQuadra(quadra, adminId)) {
-            throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.");
-        }
-
-        if (quadra.getFotos().remove(fotoUrl)) {
-            fileStorageService.excluirArquivo(fotoUrl);
-        }
-
-        Quadra quadraSalva = quadraRepository.save(quadra);
-        return QuadraResponseDTO.fromEntity(quadraSalva);
-    }
-
-    @Transactional
     public void excluir(Long id, Long adminId) {
         Quadra quadra = quadraRepository.findByIdWithAdmin(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
@@ -244,9 +201,7 @@ public class QuadraService {
         }
 
         // Limpa fotos físicas
-        for (String fotoUrl : quadra.getFotos()) {
-            fileStorageService.excluirArquivo(fotoUrl);
-        }
+        quadraFotoService.excluirFotosDaQuadra(quadra);
 
         quadraRepository.delete(quadra);
         if (auditoriaService != null) {

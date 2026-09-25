@@ -43,7 +43,7 @@ class QuadraServiceTest {
     private AgendamentoService agendamentoService;
 
     @Mock
-    private FileStorageService fileStorageService;
+    private QuadraFotoService quadraFotoService;
 
     @Mock
     private AuditoriaService auditoriaService;
