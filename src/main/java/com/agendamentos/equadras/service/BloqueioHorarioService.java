@@ -4,7 +4,6 @@ import com.agendamentos.equadras.dto.request.BloqueioHorarioCriacaoDTO;
 import com.agendamentos.equadras.dto.response.BloqueioHorarioResponseDTO;
 import com.agendamentos.equadras.model.entity.BloqueioHorario;
 import com.agendamentos.equadras.model.entity.Quadra;
-import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.event.BloqueioHorarioAlteradoEvent;
 import com.agendamentos.equadras.repository.BloqueioHorarioRepository;
 import com.agendamentos.equadras.repository.QuadraRepository;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -39,7 +37,7 @@ public class BloqueioHorarioService {
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
         this.eventPublisher = eventPublisher;
-        this.intervaloCalculator = intervaloCalculator != null ? intervaloCalculator : new BloqueioIntervaloCalculator();
+        this.intervaloCalculator = intervaloCalculator;
     }
 
     @Transactional

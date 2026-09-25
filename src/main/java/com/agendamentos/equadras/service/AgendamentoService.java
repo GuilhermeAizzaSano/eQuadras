@@ -2,7 +2,6 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.AgendamentoCriacaoDTO;
 import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
-import com.agendamentos.equadras.dto.response.HorarioDisponivelDTO;
 import com.agendamentos.equadras.model.entity.Agendamento;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
@@ -23,12 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +43,6 @@ public class AgendamentoService {
 
     private static final Logger log = LoggerFactory.getLogger(AgendamentoService.class);
 
-    private static final LocalTime HORARIO_ABERTURA = LocalTime.of(6, 0);
-    private static final LocalTime HORARIO_FECHAMENTO = LocalTime.of(23, 0);
 
     private static final Set<String> ORDENACOES_PERMITIDAS_AGENDAMENTO = Set.of("dataHoraInicio", "id");
 
