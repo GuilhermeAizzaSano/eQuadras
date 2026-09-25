@@ -1,7 +1,6 @@
 package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
-import com.agendamentos.equadras.dto.request.UsuarioLoginDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
@@ -101,35 +100,6 @@ class UsuarioServiceTest {
     }
 
     @Test
-    @DisplayName("Deve realizar login com sucesso com credenciais válidas")
-    void deveRealizarLoginComSucesso() {
-        UsuarioLoginDTO dto = new UsuarioLoginDTO("mariana@email.com", "senha123");
-
-        when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("senha123", usuario.getSenha_usuario())).thenReturn(true);
-        when(jwtService.gerarToken(usuario)).thenReturn("token-fake");
-
-        var resposta = usuarioService.login(dto);
-
-        assertNotNull(resposta);
-        assertEquals("token-fake", resposta.token());
-        assertEquals(1L, resposta.usuario().id_usuario());
-        assertEquals("mariana@email.com", resposta.usuario().email_usuario());
-    }
-
-    @Test
-    @DisplayName("Deve falhar no login quando a senha estiver incorreta")
-    void deveFalharLoginComSenhaIncorreta() {
-        UsuarioLoginDTO dto = new UsuarioLoginDTO("mariana@email.com", "senhaErrada");
-
-        when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
-
-        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.login(dto));
-        assertEquals("E-mail ou senha incorretos.", ex.getMessage());
-    }
-
-    @Test
     @DisplayName("Deve cadastrar usuário quando chamado pelo Master Admin")
     void deveCadastrarPorAdminQuandoMasterAdmin() {
         Usuario masterAdmin = Usuario.builder()
@@ -201,64 +171,6 @@ class UsuarioServiceTest {
         RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> usuarioService.excluirUsuario(99L, 99L));
         assertTrue(ex.getMessage().contains("não pode ser excluída"));
-    }
-
-    @Test
-    @DisplayName("Deve alterar a senha do próprio usuário com sucesso")
-    void deveAlterarMinhaSenhaComSucesso() {
-        com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto =
-                new com.agendamentos.equadras.dto.request.AlterarSenhaDTO("senhaAtual123", "NovaSenha@2026");
-
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("senhaAtual123", usuario.getSenha_usuario())).thenReturn(true);
-        when(passwordEncoder.encode("NovaSenha@2026")).thenReturn("$2a$10$newHashedPassword");
-
-        usuarioService.alterarMinhaSenha(1L, dto);
-
-        verify(usuarioRepository, times(1)).save(usuario);
-        assertEquals("$2a$10$newHashedPassword", usuario.getSenha_usuario());
-    }
-
-    @Test
-    @DisplayName("Deve falhar alteração de senha quando a senha atual informada estiver incorreta")
-    void deveFalharQuandoSenhaAtualIncorreta() {
-        com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto =
-                new com.agendamentos.equadras.dto.request.AlterarSenhaDTO("senhaErrada", "NovaSenha@2026");
-
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
-
-        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
-                () -> usuarioService.alterarMinhaSenha(1L, dto));
-        assertTrue(ex.getMessage().contains("A senha atual informada está incorreta"));
-        verify(usuarioRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Deve executar verificação de senha dummy quando usuário não existir para evitar timing attack")
-    void deveExecutarDummyPasswordQuandoUsuarioNaoExiste() {
-        UsuarioLoginDTO dto = new UsuarioLoginDTO("inexistente@email.com", "qualquerSenha");
-        when(usuarioRepository.findByEmail_usuario("inexistente@email.com")).thenReturn(Optional.empty());
-
-        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
-                () -> usuarioService.login(dto));
-
-        assertEquals("E-mail ou senha incorretos.", ex.getMessage());
-        verify(passwordEncoder, times(1)).matches(eq("qualquerSenha"), anyString());
-    }
-
-    @Test
-    @DisplayName("Deve falhar login quando a senha estiver errada")
-    void deveFalharLoginQuandoSenhaIncorreta() {
-        UsuarioLoginDTO dto = new UsuarioLoginDTO("mariana@email.com", "senhaErrada");
-        when(usuarioRepository.findByEmail_usuario("mariana@email.com")).thenReturn(Optional.of(usuario));
-        when(passwordEncoder.matches("senhaErrada", usuario.getSenha_usuario())).thenReturn(false);
-
-        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
-                () -> usuarioService.login(dto));
-
-        assertEquals("E-mail ou senha incorretos.", ex.getMessage());
-        verify(passwordEncoder, times(1)).matches("senhaErrada", usuario.getSenha_usuario());
     }
 
     @Test

@@ -2,7 +2,6 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
 import com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO;
-import com.agendamentos.equadras.dto.request.UsuarioLoginDTO;
 import com.agendamentos.equadras.dto.response.LoginResponseDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Usuario;
@@ -180,36 +179,6 @@ public class UsuarioService {
         }
     }
 
-    private static final String DUMMY_BCRYPT_HASH = "$2a$10$abcdefghijklmnopqrstuvABCDEFGHIJKLMNOPQRSTUVWXYZ012345";
-
-    @Transactional
-    public LoginResponseDTO login(UsuarioLoginDTO dto) {
-        Usuario usuario = usuarioRepository.findByEmail_usuario(dto.email_usuario())
-                .orElse(null);
-
-        if (usuario == null) {
-            passwordEncoder.matches(dto.senha_usuario(), DUMMY_BCRYPT_HASH);
-            if (auditoriaService != null) {
-                auditoriaService.registrarLoginFalha(dto.email_usuario(), "E-mail não cadastrado.");
-            }
-            throw new RegraNegocioException("CREDENCIAIS_INVALIDAS", "E-mail ou senha incorretos.");
-        }
-
-        if (!passwordEncoder.matches(dto.senha_usuario(), usuario.getSenha_usuario())) {
-            if (auditoriaService != null) {
-                auditoriaService.registrarLoginFalha(dto.email_usuario(), "Senha incorreta.");
-            }
-            throw new RegraNegocioException("CREDENCIAIS_INVALIDAS", "E-mail ou senha incorretos.");
-        }
-
-        String token = jwtService.gerarToken(usuario);
-        if (auditoriaService != null) {
-            auditoriaService.registrarLoginSucesso(usuario);
-        }
-        boolean ehMaster = usuario.isMasterAdmin(this.masterAdminEmail);
-        return new LoginResponseDTO(token, UsuarioResponseDTO.fromEntity(usuario, ehMaster));
-    }
-
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
         return usuarioRepository.findAll()
@@ -231,36 +200,6 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
         return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
-    }
-
-    @Transactional
-    public void revogarSessao(Long usuarioId) {
-        if (usuarioId == null) return;
-        usuarioRepository.findById(usuarioId).ifPresent(usuario -> {
-            usuario.incrementarTokenVersion();
-            usuarioRepository.save(usuario);
-        });
-    }
-
-    @Transactional
-    public void alterarMinhaSenha(Long usuarioId, com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + usuarioId));
-
-        if (!passwordEncoder.matches(dto.senhaAtual(), usuario.getSenha_usuario())) {
-            throw new RegraNegocioException("SENHA_INCORRETA", "A senha atual informada está incorreta.");
-        }
-
-        if (passwordEncoder.matches(dto.novaSenha(), usuario.getSenha_usuario())) {
-            throw new RegraNegocioException("SENHA_REPETIDA", "A nova senha deve ser diferente da senha atual.");
-        }
-
-        usuario.setSenha_usuario(passwordEncoder.encode(dto.novaSenha()));
-        usuario.incrementarTokenVersion();
-        usuarioRepository.save(usuario);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAlteracaoSenha(usuario);
-        }
     }
 
     @Transactional
