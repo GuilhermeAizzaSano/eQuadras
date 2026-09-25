@@ -14,6 +14,7 @@ import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
 import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
+import com.agendamentos.equadras.repository.ContagemPorAba;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,10 +367,11 @@ public class AgendamentoService {
         LocalDateTime agora = LocalDateTime.now(clock);
         Specification<Agendamento> base = AgendamentoSpecifications.daQuadra(quadraId);
 
+        ContagemPorAba contagem = agendamentoRepository.contarPorAba(base, agora);
         Map<String, Long> contagens = new java.util.LinkedHashMap<>();
-        contagens.put("TODOS", agendamentoRepository.count(base));
+        contagens.put("TODOS", contagem.total());
         for (AbaAgendamento aba : AbaAgendamento.values()) {
-            contagens.put(aba.name(), agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
+            contagens.put(aba.name(), contagem.porAba().get(aba));
         }
         return contagens;
     }
@@ -420,11 +422,7 @@ public class AgendamentoService {
     public Map<AbaAgendamento, Long> contarPorAba(Long usuarioId) {
         LocalDateTime agora = LocalDateTime.now(clock);
         Specification<Agendamento> base = escopoListagemPorPerfil(usuarioId);
-        Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
-        for (AbaAgendamento aba : AbaAgendamento.values()) {
-            contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
-        }
-        return contagens;
+        return new EnumMap<>(agendamentoRepository.contarPorAba(base, agora).porAba());
     }
 
     @Transactional(readOnly = true)

@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 @Repository
-public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>, JpaSpecificationExecutor<Agendamento> {
+public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>, JpaSpecificationExecutor<Agendamento>, AgendamentoContagemRepository {
 
     @Query("""
         SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Agendamento a

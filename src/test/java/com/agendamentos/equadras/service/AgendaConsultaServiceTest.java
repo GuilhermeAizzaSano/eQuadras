@@ -8,6 +8,7 @@ import com.agendamentos.equadras.model.enums.AbaAgendamento;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
+import com.agendamentos.equadras.repository.ContagemPorAba;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.shared.pagination.PageResponse;
@@ -164,7 +165,11 @@ class AgendaConsultaServiceTest {
     void deveContarAgendaDoDiaPorAba() {
         LocalDate data = LocalDate.now(clock).plusDays(1);
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(admin));
-        when(agendamentoRepository.count(any(Specification.class))).thenReturn(5L);
+        Map<AbaAgendamento, Long> porAba = new java.util.EnumMap<>(AbaAgendamento.class);
+        for (AbaAgendamento aba : AbaAgendamento.values()) {
+            porAba.put(aba, 5L);
+        }
+        when(agendamentoRepository.contarPorAba(any(), any())).thenReturn(new ContagemPorAba(15L, porAba));
 
         Map<AbaAgendamento, Long> contadores = agendaConsultaService.contarAgendaDoDiaPorAba(1L, data, null, null, null);
 

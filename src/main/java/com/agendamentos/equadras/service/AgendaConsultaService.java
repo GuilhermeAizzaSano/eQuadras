@@ -157,10 +157,6 @@ public class AgendaConsultaService {
             Long usuarioId, LocalDate data, LocalDateTime inicio, LocalDateTime fim, Long quadraId) {
         Specification<Agendamento> base = escopoAgendaAdmin(usuarioId, resolverIntervalo(data, inicio, fim), quadraId);
         LocalDateTime agora = LocalDateTime.now(clock);
-        Map<AbaAgendamento, Long> contagens = new EnumMap<>(AbaAgendamento.class);
-        for (AbaAgendamento aba : AbaAgendamento.values()) {
-            contagens.put(aba, agendamentoRepository.count(base.and(AgendamentoSpecifications.daAba(aba, agora))));
-        }
-        return contagens;
+        return new EnumMap<>(agendamentoRepository.contarPorAba(base, agora).porAba());
     }
 }
