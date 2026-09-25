@@ -196,6 +196,12 @@ public class QuadraService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<Quadra> buscarPorIdEntidade(Long id) {
+        if (id == null) return java.util.Optional.empty();
+        return quadraRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
     public QuadraResponseDTO buscarPorId(Long id) {
         Quadra quadra = quadraRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));

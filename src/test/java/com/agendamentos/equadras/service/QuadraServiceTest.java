@@ -172,4 +172,16 @@ class QuadraServiceTest {
         verify(quadraRepository, times(1)).delete(quadraAdminComum);
         verify(eventPublisher, times(1)).publishEvent(any(com.agendamentos.equadras.event.QuadraAlteradaEvent.class));
     }
+
+    @Test
+    @DisplayName("Deve buscar entidade Quadra por ID com sucesso")
+    void deveBuscarPorIdEntidade() {
+        when(quadraRepository.findById(10L)).thenReturn(Optional.of(quadraAdminComum));
+
+        Optional<Quadra> resultado = quadraService.buscarPorIdEntidade(10L);
+
+        assertTrue(resultado.isPresent());
+        assertEquals(10L, resultado.get().getId_quadra());
+        verify(quadraRepository, times(1)).findById(10L);
+    }
 }
