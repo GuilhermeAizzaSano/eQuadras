@@ -23,14 +23,18 @@ public class PagamentoService {
 
     private static final Logger log = LoggerFactory.getLogger(PagamentoService.class);
 
-    @Value("${mercadopago.access.token:}")
-    private String mercadoPagoAccessToken;
+    private final String mercadoPagoAccessToken;
+    private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofMillis(4000))
-            .build();
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    public PagamentoService(
+            @Value("${mercadopago.access.token:}") String mercadoPagoAccessToken,
+            HttpClient httpClient,
+            ObjectMapper objectMapper) {
+        this.mercadoPagoAccessToken = mercadoPagoAccessToken;
+        this.httpClient = httpClient;
+        this.objectMapper = objectMapper;
+    }
 
     public record PixDados(String transacaoId, String pixCopiaECola, String qrCodeBase64) {}
 
