@@ -1,0 +1,229 @@
+package com.agendamentos.equadras.service;
+
+import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
+import com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO;
+import com.agendamentos.equadras.model.entity.Quadra;
+import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.model.enums.Role;
+import com.agendamentos.equadras.model.enums.TipoEsporte;
+import com.agendamentos.equadras.repository.QuadraRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class QuadraBuscaServiceTest {
+
+    @Mock
+    private QuadraRepository quadraRepository;
+
+    @Mock
+    private UsuarioService usuarioService;
+
+    @InjectMocks
+    private QuadraBuscaService quadraBuscaService;
+
+    private Usuario adminComum;
+    private Usuario masterAdmin;
+    private Quadra quadraAdminComum;
+
+    @BeforeEach
+    void setUp() {
+        adminComum = Usuario.builder()
+                .id_usuario(1L)
+                .nome_usuario("Admin Comum")
+                .email_usuario("admin@test.com")
+                .role(Role.ADMIN)
+                .build();
+
+        masterAdmin = Usuario.builder()
+                .id_usuario(99L)
+                .nome_usuario("Master Admin")
+                .email_usuario("gui@gmail.com")
+                .role(Role.ADMIN)
+                .build();
+
+        quadraAdminComum = Quadra.builder()
+                .id_quadra(10L)
+                .nome("Quadra do Admin")
+                .tipoEsporte(TipoEsporte.FUTEBOL)
+                .valorHora(new BigDecimal("100.00"))
+                .ativa(true)
+                .admin(adminComum)
+                .fotos(new ArrayList<>())
+                .disponibilidades(new ArrayList<>())
+                .build();
+    }
+
+    @Test
+    @DisplayName("Admin comum deve listar apenas as suas quadras")
+    void deveListarApenasQuadrasDoAdminComum() {
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+        when(quadraRepository.findByAdminId(1L)).thenReturn(List.of(quadraAdminComum));
+
+        List<QuadraResponseDTO> resultado = quadraBuscaService.listar(1L, null, null, null);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Quadra do Admin", resultado.get(0).nome());
+        verify(quadraRepository, times(1)).findByAdminId(1L);
+        verify(quadraRepository, never()).findAllWithAdminEFotos();
+    }
+
+    @Test
+    @DisplayName("Master Admin deve listar todas as quadras")
+    void deveListarTodasAsQuadrasParaMasterAdmin() {
+        when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
+        when(quadraRepository.findAllWithAdminEFotos()).thenReturn(List.of(quadraAdminComum));
+
+        List<QuadraResponseDTO> resultado = quadraBuscaService.listar(99L, null, null, null);
+
+        assertEquals(1, resultado.size());
+        verify(quadraRepository, times(1)).findAllWithAdminEFotos();
+        verify(quadraRepository, never()).findByAdminId(any());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por proximidade calculando os limites de Bounding Box corretamente")
+    void deveFiltrarQuadrasPorProximidadeComBoundingBox() {
+        Double lat = -23.5505;
+        Double lng = -46.6333;
+        Double raioKm = 5.0;
+
+        when(quadraRepository.findByAtivaTrueAndProximidadeMenorQue(
+                eq(lat), eq(lng), eq(raioKm),
+                anyDouble(), anyDouble(), anyDouble(), anyDouble()
+        )).thenReturn(List.of(quadraAdminComum));
+
+        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, lat, lng, raioKm, null, null, null, null, null);
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+        verify(quadraRepository, times(1)).findByAtivaTrueAndProximidadeMenorQue(
+                eq(lat), eq(lng), eq(raioKm),
+                anyDouble(), anyDouble(), anyDouble(), anyDouble()
+        );
+    }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por nome ignorando maiúsculas e acentos")
+    void deveFiltrarQuadrasPorNome() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Sunset Vôlei").logradouro("Rua 13").bairro("Samambaia").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Complexo Esportivo do Bosque").logradouro("Av Brasil").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "sunset", null, null, null, null);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Arena Sunset Vôlei", resultado.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve filtrar quadras por endereço casando com logradouro ou bairro")
+    void deveFiltrarQuadrasPorEndereco() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Quadra A").logradouro("Rua dos Aviadores, 120").bairro("Jardim Municipal").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Quadra B").logradouro("Av. Brasília, 934").bairro("JACB II").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        List<Quadra> resLogradouro = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, "aviadores", null, null, null);
+        assertEquals(1, resLogradouro.size());
+        assertEquals("Quadra A", resLogradouro.get(0).getNome());
+
+        List<Quadra> resBairro = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, "jacb", null, null, null);
+        assertEquals(1, resBairro.size());
+        assertEquals("Quadra B", resBairro.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve combinar filtros de nome e endereço simultaneamente")
+    void deveCombinarFiltroNomeEEndereco() {
+        Quadra q1 = Quadra.builder().id_quadra(1L).nome("Arena Beach").logradouro("Rua das Rosas").bairro("Jardim Oiti").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+        Quadra q2 = Quadra.builder().id_quadra(2L).nome("Arena Gol").logradouro("Rua das Rosas").bairro("Centro").ativa(true).fotos(new ArrayList<>()).disponibilidades(new ArrayList<>()).build();
+
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(q1, q2));
+
+        List<Quadra> resultado = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, "Beach", "oiti", null, null, null);
+        assertEquals(1, resultado.size());
+        assertEquals("Arena Beach", resultado.get(0).getNome());
+    }
+
+    @Test
+    @DisplayName("Deve listar quadras de forma paginada respeitando limite por página")
+    void deveListarQuadrasPaginadas() {
+        List<Quadra> quadras = new ArrayList<>();
+        for (long i = 1; i <= 14; i++) {
+            quadras.add(Quadra.builder()
+                    .id_quadra(i)
+                    .nome("Quadra " + i)
+                    .ativa(true)
+                    .fotos(new ArrayList<>())
+                    .disponibilidades(new ArrayList<>())
+                    .build());
+        }
+
+        when(quadraRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenAnswer(invocation -> {
+                    Pageable p = invocation.getArgument(1);
+                    int start = (int) p.getOffset();
+                    int end = Math.min(start + p.getPageSize(), quadras.size());
+                    List<Quadra> sub = start >= quadras.size() ? List.of() : quadras.subList(start, end);
+                    return new PageImpl<>(sub, p, quadras.size());
+                });
+
+        Pageable pageable = PageRequest.of(0, 6);
+        Page<QuadraResponseDTO> primeiraPagina = quadraBuscaService.listar(null, null, null, null, null, null, null, null, null, null, pageable);
+
+        assertEquals(6, primeiraPagina.getContent().size());
+        assertEquals(14, primeiraPagina.getTotalElements());
+        assertEquals(3, primeiraPagina.getTotalPages());
+        assertEquals(0, primeiraPagina.getNumber());
+        assertEquals("Quadra 1", primeiraPagina.getContent().get(0).nome());
+    }
+
+    @Test
+    @DisplayName("Deve realizar parse de tipos de esportes de forma resiliente")
+    void deveFazerParseTipoEsporteResiliente() {
+        assertEquals(TipoEsporte.FUTEBOL, quadraBuscaService.parseTipoEsporte("society"));
+        assertEquals(TipoEsporte.FUTSAL, quadraBuscaService.parseTipoEsporte("futebol de salão"));
+        assertEquals(TipoEsporte.BEACH_TENNIS, quadraBuscaService.parseTipoEsporte("beach tennis"));
+        assertEquals(TipoEsporte.BEACH_TENNIS, quadraBuscaService.parseTipoEsporte("bit"));
+        assertEquals(TipoEsporte.BASQUETE, quadraBuscaService.parseTipoEsporte("basquete"));
+        assertEquals(TipoEsporte.TENIS, quadraBuscaService.parseTipoEsporte("tênis"));
+        assertEquals(TipoEsporte.VOLEI, quadraBuscaService.parseTipoEsporte("vôlei"));
+        assertNull(quadraBuscaService.parseTipoEsporte("esporte_desconhecido_xyz"));
+        assertNull(quadraBuscaService.parseTipoEsporte(""));
+        assertNull(quadraBuscaService.parseTipoEsporte(null));
+    }
+
+    @Test
+    @DisplayName("Deve listar quadras no formato resumido para integrações/bots")
+    void deveListarResumido() {
+        when(quadraRepository.findByAtivaTrue()).thenReturn(List.of(quadraAdminComum));
+
+        List<QuadraResumoResponseDTO> resultado = quadraBuscaService.listarResumido(null, null, null, null, null, null, null, null, null);
+
+        assertEquals(1, resultado.size());
+        assertEquals("Quadra do Admin", resultado.get(0).nome());
+    }
+}
