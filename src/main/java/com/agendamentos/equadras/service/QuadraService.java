@@ -9,46 +9,13 @@ import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.QuadraRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.agendamentos.equadras.model.enums.TipoEsporte;
-import com.agendamentos.equadras.specification.QuadraSpecifications;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 @Service
 public class QuadraService {
-
-    private static final String PROPRIEDADE_ID_QUADRA_ORDENACAO = "id_quadra";
-
-    private static final com.agendamentos.equadras.shared.pagination.SortPolicy SORT_POLICY_QUADRAS =
-            com.agendamentos.equadras.shared.pagination.SortPolicy.of(
-                    java.util.Set.of("nome", PROPRIEDADE_ID_QUADRA_ORDENACAO),
-                    org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "nome"),
-                    PROPRIEDADE_ID_QUADRA_ORDENACAO);
-
-    /**
-     * Spring Data trata "_" como separador de propriedade aninhada ao resolver um {@link Sort} via Criteria API
-     * (ex.: "id_quadra" seria interpretado como "id.quadra", que não existe em Quadra). Como o atributo da
-     * entidade é literalmente "id_quadra", a ordem correspondente precisa ser reconstruída como
-     * {@link org.springframework.data.jpa.domain.JpaSort#unsafe} para ser tratada como expressão HQL literal.
-     */
-    private static org.springframework.data.domain.Sort comOrdenacaoIdQuadraSegura(org.springframework.data.domain.Sort sort) {
-        List<org.springframework.data.domain.Sort.Order> ordens = new java.util.ArrayList<>();
-        for (org.springframework.data.domain.Sort.Order order : sort) {
-            if (PROPRIEDADE_ID_QUADRA_ORDENACAO.equals(order.getProperty())) {
-                ordens.addAll(org.springframework.data.jpa.domain.JpaSort
-                        .unsafe(order.getDirection(), PROPRIEDADE_ID_QUADRA_ORDENACAO)
-                        .toList());
-            } else {
-                ordens.add(order);
-            }
-        }
-        return org.springframework.data.domain.Sort.by(ordens);
-    }
 
     private final QuadraRepository quadraRepository;
     private final UsuarioService usuarioService;
