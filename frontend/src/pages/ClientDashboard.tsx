@@ -5,6 +5,7 @@ import { Quadra, HorarioDisponivel, Agendamento, DiaSemana, BloqueioHorario } fr
 import { FeedbackBanner, ConfirmModal, ModalPix, LoadingOverlay, CourtDetailsModal, BookingModal } from '../components/ui';
 import { ClientBookingsList, CourtSearchBar, CourtCardGrid, ModoBusca, PendingPaymentAlert } from '../components/client';
 import { parseDataHoraLocal, getAgoraBrasilia } from '../utils/dateUtils';
+import { geocodificarCep } from '../utils/geocodificarCep';
 
 const DIA_SEMANA_MAP: DiaSemana[] = [
   'SUNDAY',
@@ -211,49 +212,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ activeTab = 'Q
       const data = await response.json();
       
       if (!data.erro) {
-        let nominatimData: Array<{ lat: string; lon: string }> = [];
-
-        const fetchNominatim = async (query: string) => {
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-              { headers: { 'User-Agent': 'eQuadras-App/1.0' }, signal }
-            );
-            if (res.ok) {
-              return await res.json();
-            }
-          } catch {
-            return [];
-          }
-          return [];
-        };
-
-        // 1. Tenta com logradouro + bairro + cidade + UF
-        if (data.logradouro && data.bairro && data.localidade) {
-          nominatimData = await fetchNominatim(
-            `${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-          );
-        }
-
-        // 2. Se não achar, tenta logradouro + cidade + UF (caso o nome do bairro divirja no OSM)
-        if ((!nominatimData || nominatimData.length === 0) && data.logradouro && data.localidade) {
-          nominatimData = await fetchNominatim(
-            `${data.logradouro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-          );
-        }
-
-        // 3. Se ainda não achar, tenta bairro + cidade + UF (centro do bairro)
-        if ((!nominatimData || nominatimData.length === 0) && data.bairro && data.localidade) {
-          nominatimData = await fetchNominatim(
-            `${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-          );
-        }
-
-        // NUNCA fazer fallback para o centro genérico da cidade (data.localidade)
-        // pois distorceria buscas em raio curto (ex: 2 km) em cidades de pequeno/médio porte.
-        if (nominatimData && nominatimData.length > 0) {
-          const lat = parseFloat(nominatimData[0].lat);
-          const lon = parseFloat(nominatimData[0].lon);
+        const coords = await geocodificarCep(cepNumerico, data, signal);
+        if (coords) {
+          const { lat, lon } = coords;
           setCoordsAtivas({ lat, lon });
           setPaginaAtual(1);
           await carregarQuadras(1, { lat, lon });

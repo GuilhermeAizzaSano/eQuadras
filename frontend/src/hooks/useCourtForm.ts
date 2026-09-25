@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Quadra, TipoEsporte, DiaSemana, DisponibilidadeDia } from '../types';
 import { quadraApi } from '../api/apiClient';
 import { HorariosPorDia, DEFAULT_HORARIOS, DIAS_SEMANA } from '../components/admin';
+import { geocodificarCep } from '../utils/geocodificarCep';
 
 interface UseCourtFormOptions {
   user: unknown;
@@ -151,36 +152,10 @@ export const useCourtForm = ({
           setCidade(data.localidade || '');
           setEstado(data.uf || '');
 
-          const fetchCoord = async (query: string) => {
-            try {
-              const r = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-                { headers: { 'User-Agent': 'eQuadras-App/1.0' } }
-              );
-              if (r.ok) return await r.json();
-            } catch {
-              return [];
-            }
-            return [];
-          };
-
-          let nominatimData = await fetchCoord(
-            `${data.logradouro}, ${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-          );
-          if (!nominatimData || nominatimData.length === 0) {
-            nominatimData = await fetchCoord(
-              `${data.logradouro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-            );
-          }
-          if (!nominatimData || nominatimData.length === 0) {
-            nominatimData = await fetchCoord(
-              `${data.bairro}, ${data.localidade}, ${data.uf || 'SP'}, Brasil`
-            );
-          }
-
-          if (nominatimData && nominatimData.length > 0) {
-            setLatitude(parseFloat(nominatimData[0].lat));
-            setLongitude(parseFloat(nominatimData[0].lon));
+          const coords = await geocodificarCep(rawVal, data);
+          if (coords) {
+            setLatitude(coords.lat);
+            setLongitude(coords.lon);
           }
         }
       } catch (err) {
