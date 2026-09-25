@@ -10,7 +10,6 @@ import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
 import com.agendamentos.equadras.repository.AgendamentoRepository;
-import com.agendamentos.equadras.repository.QuadraRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ class AgendamentoServiceTest {
     private UsuarioService usuarioService;
 
     @Mock
-    private QuadraRepository quadraRepository;
+    private QuadraService quadraService;
 
     @Mock
     private PagamentoService pagamentoService;
@@ -427,7 +426,7 @@ class AgendamentoServiceTest {
                 .build();
         quadra.setAdmin(admin);
 
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(quadraService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(quadra));
         when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(admin));
 
         Agendamento ag = Agendamento.builder()
@@ -460,7 +459,7 @@ class AgendamentoServiceTest {
                 .role(Role.ADMIN)
                 .build();
 
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(quadraService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(quadra));
         when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
         when(agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(1L)).thenReturn(List.of());
 
@@ -489,7 +488,7 @@ class AgendamentoServiceTest {
                 .build();
         quadra.setAdmin(adminDono);
 
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
+        when(quadraService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(quadra));
         when(usuarioService.buscarPorIdEntidade(3L)).thenReturn(Optional.of(outroAdmin));
 
         org.springframework.security.access.AccessDeniedException ex = assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
@@ -503,7 +502,7 @@ class AgendamentoServiceTest {
     @Test
     @DisplayName("Deve lançar exceção quando a quadra não for encontrada ao listar por quadra")
     void deveLancarExcecaoQuandoQuadraNaoEncontradaAoListarPorQuadra() {
-        when(quadraRepository.findById(999L)).thenReturn(Optional.empty());
+        when(quadraService.buscarPorIdEntidade(999L)).thenReturn(Optional.empty());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 agendamentoService.listarPorQuadra(999L, 1L)

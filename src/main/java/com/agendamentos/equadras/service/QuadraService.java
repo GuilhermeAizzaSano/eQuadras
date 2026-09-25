@@ -24,7 +24,7 @@ public class QuadraService {
 
     public QuadraService(QuadraRepository quadraRepository, 
                          UsuarioService usuarioService,
-                         AgendamentoService agendamentoService,
+                         @org.springframework.context.annotation.Lazy AgendamentoService agendamentoService,
                          QuadraFotoService quadraFotoService,
                          ApplicationEventPublisher eventPublisher) {
         this.quadraRepository = quadraRepository;
