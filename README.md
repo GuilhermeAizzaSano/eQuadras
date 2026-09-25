@@ -46,9 +46,8 @@
 9. [Integrações Externas](#integrações-externas)
 10. [Infraestrutura e Pipeline CI/CD](#infraestrutura-e-pipeline-cicd)
 11. [Guia de Instalação e Execução Local](#guia-de-instalação-e-execução-local)
-12. [Endpoints Principais da API](#endpoints-principais-da-api)
-13. [Variáveis de Ambiente](#variáveis-de-ambiente)
-14. [Licença e Autoria](#licença-e-autoria)
+12. [Variáveis de Ambiente](#variáveis-de-ambiente)
+13. [Licença e Autoria](#licença-e-autoria)
 
 ---
 
@@ -407,37 +406,6 @@ npm install
 npm run dev
 ```
 O frontend estará acessível em `http://localhost:5173`.
-
----
-
-## Endpoints Principais da API
-
-| Método | Endpoint | Permissão | Descrição |
-|---|---|:---:|---|
-| `POST` | `/usuarios/login` | Público | Autenticação e emissão de sessão web / token |
-| `POST` | `/usuarios/logout` | Público | Encerramento de sessão e invalidação de cookies |
-| `GET` | `/usuarios/me` | Autenticado | Dados do perfil autenticado |
-| `GET` | `/usuarios` | `ROLE_ADMIN` (Master) | Listagem de usuários do sistema (suporta paginação `?page=...`) |
-| `GET` | `/quadras` | Autenticado | Listar quadras completas (suporta paginação `page`, `size` e filtros) |
-| `GET` | `/api/quadras` | Autenticado | Listar quadras no formato resumido sem paginação (para bots e terceiros) |
-| `POST` | `/quadras` | `ROLE_ADMIN` | Cadastrar nova quadra com grade de horários e fotos |
-| `PUT` | `/quadras/{id}` | `ROLE_ADMIN` | Atualizar dados cadastrais e grade da quadra |
-| `PATCH`| `/quadras/{id}/status` | `ROLE_ADMIN` | Ativar ou desativar quadra esportiva |
-| `POST` | `/quadras/{id}/fotos` | `ROLE_ADMIN` | Upload de até 5 fotos por quadra |
-| `GET` | `/quadras/bloqueios` | `ROLE_ADMIN` | Consulta unificada de bloqueios de horários do gestor |
-| `POST` | `/quadras/{id}/bloqueios` | `ROLE_ADMIN` | Criar bloqueio de horários ou dia inteiro |
-| `GET` | `/agendamentos/dia` | `ROLE_ADMIN` | Grade consolidada de agendamentos para uma data |
-| `GET` | `/agendamentos/quadra/{id}/horarios-disponiveis` | Autenticado | Slots disponíveis de uma quadra para a data informada |
-| `GET` | `/agendamentos/quadra/{id}` | `ROLE_ADMIN` | Histórico completo de reservas da quadra do admin |
-| `POST` | `/agendamentos` | Autenticado | Criar agendamento com lock pessimista e emissão de Pix |
-| `POST` | `/agendamentos/bot` | Público (WhatsApp) | Agendamento simplificado sem token para automação WhatsApp |
-| `GET` | `/agendamentos` | Autenticado | Listagem de reservas (`?historico=true` para histórico) |
-| `PATCH`| `/agendamentos/{id}/cancelar` | Autenticado | Cancelar agendamento ativo |
-| `GET` | `/notificacoes/stream` | `ROLE_ADMIN` | Stream de Server-Sent Events (SSE) para notificações em tempo real |
-| `GET` | `/notificacoes/admin` | `ROLE_ADMIN` | Histórico paginado de notificações do administrador |
-| `PUT` | `/notificacoes/ler-todas` | `ROLE_ADMIN` | Marcar todas as notificações como lidas |
-| `GET` | `/admin/auditoria` | `ROLE_ADMIN` (Master) | Trilha de auditoria operacional paginada com filtros |
-| `POST` | `/usuarios/api-key/regenerar` | Autenticado | Geração e substituição de API Key pessoal |
 
 ---
 
