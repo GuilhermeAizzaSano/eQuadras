@@ -2,11 +2,12 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.QuadraCriacaoDTO;
 import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
+import com.agendamentos.equadras.event.QuadraAlteradaEvent;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
-import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.repository.QuadraRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
@@ -22,20 +23,20 @@ public class QuadraService {
     private final AgendamentoService agendamentoService;
     private final QuadraFotoService quadraFotoService;
     private final QuadraBuscaService quadraBuscaService;
-    private final AuditoriaService auditoriaService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public QuadraService(QuadraRepository quadraRepository, 
                          UsuarioService usuarioService,
                          AgendamentoService agendamentoService,
                          QuadraFotoService quadraFotoService,
                          QuadraBuscaService quadraBuscaService,
-                         AuditoriaService auditoriaService) {
+                         ApplicationEventPublisher eventPublisher) {
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.agendamentoService = agendamentoService;
         this.quadraFotoService = quadraFotoService;
         this.quadraBuscaService = quadraBuscaService;
-        this.auditoriaService = auditoriaService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -90,10 +91,16 @@ public class QuadraService {
                 .build();
 
         Quadra quadraSalva = quadraRepository.save(quadra);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcao(admin, CategoriaAuditoria.QUADRA, "CRIAR", "QUADRA",
-                    quadraSalva.getId_quadra().toString(),
-                    "Quadra cadastrada: " + quadraSalva.getNome() + " (" + quadraSalva.getCidade() + "/" + quadraSalva.getEstado() + ")");
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new QuadraAlteradaEvent(
+                    quadraSalva.getId_quadra(),
+                    quadraSalva.getNome(),
+                    quadraSalva.getCidade(),
+                    quadraSalva.getEstado(),
+                    adminId,
+                    "CRIAR",
+                    "Quadra cadastrada: " + quadraSalva.getNome() + " (" + quadraSalva.getCidade() + "/" + quadraSalva.getEstado() + ")"
+            ));
         }
         return QuadraResponseDTO.fromEntity(quadraSalva);
     }
@@ -149,10 +156,16 @@ public class QuadraService {
         }
 
         Quadra quadraSalva = quadraRepository.save(quadra);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.QUADRA, "EDITAR", "QUADRA",
-                    quadraSalva.getId_quadra().toString(),
-                    "Quadra editada: " + quadraSalva.getNome());
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new QuadraAlteradaEvent(
+                    quadraSalva.getId_quadra(),
+                    quadraSalva.getNome(),
+                    quadraSalva.getCidade(),
+                    quadraSalva.getEstado(),
+                    adminId,
+                    "EDITAR",
+                    "Quadra editada: " + quadraSalva.getNome()
+            ));
         }
         return QuadraResponseDTO.fromEntity(quadraSalva);
     }
@@ -174,10 +187,16 @@ public class QuadraService {
         quadraFotoService.excluirFotosDaQuadra(quadra);
 
         quadraRepository.delete(quadra);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.QUADRA, "EXCLUIR", "QUADRA",
-                    id.toString(),
-                    "Quadra excluída: " + quadra.getNome());
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new QuadraAlteradaEvent(
+                    id,
+                    quadra.getNome(),
+                    quadra.getCidade(),
+                    quadra.getEstado(),
+                    adminId,
+                    "EXCLUIR",
+                    "Quadra excluída: " + quadra.getNome()
+            ));
         }
     }
 
@@ -259,10 +278,16 @@ public class QuadraService {
 
         quadra.setAtiva(status);
         Quadra quadraAtualizada = quadraRepository.save(quadra);
-        if (auditoriaService != null) {
-            auditoriaService.registrarAcaoPorUsuarioId(adminId, CategoriaAuditoria.QUADRA, "STATUS", "QUADRA",
-                    quadraAtualizada.getId_quadra().toString(),
-                    "Status da quadra alterado para " + (status ? "ATIVA" : "INATIVA") + ": " + quadraAtualizada.getNome());
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new QuadraAlteradaEvent(
+                    quadraAtualizada.getId_quadra(),
+                    quadraAtualizada.getNome(),
+                    quadraAtualizada.getCidade(),
+                    quadraAtualizada.getEstado(),
+                    adminId,
+                    "STATUS",
+                    "Status da quadra alterado para " + (status ? "ATIVA" : "INATIVA") + ": " + quadraAtualizada.getNome()
+            ));
         }
         return QuadraResponseDTO.fromEntity(quadraAtualizada);
     }

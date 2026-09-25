@@ -50,7 +50,7 @@ class QuadraServiceTest {
     private QuadraBuscaService quadraBuscaService;
 
     @Mock
-    private AuditoriaService auditoriaService;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private QuadraService quadraService;
@@ -213,5 +213,6 @@ class QuadraServiceTest {
         assertDoesNotThrow(() -> quadraService.excluir(10L, 1L));
 
         verify(quadraRepository, times(1)).delete(quadraAdminComum);
+        verify(eventPublisher, times(1)).publishEvent(any(com.agendamentos.equadras.event.QuadraAlteradaEvent.class));
     }
 }
