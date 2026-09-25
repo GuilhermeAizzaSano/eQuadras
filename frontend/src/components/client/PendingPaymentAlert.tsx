@@ -61,8 +61,8 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="relative overflow-hidden rounded-2xl border border-warning/30 bg-warning/[0.08] backdrop-blur-xl p-4 sm:p-5 shadow-apple-card min-h-[108px] sm:h-[108px] flex items-center">
+    <div className="w-full max-w-3xl animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="relative overflow-hidden rounded-2xl border border-warning/30 bg-warning/[0.08] backdrop-blur-xl p-4 sm:p-5 shadow-apple-card min-h-[108px] flex items-center">
         {/* Glow de fundo sutil */}
         <div className="absolute -right-8 -top-8 w-32 h-32 bg-warning/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -82,7 +82,7 @@ export const PendingPaymentAlert: React.FC<PendingPaymentAlertProps> = ({
                 </span>
               </div>
 
-              <p className="text-xs sm:text-[13px] text-fg/90 leading-relaxed line-clamp-2">
+              <p className="text-xs sm:text-[13px] text-fg/90 leading-relaxed">
                 Confirme o pagamento da sua reserva na{' '}
                 <span className="font-semibold text-fg">{agendamentoAtual.nomeQuadra}</span> em até{' '}
                 <span className="font-mono font-bold text-warning">{tempoFormatado}</span> ou ela será cancelada automaticamente.

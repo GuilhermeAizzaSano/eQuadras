@@ -51,45 +51,27 @@ const SidebarHeader: React.FC<{ onSelectHome: () => void }> = ({
 
   return (
     <div className="flex h-14 w-full items-center px-2">
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild className="w-full">
-          <button
-            type="button"
-            className="flex w-full items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-fg/[0.06] text-left outline-none cursor-pointer"
-          >
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-fg/[0.1] border border-fg/[0.15]">
-              <Logo size={20} showText={false} />
+      <button
+        type="button"
+        onClick={onSelectHome}
+        className="flex w-full items-center gap-2.5 rounded-lg p-1.5 transition hover:bg-fg/[0.06] text-left outline-none cursor-pointer"
+      >
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-fg/[0.1] border border-fg/[0.15]">
+          <Logo size={20} showText={false} />
+        </div>
+        {!isCollapsed && (
+          <div className="flex min-w-0 flex-1 items-center justify-between">
+            <div className="flex flex-col truncate">
+              <span className="text-xs font-semibold text-fg tracking-tight truncate">
+                eQuadras
+              </span>
+              <span className="text-xs text-fg/60 truncate">
+                Sistema de Gestão
+              </span>
             </div>
-            {!isCollapsed && (
-              <div className="flex min-w-0 flex-1 items-center justify-between">
-                <div className="flex flex-col truncate">
-                  <span className="text-xs font-semibold text-fg tracking-tight truncate">
-                    eQuadras
-                  </span>
-                  <span className="text-xs text-fg/60 truncate">
-                    Sistema de Gestão
-                  </span>
-                </div>
-                <ChevronsUpDown className="size-3.5 shrink-0 text-fg/60 ml-1" />
-              </div>
-            )}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-surface-2 border-fg/10 text-fg">
-          <div className="px-2 py-1.5 text-xs font-medium text-fg/60">
-            Ambiente Ativo
           </div>
-          <DropdownMenuItem
-            className="text-xs focus:bg-fg/10 focus:text-fg cursor-pointer"
-            onClick={onSelectHome}
-          >
-            <div className="flex items-center gap-2">
-              <span className="size-2 rounded-full bg-success" />
-              <span>eQuadras Principal</span>
-            </div>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        )}
+      </button>
     </div>
   );
 };
@@ -98,7 +80,7 @@ const SidebarFooter: React.FC<{
   onOpenApiKey: () => void;
   onOpenTrocarSenha: () => void;
 }> = ({ onOpenApiKey, onOpenTrocarSenha }) => {
-  const { user, isAdmin, isMasterAdmin, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { tema, alternar: alternarTema } = useTema();
   const { isCollapsed } = useSidebar();
 
@@ -129,9 +111,6 @@ const SidebarFooter: React.FC<{
               <div className="flex flex-col truncate">
                 <span className="text-xs font-medium text-fg truncate">
                   {user?.nome_usuario || 'Usuário'}
-                </span>
-                <span className="text-xs font-mono uppercase tracking-wider text-fg/60 truncate">
-                  {isMasterAdmin ? 'Master Admin' : isAdmin ? 'Admin' : 'Cliente'}
                 </span>
               </div>
               <ChevronsUpDown className="size-3.5 shrink-0 text-fg/60 ml-1" />
