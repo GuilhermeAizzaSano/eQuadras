@@ -158,58 +158,8 @@ public class QuadraController {
             @RequestParam(required = false) String cidade,
             @RequestParam(required = false) String bairro) {
         Long idBuscado = idPath != null ? idPath : (idParam != null ? idParam : quadraId);
-        if (idBuscado != null) {
-            QuadraResponseDTO q = quadraService.buscarPorId(idBuscado);
-            return ResponseEntity.ok(mapQuadraFotos(q));
-        }
-
         String nomeBuscado = (nome != null && !nome.isBlank()) ? nome : nomeQuadra;
         String esporteBuscado = (tipoEsporte != null && !tipoEsporte.isBlank()) ? tipoEsporte : esporte;
-
-        boolean temFiltro = (nomeBuscado != null && !nomeBuscado.isBlank())
-                || (esporteBuscado != null && !esporteBuscado.isBlank())
-                || (cidade != null && !cidade.isBlank())
-                || (bairro != null && !bairro.isBlank());
-
-        if (temFiltro) {
-            java.util.List<com.agendamentos.equadras.model.entity.Quadra> quadras =
-                    quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, esporteBuscado, nomeBuscado, cidade, bairro, null);
-            if (quadras.size() == 1) {
-                return ResponseEntity.ok(mapQuadraFotos(quadras.get(0)));
-            } else if (!quadras.isEmpty()) {
-                return ResponseEntity.ok(quadras.stream().map(this::mapQuadraFotos).toList());
-            }
-            return ResponseEntity.ok(java.util.Map.of("fotos", java.util.List.of()));
-        }
-
-        // Se não passou id, nome nem esporte, lista todas as quadras ativas com suas fotos organizadas por quadra
-        java.util.List<java.util.Map<String, Object>> todas = quadraBuscaService.filtrarQuadrasEntidades(null, null, null, null, null, null, null, null, null)
-                .stream()
-                .map(this::mapQuadraFotos)
-                .toList();
-
-        return ResponseEntity.ok(todas);
-    }
-
-    private java.util.Map<String, Object> mapQuadraFotos(com.agendamentos.equadras.model.entity.Quadra q) {
-        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
-        map.put("id_quadra", q.getId_quadra());
-        map.put("nome", q.getNome());
-        map.put("tipoEsporte", q.getTipoEsporte() != null ? q.getTipoEsporte().name() : null);
-        map.put("cidade", q.getCidade() != null ? q.getCidade() : "");
-        map.put("bairro", q.getBairro() != null ? q.getBairro() : "");
-        map.put("fotos", q.getFotos() != null ? new java.util.ArrayList<>(q.getFotos()) : java.util.List.of());
-        return map;
-    }
-
-    private java.util.Map<String, Object> mapQuadraFotos(QuadraResponseDTO q) {
-        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
-        map.put("id_quadra", q.id_quadra());
-        map.put("nome", q.nome());
-        map.put("tipoEsporte", q.tipoEsporte() != null ? q.tipoEsporte().name() : null);
-        map.put("cidade", q.cidade() != null ? q.cidade() : "");
-        map.put("bairro", q.bairro() != null ? q.bairro() : "");
-        map.put("fotos", q.fotos() != null ? new java.util.ArrayList<>(q.fotos()) : java.util.List.of());
-        return map;
+        return ResponseEntity.ok(quadraFotoService.consultarFotos(idBuscado, nomeBuscado, esporteBuscado, cidade, bairro));
     }
 }

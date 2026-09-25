@@ -1,5 +1,6 @@
 package com.agendamentos.equadras.service;
 
+import com.agendamentos.equadras.dto.response.QuadraFotosResponseDTO;
 import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.repository.QuadraRepository;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class QuadraFotoService {
@@ -16,13 +18,48 @@ public class QuadraFotoService {
     private final QuadraRepository quadraRepository;
     private final UsuarioService usuarioService;
     private final FileStorageService fileStorageService;
+    private final QuadraBuscaService quadraBuscaService;
 
     public QuadraFotoService(QuadraRepository quadraRepository,
                              UsuarioService usuarioService,
-                             FileStorageService fileStorageService) {
+                             FileStorageService fileStorageService,
+                             QuadraBuscaService quadraBuscaService) {
         this.quadraRepository = quadraRepository;
         this.usuarioService = usuarioService;
         this.fileStorageService = fileStorageService;
+        this.quadraBuscaService = quadraBuscaService;
+    }
+
+    /**
+     * Contrato legado (bot/integrações): por id → objeto (inclusive quadra inativa); filtro com 1 resultado → objeto;
+     * vários → lista; nenhum → {"fotos": []}; sem filtro → lista de todas as ativas.
+     */
+    @Transactional(readOnly = true)
+    public Object consultarFotos(Long id, String nome, String tipoEsporte, String cidade, String bairro) {
+        if (id != null) {
+            Quadra quadra = quadraRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + id));
+            return QuadraFotosResponseDTO.fromEntity(quadra);
+        }
+
+        List<QuadraFotosResponseDTO> quadras = quadraBuscaService
+                .filtrarQuadrasEntidades(null, null, null, null, tipoEsporte, nome, cidade, bairro, null)
+                .stream()
+                .map(QuadraFotosResponseDTO::fromEntity)
+                .toList();
+
+        boolean temFiltro = temTexto(nome) || temTexto(tipoEsporte) || temTexto(cidade) || temTexto(bairro);
+        if (!temFiltro) {
+            return quadras;
+        }
+        if (quadras.size() == 1) {
+            return quadras.get(0);
+        }
+        return quadras.isEmpty() ? Map.of("fotos", List.of()) : quadras;
+    }
+
+    private static boolean temTexto(String valor) {
+        return valor != null && !valor.isBlank();
     }
 
     @Transactional

@@ -37,6 +37,9 @@ class QuadraFotoServiceTest {
     @Mock
     private FileStorageService fileStorageService;
 
+    @Mock
+    private QuadraBuscaService quadraBuscaService;
+
     @InjectMocks
     private QuadraFotoService quadraFotoService;
 
