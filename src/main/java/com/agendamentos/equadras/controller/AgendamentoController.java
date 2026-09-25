@@ -9,6 +9,7 @@ import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoBotService;
 import com.agendamentos.equadras.service.AgendamentoService;
 import com.agendamentos.equadras.service.DashboardService;
+import com.agendamentos.equadras.service.GradeHorariosService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,13 +34,16 @@ public class AgendamentoController {
     private final AgendamentoService agendamentoService;
     private final DashboardService dashboardService;
     private final AgendamentoBotService agendamentoBotService;
+    private final GradeHorariosService gradeHorariosService;
 
     public AgendamentoController(AgendamentoService agendamentoService,
                                  DashboardService dashboardService,
-                                 AgendamentoBotService agendamentoBotService) {
+                                 AgendamentoBotService agendamentoBotService,
+                                 GradeHorariosService gradeHorariosService) {
         this.agendamentoService = agendamentoService;
         this.dashboardService = dashboardService;
         this.agendamentoBotService = agendamentoBotService;
+        this.gradeHorariosService = gradeHorariosService;
     }
 
     @Operation(
@@ -136,7 +140,7 @@ public class AgendamentoController {
             @PathVariable Long quadraId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
-        return ResponseEntity.ok(agendamentoService.listarHorariosDisponiveis(quadraId, data));
+        return ResponseEntity.ok(gradeHorariosService.listarHorariosDisponiveis(quadraId, data));
     }
 
     @Operation(
@@ -148,7 +152,7 @@ public class AgendamentoController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
-        return ResponseEntity.ok(agendamentoService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
+        return ResponseEntity.ok(gradeHorariosService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
     @Operation(summary = "Listar reservas da agenda do dia ou intervalo paginadas (Admin)", description = "Retorna agendamentos paginados do dia informado ou intervalo [inicio, fim) para as quadras do admin autenticado, com filtro opcional por quadra e aba.")
@@ -244,6 +248,6 @@ public class AgendamentoController {
             @RequestParam(required = false) String nomeQuadra,
             @RequestParam(required = false, defaultValue = "false") boolean apenasDisponiveis
     ) {
-        return ResponseEntity.ok(agendamentoService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));
+        return ResponseEntity.ok(gradeHorariosService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));
     }
 }

@@ -71,7 +71,6 @@ public class AgendamentoService {
     private final QuadraRepository quadraRepository;
     private final PagamentoService pagamentoService;
     private final AgendamentoLockService agendamentoLockService;
-    private final com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final java.time.Clock clock;
 
@@ -80,7 +79,6 @@ public class AgendamentoService {
                               QuadraRepository quadraRepository,
                               PagamentoService pagamentoService,
                               AgendamentoLockService agendamentoLockService,
-                              com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository,
                               ApplicationEventPublisher eventPublisher,
                               java.time.Clock clock) {
         this.agendamentoRepository = agendamentoRepository;
@@ -88,7 +86,6 @@ public class AgendamentoService {
         this.quadraRepository = quadraRepository;
         this.pagamentoService = pagamentoService;
         this.agendamentoLockService = agendamentoLockService;
-        this.bloqueioHorarioRepository = bloqueioHorarioRepository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
@@ -463,37 +460,7 @@ public class AgendamentoService {
         return contagens;
     }
 
-    @Transactional(readOnly = true)
-    public List<HorarioDisponivelDTO> listarHorariosDisponiveis(Long quadraId, LocalDate data) {
-        Quadra quadra = quadraRepository.findById(quadraId)
-                .orElseThrow(() -> new IllegalArgumentException("Quadra não encontrada para o ID: " + quadraId));
 
-        java.time.DayOfWeek diaSemana = data.getDayOfWeek();
-        com.agendamentos.equadras.model.entity.DisponibilidadeDia disp = null;
-        if (quadra.getDisponibilidades() != null) {
-            disp = quadra.getDisponibilidades().stream()
-                    .filter(d -> d.getDiaSemana() == diaSemana)
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (disp == null) {
-            return List.of();
-        }
-
-        LocalDateTime inicioDoDia = data.atStartOfDay();
-        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
-
-        List<Agendamento> agendamentosDoDia = agendamentoRepository.buscarPorQuadraEData(
-                quadraId,
-                StatusAgendamento.CANCELADO,
-                inicioDoDia,
-                fimDoDia
-        );
-
-        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdAndData(quadraId, data);
-        return montarSlotsHorarios(quadra, data, agendamentosDoDia, bloqueios);
-    }
 
     private Specification<Agendamento> escopoListagemPorPerfil(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
@@ -606,265 +573,7 @@ public class AgendamentoService {
                 .toList();
     }
 
-    private List<HorarioDisponivelDTO> montarSlotsHorarios(
-            Quadra quadra,
-            LocalDate data,
-            List<Agendamento> agendamentosDoDia,
-            List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueios) {
 
-        java.time.DayOfWeek diaSemana = data.getDayOfWeek();
-        com.agendamentos.equadras.model.entity.DisponibilidadeDia disp = null;
-        if (quadra.getDisponibilidades() != null) {
-            disp = quadra.getDisponibilidades().stream()
-                    .filter(d -> d.getDiaSemana() == diaSemana)
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        if (disp == null) {
-            return List.of();
-        }
-
-        LocalDateTime agora = LocalDateTime.now(clock);
-        List<HorarioDisponivelDTO> slots = new ArrayList<>();
-
-        boolean dataLimiteExcedida = quadra.getDataLimiteAgendamento() != null && data.isAfter(quadra.getDataLimiteAgendamento());
-        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueioDiaInteiro = bloqueios.stream()
-                .filter(b -> b.getHoraInicio() == null || b.getHoraFim() == null)
-                .findFirst()
-                .orElse(null);
-
-        LocalTime slotInicio = disp.getHoraInicio();
-        while (slotInicio.isBefore(disp.getHoraFim())) {
-            LocalTime slotFim = slotInicio.plusHours(1);
-            LocalDateTime slotDataHoraInicio = data.atTime(slotInicio);
-            LocalDateTime slotDataHoraFim = data.atTime(slotFim);
-
-            boolean disponivel = true;
-            String motivo = "Disponível";
-            com.agendamentos.equadras.model.enums.StatusHorario status = com.agendamentos.equadras.model.enums.StatusHorario.DISPONIVEL;
-
-            if (!quadra.isAtiva()) {
-                disponivel = false;
-                status = com.agendamentos.equadras.model.enums.StatusHorario.INDISPONIVEL;
-                motivo = "Quadra inativa";
-            } else if (dataLimiteExcedida) {
-                disponivel = false;
-                status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
-                motivo = "Data limite de agendamento encerrada";
-            } else if (bloqueioDiaInteiro != null) {
-                disponivel = false;
-                status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
-                motivo = (bloqueioDiaInteiro.getMotivo() != null && !bloqueioDiaInteiro.getMotivo().isBlank())
-                        ? "Bloqueado: " + bloqueioDiaInteiro.getMotivo()
-                        : "Horário bloqueado pelo administrador";
-            } else if (slotDataHoraInicio.isBefore(agora)) {
-                disponivel = false;
-                status = com.agendamentos.equadras.model.enums.StatusHorario.INDISPONIVEL;
-                motivo = "Horário indisponível (passado)";
-            } else {
-                final LocalTime sIni = slotInicio;
-                final LocalTime sFim = slotFim;
-                com.agendamentos.equadras.model.entity.BloqueioHorario bloqueioParcial = bloqueios.stream()
-                        .filter(b -> b.getHoraInicio() != null && b.getHoraFim() != null)
-                        .filter(b -> b.getHoraInicio().isBefore(sFim) && b.getHoraFim().isAfter(sIni))
-                        .findFirst()
-                        .orElse(null);
-
-                if (bloqueioParcial != null) {
-                    disponivel = false;
-                    status = com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO;
-                    motivo = (bloqueioParcial.getMotivo() != null && !bloqueioParcial.getMotivo().isBlank())
-                            ? "Bloqueado: " + bloqueioParcial.getMotivo()
-                            : "Horário bloqueado pelo administrador";
-                } else {
-                    boolean ocupado = agendamentosDoDia.stream().anyMatch(a ->
-                            a.getDataHoraInicio().isBefore(slotDataHoraFim) && a.getDataHoraFim().isAfter(slotDataHoraInicio)
-                    );
-                    if (ocupado) {
-                        disponivel = false;
-                        status = com.agendamentos.equadras.model.enums.StatusHorario.AGENDADO;
-                        motivo = "Horário ocupado / agendado";
-                    }
-                }
-            }
-
-            slots.add(new HorarioDisponivelDTO(slotInicio, slotFim, disponivel, status, motivo));
-            slotInicio = slotFim;
-        }
-
-        return slots;
-    }
-
-    @Transactional(readOnly = true)
-    public java.util.Map<Long, List<HorarioDisponivelDTO>> listarHorariosDoDiaParaAdmin(LocalDate data, Long adminId) {
-        Usuario admin = usuarioRepository.findById(adminId).orElse(null);
-        List<Quadra> quadrasDoAdmin;
-        if (admin != null && admin.isMasterAdmin()) {
-            quadrasDoAdmin = quadraRepository.findAllWithAdminEFotos();
-        } else {
-            quadrasDoAdmin = quadraRepository.findByAdminId(adminId);
-        }
-
-        java.util.Map<Long, List<HorarioDisponivelDTO>> mapaResultado = new java.util.LinkedHashMap<>();
-        List<Quadra> quadrasAtivas = quadrasDoAdmin.stream().filter(Quadra::isAtiva).toList();
-
-        if (quadrasAtivas.isEmpty()) {
-            for (Quadra quadra : quadrasDoAdmin) {
-                mapaResultado.put(quadra.getId_quadra(), List.of());
-            }
-            return mapaResultado;
-        }
-
-        List<Long> quadraIdsAtivas = quadrasAtivas.stream().map(Quadra::getId_quadra).toList();
-        LocalDateTime inicioDoDia = data.atStartOfDay();
-        LocalDateTime fimDoDia = data.atTime(LocalTime.MAX);
-
-        List<Agendamento> agendamentosEmLote = agendamentoRepository.buscarPorQuadrasEDataLote(
-                quadraIdsAtivas,
-                StatusAgendamento.CANCELADO,
-                inicioDoDia,
-                fimDoDia
-        );
-
-        List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueiosEmLote =
-                bloqueioHorarioRepository.findByQuadraIdsAndData(quadraIdsAtivas, data);
-
-        java.util.Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosEmLote.stream()
-                .collect(java.util.stream.Collectors.groupingBy(a -> a.getQuadra().getId_quadra()));
-
-        java.util.Map<Long, List<com.agendamentos.equadras.model.entity.BloqueioHorario>> bloqueiosPorQuadra = bloqueiosEmLote.stream()
-                .collect(java.util.stream.Collectors.groupingBy(b -> b.getQuadra().getId_quadra()));
-
-        for (Quadra quadra : quadrasDoAdmin) {
-            if (quadra.isAtiva()) {
-                List<Agendamento> agendamentosQuadra = agendamentosPorQuadra.getOrDefault(quadra.getId_quadra(), List.of());
-                List<com.agendamentos.equadras.model.entity.BloqueioHorario> bloqueiosQuadra = bloqueiosPorQuadra.getOrDefault(quadra.getId_quadra(), List.of());
-                List<HorarioDisponivelDTO> slots = montarSlotsHorarios(quadra, data, agendamentosQuadra, bloqueiosQuadra);
-                mapaResultado.put(quadra.getId_quadra(), slots);
-            } else {
-                mapaResultado.put(quadra.getId_quadra(), List.of());
-            }
-        }
-
-        return mapaResultado;
-    }
-
-    @Transactional(readOnly = true)
-    public List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> consultarGradeHorarios(
-            LocalDate data, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
-        
-        List<Quadra> quadras = buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
-
-        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultado = new ArrayList<>();
-        for (Quadra q : quadras) {
-            List<HorarioDisponivelDTO> slots = listarHorariosDisponiveis(q.getId_quadra(), data);
-            if (apenasDisponiveis) {
-                slots = slots.stream().filter(HorarioDisponivelDTO::disponivel).toList();
-            }
-            if (!slots.isEmpty() || !apenasDisponiveis) {
-                resultado.add(new com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO(
-                        q.getId_quadra(),
-                        q.getNome(),
-                        q.getTipoEsporte(),
-                        q.getValorHora(),
-                        data,
-                        slots
-                ));
-            }
-        }
-
-        return resultado;
-    }
-
-    @Transactional(readOnly = true)
-    public List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> consultarGradeHorariosFlexivel(
-            String dataFlexivel, Long quadraId, String tipoEsporte, String nomeQuadra, boolean apenasDisponiveis) {
-        LocalDate dataResolvida = com.agendamentos.equadras.util.DataFlexivelUtil.resolverData(dataFlexivel);
-        
-        if (dataResolvida != null) {
-            return consultarGradeHorarios(dataResolvida, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
-        }
-
-        // Predição de 14 dias para encontrar o próximo dia com horários disponíveis
-        LocalDate inicio = LocalDate.now(clock);
-        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultadoFinal = new ArrayList<>();
-        
-        for (int i = 0; i < 14; i++) {
-            LocalDate dataAlvo = inicio.plusDays(i);
-            List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> gradeDia = 
-                    consultarGradeHorarios(dataAlvo, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
-            
-            if (!gradeDia.isEmpty()) {
-                resultadoFinal.addAll(gradeDia);
-                // Retorna apenas os horários do primeiro dia que tiver disponibilidade
-                return resultadoFinal;
-            }
-        }
-        
-        return resultadoFinal;
-    }
-
-    private List<Quadra> buscarQuadrasAtivas(Long quadraId, String tipoEsporte, String nomeQuadra) {
-        if (quadraId != null) {
-            return quadraRepository.findById(quadraId)
-                    .filter(Quadra::isAtiva)
-                    .map(List::of)
-                    .orElse(List.of());
-        }
-
-        org.springframework.data.jpa.domain.Specification<Quadra> spec = com.agendamentos.equadras.specification.QuadraSpecifications.ativa();
-
-        if (tipoEsporte != null && !tipoEsporte.isBlank()) {
-            com.agendamentos.equadras.model.enums.TipoEsporte esporteEnum = parseTipoEsporte(tipoEsporte);
-            if (esporteEnum != null) {
-                spec = spec.and(com.agendamentos.equadras.specification.QuadraSpecifications.comTipoEsporte(esporteEnum));
-            } else {
-                return List.of();
-            }
-        }
-
-        if (nomeQuadra != null && !nomeQuadra.isBlank()) {
-            spec = spec.and(com.agendamentos.equadras.specification.QuadraSpecifications.comNome(nomeQuadra));
-        }
-
-        return quadraRepository.findAll(spec);
-    }
-
-    private com.agendamentos.equadras.model.enums.TipoEsporte parseTipoEsporte(String valor) {
-        if (valor == null || valor.isBlank()) {
-            return null;
-        }
-        String normalizado = com.agendamentos.equadras.util.TextoUtil.normalizar(valor)
-                .toUpperCase(java.util.Locale.ROOT).replace("-", "_").replace(" ", "_");
-
-        for (com.agendamentos.equadras.model.enums.TipoEsporte t : com.agendamentos.equadras.model.enums.TipoEsporte.values()) {
-            if (t.name().equals(normalizado)) {
-                return t;
-            }
-        }
-
-        if (normalizado.contains("SOCIETY") || normalizado.contains("CAMPO") || normalizado.contains("FUT")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTEBOL;
-        }
-        if (normalizado.contains("SALAO")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.FUTSAL;
-        }
-        if (normalizado.contains("BEACH") || normalizado.contains("AREIA") || normalizado.contains("FUTEVOLEI") || normalizado.contains("BIT")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.BEACH_TENNIS;
-        }
-        if (normalizado.contains("BASQUET")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.BASQUETE;
-        }
-        if (normalizado.contains("TENIS")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.TENIS;
-        }
-        if (normalizado.contains("VOLEI")) {
-            return com.agendamentos.equadras.model.enums.TipoEsporte.VOLEI;
-        }
-
-        return null;
-    }
 
     @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
     @Transactional

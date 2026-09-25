@@ -51,9 +51,6 @@ class AgendamentoServiceTest {
     private AgendamentoLockService agendamentoLockService;
 
     @Mock
-    private com.agendamentos.equadras.repository.BloqueioHorarioRepository bloqueioHorarioRepository;
-
-    @Mock
     private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -155,63 +152,7 @@ class AgendamentoServiceTest {
         verify(pagamentoService, never()).gerarPix(any());
     }
 
-    @Test
-    @DisplayName("Deve listar horários e marcar como bloqueado o horário que já possui agendamento")
-    void deveListarHorariosComBloqueioDeOcupados() {
-        LocalDate dataAmanha = LocalDate.now().plusDays(1);
-        LocalDateTime inicioAgendado = dataAmanha.atTime(10, 0);
-        LocalDateTime fimAgendado = dataAmanha.atTime(11, 0);
 
-        Agendamento agendamentoExistente = Agendamento.builder()
-                .id_agendamento(5L)
-                .quadra(quadra)
-                .usuario(usuario)
-                .dataHoraInicio(inicioAgendado)
-                .dataHoraFim(fimAgendado)
-                .status(StatusAgendamento.CONFIRMADO)
-                .build();
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of(agendamentoExistente));
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataAmanha);
-
-        assertFalse(slots.isEmpty());
-
-        HorarioDisponivelDTO slot10as11 = slots.stream()
-                .filter(s -> s.inicio().equals(LocalTime.of(10, 0)))
-                .findFirst()
-                .orElseThrow();
-
-        assertFalse(slot10as11.disponivel());
-        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.AGENDADO, slot10as11.status());
-        assertEquals("Horário ocupado / agendado", slot10as11.motivo());
-
-        HorarioDisponivelDTO slot11as12 = slots.stream()
-                .filter(s -> s.inicio().equals(LocalTime.of(11, 0)))
-                .findFirst()
-                .orElseThrow();
-
-        assertTrue(slot11as12.disponivel());
-        assertEquals("Disponível", slot11as12.motivo());
-    }
-
-    @Test
-    @DisplayName("Deve bloquear todos os horários se a quadra estiver inativa")
-    void deveBloquearHorariosSeQuadraInativa() {
-        quadra.setAtiva(false);
-        LocalDate dataAmanha = LocalDate.now().plusDays(1);
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataAmanha);
-
-        assertTrue(slots.stream().noneMatch(HorarioDisponivelDTO::disponivel));
-        assertTrue(slots.stream().allMatch(s -> "Quadra inativa".equals(s.motivo())));
-    }
 
     @Test
     @DisplayName("Deve listar agendamentos confirmados omitindo dados Pix (qrCodeBase64 e pixCopiaECola)")
@@ -337,106 +278,7 @@ class AgendamentoServiceTest {
         assertNull(dto.qrCodeBase64());
     }
 
-    @Test
-    @DisplayName("Deve retornar lista vazia quando a quadra não funcionar no dia da semana selecionado")
-    void deveRetornarListaVaziaQuandoQuadraFechadaNoDia() {
-        quadra.setDisponibilidades(List.of(
-                new com.agendamentos.equadras.model.entity.DisponibilidadeDia(java.time.DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))
-        ));
 
-        // Encontrar uma data que não seja MONDAY
-        LocalDate dataFechada = LocalDate.now();
-        while (dataFechada.getDayOfWeek() == java.time.DayOfWeek.MONDAY) {
-            dataFechada = dataFechada.plusDays(1);
-        }
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataFechada);
-
-        assertTrue(slots.isEmpty());
-    }
-
-    @Test
-    @DisplayName("Deve marcar todos os slots como indisponíveis quando data for após dataLimiteAgendamento")
-    void deveMarcarSlotsIndisponiveisQuandoAposDataLimite() {
-        LocalDate limite = LocalDate.now().plusDays(2);
-        quadra.setDataLimiteAgendamento(limite);
-        LocalDate dataConsulta = limite.plusDays(1);
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
-        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, dataConsulta))
-                .thenReturn(List.of());
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataConsulta);
-
-        assertFalse(slots.isEmpty());
-        assertTrue(slots.stream().noneMatch(HorarioDisponivelDTO::disponivel));
-        assertTrue(slots.stream().allMatch(s -> "Data limite de agendamento encerrada".equals(s.motivo())));
-    }
-
-    @Test
-    @DisplayName("Deve marcar todos os slots com motivo do bloqueio quando houver bloqueio de dia inteiro")
-    void deveBloquearDiaInteiroQuandoHouverBloqueioTotal() {
-        LocalDate dataConsulta = LocalDate.now().plusDays(3);
-        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueio = new com.agendamentos.equadras.model.entity.BloqueioHorario(
-                quadra,
-                dataConsulta,
-                null,
-                null,
-                "Feriado Municipal"
-        );
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
-        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, dataConsulta))
-                .thenReturn(List.of(bloqueio));
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataConsulta);
-
-        assertFalse(slots.isEmpty());
-        assertTrue(slots.stream().noneMatch(HorarioDisponivelDTO::disponivel));
-        assertTrue(slots.stream().allMatch(s -> "Bloqueado: Feriado Municipal".equals(s.motivo())));
-    }
-
-    @Test
-    @DisplayName("Deve marcar apenas slots colidentes como indisponíveis quando houver bloqueio parcial")
-    void deveBloquearApenasSlotsColidentesNoBloqueioParcial() {
-        LocalDate dataConsulta = LocalDate.now().plusDays(3);
-        com.agendamentos.equadras.model.entity.BloqueioHorario bloqueio = new com.agendamentos.equadras.model.entity.BloqueioHorario(
-                quadra,
-                dataConsulta,
-                LocalTime.of(14, 0),
-                LocalTime.of(16, 0),
-                "Manutenção da rede"
-        );
-
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
-        when(bloqueioHorarioRepository.findByQuadraIdAndData(1L, dataConsulta))
-                .thenReturn(List.of(bloqueio));
-
-        List<HorarioDisponivelDTO> slots = agendamentoService.listarHorariosDisponiveis(1L, dataConsulta);
-
-        HorarioDisponivelDTO slot14 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(14, 0))).findFirst().orElseThrow();
-        HorarioDisponivelDTO slot15 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(15, 0))).findFirst().orElseThrow();
-        HorarioDisponivelDTO slot10 = slots.stream().filter(s -> s.inicio().equals(LocalTime.of(10, 0))).findFirst().orElseThrow();
-
-        assertFalse(slot14.disponivel());
-        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO, slot14.status());
-        assertEquals("Bloqueado: Manutenção da rede", slot14.motivo());
-
-        assertFalse(slot15.disponivel());
-        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.BLOQUEADO, slot15.status());
-        assertEquals("Bloqueado: Manutenção da rede", slot15.motivo());
-
-        assertTrue(slot10.disponivel());
-        assertEquals(com.agendamentos.equadras.model.enums.StatusHorario.DISPONIVEL, slot10.status());
-    }
 
     @Test
     @DisplayName("Deve confirmar pagamento via webhook localizando por transacaoPagamentoId")
@@ -671,39 +513,7 @@ class AgendamentoServiceTest {
         assertEquals("Quadra não encontrada para o ID: 999", ex.getMessage());
     }
 
-    @Test
-    @DisplayName("Deve consultar grade de horários filtrando por quadraId direto pelo repository")
-    void deveConsultarGradeHorariosPorQuadraId() {
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
 
-        LocalDate amanha = LocalDate.now(clock).plusDays(1);
-        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> grade =
-                agendamentoService.consultarGradeHorarios(amanha, 1L, null, null, false);
-
-        assertNotNull(grade);
-        assertEquals(1, grade.size());
-        assertEquals(1L, grade.get(0).id_quadra());
-        verify(quadraRepository, times(2)).findById(1L);
-    }
-
-    @Test
-    @DisplayName("Deve consultar grade de horários via specification quando quadraId for nulo")
-    void deveConsultarGradeHorariosViaSpecification() {
-        when(quadraRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(List.of(quadra));
-        when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
-        when(agendamentoRepository.buscarPorQuadraEData(eq(1L), eq(StatusAgendamento.CANCELADO), any(), any()))
-                .thenReturn(List.of());
-
-        LocalDate amanha = LocalDate.now(clock).plusDays(1);
-        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> grade =
-                agendamentoService.consultarGradeHorarios(amanha, null, "TENIS", "Quadra de Tênis", false);
-
-        assertNotNull(grade);
-        assertEquals(1, grade.size());
-        verify(quadraRepository, times(1)).findAll(any(org.springframework.data.jpa.domain.Specification.class));
-    }
 
 
 
