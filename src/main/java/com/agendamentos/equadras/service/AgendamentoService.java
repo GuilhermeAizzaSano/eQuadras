@@ -575,19 +575,5 @@ public class AgendamentoService {
 
 
 
-    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 60000)
-    @Transactional
-    public void expirarAgendamentosPendentes() {
-        LocalDateTime agora = LocalDateTime.now(clock);
-        LocalDateTime limite = agora.minusMinutes(15);
-        int cancelados = agendamentoRepository.cancelarPendentesExpirados(
-                StatusAgendamento.PENDENTE,
-                StatusAgendamento.CANCELADO,
-                limite,
-                agora
-        );
-        if (cancelados > 0 && eventPublisher != null) {
-            eventPublisher.publishEvent(new AgendamentosExpiradosCanceladosEvent(cancelados));
-        }
-    }
+
 }
