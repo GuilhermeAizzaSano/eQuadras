@@ -143,6 +143,10 @@ public class QuadraBuscaService {
         return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, null, cidade, bairro, cep);
     }
 
+    /**
+     * Coleções LAZY (disponibilidades) não são pré-carregadas: cada chamador lê só o que usa,
+     * dentro da própria transação (open-in-view está desligado).
+     */
     @Transactional(readOnly = true)
     public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                 String tipoEsporte,
@@ -153,18 +157,7 @@ public class QuadraBuscaService {
             return List.of();
         }
 
-        List<Quadra> quadras = quadraRepository.findAll(spec.get());
-
-        quadras.forEach(q -> {
-            if (q.getFotos() != null) {
-                q.getFotos().size();
-            }
-            if (q.getDisponibilidades() != null) {
-                q.getDisponibilidades().size();
-            }
-        });
-
-        return quadras;
+        return quadraRepository.findAll(spec.get());
     }
 
     // Regra de negócio: raio ausente/inválido usa o padrão; acima do máximo é limitado para não varrer a base.
