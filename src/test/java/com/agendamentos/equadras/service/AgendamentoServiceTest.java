@@ -429,6 +429,7 @@ class AgendamentoServiceTest {
 
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
         when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(admin));
+        when(usuarioService.podeGerenciarQuadra(quadra, 2L)).thenReturn(true);
 
         Agendamento ag = Agendamento.builder()
                 .id_agendamento(100L)
@@ -462,6 +463,7 @@ class AgendamentoServiceTest {
 
         when(quadraRepository.findById(1L)).thenReturn(Optional.of(quadra));
         when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
+        when(usuarioService.podeGerenciarQuadra(quadra, 99L)).thenReturn(true);
         when(agendamentoRepository.findByQuadraIdOrderByDataHoraInicioDesc(1L)).thenReturn(List.of());
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarPorQuadra(1L, 99L);
@@ -552,5 +554,43 @@ class AgendamentoServiceTest {
         assertTrue(agendamentoService.listarTodos(404L, true).isEmpty());
         assertTrue(agendamentoService.listarTodos(404L, false).isEmpty());
         verifyNoInteractions(agendamentoRepository);
+    }
+
+    @Test
+    @DisplayName("Admin não deve cancelar agendamento de quadra sem admin (403, não NullPointerException)")
+    void adminNaoDeveCancelarAgendamentoDeQuadraSemAdmin() {
+        Usuario admin = Usuario.builder().id_usuario(2L).email_usuario("admin@email.com").role(Role.ADMIN).build();
+        Quadra quadraSemAdmin = Quadra.builder().id_quadra(5L).nome("Sem Admin").build();
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(70L)
+                .quadra(quadraSemAdmin)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).plusHours(1))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+        when(agendamentoRepository.findById(70L)).thenReturn(Optional.of(agendamento));
+        when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(admin));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> agendamentoService.cancelar(70L, 2L));
+        verify(agendamentoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Confirmar pagamento por usuário sem vínculo deve manter o erro ACESSO_NEGADO")
+    void naoDeveConfirmarPagamentoDeTerceiro() {
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(80L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .status(StatusAgendamento.PENDENTE)
+                .build();
+        when(agendamentoRepository.findById(80L)).thenReturn(Optional.of(agendamento));
+
+        com.agendamentos.equadras.exception.RegraNegocioException ex = assertThrows(
+                com.agendamentos.equadras.exception.RegraNegocioException.class,
+                () -> agendamentoService.confirmarPagamento(80L, 404L));
+        assertEquals("ACESSO_NEGADO", ex.getCode());
     }
 }

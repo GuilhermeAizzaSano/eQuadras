@@ -19,6 +19,7 @@ import com.agendamentos.equadras.repository.QuadraRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,12 +123,8 @@ public class AgendamentoService {
         Agendamento agendamento = agendamentoRepository.findById(idAgendamento)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
 
-        Usuario usuarioAutenticado = usuarioService.buscarPorIdEntidade(usuarioIdAutenticado).orElse(null);
-        boolean ehMasterAdmin = usuarioAutenticado != null && usuarioAutenticado.isMasterAdmin();
         boolean ehDono = agendamento.getUsuario().getId_usuario().equals(usuarioIdAutenticado);
-        boolean ehAdminDaQuadra = agendamento.getQuadra().getAdmin() != null
-                && agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioIdAutenticado);
-        if (!ehDono && !ehAdminDaQuadra && !ehMasterAdmin) {
+        if (!ehDono && !usuarioService.podeGerenciarQuadra(agendamento.getQuadra(), usuarioIdAutenticado)) {
             throw new RegraNegocioException("ACESSO_NEGADO", "Você não tem permissão para confirmar o pagamento deste agendamento.");
         }
 
@@ -234,13 +231,13 @@ public class AgendamentoService {
 
         if (usuario.isMasterAdmin()) {
             // Master Admin tem permissão para cancelar qualquer agendamento
-        } else if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
+        } else if (usuario.getRole() == Role.CLIENT) {
             if (!agendamento.getUsuario().getId_usuario().equals(usuarioId)) {
-                throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para cancelar este agendamento.");
+                throw new AccessDeniedException("Você não tem permissão para cancelar este agendamento.");
             }
-        } else if (usuario.getRole() == com.agendamentos.equadras.model.enums.Role.ADMIN) {
-            if (!agendamento.getQuadra().getAdmin().getId_usuario().equals(usuarioId)) {
-                throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para cancelar agendamentos desta quadra.");
+        } else if (usuario.getRole() == Role.ADMIN) {
+            if (!usuarioService.podeGerenciarQuadra(agendamento.getQuadra(), usuarioId)) {
+                throw new AccessDeniedException("Você não tem permissão para cancelar agendamentos desta quadra.");
             }
         }
 
@@ -257,19 +254,16 @@ public class AgendamentoService {
         Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
 
         if (eventPublisher != null) {
-            String nomeExecutor = (usuario != null && usuario.getNome_usuario() != null) ? usuario.getNome_usuario() : "Sistema";
-            String emailExecutor = usuario != null ? usuario.getEmail_usuario() : null;
-            Long idExecutor = usuario != null ? usuario.getId_usuario() : null;
-            TipoExecutor tipoExec = usuario == null
-                    ? TipoExecutor.SISTEMA
-                    : (usuario.isMasterAdmin()
+            // usuario nunca é nulo aqui: a busca acima lança exceção quando não encontrado
+            String nomeExecutor = usuario.getNome_usuario() != null ? usuario.getNome_usuario() : "Sistema";
+            TipoExecutor tipoExec = usuario.isMasterAdmin()
                     ? TipoExecutor.MASTER_ADMIN
-                    : (usuario.getRole() == Role.ADMIN ? TipoExecutor.ADMIN_QUADRA : TipoExecutor.CLIENTE));
+                    : (usuario.getRole() == Role.ADMIN ? TipoExecutor.ADMIN_QUADRA : TipoExecutor.CLIENTE);
 
             eventPublisher.publishEvent(new AgendamentoCanceladoEvent(
                     AgendamentoNotificacaoPayload.fromEntity(agendamentoAtualizado),
-                    idExecutor,
-                    emailExecutor,
+                    usuario.getId_usuario(),
+                    usuario.getEmail_usuario(),
                     nomeExecutor,
                     tipoExec
             ));
@@ -296,14 +290,11 @@ public class AgendamentoService {
     }
 
     private void validarAcessoQuadra(Quadra quadra, Long usuarioId) {
-        Usuario usuario = usuarioService.buscarPorIdEntidade(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
-
-        boolean ehMasterAdmin = usuario.isMasterAdmin();
-        boolean ehDonoQuadra = quadra.getAdmin() != null && quadra.getAdmin().getId_usuario().equals(usuarioId);
-
-        if (!ehMasterAdmin && !ehDonoQuadra) {
-            throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para visualizar o histórico desta quadra.");
+        if (usuarioService.buscarPorIdEntidade(usuarioId).isEmpty()) {
+            throw new IllegalArgumentException("Usuário não encontrado.");
+        }
+        if (!usuarioService.podeGerenciarQuadra(quadra, usuarioId)) {
+            throw new AccessDeniedException("Você não tem permissão para visualizar o histórico desta quadra.");
         }
     }
 
