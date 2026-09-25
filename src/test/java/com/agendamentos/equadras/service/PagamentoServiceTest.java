@@ -5,21 +5,29 @@ import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
+import com.agendamentos.equadras.config.HttpClientConfig;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,7 +74,7 @@ class PagamentoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve gerar Pix mock quando access token for nulo ou TEST-MOCK")
+    @DisplayName("Deve gerar Pix mock quando access token for vazio")
     void deveGerarPixMockSemToken() {
         PagamentoService service = new PagamentoService("", httpClient, objectMapper);
 
@@ -182,5 +190,134 @@ class PagamentoServiceTest {
         assertEquals("approved", status.status());
         assertEquals("accredited", status.statusDetail());
         verifyNoInteractions(httpClient);
+    }
+
+    @Test
+    @DisplayName("Deve gerar Pix mock sem chamar HTTP quando token começar com TEST-MOCK")
+    void deveGerarPixMockComTokenTestMock() {
+        PagamentoService service = new PagamentoService("TEST-MOCK-123", httpClient, objectMapper);
+
+        PagamentoService.PixDados pix = service.gerarPix(agendamento);
+
+        assertTrue(pix.transacaoId().startsWith("MP-DEV-"));
+        verifyNoInteractions(httpClient);
+    }
+
+    @Test
+    @DisplayName("Deve enviar POST ao Mercado Pago com URI, headers e payload corretos")
+    void deveEnviarRequisicaoPixCorreta() throws Exception {
+        PagamentoService service = new PagamentoService("APP_USR-123", httpClient, objectMapper);
+        when(httpResponse.statusCode()).thenReturn(201);
+        when(httpResponse.body()).thenReturn("{\"id\":\"999\",\"point_of_interaction\":{\"transaction_data\":{\"qr_code\":\"qr\",\"qr_code_base64\":\"b64\"}}}");
+        doReturn(httpResponse).when(httpClient).send(any(HttpRequest.class), any());
+
+        service.gerarPix(agendamento);
+
+        ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient).send(captor.capture(), any());
+        HttpRequest req = captor.getValue();
+        assertEquals("POST", req.method());
+        assertEquals("https://api.mercadopago.com/v1/payments", req.uri().toString());
+        assertEquals("Bearer APP_USR-123", req.headers().firstValue("Authorization").orElseThrow());
+        assertEquals("eq-agendamento-100", req.headers().firstValue("X-Idempotency-Key").orElseThrow());
+        assertEquals(HttpClientConfig.TIMEOUT, req.timeout().orElseThrow());
+
+        JsonNode json = objectMapper.readTree(lerCorpo(req));
+        assertEquals("pix", json.path("payment_method_id").asText());
+        assertEquals(0, new BigDecimal("120.0").compareTo(json.path("transaction_amount").decimalValue()));
+        assertEquals("100", json.path("external_reference").asText());
+    }
+
+    @Test
+    @DisplayName("Deve acionar fallback mock quando sandbox retornar HTTP 500")
+    void deveAcionarFallbackMockEmErroHttpSandbox() throws Exception {
+        PagamentoService service = new PagamentoService("TEST-abc", httpClient, objectMapper);
+        when(httpResponse.statusCode()).thenReturn(500);
+        when(httpResponse.body()).thenReturn("erro");
+        doReturn(httpResponse).when(httpClient).send(any(HttpRequest.class), any());
+
+        assertTrue(service.gerarPix(agendamento).transacaoId().startsWith("MP-DEV-"));
+    }
+
+    @Test
+    @DisplayName("Deve acionar fallback mock quando sandbox lançar exceção genérica")
+    void deveAcionarFallbackMockEmExcecaoGenericaSandbox() throws Exception {
+        PagamentoService service = new PagamentoService("TEST-abc", httpClient, objectMapper);
+        doThrow(new IOException("conexão recusada")).when(httpClient).send(any(HttpRequest.class), any());
+
+        assertTrue(service.gerarPix(agendamento).transacaoId().startsWith("MP-DEV-"));
+    }
+
+    @Test
+    @DisplayName("Deve lançar IllegalStateException quando produção lançar exceção genérica")
+    void deveLancarExcecaoEmExcecaoGenericaProducao() throws Exception {
+        PagamentoService service = new PagamentoService("APP_USR-123", httpClient, objectMapper);
+        doThrow(new IOException("conexão recusada")).when(httpClient).send(any(HttpRequest.class), any());
+
+        assertThrows(IllegalStateException.class, () -> service.gerarPix(agendamento));
+    }
+
+    @Test
+    @DisplayName("Deve retornar vazio na consulta quando token estiver vazio")
+    void deveRetornarVazioSemToken() {
+        PagamentoService service = new PagamentoService("", httpClient, objectMapper);
+
+        assertTrue(service.consultarPagamentoMercadoPago("123").isEmpty());
+        verifyNoInteractions(httpClient);
+    }
+
+    @Test
+    @DisplayName("Deve retornar vazio na consulta quando o gateway responder 404")
+    void deveRetornarVazioEmStatusNao2xx() throws Exception {
+        PagamentoService service = new PagamentoService("APP_USR-123", httpClient, objectMapper);
+        when(httpResponse.statusCode()).thenReturn(404);
+        doReturn(httpResponse).when(httpClient).send(any(HttpRequest.class), any());
+
+        assertTrue(service.consultarPagamentoMercadoPago("123").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve retornar vazio na consulta quando o JSON for inválido")
+    void deveRetornarVazioEmJsonInvalido() throws Exception {
+        PagamentoService service = new PagamentoService("APP_USR-123", httpClient, objectMapper);
+        when(httpResponse.statusCode()).thenReturn(200);
+        when(httpResponse.body()).thenReturn("{invalido");
+        doReturn(httpResponse).when(httpClient).send(any(HttpRequest.class), any());
+
+        assertTrue(service.consultarPagamentoMercadoPago("123").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve retornar amount e external_reference nulos quando ausentes")
+    void deveRetornarAmountNuloQuandoAusente() throws Exception {
+        PagamentoService service = new PagamentoService("APP_USR-123", httpClient, objectMapper);
+        when(httpResponse.statusCode()).thenReturn(200);
+        when(httpResponse.body()).thenReturn("{\"id\":\"123\",\"status\":\"pending\",\"status_detail\":\"waiting\"}");
+        doReturn(httpResponse).when(httpClient).send(any(HttpRequest.class), any());
+
+        PagamentoService.MercadoPagoStatus status = service.consultarPagamentoMercadoPago("123").orElseThrow();
+
+        assertNull(status.transactionAmount());
+        assertNull(status.externalReference());
+    }
+
+    private static String lerCorpo(HttpRequest req) throws Exception {
+        CompletableFuture<String> corpo = new CompletableFuture<>();
+        req.bodyPublisher().orElseThrow().subscribe(new Flow.Subscriber<ByteBuffer>() {
+            private final StringBuilder sb = new StringBuilder();
+
+            @Override
+            public void onSubscribe(Flow.Subscription s) { s.request(Long.MAX_VALUE); }
+
+            @Override
+            public void onNext(ByteBuffer b) { sb.append(StandardCharsets.UTF_8.decode(b)); }
+
+            @Override
+            public void onError(Throwable t) { corpo.completeExceptionally(t); }
+
+            @Override
+            public void onComplete() { corpo.complete(sb.toString()); }
+        });
+        return corpo.get();
     }
 }
