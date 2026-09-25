@@ -14,6 +14,7 @@ import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.model.enums.CategoriaAuditoria;
 import com.agendamentos.equadras.security.UsuarioLogadoArgumentResolver;
 import com.agendamentos.equadras.service.AuditoriaService;
+import com.agendamentos.equadras.service.UsuarioAuthService;
 import com.agendamentos.equadras.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +37,7 @@ import java.util.List;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final UsuarioAuthService usuarioAuthService;
     private final JwtService jwtService;
     private final ApiKeyService apiKeyService;
     private final ApiKeyRateLimiter apiKeyRateLimiter;
@@ -47,12 +49,14 @@ public class UsuarioController {
 
     public UsuarioController(
             UsuarioService usuarioService,
+            UsuarioAuthService usuarioAuthService,
             JwtService jwtService,
             ApiKeyService apiKeyService,
             ApiKeyRateLimiter apiKeyRateLimiter,
             LoginRateLimiter loginRateLimiter,
             AuditoriaService auditoriaService) {
         this.usuarioService = usuarioService;
+        this.usuarioAuthService = usuarioAuthService;
         this.jwtService = jwtService;
         this.apiKeyService = apiKeyService;
         this.apiKeyRateLimiter = apiKeyRateLimiter;
@@ -95,7 +99,7 @@ public class UsuarioController {
         }
 
         try {
-            var resposta = usuarioService.login(dto);
+            var resposta = usuarioAuthService.login(dto);
             loginRateLimiter.registrarSucesso(email);
             ResponseCookie cookie = criarCookieSessao(resposta.token());
             return ResponseEntity.ok()
@@ -112,7 +116,7 @@ public class UsuarioController {
     public ResponseEntity<Void> logout() {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
         if (usuarioLogado != null && usuarioLogado.id() != null) {
-            usuarioService.revogarSessao(usuarioLogado.id());
+            usuarioAuthService.revogarSessao(usuarioLogado.id());
             auditoriaService.registrarAcaoPorUsuarioId(usuarioLogado.id(), CategoriaAuditoria.AUTENTICACAO,
                     "LOGOUT", "USUARIO", usuarioLogado.id().toString(), "Logout efetuado com sucesso.");
         }
@@ -218,7 +222,7 @@ public class UsuarioController {
     @PatchMapping("/minha-senha")
     public ResponseEntity<Void> alterarMinhaSenha(@RequestBody @Valid com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto,
                                                   @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        usuarioService.alterarMinhaSenha(usuarioLogado.id(), dto);
+        usuarioAuthService.alterarMinhaSenha(usuarioLogado.id(), dto);
         return ResponseEntity.noContent().build();
     }
 
