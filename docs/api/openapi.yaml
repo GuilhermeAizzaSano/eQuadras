@@ -1463,7 +1463,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageNotificacao"
+                $ref: "#/components/schemas/PageNotificacaoResponseDTO"
               example:
               - id: 1
                 mensagem: "Nova reserva confirmada: Arthur Prado em Arena Gol Society\
@@ -2676,7 +2676,7 @@ components:
         timeout:
           type: integer
           format: int64
-    Notificacao:
+    NotificacaoResponseDTO:
       type: object
       properties:
         dataCriacao:
@@ -2691,13 +2691,13 @@ components:
           type: boolean
         mensagem:
           type: string
-    PageNotificacao:
+    PageNotificacaoResponseDTO:
       type: object
       properties:
         content:
           type: array
           items:
-            $ref: "#/components/schemas/Notificacao"
+            $ref: "#/components/schemas/NotificacaoResponseDTO"
         empty:
           type: boolean
         first:

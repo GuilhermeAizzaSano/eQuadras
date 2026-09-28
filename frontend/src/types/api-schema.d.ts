@@ -111,7 +111,7 @@ export interface paths {
         put?: never;
         /**
          * Realizar logout
-         * @description Encerra a sessão do usuário limpando o cookie HttpOnly.
+         * @description Encerra a sessão do usuário limpando o cookie HttpOnly e invalidando tokens ativos.
          */
         post: operations["logout"];
         delete?: never;
@@ -131,9 +131,29 @@ export interface paths {
         put?: never;
         /**
          * Realizar login
-         * @description Autentica via e-mail e senha e retorna o token JWT assinado para autenticação nas demais rotas.
+         * @description Autentica via e-mail e senha, define o cookie HttpOnly de sessão e retorna o perfil do usuário.
          */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/usuarios/api-key/regenerar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gerar ou regenerar API-KEY
+         * @description Emite uma nova chave de API opaca (eq_...) de alta entropia. O token anterior é invalidado de imediato. A chave em texto plano é devolvida exclusivamente nesta resposta.
+         */
+        post: operations["regenerarApiKey"];
         delete?: never;
         options?: never;
         head?: never;
@@ -151,11 +171,11 @@ export interface paths {
          * Listar todos os usuários (Apenas Admin Geral)
          * @description Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.
          */
-        get: operations["listarTodos"];
+        get: operations["listarUsuariosPaginado"];
         put?: never;
         /**
          * Cadastrar novo usuário (Apenas Administrador)
-         * @description Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer token de autenticação com privilégios de Administrador.
+         * @description Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer sessão com privilégios de Administrador.
          */
         post: operations["cadastrar"];
         delete?: never;
@@ -245,7 +265,7 @@ export interface paths {
         };
         /**
          * Listar quadras ativas / por proximidade e filtros
-         * @description Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO). Também suporta o parâmetro 'resumido=true/false'.
+         * @description Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO) com suporte a paginação (page, size). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO) sem paginação. Também suporta o parâmetro 'resumido=true/false'.
          */
         get: operations["listarTodas"];
         put?: never;
@@ -270,7 +290,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Simular aprovação de pagamento Pix (Dev)
+         * Simular aprovação de pagamento Pix
          * @description Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.
          */
         post: operations["simularAprovacao"];
@@ -328,10 +348,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar agendamentos do usuário autenticado
-         * @description Retorna os agendamentos do atleta logado (ativos por padrão, ou histórico completo com historico=true) ou pelas quadras do admin.
+         * Listar agendamentos (legado sem paginação)
+         * @deprecated
+         * @description Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.
          */
-        get: operations["listarTodos_1"];
+        get: operations["listarPaginado"];
         put?: never;
         /**
          * Criar novo agendamento com Lock e Pix
@@ -359,7 +380,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar minha senha
-         * @description Permite que o próprio usuário autenticado altere sua senha informando a atual e a nova (mínimo 6 chars, 1 maiúscula, 1 minúscula, 1 número e 1 símbolo).
+         * @description Permite que o próprio usuário autenticado por sessão altere sua senha informando a atual e a nova.
          */
         patch: operations["alterarMinhaSenha"];
         trace?: never;
@@ -402,6 +423,50 @@ export interface paths {
          * @description Cancela uma reserva ativa pertencente ao usuário autenticado ou ao administrador da quadra.
          */
         patch: operations["cancelar"];
+        trace?: never;
+    };
+    "/api/usuarios/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dados da minha sessão
+         * @description Retorna os dados do usuário autenticado pela sessão ativa (cookie HttpOnly).
+         */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/usuarios/api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consultar metadados da minha API-KEY
+         * @description Retorna informações sobre a existência, prefixo e datas de criação/último uso da chave de API da conta.
+         */
+        get: operations["obterApiKeyInfo"];
+        put?: never;
+        post?: never;
+        /**
+         * Revogar API-KEY
+         * @description Invalida imediatamente a chave de API da conta sem gerar uma substituta. É uma operação idempotente.
+         */
+        delete: operations["revogarApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/quadras/fotos": {
@@ -544,6 +609,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agendamentos/quadra/{quadraId}/contadores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contadores de agendamentos por aba de uma quadra
+         * @description Retorna contadores de agendamentos (TODOS, ATIVOS, REALIZADOS, CANCELADOS) da quadra para o admin proprietário ou Master Admin.
+         */
+        get: operations["obterContadoresPorQuadra"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/quadra/{quadraId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar histórico de agendamentos de uma quadra específica (legado sem paginação)
+         * @deprecated
+         * @description Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.
+         */
+        get: operations["listarPorQuadraPaginado"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agendamentos/horarios-disponiveis": {
         parameters: {
             query?: never;
@@ -576,6 +682,166 @@ export interface paths {
          * @description Retorna em uma única requisição a grade completa de horários de todas as quadras ativas do administrador autenticado para a data indicada.
          */
         get: operations["listarHorariosDoDiaParaAdmin"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/dashboard/metricas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter métricas agregadas do dashboard admin
+         * @description Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado.
+         */
+        get: operations["obterMetricasDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/contadores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contadores de agendamentos por aba
+         * @description Retorna o total de agendamentos do atleta por aba (ATIVOS, REALIZADOS, CANCELADOS).
+         */
+        get: operations["obterContadores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/agenda/mensal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar agenda mensal (Admin)
+         * @description Retorna os agendamentos não cancelados do mês informado para as quadras do admin autenticado, usados no calendário de ocupação.
+         */
+        get: operations["listarAgendaMensal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/agenda/contadores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contadores de reservas da agenda por aba (Admin)
+         * @description Retorna contadores de agendamentos por aba para a data ou intervalo informado e quadra(s) do admin autenticado.
+         */
+        get: operations["obterContadoresAgendaDoDia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/agenda/completa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar agenda completa do dia (Admin)
+         * @description Retorna todos os agendamentos não cancelados de um único dia (máximo 24h) para visualização na grade operacional da timeline.
+         */
+        get: operations["listarAgendaCompleta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agendamentos/agenda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar reservas da agenda do dia ou intervalo paginadas (Admin)
+         * @description Retorna agendamentos paginados do dia informado ou intervalo [inicio, fim) para as quadras do admin autenticado, com filtro opcional por quadra e aba.
+         */
+        get: operations["listarAgendaDoDia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/auditoria/estatisticas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter estatísticas de auditoria de hoje
+         * @description Retorna contadores de logins, falhas, cancelamentos e ações gerais do dia de hoje.
+         */
+        get: operations["obterEstatisticas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/auditoria": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar logs de auditoria com filtros
+         * @description Retorna logs paginados e filtráveis. Apenas o Administrador Geral (Master Admin) tem acesso.
+         */
+        get: operations["listarLogs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -634,15 +900,26 @@ export interface components {
          */
         LocalTime: string;
         UsuarioEdicaoDTO: {
-            nome_usuario: string;
             email_usuario: string;
+            nome_usuario: string;
+            nova_senha?: string;
             phone_usuario: string;
             /** @enum {string} */
             role?: "CLIENT" | "ADMIN";
-            nova_senha?: string;
         };
         /** @description Perfil cadastral de um usuário do sistema */
         UsuarioResponseDTO: {
+            /**
+             * Format: date-time
+             * @description Data e hora de criação da conta
+             * @example 2026-09-04T10:00:00
+             */
+            criadoEm?: string;
+            /**
+             * @description Endereço de e-mail
+             * @example arthur.prado@email.com
+             */
+            email_usuario?: string;
             /**
              * Format: int64
              * @description ID do usuário
@@ -650,15 +927,15 @@ export interface components {
              */
             id_usuario?: number;
             /**
+             * @description Indica se o usuário possui privilégios de Master Admin
+             * @example false
+             */
+            masterAdmin?: boolean;
+            /**
              * @description Nome completo
              * @example Arthur Prado
              */
             nome_usuario?: string;
-            /**
-             * @description Endereço de e-mail
-             * @example arthur.prado@email.com
-             */
-            email_usuario?: string;
             /**
              * @description Telefone ou WhatsApp
              * @example (11) 99999-8888
@@ -670,47 +947,98 @@ export interface components {
              * @enum {string}
              */
             role?: "CLIENT" | "ADMIN";
-            /**
-             * Format: date-time
-             * @description Data e hora de criação da conta
-             * @example 2026-09-04T10:00:00
-             */
-            criadoEm?: string;
         };
         DisponibilidadeDiaDTO: {
             /** @enum {string} */
             diaSemana?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
-            horaInicio?: components["schemas"]["LocalTime"];
             horaFim?: components["schemas"]["LocalTime"];
+            horaInicio?: components["schemas"]["LocalTime"];
         };
         QuadraCriacaoDTO: {
+            bairro?: string;
+            cep?: string;
+            cidade?: string;
+            /** Format: date */
+            dataLimiteAgendamento?: string;
+            descricao?: string;
+            disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
+            estado?: string;
+            fotos?: string[];
+            /** Format: double */
+            latitude?: number;
+            logradouro?: string;
+            /** Format: double */
+            longitude?: number;
             nome: string;
             /** @enum {string} */
             tipoEsporte: "FUTEBOL" | "FUTSAL" | "VOLEI" | "BEACH_TENNIS" | "BASQUETE" | "TENIS";
             valorHora: number;
-            cep?: string;
-            logradouro?: string;
-            bairro?: string;
-            cidade?: string;
-            estado?: string;
-            /** Format: double */
-            latitude?: number;
-            /** Format: double */
-            longitude?: number;
-            descricao?: string;
-            /** Format: date */
-            dataLimiteAgendamento?: string;
-            fotos?: string[];
-            disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
         };
         /** @description Detalhes cadastrais completos e horários de funcionamento de uma quadra */
         QuadraResponseDTO: {
+            /**
+             * @description Status de ativação da quadra
+             * @example true
+             */
+            ativa?: boolean;
+            /**
+             * @description Bairro da quadra
+             * @example Jardim das Flores
+             */
+            bairro?: string;
+            /**
+             * @description CEP do local da quadra
+             * @example 15000-000
+             */
+            cep?: string;
+            /**
+             * @description Cidade onde a quadra está localizada
+             * @example São José do Rio Preto
+             */
+            cidade?: string;
+            /**
+             * Format: date
+             * @description Data limite máxima permitida para agendamentos futuros
+             * @example 2026-12-31
+             */
+            dataLimiteAgendamento?: string;
+            /**
+             * @description Descrição detalhada da infraestrutura da quadra
+             * @example Grama sintética padrão FIFA com iluminação em LED e vestiários.
+             */
+            descricao?: string;
+            /** @description Horários de funcionamento semanais configurados para a quadra */
+            disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
+            /**
+             * @description UF do estado
+             * @example SP
+             */
+            estado?: string;
+            /** @description Lista de URLs das fotos da galeria da quadra */
+            fotos?: string[];
             /**
              * Format: int64
              * @description ID único da quadra
              * @example 1
              */
             id_quadra?: number;
+            /**
+             * Format: double
+             * @description Coordenada geográfica de latitude
+             * @example -20.8113
+             */
+            latitude?: number;
+            /**
+             * @description Logradouro / Rua
+             * @example Av. Brasil, 1500
+             */
+            logradouro?: string;
+            /**
+             * Format: double
+             * @description Coordenada geográfica de longitude
+             * @example -49.3758
+             */
+            longitude?: number;
             /**
              * @description Nome da quadra esportiva
              * @example Arena Gol Society
@@ -727,85 +1055,18 @@ export interface components {
              * @example 120
              */
             valorHora?: number;
-            /**
-             * @description Status de ativação da quadra
-             * @example true
-             */
-            ativa?: boolean;
-            /**
-             * @description CEP do local da quadra
-             * @example 15000-000
-             */
-            cep?: string;
-            /**
-             * @description Logradouro / Rua
-             * @example Av. Brasil, 1500
-             */
-            logradouro?: string;
-            /**
-             * @description Bairro da quadra
-             * @example Jardim das Flores
-             */
-            bairro?: string;
-            /**
-             * @description Cidade onde a quadra está localizada
-             * @example São José do Rio Preto
-             */
-            cidade?: string;
-            /**
-             * @description UF do estado
-             * @example SP
-             */
-            estado?: string;
-            /**
-             * Format: double
-             * @description Coordenada geográfica de latitude
-             * @example -20.8113
-             */
-            latitude?: number;
-            /**
-             * Format: double
-             * @description Coordenada geográfica de longitude
-             * @example -49.3758
-             */
-            longitude?: number;
-            /**
-             * @description Descrição detalhada da infraestrutura da quadra
-             * @example Grama sintética padrão FIFA com iluminação em LED e vestiários.
-             */
-            descricao?: string;
-            /**
-             * Format: date
-             * @description Data limite máxima permitida para agendamentos futuros
-             * @example 2026-12-31
-             */
-            dataLimiteAgendamento?: string;
-            /** @description Lista de URLs das fotos da galeria da quadra */
-            fotos?: string[];
-            /** @description Horários de funcionamento semanais configurados para a quadra */
-            disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
         };
         UsuarioLoginDTO: {
             email_usuario: string;
             senha_usuario: string;
         };
-        /** @description Dados de autenticação bem-sucedida e token JWT */
-        LoginResponseDTO: {
-            /**
-             * @description Token JWT assinado para autenticação Bearer
-             * @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-             */
-            token?: string;
-            /** @description Perfil cadastral do usuário autenticado */
-            usuario?: components["schemas"]["UsuarioResponseDTO"];
-        };
         UsuarioCriacaoDTO: {
-            nome_usuario: string;
             email_usuario: string;
-            senha_usuario: string;
+            nome_usuario: string;
             phone_usuario: string;
             /** @enum {string} */
             role?: "CLIENT" | "ADMIN";
+            senha_usuario: string;
         };
         /** @description Dados para desbloquear horários de uma quadra via API */
         DesbloqueioHorarioDTO: {
@@ -822,78 +1083,51 @@ export interface components {
              */
             data?: string;
             /**
-             * @description Hora de início do bloqueio (opcional)
-             * @example 14:00:00
-             */
-            horaInicio?: components["schemas"]["LocalTime"];
-            /**
              * @description Hora de término do bloqueio (opcional)
              * @example 16:00:00
              */
             horaFim?: components["schemas"]["LocalTime"];
+            /**
+             * @description Hora de início do bloqueio (opcional)
+             * @example 14:00:00
+             */
+            horaInicio?: components["schemas"]["LocalTime"];
         };
         BloqueioHorarioCriacaoDTO: {
             /** Format: date */
             data: string;
-            horaInicio?: components["schemas"]["LocalTime"];
             horaFim?: components["schemas"]["LocalTime"];
+            horaInicio?: components["schemas"]["LocalTime"];
             motivo?: string;
             substituirDiaInteiro?: boolean;
         };
         BloqueioHorarioResponseDTO: {
-            /** Format: int64 */
-            id?: number;
-            /** Format: int64 */
-            quadraId?: number;
-            /** Format: date */
-            data?: string;
-            horaInicio?: components["schemas"]["LocalTime"];
-            horaFim?: components["schemas"]["LocalTime"];
-            motivo?: string;
             /** Format: date-time */
             criadoEm?: string;
+            /** Format: date */
+            data?: string;
+            horaFim?: components["schemas"]["LocalTime"];
+            horaInicio?: components["schemas"]["LocalTime"];
+            /** Format: int64 */
+            id?: number;
+            motivo?: string;
+            /** Format: int64 */
+            quadraId?: number;
         };
         /** @description Dados completos de retorno de um agendamento esportivo */
         AgendamentoResponseDTO: {
             /**
-             * Format: int64
-             * @description Identificador único do agendamento
-             * @example 42
+             * Format: date-time
+             * @description Data e hora de cancelamento do agendamento, se cancelado
+             * @example 2026-09-04T16:00:00
              */
-            id_agendamento?: number;
-            /**
-             * Format: int64
-             * @description ID do usuário que realizou a reserva
-             * @example 10
-             */
-            usuarioId?: number;
-            /**
-             * @description Nome do atleta que reservou
-             * @example Arthur Prado
-             */
-            nomeUsuario?: string;
-            /**
-             * @description Telefone de contato do atleta
-             * @example (11) 99999-8888
-             */
-            telefoneUsuario?: string;
-            /**
-             * Format: int64
-             * @description ID da quadra reservada
-             * @example 1
-             */
-            quadraId?: number;
-            /**
-             * @description Nome da quadra esportiva
-             * @example Arena Gol Society
-             */
-            nomeQuadra?: string;
+            canceladoEm?: string;
             /**
              * Format: date-time
-             * @description Data e horário de início da partida
-             * @example 2026-09-05T19:00:00
+             * @description Data e hora de criação do agendamento
+             * @example 2026-09-04T15:30:00
              */
-            dataHoraInicio?: string;
+            criadoEm?: string;
             /**
              * Format: date-time
              * @description Data e horário de término da partida
@@ -901,21 +1135,27 @@ export interface components {
              */
             dataHoraFim?: string;
             /**
-             * @description Valor total da reserva em reais
-             * @example 120
+             * Format: date-time
+             * @description Data e horário de início da partida
+             * @example 2026-09-05T19:00:00
              */
-            valorTotal?: number;
+            dataHoraInicio?: string;
             /**
-             * @description Status do agendamento (PENDENTE, CONFIRMADO, CANCELADO)
-             * @example CONFIRMADO
-             * @enum {string}
+             * Format: int64
+             * @description Identificador único do agendamento
+             * @example 42
              */
-            status?: "PENDENTE" | "CONFIRMADO" | "CANCELADO";
+            id_agendamento?: number;
             /**
-             * @description Identificador da transação no gateway de pagamento
-             * @example mp-pix-987654321
+             * @description Nome da quadra esportiva
+             * @example Arena Gol Society
              */
-            transacaoPagamentoId?: string;
+            nomeQuadra?: string;
+            /**
+             * @description Nome do atleta que reservou
+             * @example Arthur Prado
+             */
+            nomeUsuario?: string;
             /**
              * @description Chave Pix Copia e Cola emitida pelo gateway
              * @example 00020126580014br.gov.bcb.pix...
@@ -927,14 +1167,66 @@ export interface components {
              */
             qrCodeBase64?: string;
             /**
-             * Format: date-time
-             * @description Data e hora de criação do agendamento
-             * @example 2026-09-04T15:30:00
+             * Format: int64
+             * @description ID da quadra reservada
+             * @example 1
              */
-            criadoEm?: string;
+            quadraId?: number;
+            /**
+             * @description Status do agendamento (PENDENTE, CONFIRMADO, CANCELADO)
+             * @example CONFIRMADO
+             * @enum {string}
+             */
+            status?: "PENDENTE" | "CONFIRMADO" | "CANCELADO";
+            /**
+             * @description Telefone de contato do atleta
+             * @example (11) 99999-8888
+             */
+            telefoneUsuario?: string;
+            /**
+             * @description Identificador da transação no gateway de pagamento
+             * @example mp-pix-987654321
+             */
+            transacaoPagamentoId?: string;
+            /**
+             * Format: int64
+             * @description ID do usuário que realizou a reserva
+             * @example 10
+             */
+            usuarioId?: number;
+            /**
+             * @description Valor total da reserva em reais
+             * @example 120
+             */
+            valorTotal?: number;
         };
         /** @description Dados para criação simplificada de reserva via Bot / WhatsApp */
         AgendamentoBotRequestDTO: {
+            /**
+             * @description Data da reserva (ex: '2026-09-05', '15/09', 'amanha', 'sexta')
+             * @example 2026-09-05
+             */
+            data: string;
+            /**
+             * @description Horário de término (opcional, padrão: início + 1h)
+             * @example 20:00
+             */
+            horaFim?: string;
+            /**
+             * @description Horário de início (ex: '19:00', '19h', '19')
+             * @example 19:00
+             */
+            horaInicio: string;
+            /**
+             * @description Nome completo do cliente
+             * @example Arthur Prado
+             */
+            nomeCliente: string;
+            /**
+             * @description Nome ou parte do nome da quadra (opcional)
+             * @example Quadra Society Principal
+             */
+            nomeQuadra?: string;
             /**
              * Format: int64
              * @description ID numérico da quadra (opcional se nomeQuadra ou tipoEsporte informado)
@@ -942,54 +1234,23 @@ export interface components {
              */
             quadraId?: number;
             /**
-             * @description Nome ou parte do nome da quadra (opcional)
-             * @example Quadra Society Principal
+             * @description Telefone ou WhatsApp do cliente com DDD
+             * @example 11999998888
              */
-            nomeQuadra?: string;
+            telefoneCliente: string;
             /**
              * @description Tipo de esporte da quadra (opcional)
              * @example SOCIETY
              */
             tipoEsporte?: string;
-            /**
-             * @description Data da reserva (ex: '2026-09-05', '15/09', 'amanha', 'sexta')
-             * @example 2026-09-05
-             */
-            data: string;
-            /**
-             * @description Horário de início (ex: '19:00', '19h', '19')
-             * @example 19:00
-             */
-            horaInicio: string;
-            /**
-             * @description Horário de término (opcional, padrão: início + 1h)
-             * @example 20:00
-             */
-            horaFim?: string;
-            /**
-             * @description Nome completo do cliente
-             * @example Arthur Prado
-             */
-            nomeCliente: string;
-            /**
-             * @description Telefone ou WhatsApp do cliente com DDD
-             * @example 11999998888
-             */
-            telefoneCliente: string;
         };
         AgendamentoCriacaoDTO: {
             /**
-             * Format: int64
-             * @description ID do usuário (opcional para usuários autenticados via JWT)
-             * @example 10
+             * Format: date-time
+             * @description Data e hora de término. Deve ser hora cheia (minutos zerados: HH:00:00). A duração mínima é de 1 hora e múltipla de 60 minutos.
+             * @example 2026-09-12T20:00:00
              */
-            usuarioId?: number;
-            /**
-             * Format: int64
-             * @description Identificador único da quadra esportiva
-             * @example 1
-             */
-            quadraId: number;
+            dataHoraFim: string;
             /**
              * Format: date-time
              * @description Data e hora de início. Deve ser hora cheia (minutos zerados: HH:00:00).
@@ -997,57 +1258,89 @@ export interface components {
              */
             dataHoraInicio: string;
             /**
-             * Format: date-time
-             * @description Data e hora de término. Deve ser hora cheia (minutos zerados: HH:00:00). A duração mínima é de 1 hora e múltipla de 60 minutos.
-             * @example 2026-09-12T20:00:00
+             * Format: int64
+             * @description Identificador único da quadra esportiva
+             * @example 1
              */
-            dataHoraFim: string;
+            quadraId: number;
+            /**
+             * Format: int64
+             * @description ID do usuário (opcional para usuários autenticados via JWT)
+             * @example 10
+             */
+            usuarioId?: number;
         };
         AlterarSenhaDTO: {
-            senhaAtual: string;
             novaSenha: string;
+            senhaAtual: string;
+        };
+        ApiKeyInfoDTO: {
+            /** Format: date-time */
+            criadaEm?: string;
+            last4?: string;
+            possuiChave?: boolean;
+            /** Format: date-time */
+            ultimoUsoEm?: string;
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        PageResponseUsuarioResponseDTO: {
+            content?: components["schemas"]["UsuarioResponseDTO"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         SseEmitter: {
             /** Format: int64 */
             timeout?: number;
         };
-        Notificacao: {
-            /** Format: int64 */
-            id?: number;
-            mensagem?: string;
-            lida?: boolean;
-            excluida?: boolean;
+        NotificacaoResponseDTO: {
             /** Format: date-time */
             dataCriacao?: string;
+            excluida?: boolean;
+            /** Format: int64 */
+            id?: number;
+            lida?: boolean;
+            mensagem?: string;
         };
-        PageNotificacao: {
+        PageNotificacaoResponseDTO: {
+            content?: components["schemas"]["NotificacaoResponseDTO"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
             /** Format: int64 */
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            /** Format: int32 */
-            size?: number;
-            content?: components["schemas"]["Notificacao"][];
-            /** Format: int32 */
-            number?: number;
-            first?: boolean;
-            last?: boolean;
-            sort?: components["schemas"]["SortObject"];
-            /** Format: int32 */
-            numberOfElements?: number;
-            pageable?: components["schemas"]["PageableObject"];
-            empty?: boolean;
         };
         PageableObject: {
             /** Format: int64 */
             offset?: number;
-            sort?: components["schemas"]["SortObject"];
-            unpaged?: boolean;
-            /** Format: int32 */
-            pageSize?: number;
             /** Format: int32 */
             pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
             paged?: boolean;
+            sort?: components["schemas"]["SortObject"];
+            unpaged?: boolean;
         };
         SortObject: {
             empty?: boolean;
@@ -1057,11 +1350,10 @@ export interface components {
         /** @description Representação detalhada de cada slot de horário de uma quadra no dia */
         HorarioDisponivelDTO: {
             /**
-             * Format: time
-             * @description Horário de início do slot
-             * @example 14:00:00
+             * @description Indica se o horário pode ser agendado no momento
+             * @example true
              */
-            inicio?: string;
+            disponivel?: boolean;
             /**
              * Format: time
              * @description Horário de término do slot
@@ -1069,24 +1361,44 @@ export interface components {
              */
             fim?: string;
             /**
-             * @description Indica se o horário pode ser agendado no momento
-             * @example true
+             * Format: time
+             * @description Horário de início do slot
+             * @example 14:00:00
              */
-            disponivel?: boolean;
+            inicio?: string;
+            /**
+             * @description Justificativa ou motivo do status
+             * @example Disponível
+             */
+            motivo?: string;
             /**
              * @description Status detalhado: DISPONIVEL, BLOQUEADO, AGENDADO ou INDISPONIVEL
              * @example DISPONIVEL
              * @enum {string}
              */
             status?: "DISPONIVEL" | "BLOQUEADO" | "AGENDADO" | "INDISPONIVEL";
-            /**
-             * @description Justificativa ou motivo do status
-             * @example Disponível
-             */
-            motivo?: string;
+        };
+        PageResponseAgendamentoResponseDTO: {
+            content?: components["schemas"]["AgendamentoResponseDTO"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         /** @description Representação consolidada da grade de horários de uma quadra com contexto */
         GradeHorariosResponseDTO: {
+            /**
+             * Format: date
+             * @description Data consultada
+             * @example 2026-09-05
+             */
+            data?: string;
+            /** @description Lista dos slots de horários do dia */
+            horarios?: components["schemas"]["HorarioDisponivelDTO"][];
             /**
              * Format: int64
              * @description ID único da quadra
@@ -1109,14 +1421,86 @@ export interface components {
              * @example 120
              */
             valorHora?: number;
+        };
+        /** @description Métricas agregadas do painel administrativo */
+        DashboardMetricasDTO: {
             /**
-             * Format: date
-             * @description Data consultada
-             * @example 2026-09-05
+             * @description Faturamento total acumulado em reservas confirmadas (pagas)
+             * @example 15420
              */
-            data?: string;
-            /** @description Lista dos slots de horários do dia */
-            horarios?: components["schemas"]["HorarioDisponivelDTO"][];
+            faturamentoTotal?: number;
+            /**
+             * Format: int64
+             * @description Total de quadras ativas do administrador
+             * @example 3
+             */
+            quadrasAtivas?: number;
+            /**
+             * Format: int64
+             * @description Total de reservas agendadas para o dia atual
+             * @example 6
+             */
+            reservasHoje?: number;
+            /**
+             * Format: int64
+             * @description Total de quadras pertencentes ao administrador
+             * @example 4
+             */
+            totalQuadras?: number;
+            /**
+             * Format: int64
+             * @description Total histórico de reservas válidas (não canceladas)
+             * @example 128
+             */
+            totalReservas?: number;
+        };
+        EstatisticasAuditoriaDTO: {
+            /** Format: int64 */
+            totalAcoesHoje?: number;
+            /** Format: int64 */
+            totalCancelamentosHoje?: number;
+            /** Format: int64 */
+            totalFalhasLoginHoje?: number;
+            /** Format: int64 */
+            totalLoginsHoje?: number;
+        };
+        LogAuditoriaResponseDTO: {
+            acao?: string;
+            /** @enum {string} */
+            categoria?: "AUTENTICACAO" | "AGENDAMENTO" | "QUADRA" | "USUARIO" | "BLOQUEIO" | "API_KEY";
+            /** Format: date-time */
+            criadoEm?: string;
+            detalhes?: string;
+            entidade?: string;
+            /** Format: int64 */
+            id?: number;
+            ip?: string;
+            recursoId?: string;
+            /** @enum {string} */
+            tipoExecutor?: "MASTER_ADMIN" | "ADMIN_QUADRA" | "CLIENTE" | "SISTEMA";
+            userAgent?: string;
+            usuarioEmail?: string;
+            /** Format: int64 */
+            usuarioId?: number;
+            usuarioNome?: string;
+        };
+        PageLogAuditoriaResponseDTO: {
+            content?: components["schemas"]["LogAuditoriaResponseDTO"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         /** @description Resumo cadastral simplificado da quadra para listagens e bots */
         QuadraResumoResponseDTO: {
@@ -1588,7 +1972,7 @@ export interface operations {
                      *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["LoginResponseDTO"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Requisição Inválida */
@@ -1611,9 +1995,31 @@ export interface operations {
             };
         };
     };
-    listarTodos: {
+    regenerarApiKey: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+        };
+    };
+    listarUsuariosPaginado: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1646,7 +2052,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["UsuarioResponseDTO"][];
+                    "application/json": components["schemas"]["UsuarioResponseDTO"][] | components["schemas"]["PageResponseUsuarioResponseDTO"];
                 };
             };
         };
@@ -1997,10 +2403,13 @@ export interface operations {
                 raioKm?: number;
                 tipoEsporte?: string;
                 nome?: string;
+                endereco?: string;
                 cidade?: string;
                 bairro?: string;
                 cep?: string;
                 resumido?: boolean;
+                page?: number;
+                size?: number;
             };
             header?: {
                 "X-Client"?: string;
@@ -2262,9 +2671,12 @@ export interface operations {
             };
         };
     };
-    listarTodos_1: {
+    listarPaginado: {
         parameters: {
-            query?: {
+            query: {
+                aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
+                apenasPendentes?: boolean;
+                pageable: components["schemas"]["Pageable"];
                 historico?: boolean;
             };
             header?: never;
@@ -2299,7 +2711,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"][] | components["schemas"]["PageResponseAgendamentoResponseDTO"];
                 };
             };
         };
@@ -2486,6 +2898,64 @@ export interface operations {
             };
         };
     };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioResponseDTO"];
+                };
+            };
+        };
+    };
+    obterApiKeyInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyInfoDTO"];
+                };
+            };
+        };
+    };
+    revogarApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     consultarFotos_1: {
         parameters: {
             query?: {
@@ -2639,7 +3109,7 @@ export interface operations {
                      *       }
                      *     ]
                      */
-                    "application/json": components["schemas"]["PageNotificacao"];
+                    "application/json": components["schemas"]["PageNotificacaoResponseDTO"];
                 };
             };
         };
@@ -2794,10 +3264,35 @@ export interface operations {
             };
         };
     };
-    listarPorQuadraEData: {
+    obterContadoresPorQuadra: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                quadraId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    listarPorQuadraPaginado: {
         parameters: {
             query: {
-                data: string;
+                aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
+                pageable: components["schemas"]["Pageable"];
             };
             header?: never;
             path: {
@@ -2807,33 +3302,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de agendamentos da quadra na data informada */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "id_agendamento": 42,
-                     *         "usuarioId": 10,
-                     *         "nomeUsuario": "Arthur Prado",
-                     *         "telefoneUsuario": "(11) 99999-8888",
-                     *         "quadraId": 1,
-                     *         "nomeQuadra": "Arena Gol Society",
-                     *         "dataHoraInicio": "2026-09-12T19:00:00",
-                     *         "dataHoraFim": "2026-09-12T20:00:00",
-                     *         "valorTotal": 140,
-                     *         "status": "CONFIRMADO",
-                     *         "transacaoPagamentoId": "mp-pix-987654321",
-                     *         "pixCopiaECola": null,
-                     *         "qrCodeBase64": null,
-                     *         "criadoEm": "2026-09-09T00:30:00"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"][] | components["schemas"]["PageResponseAgendamentoResponseDTO"];
                 };
             };
         };
@@ -2985,6 +3460,200 @@ export interface operations {
             };
         };
     };
+    obterMetricasDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardMetricasDTO"];
+                };
+            };
+        };
+    };
+    obterContadores: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    listarAgendaMensal: {
+        parameters: {
+            query: {
+                ano: number;
+                mes: number;
+                quadraId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                };
+            };
+        };
+    };
+    obterContadoresAgendaDoDia: {
+        parameters: {
+            query?: {
+                data?: string;
+                inicio?: string;
+                fim?: string;
+                quadraId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    listarAgendaCompleta: {
+        parameters: {
+            query?: {
+                data?: string;
+                inicio?: string;
+                fim?: string;
+                quadraId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                };
+            };
+        };
+    };
+    listarAgendaDoDia: {
+        parameters: {
+            query: {
+                data?: string;
+                inicio?: string;
+                fim?: string;
+                quadraId?: number;
+                aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseAgendamentoResponseDTO"];
+                };
+            };
+        };
+    };
+    obterEstatisticas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstatisticasAuditoriaDTO"];
+                };
+            };
+        };
+    };
+    listarLogs: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                usuarioId?: number;
+                categoria?: "AUTENTICACAO" | "AGENDAMENTO" | "QUADRA" | "USUARIO" | "BLOQUEIO" | "API_KEY";
+                acao?: string;
+                dataInicio?: string;
+                dataFim?: string;
+                busca?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageLogAuditoriaResponseDTO"];
+                };
+            };
+        };
+    };
     removerBloqueio: {
         parameters: {
             query?: never;
@@ -3022,8 +3691,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Notificações excluídas com sucesso (No Content) */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
