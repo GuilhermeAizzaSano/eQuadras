@@ -9,7 +9,6 @@ import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
@@ -31,10 +30,13 @@ public class ApiKeyService {
 
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaApiKeyRepository auditoriaRepository;
+    private final ApiKeyCache apiKeyCache;
 
-    public ApiKeyService(UsuarioRepository usuarioRepository, AuditoriaApiKeyRepository auditoriaRepository) {
+    public ApiKeyService(UsuarioRepository usuarioRepository, AuditoriaApiKeyRepository auditoriaRepository,
+                         ApiKeyCache apiKeyCache) {
         this.usuarioRepository = usuarioRepository;
         this.auditoriaRepository = auditoriaRepository;
+        this.apiKeyCache = apiKeyCache;
     }
 
     @Transactional
@@ -45,6 +47,8 @@ public class ApiKeyService {
         if (!usuario.isAtivo()) {
             throw new IllegalStateException("Usuário inativo não pode gerar API-KEY.");
         }
+
+        apiKeyCache.invalidarHash(usuario.getApiKeyHash());
 
         String evento = (usuario.getApiKeyHash() == null) ? "GERADA" : "REGENERADA";
 
@@ -80,6 +84,7 @@ public class ApiKeyService {
             return;
         }
 
+        apiKeyCache.invalidarHash(usuario.getApiKeyHash());
         usuario.setApiKeyHash(null);
         // Preserva last4, criadaEm e ultimoUsoEm para fins de auditoria
         usuarioRepository.save(usuario);
@@ -90,22 +95,22 @@ public class ApiKeyService {
         log.info("API-KEY evento=REVOGADA realizado para usuarioId={}, ip={}", usuarioId, ip);
     }
 
-    @Transactional(readOnly = true)
-    public Optional<Usuario> autenticar(String rawKey) {
+    public Optional<UsuarioAutenticado> autenticar(String rawKey) {
         if (rawKey == null || !API_KEY_PATTERN.matcher(rawKey).matches()) {
             return Optional.empty();
         }
-
-        String hash = sha256Hex(rawKey);
-        return usuarioRepository.findByApiKeyHash(hash)
-                .filter(Usuario::isAtivo);
+        return apiKeyCache.obter(sha256Hex(rawKey), hash -> usuarioRepository.findByApiKeyHash(hash)
+                .filter(Usuario::isAtivo)
+                .map(u -> new UsuarioAutenticado(u.getId_usuario(), u.getRole(), TipoAutenticacao.API_KEY)));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    // Throttle em memória evita um UPDATE por requisição; o repositório mantém o limite também no SQL
     public void registrarUso(Long usuarioId) {
+        if (!apiKeyCache.deveRegistrarUso(usuarioId)) {
+            return;
+        }
         Instant agora = Instant.now();
-        Instant limite = agora.minus(Duration.ofMinutes(5));
-        usuarioRepository.atualizarUltimoUsoComThrottling(usuarioId, agora, limite);
+        usuarioRepository.atualizarUltimoUsoComThrottling(usuarioId, agora, agora.minus(Duration.ofMinutes(5)));
     }
 
     @Transactional(readOnly = true)

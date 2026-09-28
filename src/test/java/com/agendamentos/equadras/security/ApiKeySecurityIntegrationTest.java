@@ -42,6 +42,9 @@ public class ApiKeySecurityIntegrationTest {
     @Autowired
     private ApiKeyRateLimiter apiKeyRateLimiter;
 
+    @Autowired
+    private ApiKeyCache apiKeyCache;
+
     private MockMvc mockMvc;
     private Usuario usuarioAdmin;
     private String rawApiKeyAdmin;
@@ -56,6 +59,7 @@ public class ApiKeySecurityIntegrationTest {
 
         // Reseta o rate limiter entre testes para evitar contaminação de estado (falhas acumuladas de testes anteriores)
         apiKeyRateLimiter.reset();
+        apiKeyCache.invalidarTudo();
 
         // Cria ou atualiza usuário admin no banco
         usuarioAdmin = usuarioRepository.findByEmail_usuario("admin_integ@equadras.com")

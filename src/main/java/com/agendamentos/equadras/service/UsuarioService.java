@@ -11,6 +11,7 @@ import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
 import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.UsuarioRepository;
+import com.agendamentos.equadras.security.ApiKeyCache;
 import com.agendamentos.equadras.security.JwtService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +34,7 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditoriaService auditoriaService;
+    private final ApiKeyCache apiKeyCache;
     private final String masterAdminEmail;
     private final String botDefaultPassword;
 
@@ -41,12 +43,14 @@ public class UsuarioService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuditoriaService auditoriaService,
+            ApiKeyCache apiKeyCache,
             @org.springframework.beans.factory.annotation.Value("${admin.master.email:gui@gmail.com}") String masterAdminEmail,
             @org.springframework.beans.factory.annotation.Value("${equadras.bot.default-password:}") String botDefaultPassword) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditoriaService = auditoriaService;
+        this.apiKeyCache = apiKeyCache;
         this.masterAdminEmail = masterAdminEmail != null ? masterAdminEmail.trim().toLowerCase() : "gui@gmail.com";
         this.botDefaultPassword = botDefaultPassword != null ? botDefaultPassword.trim() : "";
 
@@ -166,6 +170,7 @@ public class UsuarioService {
         }
 
         Usuario atualizado = usuarioRepository.save(usuario);
+        apiKeyCache.invalidarUsuario(id);
         if (auditoriaService != null) {
             auditoriaService.registrarAcaoPorUsuarioId(usuarioLogadoId, CategoriaAuditoria.USUARIO, "EDITAR",
                     "USUARIO", atualizado.getId_usuario().toString(),
@@ -186,6 +191,7 @@ public class UsuarioService {
         }
 
         usuarioRepository.delete(usuario);
+        apiKeyCache.invalidarUsuario(id);
         if (auditoriaService != null) {
             auditoriaService.registrarAcaoPorUsuarioId(usuarioLogadoId, CategoriaAuditoria.USUARIO, "EXCLUIR",
                     "USUARIO", id.toString(),

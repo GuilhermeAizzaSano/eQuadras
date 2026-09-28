@@ -32,6 +32,9 @@ class ApiKeyServiceTest {
     @Mock
     private AuditoriaApiKeyRepository auditoriaApiKeyRepository;
 
+    @org.mockito.Spy
+    private ApiKeyCache apiKeyCache = new ApiKeyCache();
+
     @InjectMocks
     private ApiKeyService apiKeyService;
 
@@ -188,22 +191,22 @@ class ApiKeyServiceTest {
 
         when(usuarioRepository.findByApiKeyHash(hash)).thenReturn(Optional.of(usuario));
 
-        Optional<Usuario> autenticado = apiKeyService.autenticar(rawToken);
+        Optional<UsuarioAutenticado> autenticado = apiKeyService.autenticar(rawToken);
 
         assertTrue(autenticado.isPresent());
-        assertEquals(10L, autenticado.get().getId_usuario());
+        assertEquals(10L, autenticado.get().id());
     }
 
     @Test
     @DisplayName("Não deve autenticar se o formato da chave for inválido")
     void naoDeveAutenticarChaveInvalida() {
-        Optional<Usuario> result1 = apiKeyService.autenticar("token_sem_prefixo");
+        Optional<UsuarioAutenticado> result1 = apiKeyService.autenticar("token_sem_prefixo");
         assertTrue(result1.isEmpty());
 
-        Optional<Usuario> result2 = apiKeyService.autenticar(null);
+        Optional<UsuarioAutenticado> result2 = apiKeyService.autenticar(null);
         assertTrue(result2.isEmpty());
 
-        Optional<Usuario> result3 = apiKeyService.autenticar("eq_curto");
+        Optional<UsuarioAutenticado> result3 = apiKeyService.autenticar("eq_curto");
         assertTrue(result3.isEmpty());
     }
 
@@ -216,7 +219,7 @@ class ApiKeyServiceTest {
 
         when(usuarioRepository.findByApiKeyHash(hash)).thenReturn(Optional.of(usuario));
 
-        Optional<Usuario> autenticado = apiKeyService.autenticar(rawToken);
+        Optional<UsuarioAutenticado> autenticado = apiKeyService.autenticar(rawToken);
 
         assertTrue(autenticado.isEmpty(), "Usuário inativo não deve ser autenticado");
     }

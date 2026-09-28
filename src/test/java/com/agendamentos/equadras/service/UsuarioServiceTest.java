@@ -38,6 +38,9 @@ class UsuarioServiceTest {
     @Mock
     private AuditoriaService auditoriaService;
 
+    @Mock
+    private com.agendamentos.equadras.security.ApiKeyCache apiKeyCache;
+
     @InjectMocks
     private UsuarioService usuarioService;
 

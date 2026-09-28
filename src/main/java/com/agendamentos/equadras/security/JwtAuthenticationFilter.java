@@ -103,8 +103,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Optional<Usuario> usuarioOpt = apiKeyService.autenticar(rawKey);
-            if (usuarioOpt.isEmpty()) {
+            Optional<UsuarioAutenticado> autenticadoOpt = apiKeyService.autenticar(rawKey);
+            if (autenticadoOpt.isEmpty()) {
                 rateLimiter.registrarFalha(ip);
                 // Não tenta o cookie como fallback
                 authenticationEntryPoint.commence(request, response,
@@ -112,18 +112,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Usuario usuario = usuarioOpt.get();
-            UsuarioAutenticado usuarioAutenticado = new UsuarioAutenticado(
-                    usuario.getId_usuario(),
-                    usuario.getRole(),
-                    TipoAutenticacao.API_KEY
-            );
+            UsuarioAutenticado usuarioAutenticado = autenticadoOpt.get();
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     usuarioAutenticado,
                     null,
                     List.of(
-                            new SimpleGrantedAuthority("ROLE_" + usuario.getRole().name()),
+                            new SimpleGrantedAuthority("ROLE_" + usuarioAutenticado.role().name()),
                             new SimpleGrantedAuthority("SCOPE_API_KEY")
                     )
             );
@@ -131,10 +126,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // Registro de último uso com throttling: falha aqui NÃO pode derrubar a requisição principal
             try {
-                apiKeyService.registrarUso(usuario.getId_usuario());
+                apiKeyService.registrarUso(usuarioAutenticado.id());
             } catch (RuntimeException e) {
                 log.warn("Falha não-bloqueante ao registrar último uso de API-KEY para usuarioId={}: {}",
-                        usuario.getId_usuario(), e.getMessage());
+                        usuarioAutenticado.id(), e.getMessage());
             }
 
             filterChain.doFilter(request, response);
