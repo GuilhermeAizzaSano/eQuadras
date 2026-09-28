@@ -66,7 +66,7 @@ class GradeFlexivelQueryCountIntegrationTest {
         Statistics stats = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         stats.setStatisticsEnabled(true);
         stats.clear();
-        List<GradeHorariosResponseDTO> grade = gradeHorariosService.consultarGradeHorariosFlexivel(null, null, null, null, true);
+        List<GradeHorariosResponseDTO> grade = gradeHorariosService.consultarGradeHorariosFlexivel(null, quadra.getId_quadra(), null, null, true);
 
         assertTrue(stats.getPrepareStatementCount() <= 4, "statements: " + stats.getPrepareStatementCount());
         assertEquals(1, grade.size());
