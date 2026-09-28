@@ -2240,17 +2240,20 @@ components:
           type: string
           maxLength: 2
           minLength: 0
+          pattern: "^[A-Z]{2}$"
         fotos:
           type: array
           items:
             type: string
-            maxLength: 500
+            maxLength: 255
             minLength: 0
           maxItems: 5
           minItems: 0
         latitude:
           type: number
           format: double
+          maximum: 90.0
+          minimum: -90.0
         logradouro:
           type: string
           maxLength: 255
@@ -2258,6 +2261,8 @@ components:
         longitude:
           type: number
           format: double
+          maximum: 180.0
+          minimum: -180.0
         nome:
           type: string
           maxLength: 100
