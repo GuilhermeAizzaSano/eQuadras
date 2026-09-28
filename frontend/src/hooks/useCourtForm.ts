@@ -250,7 +250,8 @@ export const useCourtForm = ({
       return;
     }
     try {
-      await quadraApi.removerFoto(editandoId, fotoUrl);
+      const quadraAtualizada = await quadraApi.removerFoto(editandoId, fotoUrl);
+      setVersaoEditando(quadraAtualizada.versao);
       setFotosExistentes((prev) => prev.filter((f) => f !== fotoUrl));
       setFeedback({ type: 'success', message: 'Foto removida com sucesso!' });
       await onSuccessAction?.();
@@ -315,9 +316,13 @@ export const useCourtForm = ({
           } else {
             quadraSalva = await quadraApi.cadastrar(payload, chaveCriacao);
           }
+          // A partir daqui a quadra existe: se o upload falhar, o próximo envio vira PUT com a versão atual
+          setEditandoId(quadraSalva.id_quadra);
+          setVersaoEditando(quadraSalva.versao);
 
           if (novasFotos.length > 0 && quadraSalva.id_quadra) {
-            await quadraApi.uploadFotos(quadraSalva.id_quadra, novasFotos);
+            const comFotos = await quadraApi.uploadFotos(quadraSalva.id_quadra, novasFotos);
+            setVersaoEditando(comFotos.versao);
           }
 
           setFeedback({
