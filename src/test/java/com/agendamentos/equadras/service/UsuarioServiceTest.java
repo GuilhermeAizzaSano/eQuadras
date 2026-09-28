@@ -244,6 +244,50 @@ class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("E-mail: cadastro grava o e-mail em minúsculas e sem espaços")
+    void cadastroNormalizaEmail() {
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO("Novo", "  Novo@Email.com ", "senha123", "11999990016", Role.CLIENT);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.existsByEmail_usuario("novo@email.com")).thenReturn(false);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            u.setId_usuario(10L);
+            return u;
+        });
+
+        usuarioService.cadastrarPorAdmin(dto, 99L);
+
+        verify(usuarioRepository).save(argThat(u -> "novo@email.com".equals(u.getEmail_usuario())));
+    }
+
+    @Test
+    @DisplayName("E-mail: trocar só a caixa do próprio e-mail não acusa duplicidade e grava minúsculo")
+    void edicaoMudandoSoACaixa() {
+        usuario.setEmail_usuario("Mariana@Email.com");
+        var dto = new com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO("Mariana", "MARIANA@email.com", "11988887777", Role.CLIENT, null);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
+
+        usuarioService.editarUsuario(1L, dto, 99L);
+
+        verify(usuarioRepository, never()).existsByEmail_usuario(any());
+        assertEquals("mariana@email.com", usuario.getEmail_usuario());
+    }
+
+    @Test
+    @DisplayName("E-mail: edição para o e-mail de outro usuário em outra caixa retorna EMAIL_DUPLICADO")
+    void edicaoParaEmailDeOutroEmOutraCaixa() {
+        var dto = new com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO("Mariana", "OUTRO@Email.com", "11988887777", Role.CLIENT, null);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.existsByEmail_usuario("outro@email.com")).thenReturn(true);
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.editarUsuario(1L, dto, 99L));
+        assertEquals("EMAIL_DUPLICADO", ex.getCode());
+    }
+
+    @Test
     @DisplayName("V16: bot aceita telefone com +55 e encontra o cliente existente")
     void botNormalizaDdi() {
         when(usuarioRepository.findByPhone_usuario("11988887777")).thenReturn(Optional.of(usuario));

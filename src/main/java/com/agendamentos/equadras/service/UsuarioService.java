@@ -87,7 +87,8 @@ public class UsuarioService {
     public UsuarioResponseDTO cadastrarPorAdmin(UsuarioCriacaoDTO dto, Long usuarioLogadoId) {
         validarAcessoMasterAdmin(usuarioLogadoId);
 
-        if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
+        String email = normalizarEmail(dto.email_usuario());
+        if (usuarioRepository.existsByEmail_usuario(email)) {
             throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado no sistema.");
         }
 
@@ -96,7 +97,7 @@ public class UsuarioService {
 
         Usuario usuario = Usuario.builder()
                 .nome_usuario(dto.nome_usuario())
-                .email_usuario(dto.email_usuario())
+                .email_usuario(email)
                 .senha_usuario(passwordEncoder.encode(dto.senha_usuario()))
                 .phone_usuario(telefone)
                 .role(roleParaAtribuir)
@@ -119,16 +120,18 @@ public class UsuarioService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
 
         // Se o e-mail foi alterado, verificar duplicidade
-        if (!usuario.getEmail_usuario().equalsIgnoreCase(dto.email_usuario())) {
-            if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
+        String email = normalizarEmail(dto.email_usuario());
+        if (!usuario.getEmail_usuario().equalsIgnoreCase(email)) {
+            if (usuarioRepository.existsByEmail_usuario(email)) {
                 throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado por outro usuário.");
             }
             // Não permitir alterar o e-mail do Admin Geral
             if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
                 throw new RegraNegocioException("OPERACAO_NAO_PERMITIDA", "O e-mail do Administrador Geral não pode ser modificado.");
             }
-            usuario.setEmail_usuario(dto.email_usuario());
         }
+        // Grava sempre normalizado: trocar só a caixa também atualiza um e-mail legado
+        usuario.setEmail_usuario(email);
 
         usuario.setNome_usuario(dto.nome_usuario());
         usuario.setPhone_usuario(validarTelefoneDisponivel(dto.phone_usuario(), id));
@@ -210,6 +213,11 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado para o ID: " + id));
         return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
+    }
+
+    // E-mail comparado e gravado em minúsculas, como o índice uk_usuarios_email_lower
+    private static String normalizarEmail(String email) {
+        return email != null ? email.trim().toLowerCase(java.util.Locale.ROOT) : null;
     }
 
     // Telefone identifica o cliente no bot: guardado só com dígitos e único (índice uk_usuarios_phone)

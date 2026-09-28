@@ -96,6 +96,19 @@ class UsuarioAuthServiceTest {
     }
 
     @Test
+    @DisplayName("E-mail: login com o e-mail em outra caixa encontra o usuário")
+    void deveLogarComEmailEmOutraCaixa() {
+        UsuarioLoginDTO dto = new UsuarioLoginDTO("MARIANA@Email.com", "senha123");
+        when(usuarioRepository.findByEmail_usuario("MARIANA@Email.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("senha123", "$2a$10$encodedPasswordHash")).thenReturn(true);
+        when(jwtService.gerarToken(usuario)).thenReturn("token.jwt.teste");
+
+        LoginResponseDTO resposta = authService.login(dto);
+
+        assertEquals("token.jwt.teste", resposta.token());
+    }
+
+    @Test
     @DisplayName("Deve falhar login quando a senha estiver errada")
     void deveFalharLoginQuandoSenhaIncorreta() {
         UsuarioLoginDTO dto = new UsuarioLoginDTO("mariana@email.com", "senhaErrada");
