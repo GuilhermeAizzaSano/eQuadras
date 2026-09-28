@@ -19,7 +19,7 @@ public class AgendamentoAuditoriaListener {
         this.auditoriaService = auditoriaService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onAgendamentoCancelado(AgendamentoCanceladoEvent event) {
         if (auditoriaService == null || event == null || event.payload() == null) return;
 
@@ -40,7 +40,7 @@ public class AgendamentoAuditoriaListener {
         );
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onAgendamentosExpiradosCancelados(AgendamentosExpiradosCanceladosEvent event) {
         if (auditoriaService == null || event.quantidadeCancelados() <= 0) return;
 

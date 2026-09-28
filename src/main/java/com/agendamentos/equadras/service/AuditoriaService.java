@@ -65,14 +65,14 @@ public class AuditoriaService {
         registrarAlteracaoSenha(usuario, HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void registrarAcao(Usuario usuario, CategoriaAuditoria categoria, String acao,
                               String entidade, String recursoId, String detalhes) {
         registrarAcao(usuario, categoria, acao, entidade, recursoId, detalhes,
                 HttpRequestUtil.extrairClientIp(null), HttpRequestUtil.extrairUserAgent(null));
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void registrarAcaoPorUsuarioId(Long usuarioId, CategoriaAuditoria categoria, String acao,
                                           String entidade, String recursoId, String detalhes) {
         registrarAcaoPorUsuarioId(usuarioId, categoria, acao, entidade, recursoId, detalhes,
@@ -175,33 +175,29 @@ public class AuditoriaService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void registrarAcao(Usuario usuario, CategoriaAuditoria categoria, String acao,
                               String entidade, String recursoId, String detalhes,
                               String ip, String userAgent) {
-        try {
-            LogAuditoria entrada = LogAuditoria.builder()
-                    .usuarioId(usuario != null ? usuario.getId_usuario() : null)
-                    .usuarioEmail(usuario != null ? usuario.getEmail_usuario() : null)
-                    .usuarioNome(usuario != null ? usuario.getNome_usuario() : null)
-                    .categoria(categoria)
-                    .acao(acao)
-                    .entidade(entidade)
-                    .recursoId(recursoId)
-                    .tipoExecutor(resolverTipoExecutor(usuario))
-                    .detalhes(detalhes)
-                    .ip(ip)
-                    .userAgent(userAgent)
-                    .criadoEm(Instant.now())
-                    .build();
+        LogAuditoria entrada = LogAuditoria.builder()
+                .usuarioId(usuario != null ? usuario.getId_usuario() : null)
+                .usuarioEmail(usuario != null ? usuario.getEmail_usuario() : null)
+                .usuarioNome(usuario != null ? usuario.getNome_usuario() : null)
+                .categoria(categoria)
+                .acao(acao)
+                .entidade(entidade)
+                .recursoId(recursoId)
+                .tipoExecutor(resolverTipoExecutor(usuario))
+                .detalhes(detalhes)
+                .ip(ip)
+                .userAgent(userAgent)
+                .criadoEm(Instant.now())
+                .build();
 
-            logAuditoriaRepository.save(entrada);
-        } catch (Exception e) {
-            log.warn("Falha defensiva ao registrar auditoria acao={} entidade={}: {}", acao, entidade, e.getMessage());
-        }
+        logAuditoriaRepository.save(entrada);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void registrarAcaoPorUsuarioId(Long usuarioId, CategoriaAuditoria categoria, String acao,
                                          String entidade, String recursoId, String detalhes,
                                          String ip, String userAgent) {
@@ -212,29 +208,25 @@ public class AuditoriaService {
         registrarAcao(usuario, categoria, acao, entidade, recursoId, detalhes, ip, userAgent);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void registrarAcaoSistema(CategoriaAuditoria categoria, String acao,
                                      String entidade, String recursoId, String detalhes) {
-        try {
-            LogAuditoria entrada = LogAuditoria.builder()
-                    .usuarioId(null)
-                    .usuarioEmail("sistema@equadras.internal")
-                    .usuarioNome("Processo do Sistema")
-                    .categoria(categoria)
-                    .acao(acao)
-                    .entidade(entidade)
-                    .recursoId(recursoId)
-                    .tipoExecutor(TipoExecutor.SISTEMA)
-                    .detalhes(detalhes)
-                    .ip("127.0.0.1")
-                    .userAgent("ScheduledTask/Background")
-                    .criadoEm(Instant.now())
-                    .build();
+        LogAuditoria entrada = LogAuditoria.builder()
+                .usuarioId(null)
+                .usuarioEmail("sistema@equadras.internal")
+                .usuarioNome("Processo do Sistema")
+                .categoria(categoria)
+                .acao(acao)
+                .entidade(entidade)
+                .recursoId(recursoId)
+                .tipoExecutor(TipoExecutor.SISTEMA)
+                .detalhes(detalhes)
+                .ip("127.0.0.1")
+                .userAgent("ScheduledTask/Background")
+                .criadoEm(Instant.now())
+                .build();
 
-            logAuditoriaRepository.save(entrada);
-        } catch (Exception e) {
-            log.warn("Falha defensiva ao registrar auditoria de sistema acao={}: {}", acao, e.getMessage());
-        }
+        logAuditoriaRepository.save(entrada);
     }
 
     @Transactional(readOnly = true)

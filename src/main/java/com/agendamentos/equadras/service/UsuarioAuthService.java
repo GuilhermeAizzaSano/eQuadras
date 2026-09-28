@@ -38,7 +38,6 @@ public class UsuarioAuthService {
         this.masterAdminEmail = masterAdminEmail != null ? masterAdminEmail.trim().toLowerCase() : "gui@gmail.com";
     }
 
-    @Transactional
     public LoginResponseDTO login(UsuarioLoginDTO dto) {
         Usuario usuario = usuarioRepository.findByEmail_usuario(dto.email_usuario())
                 .orElse(null);

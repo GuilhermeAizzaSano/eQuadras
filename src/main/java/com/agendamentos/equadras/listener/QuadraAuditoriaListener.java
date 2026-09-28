@@ -16,7 +16,7 @@ public class QuadraAuditoriaListener {
         this.auditoriaService = auditoriaService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onQuadraAlterada(QuadraAlteradaEvent event) {
         if (auditoriaService == null || event == null) return;
 

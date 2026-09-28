@@ -16,7 +16,7 @@ public class BloqueioHorarioAuditoriaListener {
         this.auditoriaService = auditoriaService;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onBloqueioHorarioAlterado(BloqueioHorarioAlteradoEvent event) {
         if (auditoriaService == null || event == null) return;
 
