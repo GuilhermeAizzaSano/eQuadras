@@ -57,7 +57,7 @@ public record QuadraCriacaoDTO(
         java.util.List<@Size(max = 255, message = "A URL da foto deve ter no máximo 255 caracteres") String> fotos,
         @Size(max = 7, message = "Uma quadra pode ter no máximo 7 regras de disponibilidade semanal")
         java.util.List<@jakarta.validation.Valid DisponibilidadeDiaDTO> disponibilidades,
-        @io.swagger.v3.oas.annotations.media.Schema(description = "Versão lida antes da edição; se diferente da atual, o PUT retorna 409", example = "3")
+        @io.swagger.v3.oas.annotations.media.Schema(description = "Versão lida antes da edição; obrigatória no PUT (ausente retorna 400, diferente da atual retorna 409). Ignorada no POST", example = "3")
         Long versao
 ) {
     public QuadraCriacaoDTO(String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, String cep, String logradouro,

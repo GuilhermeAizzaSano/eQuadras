@@ -63,7 +63,7 @@ class QuadraEdicaoColecoesIntegrationTest {
     private QuadraCriacaoDTO dtoAtual(List<DisponibilidadeDiaDTO> disponibilidades) {
         QuadraResponseDTO atual = quadraService.buscarPorId(quadraId);
         return new QuadraCriacaoDTO(atual.nome(), atual.tipoEsporte(), atual.valorHora(), null, null, null, null,
-                null, null, null, null, null, atual.fotos(), disponibilidades);
+                null, null, null, null, null, atual.fotos(), disponibilidades, atual.versao());
     }
 
     @Test

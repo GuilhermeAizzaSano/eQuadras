@@ -111,7 +111,11 @@ public class QuadraService {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 
-        if (dto.versao() != null && !dto.versao().equals(quadra.getVersao())) {
+        if (dto.versao() == null) {
+            throw new com.agendamentos.equadras.exception.RegraNegocioException("VERSAO_OBRIGATORIA",
+                    "Informe a versão da quadra para editá-la.");
+        }
+        if (!dto.versao().equals(quadra.getVersao())) {
             throw new com.agendamentos.equadras.exception.RegraNegocioException("CONFLITO_VERSAO",
                     "Esta quadra foi alterada por outra pessoa. Recarregue os dados e tente de novo.");
         }

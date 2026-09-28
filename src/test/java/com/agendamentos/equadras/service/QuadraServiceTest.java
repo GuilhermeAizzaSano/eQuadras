@@ -80,6 +80,7 @@ class QuadraServiceTest {
                 .fotos(new ArrayList<>())
                 .disponibilidades(new ArrayList<>())
                 .build();
+        org.springframework.test.util.ReflectionTestUtils.setField(quadraAdminComum, "versao", 0L);
     }
 
     @Test
@@ -103,7 +104,8 @@ class QuadraServiceTest {
                 "Descrição",
                 null,
                 List.of(),
-                List.of()
+                List.of(),
+                0L
         );
 
         QuadraResponseDTO atualizada = quadraService.editar(10L, dto, 99L);
@@ -227,7 +229,7 @@ class QuadraServiceTest {
 
     private QuadraCriacaoDTO dtoComDataLimite(java.time.LocalDate dataLimite) {
         return new QuadraCriacaoDTO("Quadra Data Limite", TipoEsporte.FUTEBOL, BigDecimal.valueOf(100.00),
-                null, null, null, null, null, null, null, null, dataLimite, null, null);
+                null, null, null, null, null, null, null, null, dataLimite, null, null, 0L);
     }
 
     @Test
@@ -262,7 +264,8 @@ class QuadraServiceTest {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
         when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
 
-        assertThrows(com.agendamentos.equadras.exception.RegraNegocioException.class,
+        com.agendamentos.equadras.exception.RegraNegocioException ex = assertThrows(com.agendamentos.equadras.exception.RegraNegocioException.class,
                 () -> quadraService.editar(10L, dtoComDataLimite(java.time.LocalDate.of(2000, 1, 1)), 1L));
+        assertEquals("DATA_LIMITE_PASSADA", ex.getCode());
     }
 }

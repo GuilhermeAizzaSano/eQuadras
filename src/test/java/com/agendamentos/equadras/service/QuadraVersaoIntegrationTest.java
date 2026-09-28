@@ -83,9 +83,12 @@ class QuadraVersaoIntegrationTest {
     }
 
     @Test
-    @DisplayName("B2: PUT sem versão continua funcionando")
-    void semVersaoFunciona() {
-        assertEquals("Sem versao", quadraService.editar(quadraId, dto("Sem versao", null), admin.getId_usuario()).nome());
+    @DisplayName("B2: PUT sem versão é recusado com VERSAO_OBRIGATORIA")
+    void semVersaoRecusado() {
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> quadraService.editar(quadraId, dto("Sem versao", null), admin.getId_usuario()));
+        assertEquals("VERSAO_OBRIGATORIA", ex.getCode());
+        assertEquals("Quadra B2", quadraService.buscarPorId(quadraId).nome());
     }
 
     @Test

@@ -975,7 +975,7 @@ export interface components {
             valorHora: number;
             /**
              * Format: int64
-             * @description Versão lida antes da edição; se diferente da atual, o PUT retorna 409
+             * @description Versão lida antes da edição; obrigatória no PUT (ausente retorna 400, diferente da atual retorna 409). Ignorada no POST
              * @example 3
              */
             versao?: number;
