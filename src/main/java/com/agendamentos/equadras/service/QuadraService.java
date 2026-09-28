@@ -113,7 +113,7 @@ public class QuadraService {
 
         if (dto.versao() == null) {
             throw new com.agendamentos.equadras.exception.RegraNegocioException("VERSAO_OBRIGATORIA",
-                    "Informe a versão da quadra para editá-la.");
+                    "Não foi possível salvar a quadra. Recarregue a página e tente de novo.");
         }
         if (!dto.versao().equals(quadra.getVersao())) {
             throw new com.agendamentos.equadras.exception.RegraNegocioException("CONFLITO_VERSAO",
