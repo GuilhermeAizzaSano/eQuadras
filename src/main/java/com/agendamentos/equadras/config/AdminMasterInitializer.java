@@ -22,16 +22,19 @@ public class AdminMasterInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final String masterEmail;
     private final String masterPassword;
+    private final String masterPhone;
 
     public AdminMasterInitializer(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
             @Value("${admin.master.email:gui@gmail.com}") String masterEmail,
-            @Value("${admin.master.password:}") String masterPassword) {
+            @Value("${admin.master.password:}") String masterPassword,
+            @Value("${admin.master.phone:11999999999}") String masterPhone) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.masterEmail = masterEmail != null ? masterEmail.trim().toLowerCase() : "";
         this.masterPassword = masterPassword != null ? masterPassword.trim() : "";
+        this.masterPhone = masterPhone != null ? masterPhone.trim() : "";
     }
 
     @Override
@@ -43,6 +46,12 @@ public class AdminMasterInitializer implements CommandLineRunner {
 
         var adminOpt = usuarioRepository.findByEmail_usuario(masterEmail);
         if (adminOpt.isEmpty()) {
+            // Telefone é único (uk_usuarios_phone): colidir aqui derrubaria o boot e o deploy
+            if (usuarioRepository.findByPhone_usuario(masterPhone).isPresent()) {
+                log.error("Telefone configurado em admin.master.phone já pertence a outro usuário. "
+                        + "Master Admin ({}) não criado; ajuste admin.master.phone e reinicie.", masterEmail);
+                return;
+            }
             String senhaInicial = !masterPassword.isBlank()
                     ? masterPassword
                     : gerarSenhaTemporariaSegura();
@@ -51,7 +60,7 @@ public class AdminMasterInitializer implements CommandLineRunner {
                     .nome_usuario("Administrador Geral")
                     .email_usuario(masterEmail)
                     .senha_usuario(passwordEncoder.encode(senhaInicial))
-                    .phone_usuario("11999999999")
+                    .phone_usuario(masterPhone)
                     .role(Role.ADMIN)
                     .ativo(true)
                     .build();
