@@ -346,6 +346,7 @@ public class GlobalExceptionHandler {
             case "id_quadra", "quadraId" -> "Quadra";
             case "valorTotal", "preco" -> "Valor total";
             case "role" -> "Tipo de perfil";
+            case "disponibilidades" -> "Disponibilidades";
             default -> campo;
         };
     }

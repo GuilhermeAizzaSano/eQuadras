@@ -44,6 +44,21 @@ class QuadraCriacaoDTOValidationTest {
                 new DisponibilidadeDiaDTO(DayOfWeek.MONDAY, LocalTime.of(12, 0), LocalTime.of(14, 0))))), "dia repetido");
     }
 
+    private List<String> camposComErro(QuadraCriacaoDTO d) {
+        return validator.validate(d).stream().map(v -> v.getPropertyPath().toString()).toList();
+    }
+
+    @Test
+    @DisplayName("Erros entre campos apontam para campos reais do payload")
+    void errosEntreCamposApontamParaCamposReais() {
+        BigDecimal dez = BigDecimal.TEN;
+        assertEquals(List.of("disponibilidades[0].horaFim"), camposComErro(dto(null, null, null, dez, null,
+                List.of(new DisponibilidadeDiaDTO(DayOfWeek.MONDAY, LocalTime.of(20, 0), LocalTime.of(8, 0))))));
+        assertEquals(List.of("disponibilidades"), camposComErro(dto(null, null, null, dez, null, List.of(
+                new DisponibilidadeDiaDTO(DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0)),
+                new DisponibilidadeDiaDTO(DayOfWeek.MONDAY, LocalTime.of(12, 0), LocalTime.of(14, 0))))));
+    }
+
     @Test
     @DisplayName("M5/M6: aceita valores no limite")
     void aceitaLimites() {

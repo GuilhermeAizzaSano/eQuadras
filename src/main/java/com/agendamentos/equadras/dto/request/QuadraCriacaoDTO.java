@@ -1,7 +1,6 @@
 package com.agendamentos.equadras.dto.request;
 
 import com.agendamentos.equadras.model.enums.TipoEsporte;
-import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -13,6 +12,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
+@DisponibilidadesSemDiaRepetido
 public record QuadraCriacaoDTO(
         @NotBlank(message = "O nome da quadra é obrigatório")
         @Size(min = 3, max = 100, message = "O nome deve ter entre 3 e 100 caracteres")
@@ -65,16 +65,5 @@ public record QuadraCriacaoDTO(
                             java.time.LocalDate dataLimiteAgendamento, List<String> fotos, List<DisponibilidadeDiaDTO> disponibilidades) {
         this(nome, tipoEsporte, valorHora, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao,
                 dataLimiteAgendamento, fotos, disponibilidades, null);
-    }
-
-    @com.fasterxml.jackson.annotation.JsonIgnore
-    @AssertTrue(message = "Não é permitido repetir o dia da semana nas disponibilidades")
-    public boolean isDisponibilidadesSemDiaRepetido() {
-        if (disponibilidades == null) return true;
-        List<java.time.DayOfWeek> dias = disponibilidades.stream()
-                .filter(d -> d != null && d.diaSemana() != null)
-                .map(DisponibilidadeDiaDTO::diaSemana)
-                .toList();
-        return dias.stream().distinct().count() == dias.size();
     }
 }
