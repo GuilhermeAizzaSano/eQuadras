@@ -31,7 +31,7 @@ class QuadraDisponibilidadeUnicaIntegrationTest {
 
     @AfterEach
     void limpar() {
-        quadraRepository.deleteAll();
+        quadraRepository.deleteAll(quadraRepository.findByAdminId(admin.getId_usuario()));
         usuarioRepository.delete(admin);
     }
 

@@ -49,7 +49,8 @@ class QuadraIdempotenciaIntegrationTest {
     @AfterEach
     void limpar() {
         logAuditoriaRepository.deleteAll();
-        quadraRepository.deleteAll();
+        quadraRepository.deleteAll(quadraRepository.findByAdminId(admin.getId_usuario()));
+        quadraRepository.deleteAll(quadraRepository.findByAdminId(outroAdmin.getId_usuario()));
         usuarioRepository.delete(admin);
         usuarioRepository.delete(outroAdmin);
     }
@@ -78,7 +79,7 @@ class QuadraIdempotenciaIntegrationTest {
         }
         pool.shutdown();
 
-        assertEquals(1, quadraRepository.count());
+        assertEquals(1, quadraRepository.findByAdminId(admin.getId_usuario()).size());
         assertEquals(1, ids.stream().distinct().count());
     }
 
@@ -103,6 +104,6 @@ class QuadraIdempotenciaIntegrationTest {
     void semChave() {
         idempotenciaService.cadastrar(dto(), admin.getId_usuario(), null);
         idempotenciaService.cadastrar(dto(), admin.getId_usuario(), " ");
-        assertEquals(2, quadraRepository.count());
+        assertEquals(2, quadraRepository.findByAdminId(admin.getId_usuario()).size());
     }
 }
