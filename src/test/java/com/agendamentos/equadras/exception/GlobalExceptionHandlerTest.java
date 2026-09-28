@@ -71,6 +71,20 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("R5: violação do índice único de telefone vira 409 TELEFONE_EM_USO")
+    void deveMapearUniqueDeTelefoneParaTelefoneEmUso() {
+        SQLException sqlEx = new SQLException(
+                "ERROR: duplicate key value violates unique constraint \"uk_usuarios_phone\"", "23505");
+        DataIntegrityViolationException dive = new DataIntegrityViolationException("conflito", sqlEx);
+
+        ProblemDetail problem = exceptionHandler.handleDataIntegrityViolation(dive, request);
+
+        assertEquals(HttpStatus.CONFLICT.value(), problem.getStatus());
+        assertEquals("TELEFONE_EM_USO", problem.getProperties().get("code"));
+        assertEquals("Telefone já cadastrado para outro usuário.", problem.getDetail());
+    }
+
+    @Test
     @DisplayName("Deve mapear SQLState 23505 (Unique Violation) para 409 Conflict com código REGISTRO_DUPLICADO")
     void deveMapear23505ParaRegistroDuplicado() {
         SQLException sqlEx = new SQLException("unique violation", "23505");

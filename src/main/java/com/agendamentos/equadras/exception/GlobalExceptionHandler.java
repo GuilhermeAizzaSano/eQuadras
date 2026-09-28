@@ -134,6 +134,11 @@ public class GlobalExceptionHandler {
             title = "Conflito de Horário";
             code = "HORARIO_INDISPONIVEL";
             msg = "O horário selecionado conflita com outro agendamento já existente ou bloqueado para esta quadra.";
+        } else if ("23505".equalsIgnoreCase(sqlState) && String.valueOf(causa.getMessage()).contains("uk_usuarios_phone")) {
+            // Corrida entre dois cadastros com o mesmo telefone: o índice único barra o segundo
+            title = "Telefone em Uso";
+            code = "TELEFONE_EM_USO";
+            msg = "Telefone já cadastrado para outro usuário.";
         } else if ("23505".equalsIgnoreCase(sqlState)) {
             title = "Registro Duplicado";
             code = "REGISTRO_DUPLICADO";

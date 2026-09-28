@@ -215,7 +215,11 @@ public class UsuarioService {
     // Telefone identifica o cliente no bot: guardado só com dígitos e único (índice uk_usuarios_phone)
     private String validarTelefoneDisponivel(String telefone, Long idUsuarioAtual) {
         String normalizado = com.agendamentos.equadras.util.TelefoneUtil.normalizar(telefone);
-        if (normalizado != null && usuarioRepository.existeTelefoneEmOutroUsuario(normalizado, idUsuarioAtual)) {
+        // Mesma regra do bot: sem DDD o cliente nunca é encontrado pelo telefone
+        if (normalizado == null || !normalizado.matches("\\d{10,11}")) {
+            throw new RegraNegocioException("TELEFONE_INVALIDO", "Informe o telefone com DDD (10 ou 11 dígitos).");
+        }
+        if (usuarioRepository.existeTelefoneEmOutroUsuario(normalizado, idUsuarioAtual)) {
             throw new RegraNegocioException("TELEFONE_EM_USO", "Telefone já cadastrado para outro usuário.");
         }
         return normalizado;

@@ -222,6 +222,28 @@ class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("R5: cadastro com telefone sem DDD retorna TELEFONE_INVALIDO")
+    void cadastroComTelefoneSemDdd() {
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO("Novo", "novo@email.com", "senha123", "9999-0016", Role.CLIENT);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.cadastrarPorAdmin(dto, 99L));
+        assertEquals("TELEFONE_INVALIDO", ex.getCode());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("R5: edição com telefone sem DDD retorna TELEFONE_INVALIDO")
+    void edicaoComTelefoneSemDdd() {
+        var dto = new com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO("Mariana", "mariana@email.com", "99999-0016", Role.CLIENT, null);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.editarUsuario(1L, dto, 99L));
+        assertEquals("TELEFONE_INVALIDO", ex.getCode());
+    }
+
+    @Test
     @DisplayName("V16: bot aceita telefone com +55 e encontra o cliente existente")
     void botNormalizaDdi() {
         when(usuarioRepository.findByPhone_usuario("11988887777")).thenReturn(Optional.of(usuario));
