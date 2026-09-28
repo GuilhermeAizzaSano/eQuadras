@@ -27,10 +27,12 @@ export const UserManagementList: React.FC<UserManagementListProps> = ({
   const usuariosFiltrados = usuarios.filter((u) => {
     const atendeRole = roleFiltro === 'TODOS' || u.role === roleFiltro;
     const termo = filtro.toLowerCase();
+    // Telefone é guardado só com dígitos; a busca ignora a máscara digitada
+    const digitosTermo = filtro.replace(/\D/g, '');
     const atendeTexto =
       u.nome_usuario.toLowerCase().includes(termo) ||
       u.email_usuario.toLowerCase().includes(termo) ||
-      (u.phone_usuario && u.phone_usuario.includes(termo));
+      (digitosTermo.length > 0 && u.phone_usuario?.replace(/\D/g, '').includes(digitosTermo));
     return atendeRole && atendeTexto;
   });
 

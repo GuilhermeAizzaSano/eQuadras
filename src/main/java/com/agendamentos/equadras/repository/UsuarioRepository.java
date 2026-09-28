@@ -20,6 +20,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query("SELECT u FROM Usuario u WHERE u.phone_usuario = :phone")
     Optional<Usuario> findByPhone_usuario(@Param("phone") String phone);
 
+    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.phone_usuario = :phone AND (:id IS NULL OR u.id_usuario <> :id)")
+    boolean existeTelefoneEmOutroUsuario(@Param("phone") String phone, @Param("id") Long id);
+
     Optional<Usuario> findByApiKeyHash(String apiKeyHash);
 
     java.util.List<Usuario> findByRole(com.agendamentos.equadras.model.enums.Role role);

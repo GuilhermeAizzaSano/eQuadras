@@ -91,13 +91,14 @@ public class UsuarioService {
             throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado no sistema.");
         }
 
+        String telefone = validarTelefoneDisponivel(dto.phone_usuario(), null);
         Role roleParaAtribuir = dto.role() != null ? dto.role() : Role.CLIENT;
 
         Usuario usuario = Usuario.builder()
                 .nome_usuario(dto.nome_usuario())
                 .email_usuario(dto.email_usuario())
                 .senha_usuario(passwordEncoder.encode(dto.senha_usuario()))
-                .phone_usuario(dto.phone_usuario())
+                .phone_usuario(telefone)
                 .role(roleParaAtribuir)
                 .build();
 
@@ -130,7 +131,7 @@ public class UsuarioService {
         }
 
         usuario.setNome_usuario(dto.nome_usuario());
-        usuario.setPhone_usuario(dto.phone_usuario());
+        usuario.setPhone_usuario(validarTelefoneDisponivel(dto.phone_usuario(), id));
 
         // Se for o Admin Geral, manter sempre como ADMIN
         if (masterAdminEmail.equalsIgnoreCase(usuario.getEmail_usuario())) {
@@ -211,10 +212,20 @@ public class UsuarioService {
         return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
     }
 
+    // Telefone identifica o cliente no bot: guardado só com dígitos e único (índice uk_usuarios_phone)
+    private String validarTelefoneDisponivel(String telefone, Long idUsuarioAtual) {
+        String normalizado = com.agendamentos.equadras.util.TelefoneUtil.normalizar(telefone);
+        if (normalizado != null && usuarioRepository.existeTelefoneEmOutroUsuario(normalizado, idUsuarioAtual)) {
+            throw new RegraNegocioException("TELEFONE_EM_USO", "Telefone já cadastrado para outro usuário.");
+        }
+        return normalizado;
+    }
+
     // Sem @Transactional: cada tentativa roda na transação curta do repositório, então a colisão
     // (e-mail único bot_<telefone>) não deixa uma transação externa marcada como rollback-only.
     public Usuario obterOuCriarUsuarioBot(String nome, String telefone) {
-        String telefoneSanitizado = telefone != null ? telefone.replaceAll("\\D", "") : "";
+        String normalizado = com.agendamentos.equadras.util.TelefoneUtil.normalizar(telefone);
+        String telefoneSanitizado = normalizado != null ? normalizado : "";
         if (telefoneSanitizado.length() < 10 || telefoneSanitizado.length() > 11) {
             throw new IllegalArgumentException("Número de telefone inválido para cadastro via bot (deve conter DDD + 8 ou 9 dígitos).");
         }

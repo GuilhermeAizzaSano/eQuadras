@@ -175,4 +175,57 @@ class UsuarioServiceTest {
         assertFalse(usuarioService.podeGerenciarQuadra(semDono, 6L));
         assertFalse(usuarioService.podeGerenciarQuadra(quadra, null));
     }
+
+    private Usuario masterAdmin() {
+        return Usuario.builder().id_usuario(99L).nome_usuario("Admin Geral").email_usuario("gui@gmail.com").role(Role.ADMIN).build();
+    }
+
+    @Test
+    @DisplayName("V16: cadastro grava o telefone só com dígitos")
+    void cadastroNormalizaTelefone() {
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO("Novo", "novo@email.com", "senha123", "(11) 99999-0016", Role.CLIENT);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.existeTelefoneEmOutroUsuario("11999990016", null)).thenReturn(false);
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> {
+            Usuario u = i.getArgument(0);
+            u.setId_usuario(10L);
+            return u;
+        });
+
+        usuarioService.cadastrarPorAdmin(dto, 99L);
+
+        verify(usuarioRepository).save(argThat(u -> "11999990016".equals(u.getPhone_usuario())));
+    }
+
+    @Test
+    @DisplayName("V16: cadastro com telefone já usado retorna TELEFONE_EM_USO")
+    void cadastroComTelefoneRepetido() {
+        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO("Novo", "novo@email.com", "senha123", "(11) 99999-0016", Role.CLIENT);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.existeTelefoneEmOutroUsuario("11999990016", null)).thenReturn(true);
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.cadastrarPorAdmin(dto, 99L));
+        assertEquals("TELEFONE_EM_USO", ex.getCode());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("V16: edição para telefone de outro usuário retorna TELEFONE_EM_USO")
+    void edicaoComTelefoneDeOutro() {
+        var dto = new com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO("Mariana", "mariana@email.com", "11 97777-6666", Role.CLIENT, null);
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(masterAdmin()));
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.existeTelefoneEmOutroUsuario("11977776666", 1L)).thenReturn(true);
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.editarUsuario(1L, dto, 99L));
+        assertEquals("TELEFONE_EM_USO", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("V16: bot aceita telefone com +55 e encontra o cliente existente")
+    void botNormalizaDdi() {
+        when(usuarioRepository.findByPhone_usuario("11988887777")).thenReturn(Optional.of(usuario));
+
+        assertSame(usuario, usuarioService.obterOuCriarUsuarioBot("Mariana", "+55 11 98888-7777"));
+    }
 }
