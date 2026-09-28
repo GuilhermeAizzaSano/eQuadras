@@ -69,7 +69,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
     >
       {/* Backdrop */}
       <div

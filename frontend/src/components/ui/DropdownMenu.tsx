@@ -170,6 +170,53 @@ export interface DropdownMenuContentProps extends React.HTMLAttributes<HTMLDivEl
   sideOffset?: number;
 }
 
+const DropdownMenuContentInner = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, style, children, ...props }, forwardedRef) => {
+  const innerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const handleRef = (node: HTMLDivElement | null) => {
+    innerRef.current = node;
+    if (typeof forwardedRef === "function") {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
+  };
+
+  React.useLayoutEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const margin = 8;
+    const rect = el.getBoundingClientRect();
+    let shiftX = 0;
+    if (rect.right > window.innerWidth - margin) {
+      shiftX = window.innerWidth - margin - rect.right;
+    }
+    if (rect.left + shiftX < margin) {
+      shiftX = margin - rect.left;
+    }
+    el.style.transform = shiftX !== 0 ? `translateX(${shiftX}px)` : "";
+  });
+
+  return (
+    <div
+      ref={handleRef}
+      role="menu"
+      style={style}
+      className={cn(
+        "min-w-[8rem] overflow-hidden rounded-xl border border-fg/10 bg-surface-2 p-1 text-fg shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
+DropdownMenuContentInner.displayName = "DropdownMenuContentInner";
+
 const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContentProps>(
   ({ className, children, side = "bottom", align = "start", sideOffset = 4, style: customStyle, ...props }, forwardedRef) => {
     const { open, contentRef, triggerRect } = useDropdownMenuContext();
@@ -191,9 +238,13 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
       ...customStyle,
     };
 
+    const viewportMargin = 8;
+
     if (triggerRect) {
       if (side === "right") {
-        computedStyle.left = `${triggerRect.right + sideOffset}px`;
+        const left = triggerRect.right + sideOffset;
+        computedStyle.left = `${left}px`;
+        computedStyle.maxWidth = `${Math.max(0, window.innerWidth - left - viewportMargin)}px`;
         if (align === "end") {
           computedStyle.bottom = `${Math.max(8, window.innerHeight - triggerRect.bottom)}px`;
         } else if (align === "center") {
@@ -203,7 +254,9 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
           computedStyle.top = `${triggerRect.top}px`;
         }
       } else if (side === "left") {
-        computedStyle.right = `${window.innerWidth - triggerRect.left + sideOffset}px`;
+        const right = window.innerWidth - triggerRect.left + sideOffset;
+        computedStyle.right = `${right}px`;
+        computedStyle.maxWidth = `${Math.max(0, window.innerWidth - right - viewportMargin)}px`;
         if (align === "end") {
           computedStyle.bottom = `${Math.max(8, window.innerHeight - triggerRect.bottom)}px`;
         } else {
@@ -212,34 +265,30 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
       } else if (side === "top") {
         computedStyle.bottom = `${window.innerHeight - triggerRect.top + sideOffset}px`;
         if (align === "end") {
-          computedStyle.right = `${window.innerWidth - triggerRect.right}px`;
+          computedStyle.right = `${Math.max(viewportMargin, window.innerWidth - triggerRect.right)}px`;
         } else {
-          computedStyle.left = `${triggerRect.left}px`;
+          computedStyle.left = `${Math.max(viewportMargin, triggerRect.left)}px`;
         }
       } else {
         // bottom
         computedStyle.top = `${triggerRect.bottom + sideOffset}px`;
         if (align === "end") {
-          computedStyle.right = `${window.innerWidth - triggerRect.right}px`;
+          computedStyle.right = `${Math.max(viewportMargin, window.innerWidth - triggerRect.right)}px`;
         } else {
-          computedStyle.left = `${triggerRect.left}px`;
+          computedStyle.left = `${Math.max(viewportMargin, triggerRect.left)}px`;
         }
       }
     }
 
     const content = (
-      <div
+      <DropdownMenuContentInner
         ref={handleRef}
-        role="menu"
         style={computedStyle}
-        className={cn(
-          "min-w-[8rem] overflow-hidden rounded-xl border border-fg/10 bg-surface-2 p-1 text-fg shadow-2xl animate-in fade-in zoom-in-95 duration-100 select-none",
-          className
-        )}
+        className={className}
         {...props}
       >
         {children}
-      </div>
+      </DropdownMenuContentInner>
     );
 
     return createPortal(content, document.body);

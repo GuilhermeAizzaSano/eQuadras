@@ -296,7 +296,7 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                 if (!day.isCurrentMonth) return;
                 onAbrirAgendaDoDia(day.iso);
               }}
-              className={`min-h-[110px] sm:min-h-[124px] p-2.5 rounded-2xl border flex flex-col justify-between items-start transition-all group relative ${
+              className={`min-h-[110px] sm:min-h-[124px] p-2.5 rounded-2xl border flex flex-col justify-between items-start transition-all group relative overflow-hidden ${
                 !day.isCurrentMonth
                   ? 'opacity-20 bg-transparent border-fg/[0.03] text-fg/60 cursor-default'
                   : isDimmed
@@ -349,11 +349,11 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                           : 'bg-info/10 border-info/25 text-info'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
-                        <span className="truncate">Confirmados</span>
+                        <span className="truncate hidden sm:inline">Confirmados</span>
                       </span>
-                      <span className="font-bold">{day.confirmados}</span>
+                      <span className="font-bold shrink-0">{day.confirmados}</span>
                     </div>
                   )}
 
@@ -365,11 +365,11 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                           : 'bg-purple/10 border-purple/25 text-purple'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-purple shrink-0" />
-                        <span className="truncate">Realizados</span>
+                        <span className="truncate hidden sm:inline">Realizados</span>
                       </span>
-                      <span className="font-bold">{day.realizados}</span>
+                      <span className="font-bold shrink-0">{day.realizados}</span>
                     </div>
                   )}
 
@@ -381,11 +381,11 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                           : 'bg-warning/10 border-warning/25 text-warning'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 animate-pulse" />
-                        <span className="truncate">Pendentes Pix</span>
+                        <span className="truncate hidden sm:inline">Pendentes Pix</span>
                       </span>
-                      <span className="font-bold">{day.pendentes}</span>
+                      <span className="font-bold shrink-0">{day.pendentes}</span>
                     </div>
                   )}
 
@@ -397,21 +397,21 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                           : 'bg-danger/10 border-danger/25 text-danger'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <Ban className="w-2.5 h-2.5 text-danger shrink-0" />
-                        <span className="truncate">Bloqueados</span>
+                        <span className="truncate hidden sm:inline">Bloqueados</span>
                       </span>
-                      <span className="font-bold">{day.bloqueados}</span>
+                      <span className="font-bold shrink-0">{day.bloqueados}</span>
                     </div>
                   )}
 
                   {day.isPassado ? (
                     <div className="w-full px-1.5 py-0.5 rounded-lg border border-fg/[0.03] bg-fg/[0.03] text-fg/60 text-xs sm:text-xs font-mono flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-fg/20 shrink-0" />
-                        <span className="truncate">Encerrado</span>
+                        <span className="truncate hidden sm:inline">Encerrado</span>
                       </span>
-                      <span className="text-xs uppercase font-semibold">Passado</span>
+                      <span className="text-xs uppercase font-semibold shrink-0">Passado</span>
                     </div>
                   ) : (
                     <div
@@ -421,11 +421,11 @@ export const CalendarOccupancy: React.FC<CalendarOccupancyProps> = ({
                           : 'bg-success/10 border-success/25 text-success'
                       }`}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
-                        <span className="truncate">Livres</span>
+                        <span className="truncate hidden sm:inline">Livres</span>
                       </span>
-                      <span className="font-bold">{day.livres}</span>
+                      <span className="font-bold shrink-0">{day.livres}</span>
                     </div>
                   )}
                 </div>
