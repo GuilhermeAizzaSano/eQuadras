@@ -27,6 +27,11 @@ public interface BloqueioHorarioRepository extends JpaRepository<BloqueioHorario
     @Query("SELECT b FROM BloqueioHorario b WHERE b.data >= :hoje ORDER BY b.data ASC, b.horaInicio ASC NULLS FIRST")
     List<BloqueioHorario> findAllOrdered(@Param("hoje") LocalDate hoje);
 
+    @Query("SELECT b FROM BloqueioHorario b WHERE b.quadra.id_quadra IN :quadraIds AND b.data >= :inicio AND b.data < :fimExclusivo")
+    List<BloqueioHorario> findByQuadraIdsAndDataEntre(@Param("quadraIds") List<Long> quadraIds,
+                                                      @Param("inicio") LocalDate inicio,
+                                                      @Param("fimExclusivo") LocalDate fimExclusivo);
+
     @org.springframework.data.jpa.repository.Modifying
     @Query("DELETE FROM BloqueioHorario b WHERE b.id = :id AND b.quadra.id_quadra = :quadraId")
     int deletarDaQuadra(@Param("id") Long id, @Param("quadraId") Long quadraId);

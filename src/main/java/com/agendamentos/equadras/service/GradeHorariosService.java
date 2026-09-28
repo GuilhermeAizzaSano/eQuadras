@@ -137,6 +137,13 @@ public class GradeHorariosService {
         Map<Long, List<Agendamento>> agendamentosPorQuadra = agendamentosPorQuadra(quadraIds, data);
         Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra = bloqueiosPorQuadra(quadraIds, data);
 
+        return montarGrade(quadras, data, agendamentosPorQuadra, bloqueiosPorQuadra, apenasDisponiveis);
+    }
+
+    private List<GradeHorariosResponseDTO> montarGrade(List<Quadra> quadras, LocalDate data,
+                                                       Map<Long, List<Agendamento>> agendamentosPorQuadra,
+                                                       Map<Long, List<BloqueioHorario>> bloqueiosPorQuadra,
+                                                       boolean apenasDisponiveis) {
         List<GradeHorariosResponseDTO> resultado = new ArrayList<>();
         for (Quadra q : quadras) {
             List<HorarioDisponivelDTO> slots = montarSlotsHorarios(
@@ -172,20 +179,36 @@ public class GradeHorariosService {
         }
 
         LocalDate inicio = LocalDate.now(clock);
-        List<GradeHorariosResponseDTO> resultadoFinal = new ArrayList<>();
+        LocalDate fimExclusivo = inicio.plusDays(14);
+        List<Quadra> quadras = quadraBuscaService.buscarQuadrasAtivas(quadraId, tipoEsporte, nomeQuadra);
+        if (quadras.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> quadraIds = quadras.stream().map(Quadra::getId_quadra).toList();
 
-        for (int i = 0; i < 14; i++) {
-            LocalDate dataAlvo = inicio.plusDays(i);
-            List<GradeHorariosResponseDTO> gradeDia =
-                    consultarGradeHorarios(dataAlvo, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
+        // Uma consulta por intervalo em vez de uma por dia (spec onda 2, M1)
+        List<Agendamento> agendamentos = agendamentoRepository.buscarPorQuadrasEDataLote(
+                quadraIds, StatusAgendamento.CANCELADO, inicio.atStartOfDay(), fimExclusivo.atStartOfDay());
+        List<BloqueioHorario> bloqueios = bloqueioHorarioRepository.findByQuadraIdsAndDataEntre(quadraIds, inicio, fimExclusivo);
 
+        for (LocalDate dia = inicio; dia.isBefore(fimExclusivo); dia = dia.plusDays(1)) {
+            LocalDateTime inicioDia = dia.atStartOfDay();
+            LocalDateTime fimDia = dia.atTime(LocalTime.MAX);
+            LocalDate diaAtual = dia;
+            Map<Long, List<Agendamento>> agendamentosDia = agendamentos.stream()
+                    .filter(a -> a.getDataHoraInicio().isBefore(fimDia) && a.getDataHoraFim().isAfter(inicioDia))
+                    .collect(Collectors.groupingBy(a -> a.getQuadra().getId_quadra()));
+            Map<Long, List<BloqueioHorario>> bloqueiosDia = bloqueios.stream()
+                    .filter(b -> b.getData().equals(diaAtual))
+                    .collect(Collectors.groupingBy(b -> b.getQuadra().getId_quadra()));
+
+            List<GradeHorariosResponseDTO> gradeDia = montarGrade(quadras, dia, agendamentosDia, bloqueiosDia, apenasDisponiveis);
             if (!gradeDia.isEmpty()) {
-                resultadoFinal.addAll(gradeDia);
-                return resultadoFinal;
+                return new ArrayList<>(gradeDia);
             }
         }
 
-        return resultadoFinal;
+        return new ArrayList<>();
     }
 
     private Map<Long, List<Agendamento>> agendamentosPorQuadra(List<Long> quadraIds, LocalDate data) {
