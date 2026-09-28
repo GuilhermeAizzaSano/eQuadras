@@ -101,15 +101,15 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
       <div className="flex bg-fg/[0.03] p-1 rounded-2xl border border-fg/[0.1] text-xs">
         <button
           onClick={() => setFiltroStatusReservas('ATIVOS')}
-          className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
+          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 active:scale-[0.98] cursor-pointer tracking-tight text-xs ${
             filtroStatusReservas === 'ATIVOS'
               ? 'bg-fg text-on-accent shadow-sm'
               : 'text-fg/60 hover:text-fg'
           }`}
         >
-          <span>Ativos</span>
+          <span className="truncate">Ativos</span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono font-medium shrink-0 ${
               filtroStatusReservas === 'ATIVOS'
                 ? 'bg-on-accent/10 text-on-accent'
                 : 'bg-fg/10 text-fg/60'
@@ -121,15 +121,15 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
 
         <button
           onClick={() => setFiltroStatusReservas('REALIZADOS')}
-          className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
+          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 active:scale-[0.98] cursor-pointer tracking-tight text-xs ${
             filtroStatusReservas === 'REALIZADOS'
               ? 'bg-fg text-on-accent shadow-sm'
               : 'text-fg/60 hover:text-fg'
           }`}
         >
-          <span>Realizados</span>
+          <span className="truncate">Realizados</span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono font-medium shrink-0 ${
               filtroStatusReservas === 'REALIZADOS'
                 ? 'bg-on-accent/10 text-on-accent'
                 : 'bg-fg/10 text-fg/60'
@@ -141,15 +141,15 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
 
         <button
           onClick={() => setFiltroStatusReservas('CANCELADOS')}
-          className={`flex-1 py-2 px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer tracking-tight ${
+          className={`flex-1 py-1.5 sm:py-2 px-1 sm:px-3 font-semibold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 active:scale-[0.98] cursor-pointer tracking-tight text-xs ${
             filtroStatusReservas === 'CANCELADOS'
               ? 'bg-fg text-on-accent shadow-sm'
               : 'text-fg/60 hover:text-fg'
           }`}
         >
-          <span>Cancelados</span>
+          <span className="truncate">Cancelados</span>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-mono font-medium ${
+            className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-mono font-medium shrink-0 ${
               filtroStatusReservas === 'CANCELADOS'
                 ? 'bg-on-accent/10 text-on-accent'
                 : 'bg-fg/10 text-fg/60'
@@ -198,7 +198,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
         />
       ) : (
         <div className="space-y-4">
-          <div className={`space-y-3.5 min-h-[480px] transition-opacity duration-200 ${status === 'loading' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`space-y-3.5 min-h-0 sm:min-h-[480px] transition-opacity duration-200 ${status === 'loading' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
             {agendamentos.map((ag) => {
               const agoraBr = getAgoraBrasilia().agora;
               const isCancelado = ag.status === 'CANCELADO';
@@ -215,14 +215,16 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                   key={ag.id_agendamento}
                   className="p-4 sm:p-5 rounded-2xl bg-fg/[0.03] border border-fg/[0.1] space-y-3.5 transition hover:border-fg/[0.15] shadow-sm"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div>
-                      <div className="text-base font-semibold text-fg tracking-tight">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-base font-semibold text-fg tracking-tight break-words">
                         {ag.nomeQuadra}
                       </div>
-                      <div className="text-xs text-fg/60 flex items-center gap-1.5 mt-1 tracking-tight">
-                        <CalendarIcon className="w-3.5 h-3.5 text-fg/60" />
-                        <span>{data.split('-').reverse().join('/')}</span>
+                      <div className="text-xs text-fg/60 flex items-center gap-1.5 mt-1 tracking-tight flex-wrap">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarIcon className="w-3.5 h-3.5 text-fg/60 shrink-0" />
+                          <span>{data.split('-').reverse().join('/')}</span>
+                        </span>
                         <span className="text-fg/60">•</span>
                         <span>{horaInicio} às {horaFim}</span>
                       </div>
@@ -230,7 +232,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                       {ag.status === 'PENDENTE' && (
                         <div className="mt-2 flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 text-xs font-mono font-medium text-warning bg-warning/10 border border-warning/20 px-2 py-0.5 rounded-md">
-                            <Clock className="w-3 h-3 animate-spin" />
+                            <Clock className="w-3 h-3 animate-spin shrink-0" />
                             {getTempoRestantePix(ag.criadoEm) ? (
                               <span>Expira em {getTempoRestantePix(ag.criadoEm)}</span>
                             ) : (
@@ -251,7 +253,7 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                           ? 'neutral'
                           : 'success'
                       }
-                      className="self-start sm:self-auto uppercase tracking-wider text-xs font-mono px-2.5 py-0.5"
+                      className="self-start sm:self-auto uppercase tracking-wider text-xs font-mono px-2.5 py-0.5 shrink-0"
                     >
                       {isCancelado
                         ? 'Cancelado'
@@ -263,33 +265,33 @@ export const ClientBookingsList: React.FC<ClientBookingsListProps> = ({
                     </Badge>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-fg/[0.1] text-xs gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-fg/[0.1] text-xs gap-2.5 sm:gap-2">
                     <span className="text-fg font-mono font-bold text-sm tracking-tight">
                       R$ {ag.valorTotal.toFixed(2)}
                     </span>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
                       {ag.status === 'PENDENTE' && (
                         <button
                           type="button"
                           onClick={() => onPayPix(ag)}
                           className="text-xs bg-fg hover:bg-fg/90 text-on-accent font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm active:scale-[0.98] cursor-pointer tracking-tight"
                         >
-                          <QrCode className="w-3.5 h-3.5" />
+                          <QrCode className="w-3.5 h-3.5 shrink-0" />
                           <span>Pagar com Pix</span>
                         </button>
                       )}
 
                       {!isCancelado && (
                         isRetroativoOuEmAndamento ? (
-                          <span className="text-xs text-fg/60 italic">
+                          <span className="text-xs text-fg/60 italic leading-snug break-words">
                             Não é possível cancelar um agendamento que está em andamento ou retroativo.
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleCancel(ag)}
-                            className="text-xs text-danger hover:text-danger/80 font-medium transition active:scale-95 cursor-pointer tracking-tight"
+                            className="text-xs text-danger hover:text-danger/80 font-medium transition active:scale-95 cursor-pointer tracking-tight py-1"
                           >
                             Cancelar
                           </button>

@@ -179,12 +179,12 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
         </div>
 
         {/* Abas de Filtros por Status */}
-        <div className="px-5 sm:px-6 py-3 border-b border-fg/[0.06] bg-fg/[0.03] flex items-center">
-          <div className="flex w-full bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1] text-xs">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-3 border-b border-fg/[0.06] bg-fg/[0.03] flex items-center overflow-x-auto scrollbar-none">
+          <div className="flex w-full min-w-max sm:min-w-0 bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1] text-xs">
             <button
               type="button"
               onClick={() => handleFiltroChange('TODOS')}
-              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-xs ${
                 filtroStatus === 'TODOS'
                   ? 'bg-fg text-on-accent font-semibold shadow-sm'
                   : 'text-fg/60 hover:text-fg'
@@ -192,7 +192,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Todos</span>
               <span
-                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium shrink-0 ${
                   filtroStatus === 'TODOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -203,7 +203,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             <button
               type="button"
               onClick={() => handleFiltroChange('ATIVOS')}
-              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-xs ${
                 filtroStatus === 'ATIVOS'
                   ? 'bg-fg text-on-accent font-semibold shadow-sm'
                   : 'text-fg/60 hover:text-fg'
@@ -211,7 +211,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Ativos</span>
               <span
-                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium shrink-0 ${
                   filtroStatus === 'ATIVOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -222,7 +222,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             <button
               type="button"
               onClick={() => handleFiltroChange('REALIZADOS')}
-              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-xs ${
                 filtroStatus === 'REALIZADOS'
                   ? 'bg-fg text-on-accent font-semibold shadow-sm'
                   : 'text-fg/60 hover:text-fg'
@@ -230,7 +230,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Realizados</span>
               <span
-                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium shrink-0 ${
                   filtroStatus === 'REALIZADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -241,7 +241,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             <button
               type="button"
               onClick={() => handleFiltroChange('CANCELADOS')}
-              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`flex-1 py-1.5 px-2 font-medium rounded-lg transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-xs ${
                 filtroStatus === 'CANCELADOS'
                   ? 'bg-fg text-on-accent font-semibold shadow-sm'
                   : 'text-fg/60 hover:text-fg'
@@ -249,7 +249,7 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
             >
               <span>Cancelados</span>
               <span
-                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium ${
+                className={`text-xs px-1.5 py-0.2 rounded-full font-mono font-medium shrink-0 ${
                   filtroStatus === 'CANCELADOS' ? 'bg-on-accent/10 text-on-accent' : 'bg-fg/[0.06] text-fg/60'
                 }`}
               >
@@ -319,47 +319,47 @@ export const CourtHistoryModal: React.FC<CourtHistoryModalProps> = ({
                     key={ag.id_agendamento}
                     className="p-4 rounded-2xl bg-fg/[0.03] border border-fg/[0.06] hover:border-fg/[0.15] transition-colors space-y-3"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-semibold text-fg">
                             #{ag.id_agendamento}
                           </span>
                           <Badge
                             variant={statusVariant}
-                            className="uppercase tracking-wider text-xs font-mono px-2 py-0.5"
+                            className="uppercase tracking-wider text-xs font-mono px-2 py-0.5 shrink-0"
                           >
                             {statusLabel}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-fg/80">
-                          <User className="w-3.5 h-3.5 text-fg/60" />
-                          <span className="font-medium text-fg">{ag.nomeUsuario}</span>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-fg/80 truncate">
+                          <User className="w-3.5 h-3.5 text-fg/60 shrink-0" />
+                          <span className="font-medium text-fg truncate">{ag.nomeUsuario}</span>
                         </div>
                         {ag.telefoneUsuario && (
                           <div className="flex items-center gap-2 mt-1 text-xs text-fg/60">
-                            <Phone className="w-3.5 h-3.5 text-fg/60" />
+                            <Phone className="w-3.5 h-3.5 text-fg/60 shrink-0" />
                             <span className="font-mono text-xs">{ag.telefoneUsuario}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="text-right space-y-1">
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/90 font-medium">
-                          <Calendar className="w-3.5 h-3.5 text-fg/60" />
+                      <div className="text-left sm:text-right space-y-1 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-fg/[0.04]">
+                        <div className="flex items-center sm:justify-end gap-1.5 text-xs text-fg/90 font-medium">
+                          <Calendar className="w-3.5 h-3.5 text-fg/60 shrink-0" />
                           <span>{formatarData(ag.dataHoraInicio)}</span>
                         </div>
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-fg/60 font-mono">
-                          <Clock className="w-3 h-3 text-fg/60" />
+                        <div className="flex items-center sm:justify-end gap-1.5 text-xs text-fg/60 font-mono">
+                          <Clock className="w-3 h-3 text-fg/60 shrink-0" />
                           <span>{formatarHorario(ag.dataHoraInicio, ag.dataHoraFim)}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between pt-2 border-t border-fg/[0.03] text-xs text-fg/60 font-mono gap-2">
-                      <span>Criado em: {formatarDataHoraBr(ag.criadoEm)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-fg/[0.03] text-xs text-fg/60 font-mono gap-1.5 sm:gap-2">
+                      <span className="break-words">Criado em: {formatarDataHoraBr(ag.criadoEm)}</span>
                       {isCancelado && (
-                        <span className="text-danger/90">
+                        <span className="text-danger/90 break-words">
                           Cancelado em: <strong className="text-danger font-medium">{ag.canceladoEm ? formatarDataHoraBr(ag.canceladoEm) : '—'}</strong>
                         </span>
                       )}

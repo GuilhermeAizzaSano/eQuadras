@@ -664,7 +664,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                             <span className="text-fg font-mono font-semibold">R$ {ag.valorTotal.toFixed(2)}</span>
                             {!isCancelado && (
                               isRetroativoOuEmAndamento ? (
-                                <span className="text-xs text-fg/60 italic">
+                                <span className="text-xs text-fg/60 italic leading-snug break-words">
                                   Não é possível cancelar um agendamento que está em andamento ou retroativo.
                                 </span>
                               ) : (
@@ -676,7 +676,7 @@ export const DayAgendaModal: React.FC<DayAgendaModalProps> = ({
                                       carregarContadores();
                                     })
                                   }
-                                  className="text-xs text-danger hover:text-danger/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95"
+                                  className="text-xs text-danger hover:text-danger/80 font-medium transition underline underline-offset-2 cursor-pointer active:scale-95 py-1"
                                 >
                                   Cancelar Agendamento
                                 </button>
