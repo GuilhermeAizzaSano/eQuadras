@@ -25,6 +25,15 @@ jobs:
       - name: Build and verify Backend
         run: mvn clean verify -DskipTests=false
 
+      - name: Publish backend artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: target/equadras-*.jar
+          if-no-files-found: error
+          retention-days: 7
+
   frontend:
     name: Frontend CI (React / TypeScript)
     runs-on: ubuntu-latest
@@ -49,77 +58,72 @@ jobs:
       - name: Type check and build Frontend
         run: npm run build
 
+      - name: Publish frontend artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 7
+
   deploy:
     name: Deploy to Production (OCI VM)
     needs: [backend, frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    # Evita dois deploys simultâneos disputando o symlink "current" na VM
+    concurrency:
+      group: deploy-producao
+      cancel-in-progress: false
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Detect Changed Components
-        id: changes
-        env:
-          BEFORE_SHA: ${{ github.event.before }}
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: artefatos/backend
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: artefatos/release/frontend
+
+      - name: Montar pacote da release
         run: |
-          # Compara com o estado anterior ao push (cobre pushes com vários commits).
-          # Sem base válida (primeiro push ou force-push), reconstrói tudo por segurança.
-          if [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            CHANGED_FILES=$(git diff --name-only "$BEFORE_SHA" HEAD)
-          else
-            CHANGED_FILES=$(git ls-files)
-          fi
+          JAR=$(ls artefatos/backend/equadras-*.jar | grep -v '\.original$' | head -n 1)
+          test -n "$JAR"
+          cp "$JAR" artefatos/release/equadras.jar
+          cp deploy/deploy.sh artefatos/release/deploy.sh
+          tar -czf release.tar.gz -C artefatos/release .
 
-          # Detecta se houve alteracao no backend
-          BACKEND_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^(src/|pom.xml)' || true)
-          if [ -n "$BACKEND_CHANGED" ]; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "backend=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Configurar chave SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          # Detecta se houve alteracao no frontend
-          FRONTEND_CHANGED=$(echo "$CHANGED_FILES" | grep -E '^frontend/' || true)
-          if [ -n "$FRONTEND_CHANGED" ]; then
-            echo "frontend=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "frontend=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Enviar e ativar release (build pronto + health check + rollback)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          VERSAO: ${{ github.sha }}
+        run: |
+          ALVO="$SSH_USER@$SSH_HOST"
+          DESTINO="/opt/equadras/releases/$VERSAO"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$ALVO" "mkdir -p '$DESTINO'"
+          scp -i ~/.ssh/deploy_key -o BatchMode=yes release.tar.gz "$ALVO:$DESTINO/release.tar.gz"
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$ALVO" \
+            "cd '$DESTINO' && tar -xzf release.tar.gz && rm release.tar.gz && chmod 755 deploy.sh && ./deploy.sh '$VERSAO'"
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            echo "==> Conectado ao servidor de produção. Atualizando repositório..."
-            cd /home/ubuntu/eQuadras
-            git fetch origin main
-            git reset --hard origin/main
-
-            if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
-              echo "==> Mudanças no backend detectadas. Compilando pacote Spring Boot..."
-              ./mvnw clean package -DskipTests=true
-              echo "==> Reiniciando serviço equadras-backend.service..."
-              sudo systemctl restart equadras-backend.service
-            fi
-
-            if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
-              echo "==> Garantindo que o frontend pertence ao usuário do deploy (evita EACCES no build)..."
-              sudo chown -R "$(id -un):$(id -gn)" /home/ubuntu/eQuadras/frontend
-              echo "==> Mudanças no frontend detectadas. Reconstruindo bundle SPA..."
-              sudo /home/ubuntu/rebuild_frontend.sh
-              echo "==> Recarregando Nginx..."
-              sudo systemctl reload nginx
-            fi
-
-            echo "==> Verificando status dos serviços..."
-            sudo systemctl is-active equadras-backend.service
-            sudo systemctl is-active nginx
-            echo "==> Deploy concluído com sucesso!"
+      - name: Remover chave SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
