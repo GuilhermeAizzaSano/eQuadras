@@ -108,6 +108,8 @@ public class AgendamentoService {
             try {
                 agendamentoSalvo.setStatus(StatusAgendamento.CANCELADO);
                 agendamentoSalvo.setCanceladoEm(LocalDateTime.now(clock));
+                agendamentoSalvo.setPixCopiaECola(null);
+                agendamentoSalvo.setQrCodeBase64(null);
                 agendamentoRepository.save(agendamentoSalvo);
             } catch (Exception exCompensacao) {
                 log.error("Erro crítico ao tentar cancelar agendamento órfão {}", agendamentoSalvo.getId_agendamento(), exCompensacao);
@@ -132,7 +134,7 @@ public class AgendamentoService {
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CONFIRMADO) {
-            return AgendamentoResponseDTO.fromEntity(agendamento);
+            return AgendamentoResponseDTO.fromEntitySemPix(agendamento);
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
@@ -140,13 +142,15 @@ public class AgendamentoService {
         }
 
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
+        agendamento.setPixCopiaECola(null);
+        agendamento.setQrCodeBase64(null);
         Agendamento salvo = agendamentoRepository.save(agendamento);
 
         if (eventPublisher != null) {
             eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(AgendamentoNotificacaoPayload.fromEntity(salvo)));
         }
 
-        return AgendamentoResponseDTO.fromEntity(salvo);
+        return AgendamentoResponseDTO.fromEntitySemPix(salvo);
     }
 
     @Transactional
@@ -170,7 +174,7 @@ public class AgendamentoService {
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CONFIRMADO) {
-            return AgendamentoResponseDTO.fromEntity(agendamento);
+            return AgendamentoResponseDTO.fromEntitySemPix(agendamento);
         }
 
         if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
@@ -196,6 +200,8 @@ public class AgendamentoService {
         }
 
         agendamento.setStatus(StatusAgendamento.CONFIRMADO);
+        agendamento.setPixCopiaECola(null);
+        agendamento.setQrCodeBase64(null);
         if (transacaoId != null && !transacaoId.isBlank()) {
             agendamento.setTransacaoPagamentoId(transacaoId);
         }
@@ -204,7 +210,7 @@ public class AgendamentoService {
             eventPublisher.publishEvent(new AgendamentoPagamentoConfirmadoEvent(AgendamentoNotificacaoPayload.fromEntity(agendamento)));
         }
 
-        return AgendamentoResponseDTO.fromEntity(agendamento);
+        return AgendamentoResponseDTO.fromEntitySemPix(agendamento);
     }
 
     @Transactional(readOnly = true)
@@ -221,7 +227,7 @@ public class AgendamentoService {
                     .orElseThrow(() -> new RecursoNaoEncontradoException("AGENDAMENTO_NAO_ENCONTRADO", "Agendamento não encontrado. ID: " + idAgendamento));
         }
 
-        return AgendamentoResponseDTO.fromEntity(agendamento);
+        return AgendamentoResponseDTO.paraSolicitante(agendamento, usuarioIdAutenticado);
     }
 
     @Transactional
@@ -278,7 +284,7 @@ public class AgendamentoService {
             ));
         }
 
-        return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
+        return AgendamentoResponseDTO.fromEntitySemPix(agendamentoAtualizado);
     }
 
     @Transactional(readOnly = true)
@@ -410,12 +416,7 @@ public class AgendamentoService {
 
         Page<Agendamento> pagina = agendamentoRepository.findAll(spec, pageableComSort);
 
-        return PageResponse.of(pagina, a -> {
-            if (a.getStatus() == StatusAgendamento.PENDENTE && a.getUsuario() != null && usuarioId.equals(a.getUsuario().getId_usuario())) {
-                return AgendamentoResponseDTO.fromEntity(a);
-            }
-            return AgendamentoResponseDTO.fromEntitySemPix(a);
-        });
+        return PageResponse.of(pagina, a -> AgendamentoResponseDTO.paraSolicitante(a, usuarioId));
     }
 
     @Transactional(readOnly = true)
@@ -480,13 +481,7 @@ public class AgendamentoService {
         }
 
         return agendamentos.stream()
-                .map(a -> {
-                    // Mantém dados Pix para agendamentos pendentes do próprio cliente para pagamento imediato
-                    if (a.getStatus() == StatusAgendamento.PENDENTE && usuario != null && usuario.getId_usuario().equals(a.getUsuario().getId_usuario())) {
-                        return AgendamentoResponseDTO.fromEntity(a);
-                    }
-                    return AgendamentoResponseDTO.fromEntitySemPix(a);
-                })
+                .map(a -> AgendamentoResponseDTO.paraSolicitante(a, usuarioId))
                 .toList();
     }
 

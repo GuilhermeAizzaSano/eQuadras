@@ -74,6 +74,14 @@ public record AgendamentoResponseDTO(
         );
     }
 
+    /** Pix só para o cliente dono e só enquanto PENDENTE (spec onda 2, M3). */
+    public static AgendamentoResponseDTO paraSolicitante(Agendamento agendamento, Long solicitanteId) {
+        boolean dono = agendamento.getUsuario() != null && agendamento.getUsuario().getId_usuario().equals(solicitanteId);
+        return (dono && agendamento.getStatus() == StatusAgendamento.PENDENTE)
+                ? fromEntity(agendamento)
+                : fromEntitySemPix(agendamento);
+    }
+
     public static AgendamentoResponseDTO fromEntitySemPix(Agendamento agendamento) {
         return new AgendamentoResponseDTO(
                 agendamento.getId_agendamento(),

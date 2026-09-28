@@ -155,7 +155,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     );
 
     @org.springframework.data.jpa.repository.Modifying
-    @Query("UPDATE Agendamento a SET a.status = :statusCancelado, a.canceladoEm = :agora WHERE a.status = :statusPendente AND a.criadoEm < :limite")
+    @Query("UPDATE Agendamento a SET a.status = :statusCancelado, a.canceladoEm = :agora, a.pixCopiaECola = NULL, a.qrCodeBase64 = NULL WHERE a.status = :statusPendente AND a.criadoEm < :limite")
     int cancelarPendentesExpirados(
             @Param("statusPendente") StatusAgendamento statusPendente,
             @Param("statusCancelado") StatusAgendamento statusCancelado,
@@ -164,7 +164,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     );
 
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
-    @Query("UPDATE Agendamento a SET a.status = com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO, a.canceladoEm = :agora WHERE a.id = :id AND a.status = :statusLido")
+    @Query("UPDATE Agendamento a SET a.status = com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO, a.canceladoEm = :agora, a.pixCopiaECola = NULL, a.qrCodeBase64 = NULL WHERE a.id = :id AND a.status = :statusLido")
     int cancelarSeStatus(
             @Param("id") Long id,
             @Param("statusLido") StatusAgendamento statusLido,
@@ -175,7 +175,9 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     @Query("""
         UPDATE Agendamento a
         SET a.status = :statusConfirmado, 
-            a.transacaoPagamentoId = COALESCE(:transacaoId, a.transacaoPagamentoId) 
+            a.transacaoPagamentoId = COALESCE(:transacaoId, a.transacaoPagamentoId),
+            a.pixCopiaECola = NULL,
+            a.qrCodeBase64 = NULL 
         WHERE a.id = :id 
           AND a.status = :statusPendente
     """)

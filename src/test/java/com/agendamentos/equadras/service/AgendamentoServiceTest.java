@@ -617,4 +617,51 @@ class AgendamentoServiceTest {
         assertEquals("CONFLITO_STATUS", ex.getCode());
         verify(eventPublisher, never()).publishEvent(any());
     }
+
+    private Agendamento agendamentoComPix(StatusAgendamento status) {
+        Usuario adminQuadra = Usuario.builder().id_usuario(2L).role(Role.ADMIN).email_usuario("adm@x.com").build();
+        quadra.setAdmin(adminQuadra);
+        return Agendamento.builder()
+                .id_agendamento(80L).quadra(quadra).usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1)).dataHoraFim(LocalDateTime.now().plusDays(1).plusHours(1))
+                .valorTotal(BigDecimal.valueOf(100.00)).status(status)
+                .pixCopiaECola("pix").qrCodeBase64("qr")
+                .build();
+    }
+
+    @Test
+    @DisplayName("M3: dono recebe o Pix enquanto PENDENTE")
+    void donoRecebePixPendente() {
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
+        when(agendamentoRepository.buscarPorIdEEscopo(80L, 1L)).thenReturn(Optional.of(agendamentoComPix(StatusAgendamento.PENDENTE)));
+
+        AgendamentoResponseDTO dto = agendamentoService.buscarPorId(80L, 1L);
+
+        assertEquals("pix", dto.pixCopiaECola());
+        assertEquals("qr", dto.qrCodeBase64());
+    }
+
+    @Test
+    @DisplayName("M3: admin da quadra não recebe o Pix de agendamento PENDENTE")
+    void adminNaoRecebePix() {
+        Usuario adminQuadra = Usuario.builder().id_usuario(2L).role(Role.ADMIN).email_usuario("adm@x.com").build();
+        when(usuarioService.buscarPorIdEntidade(2L)).thenReturn(Optional.of(adminQuadra));
+        when(agendamentoRepository.buscarPorIdEEscopo(80L, 2L)).thenReturn(Optional.of(agendamentoComPix(StatusAgendamento.PENDENTE)));
+
+        AgendamentoResponseDTO dto = agendamentoService.buscarPorId(80L, 2L);
+
+        assertNull(dto.pixCopiaECola());
+        assertNull(dto.qrCodeBase64());
+    }
+
+    @Test
+    @DisplayName("M3: nem o dono recebe o Pix depois de CONFIRMADO")
+    void donoNaoRecebePixConfirmado() {
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
+        when(agendamentoRepository.buscarPorIdEEscopo(80L, 1L)).thenReturn(Optional.of(agendamentoComPix(StatusAgendamento.CONFIRMADO)));
+
+        AgendamentoResponseDTO dto = agendamentoService.buscarPorId(80L, 1L);
+
+        assertNull(dto.pixCopiaECola());
+    }
 }
