@@ -189,6 +189,8 @@ const DropdownMenuContentInner = React.forwardRef<
     const el = innerRef.current;
     if (!el) return;
     const margin = 8;
+    // Mede sem o deslocamento anterior; senão a correção oscila a cada re-render de scroll.
+    el.style.translate = "";
     const rect = el.getBoundingClientRect();
     let shiftX = 0;
     if (rect.right > window.innerWidth - margin) {
@@ -197,7 +199,7 @@ const DropdownMenuContentInner = React.forwardRef<
     if (rect.left + shiftX < margin) {
       shiftX = margin - rect.left;
     }
-    el.style.transform = shiftX !== 0 ? `translateX(${shiftX}px)` : "";
+    el.style.translate = shiftX !== 0 ? `${shiftX}px 0` : "";
   });
 
   return (

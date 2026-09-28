@@ -140,7 +140,7 @@ export const AdminScheduleToolbar: React.FC<AdminScheduleToolbarProps> = ({
         </div>
 
         {/* Alternador de Visualização: Timeline vs Calendário */}
-        <div className="flex items-center gap-2 self-end md:self-auto">
+        <div className="hidden md:flex items-center gap-2">
           <div className="flex bg-fg/[0.03] p-1 rounded-xl border border-fg/[0.1]">
             <button
               type="button"
