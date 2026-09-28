@@ -67,7 +67,8 @@ public class Quadra {
     private List<String> fotos = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "quadra_disponibilidades", joinColumns = @JoinColumn(name = "quadra_id"))
+    @CollectionTable(name = "quadra_disponibilidades", joinColumns = @JoinColumn(name = "quadra_id"),
+            uniqueConstraints = @UniqueConstraint(name = "uk_disp_quadra_dia", columnNames = {"quadra_id", "dia_semana"}))
     @org.hibernate.annotations.BatchSize(size = 50)
     private List<DisponibilidadeDia> disponibilidades = new ArrayList<>();
 
