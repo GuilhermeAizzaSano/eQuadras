@@ -47,6 +47,8 @@ public class QuadraService {
             throw new org.springframework.security.access.AccessDeniedException("Apenas administradores podem cadastrar quadras.");
         }
 
+        validarDataLimiteFutura(dto.dataLimiteAgendamento());
+
         java.util.List<String> fotosIniciais = dto.fotos() != null ? new java.util.ArrayList<>(dto.fotos()) : new java.util.ArrayList<>();
         if (fotosIniciais.size() > 5) {
             throw new IllegalArgumentException("Uma quadra pode ter no máximo 5 fotos.");
@@ -107,6 +109,11 @@ public class QuadraService {
 
         if (quadra.getAdmin() == null || !usuarioService.podeGerenciarQuadra(quadra, adminId)) {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
+        }
+
+        // Só valida quando muda: editar uma quadra com data limite já vencida, sem mexer nela, continua permitido
+        if (!java.util.Objects.equals(dto.dataLimiteAgendamento(), quadra.getDataLimiteAgendamento())) {
+            validarDataLimiteFutura(dto.dataLimiteAgendamento());
         }
 
         quadra.setNome(dto.nome());
@@ -184,6 +191,13 @@ public class QuadraService {
                     "EXCLUIR",
                     "Quadra excluída: " + quadra.getNome()
             ));
+        }
+    }
+
+    private static void validarDataLimiteFutura(java.time.LocalDate dataLimite) {
+        if (dataLimite != null && dataLimite.isBefore(java.time.LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL))) {
+            throw new com.agendamentos.equadras.exception.RegraNegocioException("DATA_LIMITE_PASSADA",
+                    "A data limite de agendamento não pode estar no passado.");
         }
     }
 

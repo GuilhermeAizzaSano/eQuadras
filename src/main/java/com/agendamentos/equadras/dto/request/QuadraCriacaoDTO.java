@@ -1,13 +1,17 @@
 package com.agendamentos.equadras.dto.request;
 
 import com.agendamentos.equadras.model.enums.TipoEsporte;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record QuadraCriacaoDTO(
         @NotBlank(message = "O nome da quadra é obrigatório")
@@ -20,6 +24,7 @@ public record QuadraCriacaoDTO(
 
         @NotNull(message = "O valor por hora é obrigatório")
         @DecimalMin(value = "0.01", message = "O valor por hora deve ser maior que zero")
+        @Digits(integer = 8, fraction = 2, message = "O valor por hora deve ter no máximo 8 dígitos inteiros e 2 casas decimais")
         BigDecimal valorHora,
 
         @Pattern(regexp = "^\\d{5}-\\d{3}$", message = "O CEP deve estar no formato XXXXX-XXX")
@@ -35,16 +40,32 @@ public record QuadraCriacaoDTO(
         String cidade,
         
         @Size(max = 2, message = "O estado deve ter no máximo 2 caracteres")
+        @Pattern(regexp = "^[A-Z]{2}$", message = "O estado deve ser uma UF com 2 letras maiúsculas")
         String estado,
 
+        @DecimalMin(value = "-90.0", message = "Latitude deve estar entre -90 e 90")
+        @DecimalMax(value = "90.0", message = "Latitude deve estar entre -90 e 90")
         Double latitude,
+        @DecimalMin(value = "-180.0", message = "Longitude deve estar entre -180 e 180")
+        @DecimalMax(value = "180.0", message = "Longitude deve estar entre -180 e 180")
         Double longitude,
         @Size(max = 2000, message = "A descrição deve ter no máximo 2000 caracteres")
         @Pattern(regexp = "^[^<>]*$", message = "Caracteres HTML não são permitidos na descrição")
         String descricao,
         java.time.LocalDate dataLimiteAgendamento,
         @Size(max = 5, message = "Uma quadra pode ter no máximo 5 fotos")
-        java.util.List<@Size(max = 500, message = "URL da foto inválida") String> fotos,
+        java.util.List<@Size(max = 255, message = "A URL da foto deve ter no máximo 255 caracteres") String> fotos,
         @Size(max = 7, message = "Uma quadra pode ter no máximo 7 regras de disponibilidade semanal")
         java.util.List<@jakarta.validation.Valid DisponibilidadeDiaDTO> disponibilidades
-) {}
+) {
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @AssertTrue(message = "Não é permitido repetir o dia da semana nas disponibilidades")
+    public boolean isDisponibilidadesSemDiaRepetido() {
+        if (disponibilidades == null) return true;
+        List<java.time.DayOfWeek> dias = disponibilidades.stream()
+                .filter(d -> d != null && d.diaSemana() != null)
+                .map(DisponibilidadeDiaDTO::diaSemana)
+                .toList();
+        return dias.stream().distinct().count() == dias.size();
+    }
+}

@@ -224,4 +224,45 @@ class QuadraServiceTest {
         assertEquals(10L, resultado.get().getId_quadra());
         verify(quadraRepository, times(1)).findById(10L);
     }
+
+    private QuadraCriacaoDTO dtoComDataLimite(java.time.LocalDate dataLimite) {
+        return new QuadraCriacaoDTO("Quadra Data Limite", TipoEsporte.FUTEBOL, BigDecimal.valueOf(100.00),
+                null, null, null, null, null, null, null, null, dataLimite, null, null);
+    }
+
+    @Test
+    @DisplayName("M5: cadastrar com data limite no passado é rejeitado")
+    void cadastrarComDataLimitePassadaRejeitado() {
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
+
+        com.agendamentos.equadras.exception.RegraNegocioException ex = assertThrows(
+                com.agendamentos.equadras.exception.RegraNegocioException.class,
+                () -> quadraService.cadastrar(dtoComDataLimite(
+                        java.time.LocalDate.now(com.agendamentos.equadras.util.DataFlexivelUtil.ZONE_BRASIL).minusDays(1)), 1L));
+
+        assertEquals("DATA_LIMITE_PASSADA", ex.getCode());
+        verify(quadraRepository, never()).save(any(Quadra.class));
+    }
+
+    @Test
+    @DisplayName("M5: editar sem alterar uma data limite já vencida continua permitido")
+    void editarMantendoDataLimiteVencidaPermitido() {
+        java.time.LocalDate antiga = java.time.LocalDate.of(2000, 1, 1);
+        quadraAdminComum.setDataLimiteAgendamento(antiga);
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
+        when(quadraRepository.save(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
+
+        assertDoesNotThrow(() -> quadraService.editar(10L, dtoComDataLimite(antiga), 1L));
+    }
+
+    @Test
+    @DisplayName("M5: editar alterando para data limite no passado é rejeitado")
+    void editarAlterandoParaDataLimitePassadaRejeitado() {
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
+        when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
+
+        assertThrows(com.agendamentos.equadras.exception.RegraNegocioException.class,
+                () -> quadraService.editar(10L, dtoComDataLimite(java.time.LocalDate.of(2000, 1, 1)), 1L));
+    }
 }
