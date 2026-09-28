@@ -6,6 +6,9 @@
 -- de infraestrutura/backend (postgres e service_role). As roles expostas pela API do
 -- Supabase (anon, authenticated) ficam sem política e, portanto, sem acesso.
 -- Idempotente: pode ser reaplicada sem efeito colateral.
+-- flyway_schema_history não é alterada aqui: o Flyway mantém lock nela em outra conexão
+-- durante a migração, e o ALTER TABLE ficaria bloqueado até o statement timeout. Seu RLS
+-- já está habilitado no Supabase e é garantido pela verificação ao final deste script.
 -- ==============================================================================
 
 DO $$
@@ -20,8 +23,7 @@ DECLARE
         'notificacoes',
         'agendamentos',
         'auditoria_api_key',
-        'logs_auditoria',
-        'flyway_schema_history'
+        'logs_auditoria'
     ];
 BEGIN
     FOREACH tabela IN ARRAY tabelas LOOP
