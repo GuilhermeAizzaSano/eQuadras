@@ -878,6 +878,14 @@ paths:
         \ e grade personalizada de horários por dia da semana (disponibilidades).\
         \ Requer ROLE_ADMIN."
       operationId: cadastrar_1
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        description: Chave gerada pelo cliente a cada formulário; reenvios com a mesma
+          chave em até 10 min devolvem a quadra já criada
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:

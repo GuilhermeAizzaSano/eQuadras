@@ -42,7 +42,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(origensPermitidas));
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS", "HEAD"));
         // Permite headers legítimos de navegação da SPA e integração via API-KEY
-        configuration.setAllowedHeaders(List.of("Content-Type", "X-Client", "X-Correlation-Id", "X-API-KEY", "Authorization"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "X-Client", "X-Correlation-Id", "X-API-KEY", "Authorization", "Idempotency-Key"));
         configuration.setExposedHeaders(List.of("Set-Cookie", "Content-Disposition", "X-Total-Count", "X-Correlation-Id", "Retry-After"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

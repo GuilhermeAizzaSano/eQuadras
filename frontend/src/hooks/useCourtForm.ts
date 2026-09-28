@@ -33,6 +33,8 @@ export const useCourtForm = ({
   const [editandoId, setEditandoId] = useState<number | null>(null);
   // Versão lida ao abrir a edição: o backend responde 409 se outra pessoa salvou antes
   const [versaoEditando, setVersaoEditando] = useState<number | undefined>(undefined);
+  // Uma chave por abertura do formulário de criação: reenvios do mesmo formulário não duplicam a quadra
+  const [chaveCriacao, setChaveCriacao] = useState<string | undefined>(undefined);
   const [nome, setNome] = useState('');
   const [tipoEsporte, setTipoEsporte] = useState<TipoEsporte>('FUTEBOL');
   const [valorHora, setValorHora] = useState('');
@@ -67,6 +69,7 @@ export const useCourtForm = ({
     setIsModalOpen(false);
     setEditandoId(null);
     setVersaoEditando(undefined);
+    setChaveCriacao(undefined);
     setNome('');
     setValorHora('');
     setDescricao('');
@@ -88,6 +91,7 @@ export const useCourtForm = ({
   const abrirModalCriacao = useCallback(() => {
     fecharModal();
     setHorarios(DEFAULT_HORARIOS);
+    setChaveCriacao(crypto.randomUUID());
     setIsModalOpen(true);
   }, [fecharModal]);
 
@@ -309,7 +313,7 @@ export const useCourtForm = ({
           if (editandoId) {
             quadraSalva = await quadraApi.editar(editandoId, { ...payload, versao: versaoEditando });
           } else {
-            quadraSalva = await quadraApi.cadastrar(payload);
+            quadraSalva = await quadraApi.cadastrar(payload, chaveCriacao);
           }
 
           if (novasFotos.length > 0 && quadraSalva.id_quadra) {
@@ -334,6 +338,7 @@ export const useCourtForm = ({
     user,
     editandoId,
     versaoEditando,
+    chaveCriacao,
     nome,
     valorHora,
     tipoEsporte,

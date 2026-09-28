@@ -27,11 +27,14 @@ public class QuadraController {
     private final QuadraService quadraService;
     private final QuadraFotoService quadraFotoService;
     private final QuadraBuscaService quadraBuscaService;
+    private final com.agendamentos.equadras.service.QuadraIdempotenciaService quadraIdempotenciaService;
 
-    public QuadraController(QuadraService quadraService, QuadraFotoService quadraFotoService, QuadraBuscaService quadraBuscaService) {
+    public QuadraController(QuadraService quadraService, QuadraFotoService quadraFotoService, QuadraBuscaService quadraBuscaService,
+                            com.agendamentos.equadras.service.QuadraIdempotenciaService quadraIdempotenciaService) {
         this.quadraService = quadraService;
         this.quadraFotoService = quadraFotoService;
         this.quadraBuscaService = quadraBuscaService;
+        this.quadraIdempotenciaService = quadraIdempotenciaService;
     }
 
     @Operation(
@@ -40,8 +43,10 @@ public class QuadraController {
     )
     @PostMapping
     public ResponseEntity<QuadraResponseDTO> cadastrar(@RequestBody @Valid QuadraCriacaoDTO dto,
+                                                       @io.swagger.v3.oas.annotations.Parameter(description = "Chave gerada pelo cliente a cada formulário; reenvios com a mesma chave em até 10 min devolvem a quadra já criada")
+                                                       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                                        @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        QuadraResponseDTO quadraCriada = quadraService.cadastrar(dto, usuarioLogado.id());
+        QuadraResponseDTO quadraCriada = quadraIdempotenciaService.cadastrar(dto, usuarioLogado.id(), idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(quadraCriada);
     }
 

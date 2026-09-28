@@ -2473,7 +2473,10 @@ export interface operations {
     cadastrar_1: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Chave gerada pelo cliente a cada formulário; reenvios com a mesma chave em até 10 min devolvem a quadra já criada */
+                "Idempotency-Key"?: string;
+            };
             path?: never;
             cookie?: never;
         };
