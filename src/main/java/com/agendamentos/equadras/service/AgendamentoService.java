@@ -249,9 +249,15 @@ public class AgendamentoService {
             throw new IllegalArgumentException("Não é possível cancelar um agendamento que está em andamento ou retroativo.");
         }
 
+        LocalDateTime agora = LocalDateTime.now(clock);
+        // Condicional ao status lido: impede sobrescrever uma confirmação de pagamento concorrente (webhook)
+        int afetados = agendamentoRepository.cancelarSeStatus(agendamento.getId_agendamento(), agendamento.getStatus(), agora);
+        if (afetados == 0) {
+            throw new RegraNegocioException("CONFLITO_STATUS", "O agendamento foi alterado por outra operação. Atualize e tente novamente.");
+        }
         agendamento.setStatus(StatusAgendamento.CANCELADO);
-        agendamento.setCanceladoEm(LocalDateTime.now(clock));
-        Agendamento agendamentoAtualizado = agendamentoRepository.save(agendamento);
+        agendamento.setCanceladoEm(agora);
+        Agendamento agendamentoAtualizado = agendamento;
 
         if (eventPublisher != null) {
             // usuario nunca é nulo aqui: a busca acima lança exceção quando não encontrado

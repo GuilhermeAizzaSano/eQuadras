@@ -380,15 +380,15 @@ class AgendamentoServiceTest {
                 .build();
 
         when(agendamentoRepository.findById(50L)).thenReturn(Optional.of(agendamento));
-        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> i.getArgument(0));
+        when(agendamentoRepository.cancelarSeStatus(anyLong(), any(StatusAgendamento.class), any(LocalDateTime.class))).thenReturn(1);
 
         AgendamentoResponseDTO response = agendamentoService.cancelar(50L, 99L);
 
         assertNotNull(response);
         assertEquals(StatusAgendamento.CANCELADO, response.status());
         assertNotNull(response.canceladoEm());
+        verify(agendamentoRepository, times(1)).cancelarSeStatus(eq(50L), any(StatusAgendamento.class), any(LocalDateTime.class));
         assertNotNull(agendamento.getCanceladoEm());
-        verify(agendamentoRepository, times(1)).save(agendamento);
     }
 
     @Test
@@ -409,7 +409,7 @@ class AgendamentoServiceTest {
                 .status(StatusAgendamento.CONFIRMADO)
                 .build();
         when(agendamentoRepository.findById(60L)).thenReturn(Optional.of(agendamento));
-        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(i -> i.getArgument(0));
+        when(agendamentoRepository.cancelarSeStatus(anyLong(), any(StatusAgendamento.class), any(LocalDateTime.class))).thenReturn(1);
 
         AgendamentoResponseDTO response = agendamentoService.cancelar(60L, 1L);
 
@@ -592,5 +592,29 @@ class AgendamentoServiceTest {
                 com.agendamentos.equadras.exception.RegraNegocioException.class,
                 () -> agendamentoService.confirmarPagamento(80L, 404L));
         assertEquals("ACESSO_NEGADO", ex.getCode());
+    }
+
+    @Test
+    @DisplayName("Cancelamento concorrente com mudança de status retorna CONFLITO_STATUS e não publica evento")
+    void cancelarComStatusAlteradoConcorrentementeLancaConflito() {
+        when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
+        Agendamento agendamento = Agendamento.builder()
+                .id_agendamento(61L)
+                .quadra(quadra)
+                .usuario(usuario)
+                .dataHoraInicio(LocalDateTime.now().plusDays(1))
+                .dataHoraFim(LocalDateTime.now().plusDays(1).plusHours(1))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.PENDENTE)
+                .build();
+        when(agendamentoRepository.findById(61L)).thenReturn(Optional.of(agendamento));
+        when(agendamentoRepository.cancelarSeStatus(eq(61L), eq(StatusAgendamento.PENDENTE), any(LocalDateTime.class))).thenReturn(0);
+
+        com.agendamentos.equadras.exception.RegraNegocioException ex = assertThrows(
+                com.agendamentos.equadras.exception.RegraNegocioException.class,
+                () -> agendamentoService.cancelar(61L, 1L));
+
+        assertEquals("CONFLITO_STATUS", ex.getCode());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

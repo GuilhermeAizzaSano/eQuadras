@@ -113,4 +113,12 @@ class GlobalExceptionHandlerTest {
         assertEquals("REGISTRO_EM_USO", problem.getProperties().get("code"));
         assertEquals("Não é possível remover ou modificar este registro, pois existem agendamentos ou dados associados a ele.", problem.getDetail());
     }
+
+    @Test
+    @DisplayName("RegraNegocioException com código CONFLITO_STATUS retorna 409 Conflict")
+    void conflitoStatusRetorna409() {
+        ProblemDetail problem = exceptionHandler.handleRegraNegocio(new RegraNegocioException("CONFLITO_STATUS", "x"), request);
+
+        assertEquals(HttpStatus.CONFLICT.value(), problem.getStatus());
+    }
 }

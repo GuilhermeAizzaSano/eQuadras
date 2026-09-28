@@ -40,10 +40,11 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
-    // Trata violações explícitas de regras de negócio de domínio (HTTP 400)
+    // Trata violações explícitas de regras de negócio de domínio (HTTP 400; conflito de status concorrente = 409)
     @ExceptionHandler(RegraNegocioException.class)
     public ProblemDetail handleRegraNegocio(RegraNegocioException ex, HttpServletRequest request) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        HttpStatus status = "CONFLITO_STATUS".equals(ex.getCode()) ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
         problemDetail.setTitle("Regra de Negócio Violada");
         problemDetail.setType(URI.create("https://api.equadras.com/erros/regra-negocio-violada"));
         problemDetail.setInstance(URI.create(request.getRequestURI()));

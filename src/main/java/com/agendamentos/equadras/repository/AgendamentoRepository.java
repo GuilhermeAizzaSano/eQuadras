@@ -160,9 +160,17 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
             @Param("agora") LocalDateTime agora
     );
 
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query("UPDATE Agendamento a SET a.status = com.agendamentos.equadras.model.enums.StatusAgendamento.CANCELADO, a.canceladoEm = :agora WHERE a.id = :id AND a.status = :statusLido")
+    int cancelarSeStatus(
+            @Param("id") Long id,
+            @Param("statusLido") StatusAgendamento statusLido,
+            @Param("agora") LocalDateTime agora
+    );
+
     @org.springframework.data.jpa.repository.Modifying
     @Query("""
-        UPDATE Agendamento a 
+        UPDATE Agendamento a
         SET a.status = :statusConfirmado, 
             a.transacaoPagamentoId = COALESCE(:transacaoId, a.transacaoPagamentoId) 
         WHERE a.id = :id 
