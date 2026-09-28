@@ -99,3 +99,6 @@ DIFF_*.md
 !src/main/resources/db/migration/*.sql
 restart.ps1
 restart.sh
+
+# Auditoria de banco gerada por IA
+DB_AUDIT.md
