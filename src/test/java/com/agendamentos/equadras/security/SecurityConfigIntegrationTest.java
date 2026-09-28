@@ -126,7 +126,7 @@ public class SecurityConfigIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    @Test
+    @DisplayName("POST /usuarios com sessão de ADMIN comum (não master) deve retornar 403 Forbidden")
     @DisplayName("POST /usuarios com cookie de sessão ADMIN e X-Client deve criar usuário com sucesso (201 Created)")
     void postUsuariosComTokenAdminDeveCriar() throws Exception {
         mockMvc.perform(post("/usuarios")

@@ -33,9 +33,6 @@ class UsuarioServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private com.agendamentos.equadras.security.JwtService jwtService;
-
-    @Mock
     private AuditoriaService auditoriaService;
 
     @Mock
@@ -56,51 +53,6 @@ class UsuarioServiceTest {
                 .phone_usuario("11988887777")
                 .role(Role.CLIENT)
                 .build();
-    }
-
-    @Test
-    @DisplayName("Deve cadastrar usuário com senha criptografada e role CLIENT por padrão")
-    void deveCadastrarUsuarioComSenhaCriptografada() {
-        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO(
-                "Mariana",
-                "mariana@email.com",
-                "senha123",
-                "11988887777"
-        );
-
-        when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(false);
-        when(passwordEncoder.encode("senha123")).thenReturn("$2a$10$encodedPasswordHash");
-        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
-        when(jwtService.gerarToken(any(Usuario.class))).thenReturn("token-fake");
-
-        var resposta = usuarioService.cadastrar(dto);
-
-        assertNotNull(resposta);
-        assertEquals("token-fake", resposta.token());
-        assertEquals("Mariana", resposta.usuario().nome_usuario());
-        assertEquals("mariana@email.com", resposta.usuario().email_usuario());
-        assertEquals(Role.CLIENT, resposta.usuario().role());
-
-        verify(passwordEncoder, times(1)).encode("senha123");
-        verify(usuarioRepository, times(1)).save(any(Usuario.class));
-    }
-
-    @Test
-    @DisplayName("Deve lançar erro ao tentar cadastrar usuário com email já existente")
-    void deveLancarErroQuandoEmailDuplicado() {
-        UsuarioCriacaoDTO dto = new UsuarioCriacaoDTO(
-                "Mariana",
-                "mariana@email.com",
-                "senha123",
-                "11988887777"
-        );
-
-        when(usuarioRepository.existsByEmail_usuario(dto.email_usuario())).thenReturn(true);
-
-        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> usuarioService.cadastrar(dto));
-        assertEquals("E-mail já cadastrado no sistema.", ex.getMessage());
-
-        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
     @Test

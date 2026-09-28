@@ -2,7 +2,6 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.UsuarioCriacaoDTO;
 import com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO;
-import com.agendamentos.equadras.dto.response.LoginResponseDTO;
 import com.agendamentos.equadras.dto.response.UsuarioResponseDTO;
 import com.agendamentos.equadras.model.entity.Quadra;
 import com.agendamentos.equadras.model.entity.Usuario;
@@ -12,7 +11,6 @@ import com.agendamentos.equadras.exception.RecursoNaoEncontradoException;
 import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import com.agendamentos.equadras.security.ApiKeyCache;
-import com.agendamentos.equadras.security.JwtService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,7 +30,6 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
     private final AuditoriaService auditoriaService;
     private final ApiKeyCache apiKeyCache;
     private final String masterAdminEmail;
@@ -41,14 +38,12 @@ public class UsuarioService {
     public UsuarioService(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService,
             AuditoriaService auditoriaService,
             ApiKeyCache apiKeyCache,
             @org.springframework.beans.factory.annotation.Value("${admin.master.email:gui@gmail.com}") String masterAdminEmail,
             @org.springframework.beans.factory.annotation.Value("${equadras.bot.default-password:}") String botDefaultPassword) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
         this.auditoriaService = auditoriaService;
         this.apiKeyCache = apiKeyCache;
         this.masterAdminEmail = masterAdminEmail != null ? masterAdminEmail.trim().toLowerCase() : "gui@gmail.com";
@@ -112,27 +107,6 @@ public class UsuarioService {
                     "Usuário cadastrado pelo admin: " + usuarioSalvo.getEmail_usuario() + " (" + usuarioSalvo.getRole() + ")");
         }
         return UsuarioResponseDTO.fromEntity(usuarioSalvo);
-    }
-
-    @Transactional
-    public LoginResponseDTO cadastrar(UsuarioCriacaoDTO dto) {
-        if (usuarioRepository.existsByEmail_usuario(dto.email_usuario())) {
-            throw new RegraNegocioException("EMAIL_DUPLICADO", "E-mail já cadastrado no sistema.");
-        }
-
-        Role roleParaAtribuir = dto.role() != null ? dto.role() : Role.CLIENT;
-
-        Usuario usuario = Usuario.builder()
-                .nome_usuario(dto.nome_usuario())
-                .email_usuario(dto.email_usuario())
-                .senha_usuario(passwordEncoder.encode(dto.senha_usuario()))
-                .phone_usuario(dto.phone_usuario())
-                .role(roleParaAtribuir)
-                .build();
-
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
-        String token = jwtService.gerarToken(usuarioSalvo);
-        return new LoginResponseDTO(token, UsuarioResponseDTO.fromEntity(usuarioSalvo));
     }
 
     @Transactional

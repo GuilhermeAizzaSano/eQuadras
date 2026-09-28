@@ -180,18 +180,14 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Cadastrar novo usuário (Apenas Administrador)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer sessão com privilégios de Administrador.")
+    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto,
                                                         @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        if (usuarioLogado != null && usuarioService.isMasterAdmin(usuarioLogado.id())) {
-            var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
-            return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
-        } else {
-            var resposta = usuarioService.cadastrar(dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(resposta.usuario());
-        }
+        // cadastrarPorAdmin valida que o chamador é o Master Admin (403 para qualquer outro ADMIN)
+        var resposta = usuarioService.cadastrarPorAdmin(dto, usuarioLogado.id());
+        return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
     @Operation(summary = "Editar usuário existente (Apenas Admin Geral)", description = "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil e opcionalmente senha). Apenas o Administrador Geral possui permissão.")
