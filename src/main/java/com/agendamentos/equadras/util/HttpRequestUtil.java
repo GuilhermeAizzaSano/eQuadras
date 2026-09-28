@@ -25,14 +25,9 @@ public final class HttpRequestUtil {
             }
             return "127.0.0.1";
         }
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isBlank()) {
-            return xRealIp.trim();
-        }
+        // O Tomcat (server.forward-headers-strategy=native + remoteip.internal-proxies) já resolve o IP real
+        // a partir do X-Forwarded-For apenas quando a requisição vem do proxy confiável; ler o cabeçalho
+        // diretamente permitiria que o cliente forjasse o próprio IP.
         return request.getRemoteAddr() != null ? request.getRemoteAddr() : "desconhecido";
     }
 

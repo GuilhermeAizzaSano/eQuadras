@@ -1,5 +1,6 @@
 package com.agendamentos.equadras.security;
 
+import com.agendamentos.equadras.util.HttpRequestUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -89,7 +90,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String clientIp = extrairClientIp(request);
+        String clientIp = HttpRequestUtil.extrairClientIp(request);
         String categoria;
         double capacidade;
         double recargaPorSegundo;
@@ -138,17 +139,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private String extrairClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isBlank()) {
-            return xRealIp.trim();
-        }
-        return request.getRemoteAddr() != null ? request.getRemoteAddr() : "desconhecido";
     }
 }
