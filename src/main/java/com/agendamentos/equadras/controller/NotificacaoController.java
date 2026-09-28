@@ -38,7 +38,8 @@ public class NotificacaoController {
             @UsuarioLogado UsuarioAutenticado usuarioLogado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        // Teto alinhado ao spring.data.web.pageable.max-page-size global
+        Pageable pageable = PageRequest.of(page, Math.min(size, 50));
         return ResponseEntity.ok(notificacaoService.listarPorAdmin(usuarioLogado.id(), pageable)
                 .map(NotificacaoResponseDTO::fromEntity));
     }
