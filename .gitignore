@@ -75,6 +75,16 @@ desktop.ini
 .gemini/
 .superpowers/
 .codegraph/
+.claude/
+.cursor/
+.windsurf/
+.aider*
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+CONSELHO_AUDITORIA.md
+docs/audit/
+docs/superpowers/
 docs/*
 !docs/api/
 *.log
