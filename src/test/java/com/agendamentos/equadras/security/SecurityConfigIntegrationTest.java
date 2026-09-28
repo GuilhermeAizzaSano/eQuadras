@@ -126,15 +126,15 @@ public class SecurityConfigIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
     @DisplayName("POST /usuarios com sessão de ADMIN comum (não master) deve retornar 403 Forbidden")
-    @DisplayName("POST /usuarios com cookie de sessão ADMIN e X-Client deve criar usuário com sucesso (201 Created)")
-    void postUsuariosComTokenAdminDeveCriar() throws Exception {
+    void postUsuariosComAdminComumDeveRetornar403() throws Exception {
         mockMvc.perform(post("/usuarios")
                         .cookie(new jakarta.servlet.http.Cookie("equadras_session", tokenAdmin))
                         .header("X-Client", "frontend")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"nome_usuario\":\"Novo Atleta\",\"email_usuario\":\"atleta_" + System.currentTimeMillis() + "@t.com\",\"senha_usuario\":\"SenhaForte123!\",\"phone_usuario\":\"11999999999\",\"role\":\"CLIENT\"}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isForbidden());
     }
 
     @Test
