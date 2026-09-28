@@ -207,32 +207,32 @@ public class UsuarioService {
         return UsuarioResponseDTO.fromEntity(usuario, usuario.isMasterAdmin(this.masterAdminEmail));
     }
 
-    @Transactional
+    // Sem @Transactional: cada tentativa roda na transação curta do repositório, então a colisão
+    // (e-mail único bot_<telefone>) não deixa uma transação externa marcada como rollback-only.
     public Usuario obterOuCriarUsuarioBot(String nome, String telefone) {
         String telefoneSanitizado = telefone != null ? telefone.replaceAll("\\D", "") : "";
         if (telefoneSanitizado.length() < 10 || telefoneSanitizado.length() > 11) {
             throw new IllegalArgumentException("Número de telefone inválido para cadastro via bot (deve conter DDD + 8 ou 9 dígitos).");
         }
-        
+
         return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
                 .orElseGet(() -> {
-                    try {
-                        String senhaBot = !botDefaultPassword.isBlank()
-                                ? botDefaultPassword
-                                : java.util.UUID.randomUUID().toString();
+                    String senhaBot = !botDefaultPassword.isBlank()
+                            ? botDefaultPassword
+                            : java.util.UUID.randomUUID().toString();
 
-                        Usuario novoUsuario = Usuario.builder()
-                                .nome_usuario(nome != null ? nome : "Usuário Bot")
-                                .phone_usuario(telefoneSanitizado)
-                                .email_usuario("bot_" + telefoneSanitizado + "@equadras.com")
-                                .senha_usuario(passwordEncoder.encode(senhaBot))
-                                .role(Role.CLIENT)
-                                .build();
+                    Usuario novoUsuario = Usuario.builder()
+                            .nome_usuario(nome != null ? nome : "Usuário Bot")
+                            .phone_usuario(telefoneSanitizado)
+                            .email_usuario("bot_" + telefoneSanitizado + "@equadras.com")
+                            .senha_usuario(passwordEncoder.encode(senhaBot))
+                            .role(Role.CLIENT)
+                            .build();
+                    try {
                         return usuarioRepository.saveAndFlush(novoUsuario);
-                    } catch (Exception e) {
-                        // Concurrency issue fallback: someone just created the user
-                        return usuarioRepository.findByPhone_usuario(telefoneSanitizado)
-                                .orElseThrow(() -> new RuntimeException("Erro ao obter/criar usuário do bot: " + e.getMessage()));
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Outra requisição criou o mesmo usuário entre a busca e o insert
+                        return usuarioRepository.findByPhone_usuario(telefoneSanitizado).orElseThrow(() -> e);
                     }
                 });
     }
