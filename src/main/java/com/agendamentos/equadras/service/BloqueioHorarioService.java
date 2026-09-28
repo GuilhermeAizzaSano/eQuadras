@@ -185,10 +185,14 @@ public class BloqueioHorarioService {
             }
         }
 
-        if (paraRemover.size() == 1 && paraRemover.contains(bloqueio)) {
-            bloqueioHorarioRepository.delete(bloqueio);
-        } else {
-            bloqueioHorarioRepository.deleteAll(paraRemover);
+        int removidos = 0;
+        for (BloqueioHorario b : paraRemover) {
+            removidos += bloqueioHorarioRepository.deletarDaQuadra(b.getId(), quadraId);
+        }
+        if (removidos == 0) {
+            // Outra requisição removeu o(s) bloqueio(s) entre a leitura e a exclusão
+            throw new com.agendamentos.equadras.exception.RecursoNaoEncontradoException(
+                    "BLOQUEIO_NAO_ENCONTRADO", "Bloqueio não encontrado para o ID: " + bloqueioId);
         }
 
         if (eventPublisher != null) {

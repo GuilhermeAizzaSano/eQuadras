@@ -189,9 +189,10 @@ class BloqueioHorarioServiceTest {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
         when(bloqueioHorarioRepository.findById(50L)).thenReturn(Optional.of(b));
 
+        when(bloqueioHorarioRepository.deletarDaQuadra(50L, 10L)).thenReturn(1);
         bloqueioHorarioService.removerBloqueio(10L, 50L, 1L);
 
-        verify(bloqueioHorarioRepository, times(1)).delete(b);
+        verify(bloqueioHorarioRepository, times(1)).deletarDaQuadra(50L, 10L);
     }
 
     @Test
@@ -293,9 +294,10 @@ class BloqueioHorarioServiceTest {
         BloqueioHorario bloqueio = new BloqueioHorario(200L, quadra, LocalDate.now().plusDays(2), null, null, "Motivo", null);
         when(bloqueioHorarioRepository.findById(200L)).thenReturn(Optional.of(bloqueio));
 
+        when(bloqueioHorarioRepository.deletarDaQuadra(200L, 10L)).thenReturn(1);
         bloqueioHorarioService.removerBloqueio(10L, 200L, 99L);
 
-        verify(bloqueioHorarioRepository, times(1)).delete(bloqueio);
+        verify(bloqueioHorarioRepository, times(1)).deletarDaQuadra(200L, 10L);
     }
 
     @Test
@@ -347,9 +349,11 @@ class BloqueioHorarioServiceTest {
         when(bloqueioHorarioRepository.findById(301L)).thenReturn(Optional.of(b1));
         when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, data)).thenReturn(List.of(b1, b2));
 
+        when(bloqueioHorarioRepository.deletarDaQuadra(anyLong(), eq(10L))).thenReturn(1);
         bloqueioHorarioService.removerBloqueio(10L, 301L, 1L);
 
-        verify(bloqueioHorarioRepository, times(1)).deleteAll(List.of(b1, b2));
+        verify(bloqueioHorarioRepository, times(1)).deletarDaQuadra(301L, 10L);
+        verify(bloqueioHorarioRepository, times(1)).deletarDaQuadra(302L, 10L);
     }
 
     @Test
@@ -404,5 +408,18 @@ class BloqueioHorarioServiceTest {
         assertEquals(LocalTime.of(12, 0), novos.get(0).getHoraFim());
         assertEquals(LocalTime.of(13, 0), novos.get(1).getHoraInicio());
         assertEquals(LocalTime.of(23, 59, 59), novos.get(1).getHoraFim());
+    }
+
+    @Test
+    @DisplayName("Remover bloqueio já removido por outra requisição retorna 404")
+    void removerBloqueioConcorrenteRetorna404() {
+        BloqueioHorario b = new BloqueioHorario(51L, quadra, LocalDate.now().plusDays(1), java.time.LocalTime.of(8, 0), java.time.LocalTime.of(9, 0), "Motivo", null);
+        when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadra));
+        when(bloqueioHorarioRepository.findById(51L)).thenReturn(Optional.of(b));
+        when(bloqueioHorarioRepository.findByQuadraIdAndData(10L, b.getData())).thenReturn(List.of(b));
+        when(bloqueioHorarioRepository.deletarDaQuadra(51L, 10L)).thenReturn(0);
+
+        assertThrows(com.agendamentos.equadras.exception.RecursoNaoEncontradoException.class,
+                () -> bloqueioHorarioService.removerBloqueio(10L, 51L, 1L));
     }
 }
