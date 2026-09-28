@@ -2,6 +2,7 @@ package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.dto.request.QuadraCriacaoDTO;
 import com.agendamentos.equadras.dto.response.QuadraResponseDTO;
+import com.agendamentos.equadras.exception.RegraNegocioException;
 import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoEsporte;
@@ -25,6 +26,7 @@ import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** B1: POST /quadras com a mesma Idempotency-Key cria uma quadra só. */
 @SpringBootTest
@@ -97,6 +99,30 @@ class QuadraIdempotenciaIntegrationTest {
         Long a = idempotenciaService.cadastrar(dto(), admin.getId_usuario(), "chave-x").id_quadra();
         Long b = idempotenciaService.cadastrar(dto(), outroAdmin.getId_usuario(), "chave-x").id_quadra();
         assertNotEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("R6: a mesma chave com outros dados é recusada e não cria quadra")
+    void mesmaChaveComPayloadDivergente() {
+        idempotenciaService.cadastrar(dto(), admin.getId_usuario(), "k-diverge");
+        QuadraCriacaoDTO corrigido = new QuadraCriacaoDTO("Quadra B1 corrigida", TipoEsporte.FUTSAL, BigDecimal.TEN,
+                null, null, null, null, null, null, null, null, null, null, null);
+
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> idempotenciaService.cadastrar(corrigido, admin.getId_usuario(), "k-diverge"));
+
+        assertEquals("IDEMPOTENCIA_CONFLITO", ex.getCode());
+        assertEquals(1, quadraRepository.findByAdminId(admin.getId_usuario()).size());
+    }
+
+    @Test
+    @DisplayName("R6: criação que falha não fica guardada para a chave")
+    void falhaNaoFicaEmCache() {
+        assertThrows(RuntimeException.class, () -> idempotenciaService.cadastrar(dto(), -1L, "k-falha"));
+
+        idempotenciaService.cadastrar(dto(), admin.getId_usuario(), "k-falha");
+
+        assertEquals(1, quadraRepository.findByAdminId(admin.getId_usuario()).size());
     }
 
     @Test
