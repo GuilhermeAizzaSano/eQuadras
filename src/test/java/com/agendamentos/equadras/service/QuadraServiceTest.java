@@ -87,7 +87,7 @@ class QuadraServiceTest {
     void devePermitirMasterAdminEditarQuadraDeOutroAdmin() {
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
         when(usuarioService.podeGerenciarQuadra(any(), eq(99L))).thenReturn(true);
-        when(quadraRepository.save(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
+        when(quadraRepository.saveAndFlush(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
 
         QuadraCriacaoDTO dto = new QuadraCriacaoDTO(
                 "Quadra Atualizada pelo Master",
@@ -110,7 +110,7 @@ class QuadraServiceTest {
 
         assertNotNull(atualizada);
         assertEquals("Quadra Atualizada pelo Master", atualizada.nome());
-        verify(quadraRepository, times(1)).save(quadraAdminComum);
+        verify(quadraRepository, times(1)).saveAndFlush(quadraAdminComum);
     }
 
     @Test
@@ -144,7 +144,7 @@ class QuadraServiceTest {
         );
 
         assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> quadraService.editar(10L, dto, 2L));
-        verify(quadraRepository, never()).save(any());
+        verify(quadraRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -251,7 +251,7 @@ class QuadraServiceTest {
         quadraAdminComum.setDataLimiteAgendamento(antiga);
         when(quadraRepository.findByIdWithAdmin(10L)).thenReturn(Optional.of(quadraAdminComum));
         when(usuarioService.podeGerenciarQuadra(any(), eq(1L))).thenReturn(true);
-        when(quadraRepository.save(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
+        when(quadraRepository.saveAndFlush(any(Quadra.class))).thenAnswer(i -> i.getArgument(0));
 
         assertDoesNotThrow(() -> quadraService.editar(10L, dtoComDataLimite(antiga), 1L));
     }

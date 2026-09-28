@@ -56,7 +56,10 @@ public record QuadraResponseDTO(
         List<String> fotos,
 
         @Schema(description = "Horários de funcionamento semanais configurados para a quadra")
-        List<DisponibilidadeDiaDTO> disponibilidades
+        List<DisponibilidadeDiaDTO> disponibilidades,
+
+        @Schema(description = "Versão atual da quadra; enviar no PUT para detectar edições concorrentes", example = "3")
+        Long versao
 ) {
     public static QuadraResponseDTO fromEntity(Quadra quadra) {
         return new QuadraResponseDTO(
@@ -79,7 +82,8 @@ public record QuadraResponseDTO(
                         ? quadra.getDisponibilidades().stream()
                                 .map(d -> new DisponibilidadeDiaDTO(d.getDiaSemana(), d.getHoraInicio(), d.getHoraFim()))
                                 .toList()
-                        : java.util.Collections.emptyList()
+                        : java.util.Collections.emptyList(),
+                quadra.getVersao()
         );
     }
 }

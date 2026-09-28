@@ -31,6 +31,8 @@ export const useCourtForm = ({
 }: UseCourtFormOptions) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  // Versão lida ao abrir a edição: o backend responde 409 se outra pessoa salvou antes
+  const [versaoEditando, setVersaoEditando] = useState<number | undefined>(undefined);
   const [nome, setNome] = useState('');
   const [tipoEsporte, setTipoEsporte] = useState<TipoEsporte>('FUTEBOL');
   const [valorHora, setValorHora] = useState('');
@@ -64,6 +66,7 @@ export const useCourtForm = ({
     novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
     setIsModalOpen(false);
     setEditandoId(null);
+    setVersaoEditando(undefined);
     setNome('');
     setValorHora('');
     setDescricao('');
@@ -91,6 +94,7 @@ export const useCourtForm = ({
   const abrirModalEdicao = useCallback((q: Quadra) => {
     novasFotosPreviews.forEach((url) => URL.revokeObjectURL(url));
     setEditandoId(q.id_quadra);
+    setVersaoEditando(q.versao);
     setNome(q.nome);
     setTipoEsporte(q.tipoEsporte);
     setValorHora(q.valorHora.toString());
@@ -303,7 +307,7 @@ export const useCourtForm = ({
 
           let quadraSalva: Quadra;
           if (editandoId) {
-            quadraSalva = await quadraApi.editar(editandoId, payload);
+            quadraSalva = await quadraApi.editar(editandoId, { ...payload, versao: versaoEditando });
           } else {
             quadraSalva = await quadraApi.cadastrar(payload);
           }
@@ -329,6 +333,7 @@ export const useCourtForm = ({
   }, [
     user,
     editandoId,
+    versaoEditando,
     nome,
     valorHora,
     tipoEsporte,

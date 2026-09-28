@@ -55,6 +55,13 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    // Duas edições simultâneas da mesma versão: a segunda perde no commit (@Version)
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleLockOtimista(org.springframework.orm.ObjectOptimisticLockingFailureException ex, HttpServletRequest request) {
+        return handleRegraNegocio(new RegraNegocioException("CONFLITO_VERSAO",
+                "Esta quadra foi alterada por outra pessoa. Recarregue os dados e tente de novo."), request);
+    }
+
     // Trata erros de requisição inválida legados / argumentos incorretos (Fallback)
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {

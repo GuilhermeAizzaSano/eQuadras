@@ -56,8 +56,17 @@ public record QuadraCriacaoDTO(
         @Size(max = 5, message = "Uma quadra pode ter no máximo 5 fotos")
         java.util.List<@Size(max = 255, message = "A URL da foto deve ter no máximo 255 caracteres") String> fotos,
         @Size(max = 7, message = "Uma quadra pode ter no máximo 7 regras de disponibilidade semanal")
-        java.util.List<@jakarta.validation.Valid DisponibilidadeDiaDTO> disponibilidades
+        java.util.List<@jakarta.validation.Valid DisponibilidadeDiaDTO> disponibilidades,
+        @io.swagger.v3.oas.annotations.media.Schema(description = "Versão lida antes da edição; se diferente da atual, o PUT retorna 409", example = "3")
+        Long versao
 ) {
+    public QuadraCriacaoDTO(String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, String cep, String logradouro,
+                            String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao,
+                            java.time.LocalDate dataLimiteAgendamento, List<String> fotos, List<DisponibilidadeDiaDTO> disponibilidades) {
+        this(nome, tipoEsporte, valorHora, cep, logradouro, bairro, cidade, estado, latitude, longitude, descricao,
+                dataLimiteAgendamento, fotos, disponibilidades, null);
+    }
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @AssertTrue(message = "Não é permitido repetir o dia da semana nas disponibilidades")
     public boolean isDisponibilidadesSemDiaRepetido() {

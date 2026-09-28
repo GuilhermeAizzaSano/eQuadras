@@ -111,6 +111,11 @@ public class QuadraService {
             throw new org.springframework.security.access.AccessDeniedException("Apenas o administrador dono da quadra ou o Master Admin pode editá-la.");
         }
 
+        if (dto.versao() != null && !dto.versao().equals(quadra.getVersao())) {
+            throw new com.agendamentos.equadras.exception.RegraNegocioException("CONFLITO_VERSAO",
+                    "Esta quadra foi alterada por outra pessoa. Recarregue os dados e tente de novo.");
+        }
+
         // Só valida quando muda: editar uma quadra com data limite já vencida, sem mexer nela, continua permitido
         if (!java.util.Objects.equals(dto.dataLimiteAgendamento(), quadra.getDataLimiteAgendamento())) {
             validarDataLimiteFutura(dto.dataLimiteAgendamento());
@@ -157,7 +162,8 @@ public class QuadraService {
             }
         }
 
-        Quadra quadraSalva = quadraRepository.save(quadra);
+        // Flush para a resposta já trazer a versão incrementada pelo @Version
+        Quadra quadraSalva = quadraRepository.saveAndFlush(quadra);
         if (eventPublisher != null) {
             eventPublisher.publishEvent(new QuadraAlteradaEvent(
                     quadraSalva.getId_quadra(),

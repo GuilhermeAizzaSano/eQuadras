@@ -75,6 +75,12 @@ public class Quadra {
     @JoinColumn(name = "admin_id")
     private Usuario admin;
 
+    // Lock otimista: edições concorrentes não se sobrescrevem em silêncio (coluna criada na V17).
+    // Nulo até o insert: o Spring Data usa versão nula para decidir entre persist e merge.
+    @Version
+    @Column(nullable = false)
+    private Long versao;
+
     public Quadra() {}
 
     public Quadra(Long id_quadra, String nome, TipoEsporte tipoEsporte, BigDecimal valorHora, boolean ativa, String cep, String logradouro, String bairro, String cidade, String estado, Double latitude, Double longitude, String descricao, java.time.LocalDate dataLimiteAgendamento, List<String> fotos, List<DisponibilidadeDia> disponibilidades, Usuario admin) {
@@ -119,6 +125,7 @@ public class Quadra {
     }
 
     public Long getId_quadra() { return id_quadra; }
+    public Long getVersao() { return versao; }
     public void setId_quadra(Long id_quadra) { this.id_quadra = id_quadra; }
 
     public String getNome() { return nome; }

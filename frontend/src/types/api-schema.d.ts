@@ -973,6 +973,12 @@ export interface components {
             /** @enum {string} */
             tipoEsporte: "FUTEBOL" | "FUTSAL" | "VOLEI" | "BEACH_TENNIS" | "BASQUETE" | "TENIS";
             valorHora: number;
+            /**
+             * Format: int64
+             * @description Versão lida antes da edição; se diferente da atual, o PUT retorna 409
+             * @example 3
+             */
+            versao?: number;
         };
         /** @description Detalhes cadastrais completos e horários de funcionamento de uma quadra */
         QuadraResponseDTO: {
@@ -1055,6 +1061,12 @@ export interface components {
              * @example 120
              */
             valorHora?: number;
+            /**
+             * Format: int64
+             * @description Versão atual da quadra; enviar no PUT para detectar edições concorrentes
+             * @example 3
+             */
+            versao?: number;
         };
         UsuarioLoginDTO: {
             email_usuario: string;
