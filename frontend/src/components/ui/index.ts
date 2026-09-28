@@ -21,3 +21,4 @@ export * from './DropdownMenu';
 export * from './Avatar';
 export * from './Skeleton';
 export * from './SidebarPrimitives';
+export * from './tubelight-navbar';

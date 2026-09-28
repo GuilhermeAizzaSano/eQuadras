@@ -182,6 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <SidebarPrimitive
+      className="hidden md:flex"
       header={
         <SidebarHeader
           onSelectHome={() => onSelectTab(isAdmin ? 'RELATORIOS' : 'QUADRAS')}
