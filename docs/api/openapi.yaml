@@ -432,9 +432,9 @@ paths:
     post:
       tags:
       - Usuários - API
-      summary: Cadastrar novo usuário (Apenas Administrador)
-      description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer\
-        \ sessão com privilégios de Administrador."
+      summary: Cadastrar novo usuário (Apenas Admin Geral)
+      description: "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas\
+        \ o Administrador Geral possui permissão."
       operationId: cadastrar
       requestBody:
         content:

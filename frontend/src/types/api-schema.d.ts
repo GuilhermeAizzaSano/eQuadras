@@ -174,8 +174,8 @@ export interface paths {
         get: operations["listarUsuariosPaginado"];
         put?: never;
         /**
-         * Cadastrar novo usuário (Apenas Administrador)
-         * @description Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Requer sessão com privilégios de Administrador.
+         * Cadastrar novo usuário (Apenas Admin Geral)
+         * @description Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.
          */
         post: operations["cadastrar"];
         delete?: never;
