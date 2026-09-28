@@ -82,7 +82,7 @@ public class QuadraBuscaService {
     public List<QuadraResponseDTO> listar(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                           String tipoEsporte,
                                           String nome, String endereco, String cidade, String bairro, String cep) {
-        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
+        return filtrarComTeto(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
                 .stream()
                 .map(QuadraResponseDTO::fromEntity)
                 .toList();
@@ -130,10 +130,22 @@ public class QuadraBuscaService {
     public List<QuadraResumoResponseDTO> listarResumido(Long usuarioId, Double latitude, Double longitude, Double raioKm,
                                                         String tipoEsporte,
                                                         String nome, String endereco, String cidade, String bairro, String cep) {
-        return filtrarQuadrasEntidades(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
+        return filtrarComTeto(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep)
                 .stream()
                 .map(QuadraResumoResponseDTO::fromEntity)
                 .toList();
+    }
+
+    private List<Quadra> filtrarComTeto(Long usuarioId, Double latitude, Double longitude, Double raioKm,
+                                        String tipoEsporte, String nome, String endereco, String cidade, String bairro, String cep) {
+        Optional<Specification<Quadra>> spec = montarSpecification(usuarioId, latitude, longitude, raioKm,
+                tipoEsporte, nome, endereco, cidade, bairro, cep);
+        if (spec.isEmpty()) {
+            return List.of();
+        }
+        // Sem Sort: a ordem por distância (dentroDoRaio) ou a ordem atual é mantida; o teto vai para o SQL
+        return quadraRepository.findAll(spec.get(),
+                PageRequest.of(0, com.agendamentos.equadras.shared.pagination.LimitesListagem.MAXIMO_SEM_PAGINACAO)).getContent();
     }
 
     public List<Quadra> filtrarQuadrasEntidades(Long usuarioId, Double latitude, Double longitude, Double raioKm,

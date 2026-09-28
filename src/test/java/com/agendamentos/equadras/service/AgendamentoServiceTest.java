@@ -173,7 +173,7 @@ class AgendamentoServiceTest {
                 .build();
 
         when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
-        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
+        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class), any(org.springframework.data.domain.Limit.class)))
                 .thenReturn(List.of(agendamento));
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L);
@@ -184,8 +184,8 @@ class AgendamentoServiceTest {
         assertEquals("tx-123", dto.transacaoPagamentoId());
         assertNull(dto.pixCopiaECola());
         assertNull(dto.qrCodeBase64());
-        verify(agendamentoRepository, times(1)).findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class));
-        verify(agendamentoRepository, never()).findByUsuarioId(1L);
+        verify(agendamentoRepository, times(1)).findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class), any(org.springframework.data.domain.Limit.class));
+        verify(agendamentoRepository, never()).findByUsuarioId(eq(1L), any(org.springframework.data.domain.Limit.class));
     }
 
     @Test
@@ -208,7 +208,7 @@ class AgendamentoServiceTest {
                 .build();
 
         when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
-        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class)))
+        when(agendamentoRepository.findAtivosByUsuarioId(eq(1L), eq(StatusAgendamento.CANCELADO), any(LocalDateTime.class), any(org.springframework.data.domain.Limit.class)))
                 .thenReturn(List.of(agendamento));
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L);
@@ -234,14 +234,14 @@ class AgendamentoServiceTest {
                 .build();
 
         when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(usuario));
-        when(agendamentoRepository.findByUsuarioId(1L)).thenReturn(List.of(agendamento));
+        when(agendamentoRepository.findByUsuarioId(eq(1L), any(org.springframework.data.domain.Limit.class))).thenReturn(List.of(agendamento));
 
         List<AgendamentoResponseDTO> resultado = agendamentoService.listarTodos(1L, true);
 
         assertEquals(1, resultado.size());
         assertEquals(21L, resultado.get(0).id_agendamento());
-        verify(agendamentoRepository, times(1)).findByUsuarioId(1L);
-        verify(agendamentoRepository, never()).findAtivosByUsuarioId(any(), any(), any());
+        verify(agendamentoRepository, times(1)).findByUsuarioId(eq(1L), any(org.springframework.data.domain.Limit.class));
+        verify(agendamentoRepository, never()).findAtivosByUsuarioId(any(), any(), any(), any());
     }
 
     @Test
@@ -349,13 +349,13 @@ class AgendamentoServiceTest {
                 .status(StatusAgendamento.CONFIRMADO)
                 .build();
 
-        when(agendamentoRepository.findAllOrderByDataHoraInicioDesc()).thenReturn(List.of(a1));
+        when(agendamentoRepository.findAllOrderByDataHoraInicioDesc(any(org.springframework.data.domain.Limit.class))).thenReturn(List.of(a1));
 
         List<AgendamentoResponseDTO> lista = agendamentoService.listarTodos(99L, true);
 
         assertEquals(1, lista.size());
-        verify(agendamentoRepository, times(1)).findAllOrderByDataHoraInicioDesc();
-        verify(agendamentoRepository, never()).findByAdminId(99L);
+        verify(agendamentoRepository, times(1)).findAllOrderByDataHoraInicioDesc(any(org.springframework.data.domain.Limit.class));
+        verify(agendamentoRepository, never()).findByAdminId(eq(99L), any(org.springframework.data.domain.Limit.class));
     }
 
     @Test

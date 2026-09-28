@@ -77,25 +77,25 @@ class QuadraBuscaServiceTest {
     @DisplayName("Admin comum deve listar apenas as suas quadras")
     void deveListarApenasQuadrasDoAdminComum() {
         when(usuarioService.buscarPorIdEntidade(1L)).thenReturn(Optional.of(adminComum));
-        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(quadraAdminComum)));
 
         List<QuadraResponseDTO> resultado = quadraBuscaService.listar(1L, null, null, null);
 
         assertEquals(1, resultado.size());
         assertEquals("Quadra do Admin", resultado.get(0).nome());
-        verify(quadraRepository, times(1)).findAll(any(Specification.class));
+        verify(quadraRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     @DisplayName("Master Admin deve listar todas as quadras")
     void deveListarTodasAsQuadrasParaMasterAdmin() {
         when(usuarioService.buscarPorIdEntidade(99L)).thenReturn(Optional.of(masterAdmin));
-        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(quadraAdminComum)));
 
         List<QuadraResponseDTO> resultado = quadraBuscaService.listar(99L, null, null, null);
 
         assertEquals(1, resultado.size());
-        verify(quadraRepository, times(1)).findAll(any(Specification.class));
+        verify(quadraRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
@@ -189,7 +189,7 @@ class QuadraBuscaServiceTest {
     @Test
     @DisplayName("Deve listar quadras no formato resumido para integrações/bots")
     void deveListarResumido() {
-        when(quadraRepository.findAll(any(Specification.class))).thenReturn(List.of(quadraAdminComum));
+        when(quadraRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(quadraAdminComum)));
 
         List<QuadraResumoResponseDTO> resultado = quadraBuscaService.listarResumido(null, null, null, null, null, null, null, null, null);
 

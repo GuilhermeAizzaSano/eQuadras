@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.agendamentos.equadras.shared.pagination.LimitesListagem;
 import com.agendamentos.equadras.shared.pagination.PageResponse;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -175,7 +176,10 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listarTodos() {
-        return usuarioRepository.findAll()
+        // Teto no SQL (spec onda 2, M11): os 200 usuários mais recentes
+        return usuarioRepository.findAll(PageRequest.of(0, LimitesListagem.MAXIMO_SEM_PAGINACAO,
+                        JpaSort.unsafe(Sort.Direction.DESC, "id_usuario")))
+                .getContent()
                 .stream()
                 .map(u -> UsuarioResponseDTO.fromEntity(u, u.isMasterAdmin(this.masterAdminEmail)))
                 .toList();

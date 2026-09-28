@@ -49,7 +49,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a WHERE a.usuario.id_usuario = :usuarioId ORDER BY a.dataHoraInicio DESC")
-    List<Agendamento> findByUsuarioId(@Param("usuarioId") Long usuarioId);
+    List<Agendamento> findByUsuarioId(@Param("usuarioId") Long usuarioId, org.springframework.data.domain.Limit limite);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("""
@@ -62,12 +62,13 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     List<Agendamento> findAtivosByUsuarioId(
             @Param("usuarioId") Long usuarioId,
             @Param("statusCancelado") StatusAgendamento statusCancelado,
-            @Param("agora") LocalDateTime agora
+            @Param("agora") LocalDateTime agora,
+            org.springframework.data.domain.Limit limite
     );
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a WHERE a.quadra.admin.id_usuario = :adminId ORDER BY a.dataHoraInicio DESC")
-    List<Agendamento> findByAdminId(@Param("adminId") Long adminId);
+    List<Agendamento> findByAdminId(@Param("adminId") Long adminId, org.springframework.data.domain.Limit limite);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("""
@@ -80,7 +81,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     List<Agendamento> findAtivosByAdminId(
             @Param("adminId") Long adminId,
             @Param("statusCancelado") StatusAgendamento statusCancelado,
-            @Param("agora") LocalDateTime agora
+            @Param("agora") LocalDateTime agora,
+            org.springframework.data.domain.Limit limite
     );
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
@@ -92,7 +94,8 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
     """)
     List<Agendamento> findAtivosAll(
             @Param("statusCancelado") StatusAgendamento statusCancelado,
-            @Param("agora") LocalDateTime agora
+            @Param("agora") LocalDateTime agora,
+            org.springframework.data.domain.Limit limite
     );
 
     @Query("SELECT COUNT(a) > 0 FROM Agendamento a WHERE a.quadra.id_quadra = :quadraId")
@@ -104,7 +107,7 @@ public interface AgendamentoRepository extends JpaRepository<Agendamento, Long>,
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     @Query("SELECT a FROM Agendamento a ORDER BY a.dataHoraInicio DESC")
-    List<Agendamento> findAllOrderByDataHoraInicioDesc();
+    List<Agendamento> findAllOrderByDataHoraInicioDesc(org.springframework.data.domain.Limit limite);
 
     @EntityGraph(attributePaths = {"usuario", "quadra"})
     List<Agendamento> findAll();

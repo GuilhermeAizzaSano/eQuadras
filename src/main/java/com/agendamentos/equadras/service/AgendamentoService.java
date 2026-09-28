@@ -48,6 +48,9 @@ public class AgendamentoService {
 
     private static final Set<String> ORDENACOES_PERMITIDAS_AGENDAMENTO = Set.of("dataHoraInicio", "id");
 
+    private static final org.springframework.data.domain.Limit TETO_SEM_PAGINACAO =
+            org.springframework.data.domain.Limit.of(com.agendamentos.equadras.shared.pagination.LimitesListagem.MAXIMO_SEM_PAGINACAO);
+
     private static final SortPolicy SORT_POLICY_ATIVOS = SortPolicy.of(
             ORDENACOES_PERMITIDAS_AGENDAMENTO,
             Sort.by(Sort.Direction.ASC, "dataHoraInicio"),
@@ -437,33 +440,36 @@ public class AgendamentoService {
                 if (usuario.isMasterAdmin()) {
                     // Master Admin vê todos os agendamentos (histórico completo ou apenas ativos)
                     if (historico) {
-                        agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc();
+                        agendamentos = agendamentoRepository.findAllOrderByDataHoraInicioDesc(TETO_SEM_PAGINACAO);
                     } else {
                         agendamentos = agendamentoRepository.findAtivosAll(
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(clock)
+                                LocalDateTime.now(clock),
+                                TETO_SEM_PAGINACAO
                         );
                     }
                 } else {
                     // Admin comum vê os agendamentos das suas quadras (histórico completo ou apenas ativos)
                     if (historico) {
-                        agendamentos = agendamentoRepository.findByAdminId(usuarioId);
+                        agendamentos = agendamentoRepository.findByAdminId(usuarioId, TETO_SEM_PAGINACAO);
                     } else {
                         agendamentos = agendamentoRepository.findAtivosByAdminId(
                                 usuarioId,
                                 StatusAgendamento.CANCELADO,
-                                LocalDateTime.now(clock)
+                                LocalDateTime.now(clock),
+                                TETO_SEM_PAGINACAO
                         );
                     }
                 }
             } else if (usuario != null && usuario.getRole() == com.agendamentos.equadras.model.enums.Role.CLIENT) {
                 if (historico) {
-                    agendamentos = agendamentoRepository.findByUsuarioId(usuarioId);
+                    agendamentos = agendamentoRepository.findByUsuarioId(usuarioId, TETO_SEM_PAGINACAO);
                 } else {
                     agendamentos = agendamentoRepository.findAtivosByUsuarioId(
                             usuarioId,
                             StatusAgendamento.CANCELADO,
-                            LocalDateTime.now(clock)
+                            LocalDateTime.now(clock),
+                            TETO_SEM_PAGINACAO
                     );
                 }
             } else {
