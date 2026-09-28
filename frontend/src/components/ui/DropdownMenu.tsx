@@ -82,20 +82,28 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ children, open: controlledO
       }
     }
 
-    function handleResizeOrScroll() {
+    function handleResize() {
       updateTriggerRect();
+    }
+
+    // Reposicionar a cada scroll faz o menu tremer no mobile (barra de endereço muda o viewport).
+    function handleScroll(event: Event) {
+      if (contentRef.current && contentRef.current.contains(event.target as Node)) {
+        return;
+      }
+      setOpen(false);
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", handleResizeOrScroll);
-    window.addEventListener("scroll", handleResizeOrScroll, true);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, true);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", handleResizeOrScroll);
-      window.removeEventListener("scroll", handleResizeOrScroll, true);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll, true);
     };
   }, [open, setOpen, updateTriggerRect]);
 
@@ -189,7 +197,7 @@ const DropdownMenuContentInner = React.forwardRef<
     const el = innerRef.current;
     if (!el) return;
     const margin = 8;
-    // Mede sem o deslocamento anterior; senão a correção oscila a cada re-render de scroll.
+    // Mede sem o deslocamento anterior; senão a correção oscila a cada re-render.
     el.style.translate = "";
     const rect = el.getBoundingClientRect();
     let shiftX = 0;
