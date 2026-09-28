@@ -111,14 +111,12 @@ public class NotificacaoService {
         marcarComoLidaSeDoUsuario(idNotificacao, usuarioId);
     }
 
+    @Transactional
     public void marcarComoLidaSeDoUsuario(Long idNotificacao, Long usuarioId) {
-        Notificacao notif = notificacaoRepository.findById(idNotificacao)
-            .orElseThrow(() -> new IllegalArgumentException("Notificação não encontrada"));
-        if (notif.getAdmin() == null || !notif.getAdmin().getId_usuario().equals(usuarioId)) {
+        // UPDATE condicional ao dono: sem SELECT prévio e sem revelar se a notificação de outro admin existe
+        if (notificacaoRepository.marcarComoLidaDoAdmin(idNotificacao, usuarioId) == 0) {
             throw new IllegalArgumentException("Você não tem permissão para alterar esta notificação.");
         }
-        notif.setLida(true);
-        notificacaoRepository.save(notif);
     }
 
     @Transactional

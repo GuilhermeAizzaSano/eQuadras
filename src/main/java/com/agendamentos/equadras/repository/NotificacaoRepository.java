@@ -24,6 +24,10 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Long> 
     long countByAdminIdAndLidaFalse(@Param("adminId") Long adminId);
 
     @Modifying
+    @Query("UPDATE Notificacao n SET n.lida = true WHERE n.id = :id AND n.admin.id_usuario = :adminId")
+    int marcarComoLidaDoAdmin(@Param("id") Long id, @Param("adminId") Long adminId);
+
+    @Modifying
     @Query("UPDATE Notificacao n SET n.lida = true WHERE n.admin.id_usuario = :adminId AND n.lida = false AND n.excluida = false")
     void marcarTodasComoLidas(@Param("adminId") Long adminId);
 
