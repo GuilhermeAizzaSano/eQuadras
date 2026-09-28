@@ -1,6 +1,6 @@
 package com.agendamentos.equadras.controller;
 
-import com.agendamentos.equadras.model.entity.Notificacao;
+import com.agendamentos.equadras.dto.response.NotificacaoResponseDTO;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.NotificacaoService;
@@ -34,12 +34,13 @@ public class NotificacaoController {
 
     @Operation(summary = "Listar notificações do administrador", description = "Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado (paginado).")
     @GetMapping("/admin")
-    public ResponseEntity<Page<Notificacao>> listarPorAdmin(
+    public ResponseEntity<Page<NotificacaoResponseDTO>> listarPorAdmin(
             @UsuarioLogado UsuarioAutenticado usuarioLogado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(notificacaoService.listarPorAdmin(usuarioLogado.id(), pageable));
+        return ResponseEntity.ok(notificacaoService.listarPorAdmin(usuarioLogado.id(), pageable)
+                .map(NotificacaoResponseDTO::fromEntity));
     }
 
     @Operation(summary = "Marcar notificação como lida", description = "Atualiza o estado de leitura da notificação.")
