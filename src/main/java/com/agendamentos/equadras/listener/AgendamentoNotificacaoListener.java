@@ -34,7 +34,7 @@ public class AgendamentoNotificacaoListener {
         this.usuarioRepository = usuarioRepository;
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
     public void onAgendamentoPagamentoConfirmado(AgendamentoPagamentoConfirmadoEvent event) {
         if (event == null || event.payload() == null) return;
         AgendamentoNotificacaoPayload payload = event.payload();
@@ -54,21 +54,14 @@ public class AgendamentoNotificacaoListener {
                     horaFim
             );
 
-            Set<Long> destinatarios = obterDestinatariosNotificacao(payload.idDonoQuadra());
-            for (Long adminId : destinatarios) {
-                try {
-                    notificacaoService.enviarNotificacao(adminId, msg);
-                } catch (Exception ex) {
-                    log.error("Erro ao enviar notificação de pagamento para o admin {}: {}", adminId, ex.getMessage());
-                }
-            }
+            notificacaoService.notificarAdmins(obterDestinatariosNotificacao(payload.idDonoQuadra()), msg);
         } catch (Exception e) {
             log.error("Falha ao enviar notificação de pagamento do agendamento {}: {}",
                     payload.idAgendamento(), e.getMessage(), e);
         }
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
     public void onAgendamentoCancelado(AgendamentoCanceladoEvent event) {
         if (event == null || event.payload() == null) return;
         AgendamentoNotificacaoPayload payload = event.payload();
@@ -92,14 +85,7 @@ public class AgendamentoNotificacaoListener {
                     nomeExecutor
             );
 
-            Set<Long> destinatarios = obterDestinatariosNotificacao(payload.idDonoQuadra());
-            for (Long adminId : destinatarios) {
-                try {
-                    notificacaoService.enviarNotificacao(adminId, msg);
-                } catch (Exception ex) {
-                    log.error("Erro ao enviar notificação de cancelamento para o admin {}: {}", adminId, ex.getMessage());
-                }
-            }
+            notificacaoService.notificarAdmins(obterDestinatariosNotificacao(payload.idDonoQuadra()), msg);
         } catch (Exception e) {
             log.error("Falha ao enviar notificação de cancelamento do agendamento {}: {}",
                     payload.idAgendamento(), e.getMessage(), e);

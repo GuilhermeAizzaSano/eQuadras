@@ -89,8 +89,7 @@ class AgendamentoNotificacaoListenerTest {
         var payload = com.agendamentos.equadras.event.AgendamentoNotificacaoPayload.fromEntity(agendamento);
         listener.onAgendamentoPagamentoConfirmado(new AgendamentoPagamentoConfirmadoEvent(payload));
 
-        verify(notificacaoService, times(1)).enviarNotificacao(eq(2L), anyString());
-        verify(notificacaoService, times(1)).enviarNotificacao(eq(3L), anyString());
+        verify(notificacaoService, times(1)).notificarAdmins(eq(java.util.Set.of(2L, 3L)), anyString());
     }
 
     @Test
@@ -107,6 +106,6 @@ class AgendamentoNotificacaoListenerTest {
                 com.agendamentos.equadras.model.enums.TipoExecutor.CLIENTE
         ));
 
-        verify(notificacaoService, times(1)).enviarNotificacao(eq(2L), anyString());
+        verify(notificacaoService, times(1)).notificarAdmins(eq(java.util.Set.of(2L)), anyString());
     }
 }

@@ -1,7 +1,7 @@
 package com.agendamentos.equadras.service;
 
 import com.agendamentos.equadras.model.entity.Notificacao;
-import com.agendamentos.equadras.model.entity.Usuario;
+import com.agendamentos.equadras.dto.response.NotificacaoResponseDTO;
 import com.agendamentos.equadras.repository.NotificacaoRepository;
 import com.agendamentos.equadras.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
@@ -12,10 +12,12 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -55,26 +57,45 @@ public class NotificacaoService {
         return emitter;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void enviarNotificacao(Long adminId, String mensagem) {
-        Usuario admin = usuarioRepository.findById(adminId)
-            .orElseThrow(() -> new IllegalArgumentException("Admin não encontrado"));
+    /**
+     * Persiste uma notificação por admin na transação corrente (lote único) e agenda o envio SSE
+     * para depois do commit, sem acessar o banco. Sem transação ativa, envia imediatamente.
+     */
+    @Transactional
+    public void notificarAdmins(Set<Long> adminIds, String mensagem) {
+        if (adminIds == null || adminIds.isEmpty()) return;
 
-        // 1. Persistir no banco
-        Notificacao notificacao = new Notificacao(admin, mensagem);
-        Notificacao salva = notificacaoRepository.save(notificacao);
+        List<Long> destinos = List.copyOf(adminIds);
+        List<Notificacao> salvas = notificacaoRepository.saveAll(destinos.stream()
+                .map(id -> new Notificacao(usuarioRepository.getReferenceById(id), mensagem))
+                .toList());
+        List<NotificacaoResponseDTO> dtos = salvas.stream().map(NotificacaoResponseDTO::fromEntity).toList();
 
-        // 2. Tentar enviar em tempo real se o admin estiver conectado
-        SseEmitter emitter = emitters.get(adminId);
-        if (emitter != null) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    enviarSse(destinos, dtos);
+                }
+            });
+        } else {
+            enviarSse(destinos, dtos);
+        }
+    }
+
+    private void enviarSse(List<Long> adminIds, List<NotificacaoResponseDTO> dtos) {
+        for (int i = 0; i < dtos.size(); i++) {
+            Long adminId = adminIds.get(i);
+            SseEmitter emitter = emitters.get(adminId);
+            if (emitter == null) continue;
+            NotificacaoResponseDTO dto = dtos.get(i);
             try {
                 Map<String, Object> payload = new java.util.HashMap<>();
-                payload.put("id", salva.getId());
-                payload.put("mensagem", salva.getMensagem());
-                payload.put("lida", salva.isLida());
-                payload.put("dataCriacao", salva.getDataCriacao() != null ? salva.getDataCriacao().toString() : java.time.LocalDateTime.now().toString());
-                String json = objectMapper.writeValueAsString(payload);
-                emitter.send(SseEmitter.event().name("notificacao").data(json));
+                payload.put("id", dto.id());
+                payload.put("mensagem", dto.mensagem());
+                payload.put("lida", dto.lida());
+                payload.put("dataCriacao", dto.dataCriacao() != null ? dto.dataCriacao().toString() : java.time.LocalDateTime.now().toString());
+                emitter.send(SseEmitter.event().name("notificacao").data(objectMapper.writeValueAsString(payload)));
             } catch (IOException | JacksonException e) {
                 // Se falhar o envio, a conexão foi perdida
                 emitters.remove(adminId);

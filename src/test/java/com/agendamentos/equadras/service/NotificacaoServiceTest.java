@@ -124,15 +124,15 @@ class NotificacaoServiceTest {
     void deveEnviarPayloadSseEmJson() throws Exception {
         Long adminId = 1L;
         Usuario admin = Usuario.builder().id_usuario(adminId).role(Role.ADMIN).build();
-        when(usuarioRepository.findById(adminId)).thenReturn(Optional.of(admin));
-        when(notificacaoRepository.save(any(Notificacao.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(usuarioRepository.getReferenceById(adminId)).thenReturn(admin);
+        when(notificacaoRepository.saveAll(org.mockito.ArgumentMatchers.<java.util.List<Notificacao>>any())).thenAnswer(inv -> inv.getArgument(0));
 
         SseEmitter emitter = mock(SseEmitter.class);
         @SuppressWarnings("unchecked")
         Map<Long, SseEmitter> emitters = (Map<Long, SseEmitter>) ReflectionTestUtils.getField(notificacaoService, "emitters");
         emitters.put(adminId, emitter);
 
-        notificacaoService.enviarNotificacao(adminId, "Nova reserva");
+        notificacaoService.notificarAdmins(java.util.Set.of(adminId), "Nova reserva");
 
         ArgumentCaptor<SseEmitter.SseEventBuilder> captor = ArgumentCaptor.forClass(SseEmitter.SseEventBuilder.class);
         verify(emitter).send(captor.capture());
