@@ -148,4 +148,18 @@ class NotificacaoServiceTest {
         assertTrue(node.path("dataCriacao").isString());
         assertEquals(4, node.size());
     }
+
+    @Test
+    @DisplayName("B3: notificar N admins grava tudo em uma única chamada saveAll")
+    void notificarAdminsGravaEmLote() {
+        when(usuarioRepository.getReferenceById(anyLong()))
+                .thenAnswer(inv -> Usuario.builder().id_usuario(inv.getArgument(0)).role(Role.ADMIN).build());
+        when(notificacaoRepository.saveAll(org.mockito.ArgumentMatchers.<java.util.List<Notificacao>>any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        notificacaoService.notificarAdmins(new java.util.LinkedHashSet<>(java.util.List.of(1L, 2L, 3L)), "msg");
+
+        verify(notificacaoRepository, times(1)).saveAll(org.mockito.ArgumentMatchers.<java.util.List<Notificacao>>argThat(l -> l.size() == 3));
+        verify(notificacaoRepository, never()).save(any(Notificacao.class));
+    }
 }
