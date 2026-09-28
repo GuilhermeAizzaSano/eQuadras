@@ -130,9 +130,15 @@ public class QuadraService {
         quadra.setDataLimiteAgendamento(dto.dataLimiteAgendamento());
 
         if (dto.disponibilidades() != null) {
-            quadra.getDisponibilidades().clear();
-            for (com.agendamentos.equadras.dto.request.DisponibilidadeDiaDTO d : dto.disponibilidades()) {
-                quadra.getDisponibilidades().add(new com.agendamentos.equadras.model.entity.DisponibilidadeDia(d.diaSemana(), d.horaInicio(), d.horaFim()));
+            List<com.agendamentos.equadras.model.entity.DisponibilidadeDia> novas = dto.disponibilidades().stream()
+                    .map(d -> new com.agendamentos.equadras.model.entity.DisponibilidadeDia(d.diaSemana(), d.horaInicio(), d.horaFim()))
+                    .toList();
+            // Só toca na coleção se mudou: @ElementCollection sem ordem regrava todas as linhas a cada alteração
+            boolean mudou = novas.size() != quadra.getDisponibilidades().size()
+                    || !new java.util.HashSet<>(novas).equals(new java.util.HashSet<>(quadra.getDisponibilidades()));
+            if (mudou) {
+                quadra.getDisponibilidades().clear();
+                quadra.getDisponibilidades().addAll(novas);
             }
         }
 
@@ -141,10 +147,12 @@ public class QuadraService {
                 throw new IllegalArgumentException("Uma quadra pode ter no máximo 5 fotos.");
             }
             List<String> novasFotos = dto.fotos();
-            quadra.getFotos().removeIf(foto -> !novasFotos.contains(foto));
-            for (String foto : novasFotos) {
-                if (!quadra.getFotos().contains(foto)) {
-                    quadra.getFotos().add(foto);
+            if (!novasFotos.equals(quadra.getFotos())) {
+                quadra.getFotos().removeIf(foto -> !novasFotos.contains(foto));
+                for (String foto : novasFotos) {
+                    if (!quadra.getFotos().contains(foto)) {
+                        quadra.getFotos().add(foto);
+                    }
                 }
             }
         }
