@@ -13,18 +13,18 @@ export interface paths {
         };
         /**
          * Buscar usuário por ID
-         * @description Consulta os dados de um usuário pelo seu identificador único. Apenas o próprio usuário ou o Admin Geral tem permissão.
+         * @description Papéis: CLIENT ou ADMIN. O próprio usuário ou o Master Admin. Outro usuário recebe 403; ID inexistente, 404 `USUARIO_NAO_ENCONTRADO`.
          */
         get: operations["buscarPorId"];
         /**
-         * Editar usuário existente (Apenas Admin Geral)
-         * @description Atualiza os dados de um usuário (nome, e-mail, telefone, perfil e opcionalmente senha). Apenas o Administrador Geral possui permissão.
+         * Editar usuário existente (Master Admin)
+         * @description Papel: ADMIN, exigindo Master Admin. Atualiza nome, e-mail, telefone, `role` e, se `nova_senha` vier, a senha. O e-mail do Master Admin não pode ser alterado (400 `OPERACAO_NAO_PERMITIDA`).
          */
         put: operations["editar"];
         post?: never;
         /**
-         * Excluir usuário (Apenas Admin Geral)
-         * @description Remove um usuário do sistema. Apenas o Administrador Geral possui permissão.
+         * Excluir usuário (Master Admin)
+         * @description Papel: ADMIN, exigindo Master Admin. Remove o usuário. A conta do Master Admin não pode ser excluída (400 `OPERACAO_NAO_PERMITIDA`).
          */
         delete: operations["excluir"];
         options?: never;
@@ -41,18 +41,18 @@ export interface paths {
         };
         /**
          * Buscar quadra por ID
-         * @description Retorna os detalhes completos, fotos e horários de funcionamento de uma quadra específica.
+         * @description Papéis: CLIENT ou ADMIN. Retorna a quadra completa, com fotos e disponibilidades semanais. ID inexistente devolve 400 (`IllegalArgumentException` no service, não 404).
          */
         get: operations["buscarPorId_1"];
         /**
          * Atualizar quadra (Admin)
-         * @description Atualiza os dados cadastrais, endereço e horários de funcionamento da quadra do admin autenticado.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Substitui os dados cadastrais e as disponibilidades. Controle de concorrência: o corpo deve trazer `versao` (a lida em `QuadraResponseDTO.versao`); ausente devolve 400 `VERSAO_OBRIGATORIA`; diferente da atual, 409 `CONFLITO_VERSAO`. `disponibilidades`: omitida ou `null` mantém os horários atuais; uma lista substitui todos; lista vazia (`[]`) apaga todos e a quadra fica fechada em todos os dias (o padrão 06:00–23:00 só vale no cadastro).
          */
         put: operations["editar_1"];
         post?: never;
         /**
          * Excluir quadra (Admin)
-         * @description Remove a quadra do sistema caso ela não possua histórico de reservas.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Remove a quadra somente se não houver agendamentos vinculados; caso contrário devolve 400 `OPERACAO_NAO_PERMITIDA` (recomendado: inativar via `PATCH /status`).
          */
         delete: operations["excluir_1"];
         options?: never;
@@ -70,7 +70,7 @@ export interface paths {
         get?: never;
         /**
          * Marcar notificação como lida
-         * @description Atualiza o estado de leitura da notificação.
+         * @description Papel: ADMIN. Marca uma notificação do próprio administrador como lida. Notificação de outro usuário devolve 400. Responde 204 sem corpo.
          */
         put: operations["marcarComoLida"];
         post?: never;
@@ -90,7 +90,7 @@ export interface paths {
         get?: never;
         /**
          * Marcar todas as notificações como lidas
-         * @description Marca todas as notificações do administrador autenticado como lidas.
+         * @description Papel: ADMIN. Marca como lidas todas as notificações do administrador autenticado. Responde 204 sem corpo.
          */
         put: operations["marcarTodasComoLidas"];
         post?: never;
@@ -111,7 +111,7 @@ export interface paths {
         put?: never;
         /**
          * Realizar logout
-         * @description Encerra a sessão do usuário limpando o cookie HttpOnly e invalidando tokens ativos.
+         * @description Rota pública (funciona sem sessão). Se houver sessão, revoga os tokens do usuário, registra `LOGOUT` na auditoria e expira o cookie `equadras_session`. Responde 204 sem corpo, sempre.
          */
         post: operations["logout"];
         delete?: never;
@@ -131,7 +131,7 @@ export interface paths {
         put?: never;
         /**
          * Realizar login
-         * @description Autentica via e-mail e senha, define o cookie HttpOnly de sessão e retorna o perfil do usuário.
+         * @description Rota pública. Autentica por e-mail e senha, grava o JWT no cookie HttpOnly `equadras_session` (header `Set-Cookie`) e devolve no corpo apenas o perfil do usuário (`UsuarioResponseDTO`); o token NÃO vem no corpo. Efeito colateral: falhas consecutivas por e-mail (limite de 5) bloqueiam novas tentativas com 429 e `Retry-After`; login bem-sucedido zera o contador.
          */
         post: operations["login"];
         delete?: never;
@@ -151,7 +151,7 @@ export interface paths {
         put?: never;
         /**
          * Gerar ou regenerar API-KEY
-         * @description Emite uma nova chave de API opaca (eq_...) de alta entropia. O token anterior é invalidado de imediato. A chave em texto plano é devolvida exclusivamente nesta resposta.
+         * @description Papéis: CLIENT ou ADMIN. Emite uma chave opaca `eq_...`, invalidando a anterior imediatamente. A chave em texto plano só aparece nesta resposta (`Cache-Control: no-store`). Registra IP e User-Agent. Limite: 5 regenerações por minuto por conta (429 com `Retry-After: 60`).
          */
         post: operations["regenerarApiKey"];
         delete?: never;
@@ -168,14 +168,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar todos os usuários (Apenas Admin Geral)
-         * @description Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.
+         * Listar todos os usuários (Master Admin)
+         * @description Variante legada sem `page`: lista até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Ver GET com `page` para a versão paginada. Papel: Master Admin.
          */
         get: operations["listarUsuariosPaginado"];
         put?: never;
         /**
-         * Cadastrar novo usuário (Apenas Admin Geral)
-         * @description Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.
+         * Cadastrar novo usuário (Master Admin)
+         * @description Papel: ADMIN, e o service exige que seja o Master Admin (outro ADMIN recebe 403). Cria conta CLIENT ou ADMIN (`role` opcional). E-mail duplicado devolve 400 `EMAIL_DUPLICADO`; telefone repetido devolve 409 `TELEFONE_EM_USO`.
          */
         post: operations["cadastrar"];
         delete?: never;
@@ -194,8 +194,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Desbloquear horários/dia da quadra (Admin)
-         * @description Desbloqueia horários ou dias de uma quadra informando o ID do bloqueio ou a data e horários no corpo da requisição. Requer ROLE_ADMIN e ser dono da quadra.
+         * Desbloquear horários ou dia (Admin)
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Informe `bloqueioId` OU `data` (com `horaInicio`/`horaFim` opcionais para desbloquear só um intervalo). Sem nenhum dos dois, 400. Devolve `{mensagem, totalRemovidos}` com quantos bloqueios foram removidos.
          */
         post: operations["desbloquear"];
         delete?: never;
@@ -213,18 +213,24 @@ export interface paths {
         };
         /**
          * Consultar fotos da quadra
-         * @description Retorna a galeria de fotos de uma quadra específica por ID, Nome, Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos se nenhum parâmetro for informado.
+         * @description Papéis: CLIENT ou ADMIN. Devolve a galeria por quadra. O formato depende dos parâmetros:
+         *     - Com ID (path `/{id}/fotos`, ou `id`/`quadraId` na query; precedência: path, depois `id`, depois `quadraId`): um objeto `QuadraFotosResponseDTO`; ID inexistente devolve 400.
+         *     - Sem ID e sem nenhum filtro de texto (`nome`, `tipoEsporte`, `cidade`, `bairro`): lista com TODAS as quadras (até 200).
+         *     - Com filtro e exatamente uma correspondência: objeto único.
+         *     - Com filtro e várias correspondências: lista.
+         *     - Com filtro e nenhuma correspondência: `{"fotos": []}`.
+         *     Aliases: `nomeQuadra` vale como `nome`, e `esporte` como `tipoEsporte`; se ambos vierem, o principal (`nome`/`tipoEsporte`) vence.
          */
         get: operations["consultarFotos"];
         put?: never;
         /**
          * Upload de fotos da quadra (Admin)
-         * @description Envia imagens (JPEG, PNG, WebP) de até 5MB para a galeria da quadra (máximo 5 fotos).
+         * @description Papel: ADMIN dono da quadra ou Master Admin. `multipart/form-data` com uma ou mais partes `fotos` (JPEG, PNG ou WebP, até 5 MB cada). A galeria comporta no máximo 5 fotos: exceder devolve 400; arquivo maior que o limite, 413.
          */
         post: operations["uploadFotos"];
         /**
          * Remover foto da quadra (Admin)
-         * @description Exclui uma foto específica da galeria e do armazenamento de disco.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Remove a foto da galeria e o arquivo do disco. Devolve a quadra atualizada (200, com corpo).
          */
         delete: operations["removerFoto"];
         options?: never;
@@ -241,13 +247,13 @@ export interface paths {
         };
         /**
          * Listar bloqueios da quadra
-         * @description Lista todos os bloqueios ativos e futuros da quadra.
+         * @description Papéis: CLIENT ou ADMIN. Lista os bloqueios ativos e futuros de uma quadra. Quadra inexistente devolve 400.
          */
         get: operations["listarBloqueios"];
         put?: never;
         /**
-         * Criar bloqueio de horário/dia (Admin)
-         * @description Bloqueia um dia inteiro ou um intervalo de horários de uma quadra. Requer ROLE_ADMIN e ser dono da quadra.
+         * Criar bloqueio de horário ou dia inteiro (Admin)
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Sem `horaInicio`/`horaFim` bloqueia o dia inteiro; com horário, ambos são obrigatórios e o início precisa ser anterior ao fim. A data não pode estar no passado. Falha com 400 se já houver reserva ativa no período ou bloqueio coincidente; se o dia já está totalmente bloqueado, a mensagem começa com `DIA_INTEIRO_BLOQUEADO` e `substituirDiaInteiro=true` desbloqueia o restante do dia mantendo só o novo intervalo.
          */
         post: operations["criarBloqueio"];
         delete?: never;
@@ -264,14 +270,24 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar quadras ativas / por proximidade e filtros
-         * @description Lista todas as quadras ativas. Na rota /quadras (Frontend), retorna a lista completa com fotos e disponibilidades (QuadraResponseDTO) com suporte a paginação (page, size). Na rota /api/quadras (Bot / Integrações), retorna o formato resumido (QuadraResumoResponseDTO) sem paginação. Também suporta o parâmetro 'resumido=true/false'.
+         * Listar quadras ativas, por proximidade e filtros
+         * @description Papéis: CLIENT ou ADMIN. Lista quadras ativas com filtros opcionais (texto parcial, sem diferenciar maiúsculas) e busca por proximidade (`latitude` + `longitude` + `raioKm`).
+         *
+         *     **Formato da resposta** (decidido nesta ordem, a primeira regra que se aplica vence):
+         *     1. `resumido=true|false` explícito;
+         *     2. header `X-Client: frontend` ou `X-View: full` → completo;
+         *     3. header `X-View: resumo|summary` ou `X-Client: api` → resumido;
+         *     4. sem nada disso: URL com `/api/` → resumido (padrão de bots e integrações).
+         *
+         *     **Variantes:** (a) resumido → `array<QuadraResumoResponseDTO>`; `page` e `size` são ignorados; (b) completo com `page` → `PageQuadraResponseDTO` (size padrão 6, máximo 50); (c) completo sem `page` → `array<QuadraResponseDTO>`.
+         *
+         *     **Teto:** listas sem paginação (a e c) devolvem no máximo 200 itens, limite aplicado no SQL e sem aviso ao cliente: use `page` (formato completo) ou filtros para não perder resultados.
          */
         get: operations["listarTodas"];
         put?: never;
         /**
          * Cadastrar nova quadra (Admin)
-         * @description Cria uma nova quadra esportiva definindo nome, tipo de esporte, valor/hora, localização, data limite de agendamento (opcional), até 5 fotos e grade personalizada de horários por dia da semana (disponibilidades). Requer ROLE_ADMIN.
+         * @description Papel: ADMIN (a quadra passa a pertencer ao administrador autenticado). Cria a quadra com valor/hora, localização, `dataLimiteAgendamento` opcional (não pode estar no passado), até 5 URLs de foto e até 7 regras de disponibilidade semanal (um dia da semana só pode aparecer uma vez). Idempotente por `Idempotency-Key`: reenvio com a mesma chave em até 10 minutos devolve a quadra já criada em vez de duplicar. O campo `versao` do corpo é ignorado no POST.
          */
         post: operations["cadastrar_1"];
         delete?: never;
@@ -291,7 +307,7 @@ export interface paths {
         put?: never;
         /**
          * Simular aprovação de pagamento Pix
-         * @description Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.
+         * @description Papéis: CLIENT ou ADMIN. Move uma reserva PENDENTE para CONFIRMADO sem passar pelo gateway e notifica o administrador da quadra por SSE. Reserva cancelada devolve 400 `STATUS_INVALIDO`; confirmação concorrente, 409 `CONFLITO_STATUS`. Devolve o `AgendamentoResponseDTO` atualizado.
          */
         post: operations["simularAprovacao"];
         delete?: never;
@@ -311,7 +327,7 @@ export interface paths {
         put?: never;
         /**
          * Webhook do Mercado Pago
-         * @description Recepção de notificações assíncronas de pagamento instantâneo do gateway.
+         * @description Rota PÚBLICA, chamada pelo gateway. Identifica o pagamento por query (`topic=payment` ou `type=payment` com `id` ou `data.id`) ou pelo JSON (`type`/`action` contendo `payment` e `data.id`, ou `id`). Consulta o pagamento no Mercado Pago e, se `approved`, confirma o agendamento (`external_reference`). Respostas: `{status: ignored}` sem ID relevante; `{status: received}` se não aprovado; `{status: processed, payment_status: approved}` se confirmou; 500 `{status: error, message}` para o gateway reenviar.
          */
         post: operations["webhook"];
         delete?: never;
@@ -331,7 +347,7 @@ export interface paths {
         put?: never;
         /**
          * Agendamento simplificado via Bot / WhatsApp
-         * @description Permite a criação e reserva direta de horário a partir de integrações externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09') e cria a reserva com lock pessimista gerando os dados de Pix.
+         * @description Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19h`, `19:00`, `19`. Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE com Pix; expira em 15 min se não paga.
          */
         post: operations["agendarViaBot"];
         delete?: never;
@@ -350,13 +366,13 @@ export interface paths {
         /**
          * Listar agendamentos (legado sem paginação)
          * @deprecated
-         * @description Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.
+         * @description Papéis: CLIENT ou ADMIN. Variante sem `page`: lista única limitada a 200 itens no SQL, sem aviso. Prefira a rota paginada com `?page=0`.
          */
         get: operations["listarPaginado"];
         put?: never;
         /**
-         * Criar novo agendamento com Lock e Pix
-         * @description Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes e gera a cobrança Pix. Requisitos: horários em horas cheias (minutos zerados) e duração mínima de 1 hora (múltipla de 60 min). Agendamentos pendentes sem pagamento expiram e são cancelados automaticamente após 15 minutos.
+         * Criar novo agendamento com lock e Pix
+         * @description Papéis: CLIENT ou ADMIN (a reserva pertence ao usuário autenticado; `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista, cria a reserva em estado PENDENTE e gera a cobrança Pix (`pixCopiaECola`, `qrCodeBase64`). Regras: horas cheias (minutos zerados), duração mínima de 1 hora e múltipla de 60 min, início no futuro. Efeito colateral: reserva PENDENTE sem pagamento expira e é cancelada automaticamente após 15 minutos. Conflito de horário devolve 409 `HORARIO_INDISPONIVEL`.
          */
         post: operations["agendar"];
         delete?: never;
@@ -380,7 +396,7 @@ export interface paths {
         head?: never;
         /**
          * Alterar minha senha
-         * @description Permite que o próprio usuário autenticado por sessão altere sua senha informando a atual e a nova.
+         * @description Papéis: CLIENT ou ADMIN. Exige a senha atual; a nova precisa ter 6+ caracteres com maiúscula, minúscula, número e símbolo e ser diferente da atual. Responde 204 sem corpo.
          */
         patch: operations["alterarMinhaSenha"];
         trace?: never;
@@ -400,7 +416,7 @@ export interface paths {
         head?: never;
         /**
          * Alternar status da quadra (Admin)
-         * @description Ativa ou inativa a quadra para novos agendamentos.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Ativa (`ativa=true`) ou inativa (`ativa=false`) a quadra. Quadras inativas deixam de aparecer nas listagens e de aceitar novos agendamentos.
          */
         patch: operations["alternarStatus"];
         trace?: never;
@@ -420,7 +436,7 @@ export interface paths {
         head?: never;
         /**
          * Cancelar agendamento
-         * @description Cancela uma reserva ativa pertencente ao usuário autenticado ou ao administrador da quadra.
+         * @description Papéis: CLIENT ou ADMIN. Dono da reserva ou administrador da quadra. Só cancela reserva futura ainda não cancelada (400 se já cancelada, em andamento ou retroativa). Libera o horário e grava `canceladoEm`.
          */
         patch: operations["cancelar"];
         trace?: never;
@@ -434,7 +450,7 @@ export interface paths {
         };
         /**
          * Dados da minha sessão
-         * @description Retorna os dados do usuário autenticado pela sessão ativa (cookie HttpOnly).
+         * @description Papéis: CLIENT ou ADMIN. Devolve o perfil do usuário autenticado (cookie de sessão, Bearer ou X-API-KEY).
          */
         get: operations["me"];
         put?: never;
@@ -454,14 +470,14 @@ export interface paths {
         };
         /**
          * Consultar metadados da minha API-KEY
-         * @description Retorna informações sobre a existência, prefixo e datas de criação/último uso da chave de API da conta.
+         * @description Papéis: CLIENT ou ADMIN. Informa se a conta possui chave, os 4 últimos caracteres e as datas de criação e último uso. Nunca devolve a chave em texto plano.
          */
         get: operations["obterApiKeyInfo"];
         put?: never;
         post?: never;
         /**
          * Revogar API-KEY
-         * @description Invalida imediatamente a chave de API da conta sem gerar uma substituta. É uma operação idempotente.
+         * @description Papéis: CLIENT ou ADMIN. Invalida a chave da conta sem gerar substituta. Idempotente: sem chave ativa também responde 204. Registra IP e User-Agent.
          */
         delete: operations["revogarApiKey"];
         options?: never;
@@ -478,7 +494,13 @@ export interface paths {
         };
         /**
          * Consultar fotos da quadra
-         * @description Retorna a galeria de fotos de uma quadra específica por ID, Nome, Tipo de Esporte, Cidade ou Bairro, ou lista todas as quadras com suas fotos se nenhum parâmetro for informado.
+         * @description Papéis: CLIENT ou ADMIN. Devolve a galeria por quadra. O formato depende dos parâmetros:
+         *     - Com ID (path `/{id}/fotos`, ou `id`/`quadraId` na query; precedência: path, depois `id`, depois `quadraId`): um objeto `QuadraFotosResponseDTO`; ID inexistente devolve 400.
+         *     - Sem ID e sem nenhum filtro de texto (`nome`, `tipoEsporte`, `cidade`, `bairro`): lista com TODAS as quadras (até 200).
+         *     - Com filtro e exatamente uma correspondência: objeto único.
+         *     - Com filtro e várias correspondências: lista.
+         *     - Com filtro e nenhuma correspondência: `{"fotos": []}`.
+         *     Aliases: `nomeQuadra` vale como `nome`, e `esporte` como `tipoEsporte`; se ambos vierem, o principal (`nome`/`tipoEsporte`) vence.
          */
         get: operations["consultarFotos_1"];
         put?: never;
@@ -497,8 +519,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar todos os bloqueios das quadras do Admin (Admin)
-         * @description Retorna todos os bloqueios cadastrados em todas as quadras pertencentes ao administrador autenticado em uma única requisição.
+         * Listar bloqueios de todas as quadras do Admin (Admin)
+         * @description Papel: ADMIN. Reúne em uma chamada os bloqueios de todas as quadras do administrador autenticado.
          */
         get: operations["listarTodosBloqueiosDoAdmin"];
         put?: never;
@@ -518,7 +540,7 @@ export interface paths {
         };
         /**
          * Consultar status de pagamento da reserva
-         * @description Verifica se o agendamento já foi confirmado ou se o pagamento foi aprovado no gateway.
+         * @description Papéis: CLIENT ou ADMIN. Devolve o `AgendamentoResponseDTO` (o campo `status` é PENDENTE, CONFIRMADO ou CANCELADO). Efeito colateral: se a reserva está PENDENTE e tem `transacaoPagamentoId`, consulta o Mercado Pago e, se o pagamento estiver `approved`, confirma a reserva antes de responder. ID inexistente ou fora do seu escopo devolve 404.
          */
         get: operations["consultarStatus"];
         put?: never;
@@ -538,7 +560,7 @@ export interface paths {
         };
         /**
          * Streaming SSE de notificações
-         * @description Estabelece conexão unidirecional persistente (Server-Sent Events) para receber notificações em tempo real. Requer ROLE_ADMIN.
+         * @description Papel: ADMIN. Abre uma conexão Server-Sent Events (`text/event-stream`, timeout de 1 hora, uma conexão por administrador: nova conexão substitui a anterior). Cada notificação chega como evento `notificacao` com `data` JSON `{id, mensagem, lida, dataCriacao}`. Os eventos são enviados após o commit da reserva ou pagamento que os originou.
          */
         get: operations["stream"];
         put?: never;
@@ -558,7 +580,7 @@ export interface paths {
         };
         /**
          * Listar notificações do administrador
-         * @description Retorna o histórico de notificações de reservas e pagamentos do administrador autenticado (paginado).
+         * @description Papel: ADMIN. Página (`Page`) das notificações de reservas e pagamentos do administrador autenticado, sem as excluídas. `size` é limitado a 50.
          */
         get: operations["listarPorAdmin"];
         put?: never;
@@ -578,7 +600,7 @@ export interface paths {
         };
         /**
          * Buscar agendamento por ID
-         * @description Retorna os detalhes completos do agendamento pertencente ao usuário autenticado ou admin da quadra.
+         * @description Papéis: CLIENT ou ADMIN. Dono da reserva, administrador da quadra ou Master Admin. `pixCopiaECola` e `qrCodeBase64` só vêm preenchidos para o dono e enquanto o status é PENDENTE. ID inexistente OU fora do seu escopo devolve 404 `AGENDAMENTO_NAO_ENCONTRADO` (nunca 403).
          */
         get: operations["buscarPorId_2"];
         put?: never;
@@ -597,8 +619,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Consultar horários dinâmicos e status do dia
-         * @description Gera a grade completa de horários de 1 hora para a quadra na data informada, retornando o status detalhado de cada horário: DISPONIVEL, BLOQUEADO ou AGENDADO, acompanhado do motivo e do indicador booleano 'disponivel'.
+         * Consultar horários de uma quadra na data
+         * @description Papéis: CLIENT ou ADMIN. Grade de horários de 1 hora com `status`: DISPONIVEL, BLOQUEADO, AGENDADO ou INDISPONIVEL, o `motivo` e o booleano `disponivel`. `data` é obrigatória (ISO, `yyyy-MM-dd`); quadra inexistente devolve 400.
          */
         get: operations["listarHorariosDisponiveis"];
         put?: never;
@@ -617,8 +639,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Contadores de agendamentos por aba de uma quadra
-         * @description Retorna contadores de agendamentos (TODOS, ATIVOS, REALIZADOS, CANCELADOS) da quadra para o admin proprietário ou Master Admin.
+         * Contadores das reservas de uma quadra (Admin)
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Devolve TODOS, ATIVOS, REALIZADOS e CANCELADOS.
          */
         get: operations["obterContadoresPorQuadra"];
         put?: never;
@@ -639,7 +661,7 @@ export interface paths {
         /**
          * Listar histórico de agendamentos de uma quadra específica (legado sem paginação)
          * @deprecated
-         * @description Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Variante sem `page`: lista única (até 200 itens, sem aviso). Prefira a rota paginada com `?page=0`.
          */
         get: operations["listarPorQuadraPaginado"];
         put?: never;
@@ -658,8 +680,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Consultar grade consolidada de horários (Busca Flexível)
-         * @description Permite consultar a disponibilidade de slots de horários com suporte a filtros combinados por data flexível ('hoje', 'amanha', '2026-09-05'), quadraId, nome da quadra ou tipo de esporte. Pode filtrar estritamente apenas slots livres com 'apenasDisponiveis=true'.
+         * Consultar grade consolidada de horários (busca flexível)
+         * @description Papéis: CLIENT ou ADMIN. Grade por quadra com filtros combináveis: `data` (omitida ou não reconhecida: devolve os próximos 14 dias, a partir de hoje, um item por quadra e dia), `quadraId`, `nomeQuadra`, `tipoEsporte`. `apenasDisponiveis=true` mantém só os horários livres.
          */
         get: operations["consultarGradeHorarios"];
         put?: never;
@@ -678,8 +700,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Consultar horários consolidados do dia para todas as quadras do Admin (Admin)
-         * @description Retorna em uma única requisição a grade completa de horários de todas as quadras ativas do administrador autenticado para a data indicada.
+         * Consultar horários do dia de todas as quadras do Admin (Admin)
+         * @description Papel: ADMIN. Devolve, em um objeto cuja chave é o ID da quadra, a grade da data para todas as quadras ativas do administrador autenticado.
          */
         get: operations["listarHorariosDoDiaParaAdmin"];
         put?: never;
@@ -698,8 +720,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Obter métricas agregadas do dashboard admin
-         * @description Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado.
+         * Obter métricas do dashboard (Admin)
+         * @description Papel: ADMIN. Métricas calculadas no banco para o administrador autenticado: `totalQuadras`, `quadrasAtivas`, `totalReservas` (não canceladas), `faturamentoTotal` (reservas confirmadas) e `reservasHoje`.
          */
         get: operations["obterMetricasDashboard"];
         put?: never;
@@ -719,7 +741,7 @@ export interface paths {
         };
         /**
          * Contadores de agendamentos por aba
-         * @description Retorna o total de agendamentos do atleta por aba (ATIVOS, REALIZADOS, CANCELADOS).
+         * @description Papéis: CLIENT ou ADMIN. Total das reservas do próprio usuário por aba: ATIVOS, REALIZADOS e CANCELADOS.
          */
         get: operations["obterContadores"];
         put?: never;
@@ -739,7 +761,7 @@ export interface paths {
         };
         /**
          * Listar agenda mensal (Admin)
-         * @description Retorna os agendamentos não cancelados do mês informado para as quadras do admin autenticado, usados no calendário de ocupação.
+         * @description Papel: ADMIN. Agendamentos não cancelados do mês, para o calendário de ocupação das quadras do administrador. `ano` entre 2000 e 2100; `mes` entre 1 e 12.
          */
         get: operations["listarAgendaMensal"];
         put?: never;
@@ -758,8 +780,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Contadores de reservas da agenda por aba (Admin)
-         * @description Retorna contadores de agendamentos por aba para a data ou intervalo informado e quadra(s) do admin autenticado.
+         * Contadores da agenda por aba (Admin)
+         * @description Papel: ADMIN. Contagem por aba (ATIVOS, REALIZADOS, CANCELADOS) para `data` ou `inicio`+`fim` e, opcionalmente, uma `quadraId`.
          */
         get: operations["obterContadoresAgendaDoDia"];
         put?: never;
@@ -779,7 +801,7 @@ export interface paths {
         };
         /**
          * Listar agenda completa do dia (Admin)
-         * @description Retorna todos os agendamentos não cancelados de um único dia (máximo 24h) para visualização na grade operacional da timeline.
+         * @description Papel: ADMIN. Todos os agendamentos não cancelados de um único dia (máximo 24 h), sem paginação, para a grade operacional da timeline. Informe `data` OU `inicio`+`fim`.
          */
         get: operations["listarAgendaCompleta"];
         put?: never;
@@ -798,8 +820,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar reservas da agenda do dia ou intervalo paginadas (Admin)
-         * @description Retorna agendamentos paginados do dia informado ou intervalo [inicio, fim) para as quadras do admin autenticado, com filtro opcional por quadra e aba.
+         * Listar agenda paginada do dia ou intervalo (Admin)
+         * @description Papel: ADMIN (quadras do administrador autenticado). Informe `data` OU o par `inicio` + `fim`; sem nenhum, 400. Intervalo `[inicio, fim)` de no máximo 24 h. `PageResponse` com size padrão 10, máx. 50; `sort` só `dataHoraInicio` ou `id`. `quadraId` e `aba` refinam o resultado.
          */
         get: operations["listarAgendaDoDia"];
         put?: never;
@@ -819,7 +841,7 @@ export interface paths {
         };
         /**
          * Obter estatísticas de auditoria de hoje
-         * @description Retorna contadores de logins, falhas, cancelamentos e ações gerais do dia de hoje.
+         * @description Papel: ADMIN, exigindo Master Admin. Contadores de hoje: logins, falhas de login, ações gerais e cancelamentos.
          */
         get: operations["obterEstatisticas"];
         put?: never;
@@ -839,7 +861,7 @@ export interface paths {
         };
         /**
          * Listar logs de auditoria com filtros
-         * @description Retorna logs paginados e filtráveis. Apenas o Administrador Geral (Master Admin) tem acesso.
+         * @description Papel: ADMIN, exigindo Master Admin (outro ADMIN recebe 403). Página ordenada por `criadoEm` decrescente (ordenação fixa). Todos os filtros são opcionais e combináveis.
          */
         get: operations["listarLogs"];
         put?: never;
@@ -862,7 +884,7 @@ export interface paths {
         post?: never;
         /**
          * Remover bloqueio por ID (Admin)
-         * @description Remove um bloqueio existente pelo seu ID. Requer ROLE_ADMIN e ser dono da quadra.
+         * @description Papel: ADMIN dono da quadra ou Master Admin. Remove um bloqueio. O bloqueio precisa pertencer à quadra do path (senão 400). Responde 204 sem corpo.
          */
         delete: operations["removerBloqueio"];
         options?: never;
@@ -882,7 +904,7 @@ export interface paths {
         post?: never;
         /**
          * Excluir todas as notificações
-         * @description Realiza o soft delete de todas as notificações do administrador autenticado.
+         * @description Papel: ADMIN. Exclusão lógica (soft delete) de todas as notificações do administrador autenticado; elas deixam de aparecer na listagem. Responde 204 sem corpo.
          */
         delete: operations["excluirTodas"];
         options?: never;
@@ -900,11 +922,31 @@ export interface components {
          */
         LocalTime: string;
         UsuarioEdicaoDTO: {
+            /**
+             * @description E-mail da conta, até 100 caracteres
+             * @example arthur.silva@email.com
+             */
             email_usuario: string;
+            /**
+             * @description Nome completo, de 3 a 80 caracteres, sem os símbolos < e >
+             * @example Arthur Prado Silva
+             */
             nome_usuario: string;
+            /**
+             * @description Opcional. Nova senha, mínimo de 6 caracteres. Omitida, a senha atual é mantida
+             * @example NovaSenha@456
+             */
             nova_senha?: string;
+            /**
+             * @description Telefone com DDD
+             * @example (11) 99999-9999
+             */
             phone_usuario: string;
-            /** @enum {string} */
+            /**
+             * @description Papel da conta: CLIENT ou ADMIN
+             * @example CLIENT
+             * @enum {string}
+             */
             role?: "CLIENT" | "ADMIN";
         };
         /** @description Perfil cadastral de um usuário do sistema */
@@ -949,29 +991,91 @@ export interface components {
             role?: "CLIENT" | "ADMIN";
         };
         DisponibilidadeDiaDTO: {
-            /** @enum {string} */
+            /**
+             * @description Dia da semana em inglês: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY ou SUNDAY. Não pode repetir dentro da mesma quadra
+             * @example MONDAY
+             * @enum {string}
+             */
             diaSemana?: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+            /**
+             * @description Hora de fechamento (HH:mm:ss). Deve ser posterior a horaInicio
+             * @example 22:00:00
+             */
             horaFim?: components["schemas"]["LocalTime"];
+            /**
+             * @description Hora de abertura (HH:mm:ss)
+             * @example 08:00:00
+             */
             horaInicio?: components["schemas"]["LocalTime"];
         };
         QuadraCriacaoDTO: {
+            /**
+             * @description Bairro, até 100 caracteres
+             * @example Jardim das Flores
+             */
             bairro?: string;
+            /**
+             * @description CEP no formato XXXXX-XXX
+             * @example 15000-000
+             */
             cep?: string;
+            /**
+             * @description Cidade, até 100 caracteres
+             * @example São José do Rio Preto
+             */
             cidade?: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Data limite para agendamentos futuros (yyyy-MM-dd). Não pode estar no passado
+             * @example 2026-12-31
+             */
             dataLimiteAgendamento?: string;
+            /**
+             * @description Descrição da infraestrutura, até 2000 caracteres, sem os símbolos < e >
+             * @example Grama sintética padrão FIFA com iluminação em LED e vestiários.
+             */
             descricao?: string;
+            /** @description Horários de funcionamento semanais, no máximo 7 regras, um dia da semana por regra */
             disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
+            /**
+             * @description UF com 2 letras maiúsculas
+             * @example SP
+             */
             estado?: string;
+            /** @description URLs das fotos da quadra, no máximo 5, cada uma com até 255 caracteres */
             fotos?: string[];
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Latitude em graus, de -90 a 90
+             * @example -20.8113
+             */
             latitude?: number;
+            /**
+             * @description Logradouro, até 255 caracteres
+             * @example Av. Brasil, 1500
+             */
             logradouro?: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Longitude em graus, de -180 a 180
+             * @example -49.3758
+             */
             longitude?: number;
+            /**
+             * @description Nome da quadra, de 3 a 100 caracteres, sem os símbolos < e >
+             * @example Arena Gol Society
+             */
             nome: string;
-            /** @enum {string} */
+            /**
+             * @description Modalidade: FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE ou TENIS
+             * @example FUTEBOL
+             * @enum {string}
+             */
             tipoEsporte: "FUTEBOL" | "FUTSAL" | "VOLEI" | "BEACH_TENNIS" | "BASQUETE" | "TENIS";
+            /**
+             * @description Valor cobrado por hora, maior que zero, até 8 dígitos inteiros e 2 decimais
+             * @example 120
+             */
             valorHora: number;
             /**
              * Format: int64
@@ -1069,15 +1173,43 @@ export interface components {
             versao?: number;
         };
         UsuarioLoginDTO: {
+            /**
+             * @description E-mail de acesso da conta
+             * @example arthur.prado@email.com
+             */
             email_usuario: string;
+            /**
+             * @description Senha da conta
+             * @example SenhaSegura@123
+             */
             senha_usuario: string;
         };
         UsuarioCriacaoDTO: {
+            /**
+             * @description E-mail da conta, até 100 caracteres. Não pode repetir outro cadastro (400 EMAIL_DUPLICADO)
+             * @example carlos.eduardo@email.com
+             */
             email_usuario: string;
+            /**
+             * @description Nome completo, de 3 a 80 caracteres, sem os símbolos < e >
+             * @example Carlos Eduardo
+             */
             nome_usuario: string;
+            /**
+             * @description Telefone com DDD, de 8 a 20 caracteres. Não pode repetir outro cadastro (409 TELEFONE_EM_USO)
+             * @example (11) 98888-7777
+             */
             phone_usuario: string;
-            /** @enum {string} */
+            /**
+             * @description Papel da conta: CLIENT ou ADMIN. Opcional
+             * @example CLIENT
+             * @enum {string}
+             */
             role?: "CLIENT" | "ADMIN";
+            /**
+             * @description Senha de acesso, mínimo de 6 caracteres
+             * @example SenhaForte@123
+             */
             senha_usuario: string;
         };
         /** @description Dados para desbloquear horários de uma quadra via API */
@@ -1106,24 +1238,72 @@ export interface components {
             horaInicio?: components["schemas"]["LocalTime"];
         };
         BloqueioHorarioCriacaoDTO: {
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Data do bloqueio (yyyy-MM-dd). Não pode estar no passado
+             * @example 2026-10-12
+             */
             data: string;
+            /**
+             * @description Fim do bloqueio (HH:mm:ss). Deve ser posterior a horaInicio; obrigatório quando horaInicio vier
+             * @example 18:00:00
+             */
             horaFim?: components["schemas"]["LocalTime"];
+            /**
+             * @description Início do bloqueio (HH:mm:ss). Omita junto com horaFim para bloquear o dia inteiro
+             * @example 14:00:00
+             */
             horaInicio?: components["schemas"]["LocalTime"];
+            /**
+             * @description Motivo do bloqueio, até 255 caracteres, sem os símbolos < e >
+             * @example Torneio Interno da Arena
+             */
             motivo?: string;
+            /**
+             * @description true desbloqueia o restante de um dia já bloqueado por inteiro e mantém só este intervalo. Padrão false
+             * @example false
+             */
             substituirDiaInteiro?: boolean;
         };
         BloqueioHorarioResponseDTO: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Data e hora de criação do bloqueio
+             * @example 2026-09-29T09:30:00
+             */
             criadoEm?: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Data do bloqueio
+             * @example 2026-10-12
+             */
             data?: string;
+            /**
+             * @description Fim do bloqueio
+             * @example 18:00:00
+             */
             horaFim?: components["schemas"]["LocalTime"];
+            /**
+             * @description Início do bloqueio
+             * @example 14:00:00
+             */
             horaInicio?: components["schemas"]["LocalTime"];
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description ID do bloqueio
+             * @example 5
+             */
             id?: number;
+            /**
+             * @description Motivo informado na criação
+             * @example Torneio Interno da Arena
+             */
             motivo?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description ID da quadra bloqueada
+             * @example 1
+             */
             quadraId?: number;
         };
         /** @description Dados completos de retorno de um agendamento esportivo */
@@ -1283,23 +1463,40 @@ export interface components {
             usuarioId?: number;
         };
         AlterarSenhaDTO: {
+            /**
+             * @description Nova senha: mínimo de 6 caracteres, com 1 maiúscula, 1 minúscula, 1 número e 1 símbolo. Deve ser diferente da atual
+             * @example SenhaSuperSegura@456
+             */
             novaSenha: string;
+            /**
+             * @description Senha atual da conta
+             * @example SenhaVelha@123
+             */
             senhaAtual: string;
         };
         ApiKeyInfoDTO: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Instante de criação da chave (UTC)
+             * @example 2026-09-20T12:00:00Z
+             */
             criadaEm?: string;
+            /**
+             * @description Quatro últimos caracteres da chave ativa
+             * @example a1b2
+             */
             last4?: string;
+            /**
+             * @description Indica se a conta tem uma chave de API ativa
+             * @example true
+             */
             possuiChave?: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Instante do último uso da chave (UTC)
+             * @example 2026-09-28T18:45:10Z
+             */
             ultimoUsoEm?: string;
-        };
-        Pageable: {
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            size?: number;
-            sort?: string[];
         };
         PageResponseUsuarioResponseDTO: {
             content?: components["schemas"]["UsuarioResponseDTO"][];
@@ -1317,12 +1514,32 @@ export interface components {
             timeout?: number;
         };
         NotificacaoResponseDTO: {
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Data e hora de criação
+             * @example 2026-09-29T15:31:00
+             */
             dataCriacao?: string;
+            /**
+             * @description Indica exclusão lógica; notificações excluídas não aparecem na listagem
+             * @example false
+             */
             excluida?: boolean;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description ID da notificação
+             * @example 1
+             */
             id?: number;
+            /**
+             * @description Indica se o administrador já leu a notificação
+             * @example false
+             */
             lida?: boolean;
+            /**
+             * @description Texto da notificação
+             * @example Nova reserva confirmada: Arthur Prado em Arena Gol Society às 19:00.
+             */
             mensagem?: string;
         };
         PageNotificacaoResponseDTO: {
@@ -1467,33 +1684,101 @@ export interface components {
             totalReservas?: number;
         };
         EstatisticasAuditoriaDTO: {
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Total de ações registradas hoje
+             * @example 180
+             */
             totalAcoesHoje?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Cancelamentos de reserva hoje
+             * @example 2
+             */
             totalCancelamentosHoje?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Tentativas de login com falha hoje
+             * @example 3
+             */
             totalFalhasLoginHoje?: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Logins bem-sucedidos hoje
+             * @example 42
+             */
             totalLoginsHoje?: number;
         };
         LogAuditoriaResponseDTO: {
+            /**
+             * @description Código da ação executada
+             * @example LOGOUT
+             */
             acao?: string;
-            /** @enum {string} */
+            /**
+             * @description Categoria do evento: AUTENTICACAO, AGENDAMENTO, QUADRA, USUARIO, BLOQUEIO ou API_KEY
+             * @example AUTENTICACAO
+             * @enum {string}
+             */
             categoria?: "AUTENTICACAO" | "AGENDAMENTO" | "QUADRA" | "USUARIO" | "BLOQUEIO" | "API_KEY";
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Instante do registro (UTC)
+             * @example 2026-09-29T15:40:00Z
+             */
             criadoEm?: string;
+            /**
+             * @description Detalhes em texto livre
+             * @example Logout efetuado com sucesso.
+             */
             detalhes?: string;
+            /**
+             * @description Entidade afetada
+             * @example USUARIO
+             */
             entidade?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description ID do registro de auditoria
+             * @example 981
+             */
             id?: number;
+            /**
+             * @description Endereço IP de origem
+             * @example 203.0.113.10
+             */
             ip?: string;
+            /**
+             * @description ID do recurso afetado
+             * @example 10
+             */
             recursoId?: string;
-            /** @enum {string} */
+            /**
+             * @description Tipo do executor da ação (ex.: MASTER_ADMIN, ADMIN_QUADRA, CLIENTE)
+             * @example CLIENTE
+             * @enum {string}
+             */
             tipoExecutor?: "MASTER_ADMIN" | "ADMIN_QUADRA" | "CLIENTE" | "SISTEMA";
+            /**
+             * @description User-Agent do cliente
+             * @example Mozilla/5.0
+             */
             userAgent?: string;
+            /**
+             * @description E-mail do executor no momento da ação
+             * @example arthur.prado@email.com
+             */
             usuarioEmail?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description ID do usuário que executou a ação
+             * @example 10
+             */
             usuarioId?: number;
+            /**
+             * @description Nome do executor no momento da ação
+             * @example Arthur Prado
+             */
             usuarioNome?: string;
         };
         PageLogAuditoriaResponseDTO: {
@@ -1549,6 +1834,74 @@ export interface components {
              */
             cep?: string;
         };
+        QuadraFotosResponseDTO: {
+            /**
+             * Format: int64
+             * @description ID da quadra
+             * @example 1
+             */
+            id_quadra?: number;
+            /**
+             * @description Nome da quadra
+             * @example Arena Gol Society
+             */
+            nome?: string;
+            /**
+             * @description Tipo de esporte da quadra
+             * @example FUTEBOL
+             */
+            tipoEsporte?: string;
+            /**
+             * @description Cidade da quadra
+             * @example São José do Rio Preto
+             */
+            cidade?: string;
+            /**
+             * @description Bairro da quadra
+             * @example Jardim das Flores
+             */
+            bairro?: string;
+            /** @description URLs das fotos da galeria */
+            fotos?: string[];
+        };
+        /** @description Corpo de erro (RFC 9457). Os filtros de segurança devolvem só status, title e detail. */
+        ProblemaErro: {
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status?: number;
+            detail?: string;
+            instance?: string;
+            code?: string;
+            timestamp?: string;
+            camposIncorretos?: {
+                campo?: string;
+                mensagem?: string;
+            }[];
+        };
+        /** @description Página (Spring Data) de quadras completas. Aparece em GET /api/quadras com formato completo e parâmetro page. */
+        PageQuadraResponseDTO: {
+            content?: components["schemas"]["QuadraResponseDTO"][];
+            pageable?: components["schemas"]["PageableObject"];
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            first?: boolean;
+            last?: boolean;
+            empty?: boolean;
+        };
+        /** @description Resposta de GET /api/quadras/fotos quando há filtro e nenhuma quadra corresponde. */
+        FotosSemResultado: {
+            fotos?: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -1563,13 +1916,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do usuário (`id_usuario`)
+                 * @example 10
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Dados do usuário localizado */
+            /** @description Dados do usuário */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1582,13 +1939,34 @@ export interface operations {
                      *       "email_usuario": "arthur.prado@email.com",
                      *       "phone_usuario": "(11) 99999-8888",
                      *       "role": "CLIENT",
-                     *       "criadoEm": "2026-09-04T10:00:00"
+                     *       "criadoEm": "2026-09-04T10:00:00",
+                     *       "masterAdmin": false
                      *     }
                      */
                     "application/json": components["schemas"]["UsuarioResponseDTO"];
                 };
             };
-            /** @description Usuário Não Encontrado */
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Você não tem permissão para visualizar os dados de outro usuário.",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1596,14 +1974,16 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/not-found",
-                     *       "title": "Usuário Não Encontrado",
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
                      *       "status": 404,
-                     *       "detail": "Usuário não localizado para o ID informado.",
-                     *       "instance": "/api/usuarios/{id}"
+                     *       "detail": "Usuário não encontrado para o ID: 99",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "USUARIO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1613,6 +1993,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do usuário (`id_usuario`)
+                 * @example 10
+                 */
                 id: number;
             };
             cookie?: never;
@@ -1623,14 +2007,16 @@ export interface operations {
                  * @example {
                  *       "nome_usuario": "Arthur Prado Silva",
                  *       "email_usuario": "arthur.silva@email.com",
-                 *       "phone_usuario": "(11) 99999-9999"
+                 *       "phone_usuario": "(11) 99999-9999",
+                 *       "role": "CLIENT",
+                 *       "nova_senha": "NovaSenha@456"
                  *     }
                  */
                 "application/json": components["schemas"]["UsuarioEdicaoDTO"];
             };
         };
         responses: {
-            /** @description Dados do usuário atualizados */
+            /** @description Usuário atualizado */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1643,10 +2029,86 @@ export interface operations {
                      *       "email_usuario": "arthur.silva@email.com",
                      *       "phone_usuario": "(11) 99999-9999",
                      *       "role": "CLIENT",
-                     *       "criadoEm": "2026-09-04T10:00:00"
+                     *       "criadoEm": "2026-09-04T10:00:00",
+                     *       "masterAdmin": false
                      *     }
                      */
                     "application/json": components["schemas"]["UsuarioResponseDTO"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
+                     *       "status": 404,
+                     *       "detail": "Usuário não encontrado para o ID: 99",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "USUARIO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: Nome: O nome deve ter entre 3 e 80 caracteres",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1656,25 +2118,82 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do usuário (`id_usuario`)
+                 * @example 10
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Usuário removido com sucesso */
+            /** @description Usuário excluído */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
+                     *       "status": 400,
+                     *       "detail": "A conta do Administrador Geral não pode ser excluída.",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "OPERACAO_NAO_PERMITIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
+                     *       "status": 404,
+                     *       "detail": "Usuário não encontrado para o ID: 99",
+                     *       "instance": "/api/usuarios/{id}",
+                     *       "code": "USUARIO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
             };
         };
     };
@@ -1683,13 +2202,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Detalhes completos da quadra informada */
+            /** @description Quadra completa */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1700,7 +2223,7 @@ export interface operations {
                      *       "id_quadra": 1,
                      *       "nome": "Arena Gol Society",
                      *       "tipoEsporte": "FUTEBOL",
-                     *       "valorHora": 140,
+                     *       "valorHora": 120,
                      *       "ativa": true,
                      *       "cep": "15000-000",
                      *       "logradouro": "Av. Brasil, 1500",
@@ -1712,41 +2235,55 @@ export interface operations {
                      *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
                      *       "dataLimiteAgendamento": "2026-12-31",
                      *       "fotos": [
-                     *         "https://equadras.app/uploads/quadras/1_principal.jpg"
+                     *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
                      *       ],
                      *       "disponibilidades": [
                      *         {
                      *           "diaSemana": "MONDAY",
-                     *           "horaInicio": "06:00:00",
-                     *           "horaFim": "23:00:00"
-                     *         },
-                     *         {
-                     *           "diaSemana": "FRIDAY",
-                     *           "horaInicio": "06:00:00",
-                     *           "horaFim": "23:00:00"
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
                      *         }
-                     *       ]
+                     *       ],
+                     *       "versao": 3
                      *     }
                      */
                     "application/json": components["schemas"]["QuadraResponseDTO"];
                 };
             };
-            /** @description Quadra Não Encontrada */
-            404: {
+            /** @description Requisição Inválida */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/not-found",
-                     *       "title": "Quadra Não Encontrada",
-                     *       "status": 404,
-                     *       "detail": "Quadra não localizada para o ID fornecido.",
-                     *       "instance": "/api/quadras/{id}"
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/quadras/{id}",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1756,6 +2293,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
@@ -1764,9 +2305,9 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "nome": "Arena Gol Society Coberta",
+                 *       "nome": "Arena Gol Society",
                  *       "tipoEsporte": "FUTEBOL",
-                 *       "valorHora": 150,
+                 *       "valorHora": 130,
                  *       "cep": "15000-000",
                  *       "logradouro": "Av. Brasil, 1500",
                  *       "bairro": "Jardim das Flores",
@@ -1777,27 +2318,23 @@ export interface operations {
                  *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
                  *       "dataLimiteAgendamento": "2026-12-31",
                  *       "fotos": [
-                 *         "https://equadras.app/uploads/quadras/1_principal.jpg"
+                 *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
                  *       ],
                  *       "disponibilidades": [
                  *         {
                  *           "diaSemana": "MONDAY",
-                 *           "horaInicio": "06:00:00",
-                 *           "horaFim": "23:00:00"
-                 *         },
-                 *         {
-                 *           "diaSemana": "FRIDAY",
-                 *           "horaInicio": "06:00:00",
-                 *           "horaFim": "23:00:00"
+                 *           "horaInicio": "08:00:00",
+                 *           "horaFim": "22:00:00"
                  *         }
-                 *       ]
+                 *       ],
+                 *       "versao": 3
                  *     }
                  */
                 "application/json": components["schemas"]["QuadraCriacaoDTO"];
             };
         };
         responses: {
-            /** @description Dados cadastrais e horários da quadra atualizados */
+            /** @description Quadra atualizada (a `versao` incrementa) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1806,9 +2343,9 @@ export interface operations {
                     /**
                      * @example {
                      *       "id_quadra": 1,
-                     *       "nome": "Arena Gol Society Coberta",
+                     *       "nome": "Arena Gol Society",
                      *       "tipoEsporte": "FUTEBOL",
-                     *       "valorHora": 150,
+                     *       "valorHora": 120,
                      *       "ativa": true,
                      *       "cep": "15000-000",
                      *       "logradouro": "Av. Brasil, 1500",
@@ -1820,23 +2357,94 @@ export interface operations {
                      *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
                      *       "dataLimiteAgendamento": "2026-12-31",
                      *       "fotos": [
-                     *         "https://equadras.app/uploads/quadras/1_principal.jpg"
+                     *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
                      *       ],
                      *       "disponibilidades": [
                      *         {
                      *           "diaSemana": "MONDAY",
-                     *           "horaInicio": "06:00:00",
-                     *           "horaFim": "23:00:00"
-                     *         },
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
+                     *         }
+                     *       ],
+                     *       "versao": 3
+                     *     }
+                     */
+                    "application/json": components["schemas"]["QuadraResponseDTO"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode editá-la.",
+                     *       "instance": "/api/quadras/{id}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
+                     *       "status": 409,
+                     *       "detail": "Esta quadra foi alterada por outra pessoa. Recarregue os dados e tente de novo.",
+                     *       "instance": "/api/quadras/{id}",
+                     *       "code": "CONFLITO_VERSAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: Nome: O nome deve ter entre 3 e 100 caracteres",
+                     *       "instance": "/api/quadras/{id}",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
                      *         {
-                     *           "diaSemana": "FRIDAY",
-                     *           "horaInicio": "06:00:00",
-                     *           "horaFim": "23:00:00"
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
                      *         }
                      *       ]
                      *     }
                      */
-                    "application/json": components["schemas"]["QuadraResponseDTO"];
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1846,25 +2454,51 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Quadra removida com sucesso */
+            /** @description Quadra excluída */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Operação Não Permitida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode excluí-la.",
+                     *       "instance": "/api/quadras/{id}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
             };
         };
     };
@@ -1873,6 +2507,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da notificação
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
@@ -1880,18 +2518,46 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Notificação marcada como lida */
-            200: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Requisição Inválida */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "id": 1,
-                     *       "lida": true
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "Você não tem permissão para alterar esta notificação.",
+                     *       "instance": "/api/notificacoes/{id}/ler",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1905,18 +2571,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Notificações marcadas como lidas */
-            200: {
+            /** @description Todas as notificações do administrador marcadas como lidas */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Acesso Proibido */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "mensagem": "Todas as notificações foram marcadas como lidas."
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -1930,19 +2605,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Sessão encerrada com sucesso */
-            200: {
+            /** @description Sessão encerrada. Sem corpo; o cookie de sessão é expirado. */
+            204: {
                 headers: {
+                    /** @description Cookie `equadras_session` com Max-Age=0, removendo a sessão do navegador. */
+                    "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
-                content: {
-                    /**
-                     * @example {
-                     *       "mensagem": "Logout realizado com sucesso."
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
+                content?: never;
             };
         };
     };
@@ -1965,29 +2635,29 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Login autenticado com sucesso e token JWT emitido */
+            /** @description Login realizado. O corpo traz o perfil; o JWT vai apenas no cookie HttpOnly `equadras_session`. */
             200: {
                 headers: {
+                    /** @description Cookie de sessão `equadras_session` (HttpOnly, SameSite=Lax, Path=/). */
+                    "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMCIsInJvbGUiOiJDTElFTlQiLCJpYXQiOjE3MjU4NTAwMDB9...",
-                     *       "usuario": {
-                     *         "id_usuario": 10,
-                     *         "nome_usuario": "Arthur Prado",
-                     *         "email_usuario": "arthur.prado@email.com",
-                     *         "phone_usuario": "(11) 99999-8888",
-                     *         "role": "CLIENT",
-                     *         "criadoEm": "2026-09-04T10:00:00"
-                     *       }
+                     *       "id_usuario": 10,
+                     *       "nome_usuario": "Arthur Prado",
+                     *       "email_usuario": "arthur.prado@email.com",
+                     *       "phone_usuario": "(11) 99999-8888",
+                     *       "role": "CLIENT",
+                     *       "criadoEm": "2026-09-04T10:00:00",
+                     *       "masterAdmin": false
                      *     }
                      */
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Requisição Inválida */
+            /** @description Regra de Negócio Violada */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -1995,14 +2665,61 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/bad-request",
-                     *       "title": "Requisição Inválida",
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
                      *       "status": 400,
-                     *       "detail": "Credenciais de e-mail ou senha inválidas.",
-                     *       "instance": "/api/usuarios/login"
+                     *       "detail": "E-mail ou senha incorretos.",
+                     *       "instance": "/api/usuarios/login",
+                     *       "code": "CREDENCIAIS_INVALIDAS",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: E-mail: Formato de e-mail inválido",
+                     *       "instance": "/api/usuarios/login",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    /** @description Segundos até nova tentativa de login para este e-mail. */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Too Many Requests",
+                     *       "status": 429,
+                     *       "detail": "Muitas tentativas falhas de login para esta conta. Tente novamente em 300 segundos."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2016,21 +2733,69 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Nova chave emitida. A chave em texto plano só aparece nesta resposta. */
             200: {
+                headers: {
+                    /** @description `no-store, no-cache, must-revalidate, max-age=0`: a resposta não pode ser guardada em cache. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "apiKey": "eq_9f8e7d6c5b4a39281706f5e4d3c2b1a0",
+                     *       "last4": "b1a0",
+                     *       "criadaEm": "2026-09-29T14:30:00Z"
+                     *     }
+                     */
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    /** @description Sempre 60 (segundos). */
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 429,
+                     *       "title": "Too Many Requests",
+                     *       "detail": "Limite de 5 regenerações por minuto atingido para esta conta. Aguarde antes de tentar novamente."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
     };
     listarUsuariosPaginado: {
         parameters: {
-            query: {
-                pageable: components["schemas"]["Pageable"];
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
             };
             header?: never;
             path?: never;
@@ -2038,33 +2803,52 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de usuários cadastrados */
+            /** @description Página de usuários (com `page`). Sem `page` o código devolve uma lista simples de até 200 usuários. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "id_usuario": 10,
-                     *         "nome_usuario": "Arthur Prado",
-                     *         "email_usuario": "arthur.prado@email.com",
-                     *         "phone_usuario": "(11) 99999-8888",
-                     *         "role": "CLIENT",
-                     *         "criadoEm": "2026-09-04T10:00:00"
-                     *       },
-                     *       {
-                     *         "id_usuario": 1,
-                     *         "nome_usuario": "Administrador Arena",
-                     *         "email_usuario": "admin@equadras.app",
-                     *         "phone_usuario": "(11) 97777-1111",
-                     *         "role": "ADMIN",
-                     *         "criadoEm": "2026-09-01T08:00:00"
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id_usuario": 10,
+                     *           "nome_usuario": "Arthur Prado",
+                     *           "email_usuario": "arthur.prado@email.com",
+                     *           "phone_usuario": "(11) 99999-8888",
+                     *           "role": "CLIENT",
+                     *           "criadoEm": "2026-09-04T10:00:00",
+                     *           "masterAdmin": false
+                     *         }
+                     *       ],
+                     *       "page": 0,
+                     *       "size": 10,
+                     *       "totalElements": 1,
+                     *       "totalPages": 1
+                     *     }
                      */
                     "application/json": components["schemas"]["UsuarioResponseDTO"][] | components["schemas"]["PageResponseUsuarioResponseDTO"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/usuarios",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2082,24 +2866,16 @@ export interface operations {
                  * @example {
                  *       "nome_usuario": "Carlos Eduardo",
                  *       "email_usuario": "carlos.eduardo@email.com",
+                 *       "senha_usuario": "SenhaForte@123",
                  *       "phone_usuario": "(11) 98888-7777",
-                 *       "senha_usuario": "SenhaForte@123"
+                 *       "role": "CLIENT"
                  *     }
                  */
                 "application/json": components["schemas"]["UsuarioCriacaoDTO"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsuarioResponseDTO"];
-                };
-            };
-            /** @description Usuário cadastrado com sucesso */
+            /** @description Usuário cadastrado */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2112,13 +2888,14 @@ export interface operations {
                      *       "email_usuario": "carlos.eduardo@email.com",
                      *       "phone_usuario": "(11) 98888-7777",
                      *       "role": "CLIENT",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "criadoEm": "2026-09-29T09:15:00",
+                     *       "masterAdmin": false
                      *     }
                      */
                     "application/json": unknown;
                 };
             };
-            /** @description Requisição Inválida */
+            /** @description Regra de Negócio Violada */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2126,14 +2903,82 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/bad-request",
-                     *       "title": "Requisição Inválida",
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
                      *       "status": 400,
-                     *       "detail": "E-mail já cadastrado na plataforma.",
-                     *       "instance": "/api/usuarios"
+                     *       "detail": "E-mail já cadastrado no sistema.",
+                     *       "instance": "/api/usuarios",
+                     *       "code": "EMAIL_DUPLICADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/usuarios",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
+                     *       "status": 409,
+                     *       "detail": "Telefone já cadastrado para outro usuário.",
+                     *       "instance": "/api/usuarios",
+                     *       "code": "TELEFONE_EM_USO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: E-mail: Formato de e-mail inválido",
+                     *       "instance": "/api/usuarios",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2143,6 +2988,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 quadraId: number;
             };
             cookie?: never;
@@ -2152,16 +3001,16 @@ export interface operations {
                 /**
                  * @example {
                  *       "bloqueioId": 5,
-                 *       "data": "2026-09-12",
+                 *       "data": "2026-10-12",
                  *       "horaInicio": "14:00:00",
-                 *       "horaFim": "18:00:00"
+                 *       "horaFim": "16:00:00"
                  *     }
                  */
                 "application/json": components["schemas"]["DesbloqueioHorarioDTO"];
             };
         };
         responses: {
-            /** @description Horários desbloqueados com sucesso */
+            /** @description Resultado do desbloqueio */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2178,46 +3027,131 @@ export interface operations {
                     };
                 };
             };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "Informe o ID do bloqueio ou a data a ser desbloqueada.",
+                     *       "instance": "/api/quadras/{quadraId}/desbloquear",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.",
+                     *       "instance": "/api/quadras/{quadraId}/desbloquear",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
         };
     };
     consultarFotos: {
         parameters: {
             query?: {
+                /**
+                 * @description ID da quadra na query. Usado se não houver ID no path.
+                 * @example 1
+                 */
                 id?: number;
+                /**
+                 * @description Alias de `id`. Usado se não houver ID no path nem `id` na query.
+                 * @example 1
+                 */
                 quadraId?: number;
+                /**
+                 * @description Filtra por parte do nome da quadra.
+                 * @example Arena
+                 */
                 nome?: string;
+                /**
+                 * @description Alias de `nome`. Só vale se `nome` estiver vazio.
+                 * @example Arena
+                 */
                 nomeQuadra?: string;
+                /**
+                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @example FUTEBOL
+                 */
                 tipoEsporte?: string;
+                /**
+                 * @description Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+                 * @example FUTEBOL
+                 */
                 esporte?: string;
+                /**
+                 * @description Filtra pela cidade.
+                 * @example São José do Rio Preto
+                 */
                 cidade?: string;
+                /**
+                 * @description Filtra pelo bairro.
+                 * @example Jardim das Flores
+                 */
                 bairro?: string;
             };
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra no path (rota `/{id}/fotos`). Tem precedência sobre `id` e `quadraId` da query.
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Galeria de fotos da quadra */
+            /** @description Uma quadra: com `id` (path ou query) ou quando o filtro corresponde a exatamente uma quadra. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["QuadraFotosResponseDTO"] | components["schemas"]["QuadraFotosResponseDTO"][] | components["schemas"]["FotosSemResultado"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "id": 1,
-                     *         "nome": "Arena Gol Society",
-                     *         "fotos": [
-                     *           "https://equadras.app/uploads/quadras/1_principal.jpg"
-                     *         ]
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
                      */
-                    "application/json": Record<string, never>;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2227,6 +3161,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
@@ -2234,12 +3172,13 @@ export interface operations {
         requestBody?: {
             content: {
                 "multipart/form-data": {
+                    /** @description Arquivos de imagem (parte multipart `fotos`, repetível). */
                     fotos: string[];
                 };
             };
         };
         responses: {
-            /** @description Fotos adicionadas à galeria com sucesso */
+            /** @description Quadra com a galeria atualizada */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2250,15 +3189,91 @@ export interface operations {
                      *       "id_quadra": 1,
                      *       "nome": "Arena Gol Society",
                      *       "tipoEsporte": "FUTEBOL",
-                     *       "valorHora": 140,
+                     *       "valorHora": 120,
                      *       "ativa": true,
+                     *       "cep": "15000-000",
+                     *       "logradouro": "Av. Brasil, 1500",
+                     *       "bairro": "Jardim das Flores",
+                     *       "cidade": "São José do Rio Preto",
+                     *       "estado": "SP",
+                     *       "latitude": -20.8113,
+                     *       "longitude": -49.3758,
+                     *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
+                     *       "dataLimiteAgendamento": "2026-12-31",
                      *       "fotos": [
-                     *         "https://equadras.app/uploads/quadras/1_principal.jpg",
-                     *         "https://equadras.app/uploads/quadras/1_nova.jpg"
-                     *       ]
+                     *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
+                     *       ],
+                     *       "disponibilidades": [
+                     *         {
+                     *           "diaSemana": "MONDAY",
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
+                     *         }
+                     *       ],
+                     *       "versao": 3
                      *     }
                      */
                     "application/json": components["schemas"]["QuadraResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "Limite de 5 fotos por quadra atingido. Remova fotos existentes antes de enviar novas.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode fazer upload de fotos.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Arquivo Muito Grande */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/tamanho-arquivo-excedido",
+                     *       "title": "Arquivo Muito Grande",
+                     *       "status": 413,
+                     *       "detail": "O arquivo enviado excede o tamanho máximo permitido.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "ARQUIVO_MUITO_GRANDE",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2266,17 +3281,25 @@ export interface operations {
     removerFoto: {
         parameters: {
             query: {
+                /**
+                 * @description URL da foto exatamente como consta em `QuadraResponseDTO.fotos`. Obrigatório.
+                 * @example /uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg
+                 */
                 fotoUrl: string;
             };
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Foto removida com sucesso da galeria */
+            /** @description Quadra com a galeria sem a foto removida */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2287,12 +3310,69 @@ export interface operations {
                      *       "id_quadra": 1,
                      *       "nome": "Arena Gol Society",
                      *       "tipoEsporte": "FUTEBOL",
-                     *       "valorHora": 140,
+                     *       "valorHora": 120,
                      *       "ativa": true,
-                     *       "fotos": []
+                     *       "cep": "15000-000",
+                     *       "logradouro": "Av. Brasil, 1500",
+                     *       "bairro": "Jardim das Flores",
+                     *       "cidade": "São José do Rio Preto",
+                     *       "estado": "SP",
+                     *       "latitude": -20.8113,
+                     *       "longitude": -49.3758,
+                     *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
+                     *       "dataLimiteAgendamento": "2026-12-31",
+                     *       "fotos": [],
+                     *       "disponibilidades": [
+                     *         {
+                     *           "diaSemana": "MONDAY",
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
+                     *         }
+                     *       ],
+                     *       "versao": 3
                      *     }
                      */
                     "application/json": components["schemas"]["QuadraResponseDTO"];
+                };
+            };
+            /** @description Parâmetro Ausente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/parametro-ausente",
+                     *       "title": "Parâmetro Ausente",
+                     *       "status": 400,
+                     *       "detail": "O parâmetro obrigatório 'fotoUrl' não foi informado.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "PARAMETRO_AUSENTE",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode remover fotos.",
+                     *       "instance": "/api/quadras/{id}/fotos",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2302,13 +3382,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de bloqueios da quadra */
+            /** @description Bloqueios ativos e futuros da quadra */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2317,18 +3401,37 @@ export interface operations {
                     /**
                      * @example [
                      *       {
-                     *         "id_bloqueio": 5,
+                     *         "id": 5,
                      *         "quadraId": 1,
-                     *         "nomeQuadra": "Arena Gol Society",
-                     *         "data": "2026-09-12",
+                     *         "data": "2026-10-12",
                      *         "horaInicio": "14:00:00",
                      *         "horaFim": "18:00:00",
                      *         "motivo": "Torneio Interno da Arena",
-                     *         "criadoEm": "2026-09-09T00:30:00"
+                     *         "criadoEm": "2026-09-29T09:30:00"
                      *       }
                      *     ]
                      */
                     "application/json": components["schemas"]["BloqueioHorarioResponseDTO"][];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/quadras/{id}/bloqueios",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2338,6 +3441,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
@@ -2346,27 +3453,18 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "quadraId": 1,
-                 *       "data": "2026-09-12",
+                 *       "data": "2026-10-12",
                  *       "horaInicio": "14:00:00",
                  *       "horaFim": "18:00:00",
-                 *       "motivo": "Torneio Interno da Arena"
+                 *       "motivo": "Torneio Interno da Arena",
+                 *       "substituirDiaInteiro": false
                  *     }
                  */
                 "application/json": components["schemas"]["BloqueioHorarioCriacaoDTO"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BloqueioHorarioResponseDTO"];
-                };
-            };
-            /** @description Bloqueio criado com sucesso */
+            /** @description Bloqueio criado */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2374,35 +3472,71 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id_bloqueio": 5,
+                     *       "id": 5,
                      *       "quadraId": 1,
-                     *       "nomeQuadra": "Arena Gol Society",
-                     *       "data": "2026-09-12",
+                     *       "data": "2026-10-12",
                      *       "horaInicio": "14:00:00",
                      *       "horaFim": "18:00:00",
                      *       "motivo": "Torneio Interno da Arena",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "criadoEm": "2026-09-29T09:30:00"
                      *     }
                      */
                     "application/json": unknown;
                 };
             };
-            /** @description Conflito de Bloqueio */
-            409: {
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/conflito-horario",
-                     *       "title": "Conflito de Bloqueio",
-                     *       "status": 409,
-                     *       "detail": "Já existem reservas ou bloqueios no intervalo informado.",
-                     *       "instance": "/api/quadras/{id}/bloqueios"
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode criar bloqueios.",
+                     *       "instance": "/api/quadras/{id}/bloqueios",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: data: A data do bloqueio é obrigatória",
+                     *       "instance": "/api/quadras/{id}/bloqueios",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2410,62 +3544,127 @@ export interface operations {
     listarTodas: {
         parameters: {
             query?: {
+                /**
+                 * @description Latitude do ponto de busca por proximidade (graus, -90 a 90). Só filtra se `longitude` também vier.
+                 * @example -20.8113
+                 */
                 latitude?: number;
+                /**
+                 * @description Longitude do ponto de busca por proximidade (graus, -180 a 180). Só filtra se `latitude` também vier.
+                 * @example -49.3758
+                 */
                 longitude?: number;
-                raioKm?: number;
+                /**
+                 * @description Raio da busca por proximidade, em km. Usado apenas com `latitude` e `longitude`.
+                 * @example 2
+                 */
+                raioKm?: string;
+                /**
+                 * @description Filtra pelo tipo de esporte. Valores: FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS.
+                 * @example FUTEBOL
+                 */
                 tipoEsporte?: string;
+                /**
+                 * @description Filtra por parte do nome da quadra.
+                 * @example Arena
+                 */
                 nome?: string;
+                /**
+                 * @description Filtra por parte do endereço (logradouro).
+                 * @example Av. Brasil
+                 */
                 endereco?: string;
+                /**
+                 * @description Filtra pela cidade.
+                 * @example São José do Rio Preto
+                 */
                 cidade?: string;
+                /**
+                 * @description Filtra pelo bairro.
+                 * @example Jardim das Flores
+                 */
                 bairro?: string;
+                /**
+                 * @description Filtra pelo CEP.
+                 * @example 15000-000
+                 */
                 cep?: string;
+                /**
+                 * @description Força o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedência sobre os headers `X-Client`/`X-View` e sobre a URL.
+                 * @example true
+                 */
                 resumido?: boolean;
+                /**
+                 * @description Índice da página, começando em 0. Só tem efeito no formato completo e o transforma em resposta paginada (`PageQuadraResponseDTO`). IGNORADO no formato resumido.
+                 * @example 0
+                 */
                 page?: number;
-                size?: number;
+                /**
+                 * @description Itens por página. Padrão 6; máximo 50 (valores maiores são limitados a 50; zero ou negativo volta para 6). Só tem efeito no formato completo com `page`. IGNORADO no formato resumido.
+                 * @example 6
+                 */
+                size?: string;
             };
             header?: {
-                "X-Client"?: string;
-                "X-View"?: string;
-                Origin?: string;
+                /**
+                 * @description Identifica o cliente. `frontend` força o formato completo; `api` força o resumido (só vale se `resumido` não vier).
+                 * @example api
+                 */
+                "X-Client"?: "frontend" | "api";
+                /**
+                 * @description Formato desejado. `full` = completo; `resumo` ou `summary` = resumido (só vale se `resumido` não vier). Se `X-Client` também vier, `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View: resumo|summary` e `X-Client: api`.
+                 * @example resumo
+                 */
+                "X-View"?: "full" | "resumo" | "summary";
             };
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de quadras ativas da arena */
+            /** @description Formato resumido: `array<QuadraResumoResponseDTO>`. É o padrão em /api/quadras. `page` e `size` são ignorados e a lista é limitada a 200 itens. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["QuadraResumoResponseDTO"][] | components["schemas"]["PageQuadraResponseDTO"] | components["schemas"]["QuadraResponseDTO"][];
+                };
+            };
+            /** @description Parâmetro Inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "id_quadra": 1,
-                     *         "nome": "Arena Gol Society",
-                     *         "tipo": "FUTEBOL_SOCIETY",
-                     *         "valorHora": 140,
-                     *         "coberta": true,
-                     *         "endereco": "Av. Brasil, 1500 - São Paulo, SP",
-                     *         "distanciaKm": 2.4,
-                     *         "ativa": true,
-                     *         "fotoCapa": "https://equadras.app/uploads/quadra-1-capa.jpg"
-                     *       },
-                     *       {
-                     *         "id_quadra": 2,
-                     *         "nome": "Praia & Sol Beach Tennis",
-                     *         "tipo": "BEACH_TENNIS",
-                     *         "valorHora": 90,
-                     *         "coberta": false,
-                     *         "endereco": "Rua das Palmeiras, 300 - São Paulo, SP",
-                     *         "distanciaKm": 3.8,
-                     *         "ativa": true,
-                     *         "fotoCapa": "https://equadras.app/uploads/quadra-2-capa.jpg"
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/parametro-invalido",
+                     *       "title": "Parâmetro Inválido",
+                     *       "status": 400,
+                     *       "detail": "O parâmetro 'raioKm' possui um valor inválido: 'abc'.",
+                     *       "instance": "/api/quadras",
+                     *       "code": "PARAMETRO_INVALIDO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
                      */
-                    "application/json": components["schemas"]["QuadraResumoResponseDTO"][];
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2474,7 +3673,10 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Chave gerada pelo cliente a cada formulário; reenvios com a mesma chave em até 10 min devolvem a quadra já criada */
+                /**
+                 * @description Chave gerada pelo cliente a cada formulário (ex.: UUID). Reenvios com a mesma chave em até 10 minutos devolvem a quadra já criada. Opcional: sem ela, cada chamada cria uma quadra.
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                 */
                 "Idempotency-Key"?: string;
             };
             path?: never;
@@ -2484,19 +3686,22 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "nome": "Quadra de Vôlei de Areia",
-                 *       "tipo": "VOLEI_PRAIA",
-                 *       "valorHora": 100,
-                 *       "coberta": false,
-                 *       "endereco": "Av. Brasil, 1500 - São Paulo, SP",
+                 *       "nome": "Arena Gol Society",
+                 *       "tipoEsporte": "FUTEBOL",
+                 *       "valorHora": 120,
+                 *       "cep": "15000-000",
+                 *       "logradouro": "Av. Brasil, 1500",
+                 *       "bairro": "Jardim das Flores",
+                 *       "cidade": "São José do Rio Preto",
+                 *       "estado": "SP",
+                 *       "latitude": -20.8113,
+                 *       "longitude": -49.3758,
+                 *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
+                 *       "dataLimiteAgendamento": "2026-12-31",
+                 *       "fotos": [],
                  *       "disponibilidades": [
                  *         {
                  *           "diaSemana": "MONDAY",
-                 *           "horaInicio": "07:00:00",
-                 *           "horaFim": "23:00:00"
-                 *         },
-                 *         {
-                 *           "diaSemana": "SATURDAY",
                  *           "horaInicio": "08:00:00",
                  *           "horaFim": "22:00:00"
                  *         }
@@ -2507,16 +3712,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["QuadraResponseDTO"];
-                };
-            };
-            /** @description Quadra cadastrada com sucesso */
+            /** @description Quadra criada. Reenvio com o mesmo `Idempotency-Key` em até 10 minutos devolve a quadra já criada. */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2524,18 +3720,112 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id_quadra": 3,
-                     *       "nome": "Quadra de Vôlei de Areia",
-                     *       "tipo": "VOLEI_PRAIA",
-                     *       "valorHora": 100,
-                     *       "coberta": false,
-                     *       "endereco": "Av. Brasil, 1500 - São Paulo, SP",
+                     *       "id_quadra": 1,
+                     *       "nome": "Arena Gol Society",
+                     *       "tipoEsporte": "FUTEBOL",
+                     *       "valorHora": 120,
                      *       "ativa": true,
-                     *       "fotoCapa": null,
-                     *       "fotos": []
+                     *       "cep": "15000-000",
+                     *       "logradouro": "Av. Brasil, 1500",
+                     *       "bairro": "Jardim das Flores",
+                     *       "cidade": "São José do Rio Preto",
+                     *       "estado": "SP",
+                     *       "latitude": -20.8113,
+                     *       "longitude": -49.3758,
+                     *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
+                     *       "dataLimiteAgendamento": "2026-12-31",
+                     *       "fotos": [
+                     *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
+                     *       ],
+                     *       "disponibilidades": [
+                     *         {
+                     *           "diaSemana": "MONDAY",
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
+                     *         }
+                     *       ],
+                     *       "versao": 3
                      *     }
                      */
                     "application/json": unknown;
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "Uma quadra pode ter no máximo 5 fotos.",
+                     *       "instance": "/api/quadras",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: Nome: O nome deve ter entre 3 e 100 caracteres",
+                     *       "instance": "/api/quadras",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2545,13 +3835,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do agendamento (`id_agendamento`)
+                 * @example 42
+                 */
                 agendamentoId: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Simulação de aprovação concluída */
+            /** @description Agendamento confirmado */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2559,13 +3853,73 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "agendamentoId": 42,
+                     *       "id_agendamento": 42,
+                     *       "usuarioId": 10,
+                     *       "nomeUsuario": "Arthur Prado",
+                     *       "telefoneUsuario": "(11) 99999-8888",
+                     *       "quadraId": 1,
+                     *       "nomeQuadra": "Arena Gol Society",
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
                      *       "status": "CONFIRMADO",
-                     *       "pago": true,
-                     *       "mensagem": "Pagamento aprovado em ambiente de desenvolvimento/testes."
+                     *       "transacaoPagamentoId": "mp-pix-987654321",
+                     *       "pixCopiaECola": null,
+                     *       "qrCodeBase64": null,
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": null
                      *     }
                      */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
+                     *       "status": 404,
+                     *       "detail": "Agendamento não encontrado. ID: 999",
+                     *       "instance": "/api/pagamentos/{agendamentoId}/simular-aprovacao",
+                     *       "code": "AGENDAMENTO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/regra-negocio-violada",
+                     *       "title": "Regra de Negócio Violada",
+                     *       "status": 409,
+                     *       "detail": "Não foi possível confirmar o agendamento pois ele foi expirado ou cancelado concorrentemente.",
+                     *       "instance": "/api/pagamentos/{agendamentoId}/simular-aprovacao",
+                     *       "code": "CONFLITO_STATUS",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2573,9 +3927,25 @@ export interface operations {
     webhook: {
         parameters: {
             query?: {
+                /**
+                 * @description ID do pagamento no formato IPN (usado com `topic=payment` ou `type=payment`).
+                 * @example 987654321
+                 */
                 id?: string;
+                /**
+                 * @description Tópico IPN. Só `payment` é processado.
+                 * @example payment
+                 */
                 topic?: string;
+                /**
+                 * @description Tipo do evento. Só valores contendo `payment` são processados.
+                 * @example payment
+                 */
                 type?: string;
+                /**
+                 * @description ID do pagamento no formato Webhooks V2 (`data.id`), usado se `id` não vier.
+                 * @example 987654321
+                 */
                 "data.id"?: string;
             };
             header?: never;
@@ -2590,20 +3960,24 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Webhook recebido e processado */
+            /** @description Notificação sem ID de pagamento relevante: ignorada. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "status": "ok"
-                     *     }
-                     */
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Falha ao confirmar ou consultar o pagamento: o gateway deve reenviar. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -2619,27 +3993,21 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "nomeCliente": "Lucas Silveira",
-                 *       "telefoneCliente": "(11) 97777-6666",
                  *       "quadraId": 1,
-                 *       "dataHoraInicio": "2026-09-12T20:00:00",
-                 *       "dataHoraFim": "2026-09-12T21:00:00"
+                 *       "nomeQuadra": "Arena Gol Society",
+                 *       "tipoEsporte": "FUTEBOL",
+                 *       "data": "amanha",
+                 *       "horaInicio": "19h",
+                 *       "horaFim": "20:00",
+                 *       "nomeCliente": "Arthur Prado",
+                 *       "telefoneCliente": "11999998888"
                  *     }
                  */
                 "application/json": components["schemas"]["AgendamentoBotRequestDTO"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"];
-                };
-            };
-            /** @description Agendamento rápido via Bot criado com cobrança Pix */
+            /** @description Reserva criada em PENDENTE com Pix; cliente criado ou vinculado pelo telefone */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2647,23 +4015,33 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id_agendamento": 43,
-                     *       "usuarioId": 15,
-                     *       "nomeUsuario": "Lucas Silveira",
-                     *       "telefoneUsuario": "(11) 97777-6666",
+                     *       "id_agendamento": 42,
+                     *       "usuarioId": 10,
+                     *       "nomeUsuario": "Arthur Prado",
+                     *       "telefoneUsuario": "(11) 99999-8888",
                      *       "quadraId": 1,
                      *       "nomeQuadra": "Arena Gol Society",
-                     *       "dataHoraInicio": "2026-09-12T20:00:00",
-                     *       "dataHoraFim": "2026-09-12T21:00:00",
-                     *       "valorTotal": 140,
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
                      *       "status": "PENDENTE",
-                     *       "transacaoPagamentoId": "mp-pix-123456789",
-                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
-                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "transacaoPagamentoId": "mp-pix-987654321",
+                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADI",
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": null
                      *     }
                      */
                     "application/json": unknown;
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
             /** @description Conflito de Horário */
@@ -2674,25 +4052,64 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/conflito-horario",
+                     *       "type": "https://api.equadras.com/erros/horario-indisponivel",
                      *       "title": "Conflito de Horário",
                      *       "status": 409,
-                     *       "detail": "A quadra já possui reserva ou bloqueio para o horário solicitado.",
-                     *       "instance": "/api/agendamentos/bot"
+                     *       "detail": "O horário selecionado conflita com outro agendamento já existente ou bloqueado para esta quadra.",
+                     *       "instance": "/api/agendamentos/bot",
+                     *       "code": "HORARIO_INDISPONIVEL",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: data: A data da reserva é obrigatória",
+                     *       "instance": "/api/agendamentos/bot",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
     };
     listarPaginado: {
         parameters: {
-            query: {
+            query?: {
+                /**
+                 * @description Aba: ATIVOS, REALIZADOS ou CANCELADOS. Obrigatória quando `apenasPendentes` é `false`.
+                 * @example ATIVOS
+                 */
                 aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                apenasPendentes?: boolean;
-                pageable: components["schemas"]["Pageable"];
-                historico?: boolean;
+                /** @description Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`. */
+                apenasPendentes?: string;
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+                /** @description Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas. */
+                historico?: string;
             };
             header?: never;
             path?: never;
@@ -2700,33 +4117,49 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de agendamentos */
+            /** @description Página de agendamentos do usuário (com `page`). Sem `page` o código devolve uma lista simples, limitada a 200 itens. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "id_agendamento": 42,
-                     *         "usuarioId": 10,
-                     *         "nomeUsuario": "Arthur Prado",
-                     *         "telefoneUsuario": "(11) 99999-8888",
-                     *         "quadraId": 1,
-                     *         "nomeQuadra": "Arena Gol Society",
-                     *         "dataHoraInicio": "2026-09-12T19:00:00",
-                     *         "dataHoraFim": "2026-09-12T20:00:00",
-                     *         "valorTotal": 140,
-                     *         "status": "CONFIRMADO",
-                     *         "transacaoPagamentoId": "mp-pix-987654321",
-                     *         "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
-                     *         "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-                     *         "criadoEm": "2026-09-09T00:30:00"
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id_agendamento": 42,
+                     *           "usuarioId": 10,
+                     *           "nomeUsuario": "Arthur Prado",
+                     *           "telefoneUsuario": "(11) 99999-8888",
+                     *           "quadraId": 1,
+                     *           "nomeQuadra": "Arena Gol Society",
+                     *           "dataHoraInicio": "2026-10-12T19:00:00",
+                     *           "dataHoraFim": "2026-10-12T20:00:00",
+                     *           "valorTotal": 120,
+                     *           "status": "CONFIRMADO",
+                     *           "transacaoPagamentoId": "mp-pix-987654321",
+                     *           "pixCopiaECola": null,
+                     *           "qrCodeBase64": null,
+                     *           "criadoEm": "2026-09-29T15:30:00",
+                     *           "canceladoEm": null
+                     *         }
+                     *       ],
+                     *       "page": 0,
+                     *       "size": 10,
+                     *       "totalElements": 1,
+                     *       "totalPages": 1
+                     *     }
                      */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"][] | components["schemas"]["PageResponseAgendamentoResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2743,24 +4176,15 @@ export interface operations {
                 /**
                  * @example {
                  *       "quadraId": 1,
-                 *       "dataHoraInicio": "2026-09-12T19:00:00",
-                 *       "dataHoraFim": "2026-09-12T20:00:00"
+                 *       "dataHoraInicio": "2026-10-12T19:00:00",
+                 *       "dataHoraFim": "2026-10-12T20:00:00"
                  *     }
                  */
                 "application/json": components["schemas"]["AgendamentoCriacaoDTO"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"];
-                };
-            };
-            /** @description Reserva criada com sucesso e cobrança Pix gerada */
+            /** @description Reserva criada em estado PENDENTE, com os dados do Pix */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2774,17 +4198,27 @@ export interface operations {
                      *       "telefoneUsuario": "(11) 99999-8888",
                      *       "quadraId": 1,
                      *       "nomeQuadra": "Arena Gol Society",
-                     *       "dataHoraInicio": "2026-09-12T19:00:00",
-                     *       "dataHoraFim": "2026-09-12T20:00:00",
-                     *       "valorTotal": 140,
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
                      *       "status": "PENDENTE",
                      *       "transacaoPagamentoId": "mp-pix-987654321",
-                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3-a456-4266141740005204000053039865405140.005802BR5913eQuadras Arena6009Sao Paulo62070503***6304ABCD",
-                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6e...",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADI",
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": null
                      *     }
                      */
                     "application/json": unknown;
+                };
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
             /** @description Conflito de Horário */
@@ -2795,14 +4229,42 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/conflito-horario",
+                     *       "type": "https://api.equadras.com/erros/horario-indisponivel",
                      *       "title": "Conflito de Horário",
                      *       "status": 409,
-                     *       "detail": "A quadra já possui uma reserva confirmada ou bloqueio ativo para este horário.",
-                     *       "instance": "/api/agendamentos"
+                     *       "detail": "O horário selecionado conflita com outro agendamento já existente ou bloqueado para esta quadra.",
+                     *       "instance": "/api/agendamentos",
+                     *       "code": "HORARIO_INDISPONIVEL",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: Horário de início: A data de início deve estar no futuro",
+                     *       "instance": "/api/agendamentos",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2826,18 +4288,46 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Confirmação de alteração de senha */
-            200: {
+            /** @description Senha alterada. Sem corpo. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Regra de Negócio Violada */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Dados Inválidos */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "mensagem": "Senha alterada com sucesso."
+                     *       "type": "https://api.equadras.com/erros/validacao",
+                     *       "title": "Dados Inválidos",
+                     *       "status": 422,
+                     *       "detail": "Dados inválidos: novaSenha: A nova senha deve ter no mínimo 6 caracteres, incluindo 1 letra maiúscula, 1 minúscula, 1 número e 1 caractere especial/símbolo.",
+                     *       "instance": "/api/usuarios/minha-senha",
+                     *       "code": "ERRO_VALIDACAO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z",
+                     *       "camposIncorretos": [
+                     *         {
+                     *           "campo": "Campo",
+                     *           "mensagem": "Mensagem de validação do campo"
+                     *         }
+                     *       ]
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2845,17 +4335,25 @@ export interface operations {
     alternarStatus: {
         parameters: {
             query: {
+                /**
+                 * @description Novo estado: `true` ativa, `false` inativa. Obrigatório.
+                 * @example false
+                 */
                 ativa: boolean;
             };
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Confirmação de alteração de status */
+            /** @description Quadra com o novo status */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2864,11 +4362,62 @@ export interface operations {
                     /**
                      * @example {
                      *       "id_quadra": 1,
+                     *       "nome": "Arena Gol Society",
+                     *       "tipoEsporte": "FUTEBOL",
+                     *       "valorHora": 120,
                      *       "ativa": false,
-                     *       "mensagem": "Status operacional da quadra atualizado com sucesso."
+                     *       "cep": "15000-000",
+                     *       "logradouro": "Av. Brasil, 1500",
+                     *       "bairro": "Jardim das Flores",
+                     *       "cidade": "São José do Rio Preto",
+                     *       "estado": "SP",
+                     *       "latitude": -20.8113,
+                     *       "longitude": -49.3758,
+                     *       "descricao": "Grama sintética padrão FIFA com iluminação em LED e vestiários.",
+                     *       "dataLimiteAgendamento": "2026-12-31",
+                     *       "fotos": [
+                     *         "/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg"
+                     *       ],
+                     *       "disponibilidades": [
+                     *         {
+                     *           "diaSemana": "MONDAY",
+                     *           "horaInicio": "08:00:00",
+                     *           "horaFim": "22:00:00"
+                     *         }
+                     *       ],
+                     *       "versao": 3
                      *     }
                      */
                     "application/json": components["schemas"]["QuadraResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode alterar seu status.",
+                     *       "instance": "/api/quadras/{id}/status",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2878,13 +4427,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do agendamento (`id_agendamento`)
+                 * @example 42
+                 */
                 id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Agendamento cancelado com sucesso */
+            /** @description Agendamento cancelado */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2898,17 +4451,67 @@ export interface operations {
                      *       "telefoneUsuario": "(11) 99999-8888",
                      *       "quadraId": 1,
                      *       "nomeQuadra": "Arena Gol Society",
-                     *       "dataHoraInicio": "2026-09-12T19:00:00",
-                     *       "dataHoraFim": "2026-09-12T20:00:00",
-                     *       "valorTotal": 140,
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
                      *       "status": "CANCELADO",
                      *       "transacaoPagamentoId": "mp-pix-987654321",
-                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
-                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "pixCopiaECola": null,
+                     *       "qrCodeBase64": null,
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": "2026-09-30T08:00:00"
                      *     }
                      */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Você não tem permissão para cancelar este agendamento.",
+                     *       "instance": "/api/agendamentos/{id}/cancelar",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
+                     *       "status": 404,
+                     *       "detail": "Agendamento não encontrado para o ID: 999",
+                     *       "instance": "/api/agendamentos/{id}/cancelar",
+                     *       "code": "AGENDAMENTO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2922,13 +4525,40 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Perfil do usuário autenticado */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id_usuario": 10,
+                     *       "nome_usuario": "Arthur Prado",
+                     *       "email_usuario": "arthur.prado@email.com",
+                     *       "phone_usuario": "(11) 99999-8888",
+                     *       "role": "CLIENT",
+                     *       "criadoEm": "2026-09-04T10:00:00",
+                     *       "masterAdmin": false
+                     *     }
+                     */
                     "application/json": components["schemas"]["UsuarioResponseDTO"];
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2942,13 +4572,37 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Metadados da chave de API (nunca a chave em texto plano) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "possuiChave": true,
+                     *       "last4": "a1b2",
+                     *       "criadaEm": "2026-09-20T12:00:00Z",
+                     *       "ultimoUsoEm": "2026-09-28T18:45:10Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["ApiKeyInfoDTO"];
+                };
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -2962,25 +4616,73 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Chave revogada (operação idempotente: sem chave ativa também devolve 204) */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Não Autorizado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 401,
+                     *       "title": "Não Autorizado",
+                     *       "detail": "Acesso não autorizado: credencial ausente, expirada ou inválida."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
             };
         };
     };
     consultarFotos_1: {
         parameters: {
             query?: {
+                /**
+                 * @description ID da quadra na query. Usado se não houver ID no path.
+                 * @example 1
+                 */
                 id?: number;
+                /**
+                 * @description Alias de `id`. Usado se não houver ID no path nem `id` na query.
+                 * @example 1
+                 */
                 quadraId?: number;
+                /**
+                 * @description Filtra por parte do nome da quadra.
+                 * @example Arena
+                 */
                 nome?: string;
+                /**
+                 * @description Alias de `nome`. Só vale se `nome` estiver vazio.
+                 * @example Arena
+                 */
                 nomeQuadra?: string;
+                /**
+                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @example FUTEBOL
+                 */
                 tipoEsporte?: string;
+                /**
+                 * @description Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+                 * @example FUTEBOL
+                 */
                 esporte?: string;
+                /**
+                 * @description Filtra pela cidade.
+                 * @example São José do Rio Preto
+                 */
                 cidade?: string;
+                /**
+                 * @description Filtra pelo bairro.
+                 * @example Jardim das Flores
+                 */
                 bairro?: string;
             };
             header?: never;
@@ -2989,24 +4691,33 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Galeria de fotos da quadra */
+            /** @description Uma quadra: com `id` (path ou query) ou quando o filtro corresponde a exatamente uma quadra. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["QuadraFotosResponseDTO"] | components["schemas"]["QuadraFotosResponseDTO"][] | components["schemas"]["FotosSemResultado"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "id": 1,
-                     *         "nome": "Arena Gol Society",
-                     *         "fotos": [
-                     *           "https://equadras.app/uploads/quadras/1_principal.jpg"
-                     *         ]
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/quadras/fotos",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
                      */
-                    "application/json": Record<string, never>;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3020,7 +4731,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Lista de bloqueios da quadra */
+            /** @description Bloqueios de todas as quadras do administrador autenticado */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3029,14 +4740,13 @@ export interface operations {
                     /**
                      * @example [
                      *       {
-                     *         "id_bloqueio": 5,
+                     *         "id": 5,
                      *         "quadraId": 1,
-                     *         "nomeQuadra": "Arena Gol Society",
-                     *         "data": "2026-09-12",
+                     *         "data": "2026-10-12",
                      *         "horaInicio": "14:00:00",
                      *         "horaFim": "18:00:00",
                      *         "motivo": "Torneio Interno da Arena",
-                     *         "criadoEm": "2026-09-09T00:30:00"
+                     *         "criadoEm": "2026-09-29T09:30:00"
                      *       }
                      *     ]
                      */
@@ -3050,97 +4760,17 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID do agendamento (`id_agendamento`)
+                 * @example 42
+                 */
                 agendamentoId: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Status atualizado da liquidação do Pix */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "agendamentoId": 42,
-                     *       "status": "CONFIRMADO",
-                     *       "pago": true,
-                     *       "mensagem": "Pagamento Pix confirmado com sucesso."
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"];
-                };
-            };
-        };
-    };
-    stream: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Stream SSE de eventos de notificações em tempo real */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /** @example data: {"id":1,"mensagem":"Nova reserva confirmada","lida":false,"dataCriacao":"2026-09-09T00:30:00"} */
-                    "text/event-stream": unknown;
-                };
-            };
-        };
-    };
-    listarPorAdmin: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Lista de alertas e notificações da arena */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "id": 1,
-                     *         "mensagem": "Nova reserva confirmada: Arthur Prado em Arena Gol Society às 19:00.",
-                     *         "lida": false,
-                     *         "dataCriacao": "2026-09-09T00:30:00"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["PageNotificacaoResponseDTO"];
-                };
-            };
-        };
-    };
-    buscarPorId_2: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Detalhes completos do agendamento */
+            /** @description Agendamento com o status atual (`PENDENTE`, `CONFIRMADO` ou `CANCELADO`) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3154,20 +4784,21 @@ export interface operations {
                      *       "telefoneUsuario": "(11) 99999-8888",
                      *       "quadraId": 1,
                      *       "nomeQuadra": "Arena Gol Society",
-                     *       "dataHoraInicio": "2026-09-12T19:00:00",
-                     *       "dataHoraFim": "2026-09-12T20:00:00",
-                     *       "valorTotal": 140,
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
                      *       "status": "CONFIRMADO",
                      *       "transacaoPagamentoId": "mp-pix-987654321",
-                     *       "pixCopiaECola": "00020126580014br.gov.bcb.pix0136123e4567-e89b-12d3...",
-                     *       "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-                     *       "criadoEm": "2026-09-09T00:30:00"
+                     *       "pixCopiaECola": null,
+                     *       "qrCodeBase64": null,
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": null
                      *     }
                      */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"];
                 };
             };
-            /** @description Agendamento Não Encontrado */
+            /** @description Recurso Não Encontrado */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -3175,14 +4806,206 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/not-found",
-                     *       "title": "Agendamento Não Encontrado",
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
                      *       "status": 404,
-                     *       "detail": "Agendamento não localizado para o ID fornecido.",
-                     *       "instance": "/api/agendamentos/{id}"
+                     *       "detail": "Agendamento não encontrado. ID: 999",
+                     *       "instance": "/api/pagamentos/{agendamentoId}/status",
+                     *       "code": "AGENDAMENTO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+        };
+    };
+    stream: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conexão SSE aberta (timeout de 1 hora). Cada notificação chega como evento `notificacao`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example event: notificacao
+                     *     data: {"id":1,"mensagem":"Nova reserva confirmada: Arthur Prado em Arena Gol Society às 19:00.","lida":false,"dataCriacao":"2026-09-29T15:31:00"}
+                     */
+                    "text/event-stream": components["schemas"]["SseEmitter"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+        };
+    };
+    listarPorAdmin: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Índice da página, começando em 0.
+                 * @example 0
+                 */
+                page?: string;
+                /**
+                 * @description Itens por página. Padrão 5; máximo 50 (valores maiores são limitados a 50).
+                 * @example 5
+                 */
+                size?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de notificações do administrador (as excluídas não voltam) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id": 1,
+                     *           "mensagem": "Nova reserva confirmada: Arthur Prado em Arena Gol Society às 19:00.",
+                     *           "lida": false,
+                     *           "excluida": false,
+                     *           "dataCriacao": "2026-09-29T15:31:00"
+                     *         }
+                     *       ],
+                     *       "pageable": {
+                     *         "pageNumber": 0,
+                     *         "pageSize": 5,
+                     *         "sort": {
+                     *           "empty": true,
+                     *           "sorted": false,
+                     *           "unsorted": true
+                     *         },
+                     *         "offset": 0,
+                     *         "paged": true,
+                     *         "unpaged": false
+                     *       },
+                     *       "last": true,
+                     *       "totalPages": 1,
+                     *       "totalElements": 1,
+                     *       "size": 5,
+                     *       "number": 0,
+                     *       "sort": {
+                     *         "empty": true,
+                     *         "sorted": false,
+                     *         "unsorted": true
+                     *       },
+                     *       "first": true,
+                     *       "numberOfElements": 1,
+                     *       "empty": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PageNotificacaoResponseDTO"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+        };
+    };
+    buscarPorId_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description ID do agendamento (`id_agendamento`)
+                 * @example 42
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agendamento (Pix só aparece para o dono, enquanto PENDENTE) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id_agendamento": 42,
+                     *       "usuarioId": 10,
+                     *       "nomeUsuario": "Arthur Prado",
+                     *       "telefoneUsuario": "(11) 99999-8888",
+                     *       "quadraId": 1,
+                     *       "nomeQuadra": "Arena Gol Society",
+                     *       "dataHoraInicio": "2026-10-12T19:00:00",
+                     *       "dataHoraFim": "2026-10-12T20:00:00",
+                     *       "valorTotal": 120,
+                     *       "status": "CONFIRMADO",
+                     *       "transacaoPagamentoId": "mp-pix-987654321",
+                     *       "pixCopiaECola": null,
+                     *       "qrCodeBase64": null,
+                     *       "criadoEm": "2026-09-29T15:30:00",
+                     *       "canceladoEm": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"];
+                };
+            };
+            /** @description Recurso Não Encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/recurso-nao-encontrado",
+                     *       "title": "Recurso Não Encontrado",
+                     *       "status": 404,
+                     *       "detail": "Agendamento não encontrado. ID: 999",
+                     *       "instance": "/api/agendamentos/{id}",
+                     *       "code": "AGENDAMENTO_NAO_ENCONTRADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3190,17 +5013,25 @@ export interface operations {
     listarHorariosDisponiveis: {
         parameters: {
             query: {
+                /**
+                 * @description Data consultada, formato ISO `yyyy-MM-dd`. Obrigatório.
+                 * @example 2026-10-12
+                 */
                 data: string;
             };
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 quadraId: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Grade completa de slots de 1 hora para o dia com disponibilidade */
+            /** @description Grade de horários de 1 hora da quadra na data */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3211,70 +5042,36 @@ export interface operations {
                      *       {
                      *         "inicio": "18:00:00",
                      *         "fim": "19:00:00",
-                     *         "status": "DISPONIVEL",
                      *         "disponivel": true,
-                     *         "motivo": null
+                     *         "status": "DISPONIVEL",
+                     *         "motivo": "Disponível"
                      *       },
                      *       {
                      *         "inicio": "19:00:00",
                      *         "fim": "20:00:00",
-                     *         "status": "AGENDADO",
                      *         "disponivel": false,
-                     *         "motivo": "Horário já reservado por outro atleta"
+                     *         "status": "AGENDADO",
+                     *         "motivo": "Horário ocupado"
                      *       },
                      *       {
                      *         "inicio": "20:00:00",
                      *         "fim": "21:00:00",
-                     *         "status": "BLOQUEADO",
                      *         "disponivel": false,
-                     *         "motivo": "Manutenção periódica na quadra"
-                     *       },
-                     *       {
-                     *         "inicio": "21:00:00",
-                     *         "fim": "22:00:00",
-                     *         "status": "DISPONIVEL",
-                     *         "disponivel": true,
-                     *         "motivo": null
+                     *         "status": "BLOQUEADO",
+                     *         "motivo": "Bloqueado: Torneio Interno da Arena"
                      *       }
                      *     ]
                      */
                     "application/json": components["schemas"]["HorarioDisponivelDTO"][];
                 };
             };
-            /** @description Data Inválida */
+            /** @description Requisição Inválida */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "type": "https://api.equadras.com/erros/bad-request",
-                     *       "title": "Data Inválida",
-                     *       "status": 400,
-                     *       "detail": "A data informada é inválida ou não segue o formato YYYY-MM-DD.",
-                     *       "instance": "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
-                     *     }
-                     */
-                    "application/json": unknown;
-                };
-            };
-            /** @description Quadra Não Encontrada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "type": "https://api.equadras.com/erros/not-found",
-                     *       "title": "Quadra Não Encontrada",
-                     *       "status": 404,
-                     *       "detail": "A quadra informada não foi localizada.",
-                     *       "instance": "/api/agendamentos/quadra/{quadraId}/horarios-disponiveis"
-                     *     }
-                     */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3284,107 +5081,36 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 quadraId: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: number;
-                    };
-                };
-            };
-        };
-    };
-    listarPorQuadraPaginado: {
-        parameters: {
-            query: {
-                aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                pageable: components["schemas"]["Pageable"];
-            };
-            header?: never;
-            path: {
-                quadraId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgendamentoResponseDTO"][] | components["schemas"]["PageResponseAgendamentoResponseDTO"];
-                };
-            };
-        };
-    };
-    consultarGradeHorarios: {
-        parameters: {
-            query?: {
-                data?: string;
-                quadraId?: number;
-                tipoEsporte?: string;
-                nomeQuadra?: string;
-                apenasDisponiveis?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Grade completa de slots de 1 hora para o dia com disponibilidade */
+            /** @description Contadores das reservas da quadra */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
-                     * @example [
-                     *       {
-                     *         "inicio": "18:00:00",
-                     *         "fim": "19:00:00",
-                     *         "status": "DISPONIVEL",
-                     *         "disponivel": true,
-                     *         "motivo": null
-                     *       },
-                     *       {
-                     *         "inicio": "19:00:00",
-                     *         "fim": "20:00:00",
-                     *         "status": "AGENDADO",
-                     *         "disponivel": false,
-                     *         "motivo": "Horário já reservado por outro atleta"
-                     *       },
-                     *       {
-                     *         "inicio": "20:00:00",
-                     *         "fim": "21:00:00",
-                     *         "status": "BLOQUEADO",
-                     *         "disponivel": false,
-                     *         "motivo": "Manutenção periódica na quadra"
-                     *       },
-                     *       {
-                     *         "inicio": "21:00:00",
-                     *         "fim": "22:00:00",
-                     *         "status": "DISPONIVEL",
-                     *         "disponivel": true,
-                     *         "motivo": null
-                     *       }
-                     *     ]
+                     * @example {
+                     *       "TODOS": 16,
+                     *       "ATIVOS": 3,
+                     *       "REALIZADOS": 12,
+                     *       "CANCELADOS": 1
+                     *     }
                      */
-                    "application/json": components["schemas"]["GradeHorariosResponseDTO"][];
+                    "application/json": {
+                        [key: string]: number;
+                    };
                 };
             };
-            /** @description Data Inválida */
+            /** @description Requisição Inválida */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -3393,31 +5119,237 @@ export interface operations {
                     /**
                      * @example {
                      *       "type": "https://api.equadras.com/erros/bad-request",
-                     *       "title": "Data Inválida",
+                     *       "title": "Requisição Inválida",
                      *       "status": 400,
-                     *       "detail": "A data informada é inválida ou não segue o formato YYYY-MM-DD.",
-                     *       "instance": "/api/agendamentos/horarios-disponiveis"
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/agendamentos/quadra/{quadraId}/contadores",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
-            /** @description Quadra Não Encontrada */
-            404: {
+            /** @description Acesso Negado */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "type": "https://api.equadras.com/erros/not-found",
-                     *       "title": "Quadra Não Encontrada",
-                     *       "status": 404,
-                     *       "detail": "A quadra informada não foi localizada.",
-                     *       "instance": "/api/agendamentos/horarios-disponiveis"
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Você não tem permissão para visualizar o histórico desta quadra.",
+                     *       "instance": "/api/agendamentos/quadra/{quadraId}/contadores",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
                      *     }
                      */
-                    "application/json": unknown;
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+        };
+    };
+    listarPorQuadraPaginado: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.
+                 * @example ATIVOS
+                 */
+                aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
+                quadraId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Página de reservas da quadra (com `page`). Sem `page` o código devolve uma lista simples de até 200 itens. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id_agendamento": 42,
+                     *           "usuarioId": 10,
+                     *           "nomeUsuario": "Arthur Prado",
+                     *           "telefoneUsuario": "(11) 99999-8888",
+                     *           "quadraId": 1,
+                     *           "nomeQuadra": "Arena Gol Society",
+                     *           "dataHoraInicio": "2026-10-12T19:00:00",
+                     *           "dataHoraFim": "2026-10-12T20:00:00",
+                     *           "valorTotal": 120,
+                     *           "status": "CONFIRMADO",
+                     *           "transacaoPagamentoId": "mp-pix-987654321",
+                     *           "pixCopiaECola": null,
+                     *           "qrCodeBase64": null,
+                     *           "criadoEm": "2026-09-29T15:30:00",
+                     *           "canceladoEm": null
+                     *         }
+                     *       ],
+                     *       "page": 0,
+                     *       "size": 10,
+                     *       "totalElements": 1,
+                     *       "totalPages": 1
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AgendamentoResponseDTO"][] | components["schemas"]["PageResponseAgendamentoResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/agendamentos/quadra/{quadraId}",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Você não tem permissão para visualizar o histórico desta quadra.",
+                     *       "instance": "/api/agendamentos/quadra/{quadraId}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+        };
+    };
+    consultarGradeHorarios: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir de hoje.
+                 * @example amanha
+                 */
+                data?: string;
+                /**
+                 * @description Restringe a uma quadra pelo ID.
+                 * @example 1
+                 */
+                quadraId?: number;
+                /**
+                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @example FUTEBOL
+                 */
+                tipoEsporte?: string;
+                /**
+                 * @description Filtra por parte do nome da quadra.
+                 * @example Arena
+                 */
+                nomeQuadra?: string;
+                /** @description Se `true`, devolve só horários livres. Padrão `false`. */
+                apenasDisponiveis?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grade consolidada por quadra */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id_quadra": 1,
+                     *         "nome_quadra": "Arena Gol Society",
+                     *         "tipoEsporte": "FUTEBOL",
+                     *         "valorHora": 120,
+                     *         "data": "2026-10-12",
+                     *         "horarios": [
+                     *           {
+                     *             "inicio": "18:00:00",
+                     *             "fim": "19:00:00",
+                     *             "disponivel": true,
+                     *             "status": "DISPONIVEL",
+                     *             "motivo": "Disponível"
+                     *           },
+                     *           {
+                     *             "inicio": "19:00:00",
+                     *             "fim": "20:00:00",
+                     *             "disponivel": false,
+                     *             "status": "AGENDADO",
+                     *             "motivo": "Horário ocupado"
+                     *           },
+                     *           {
+                     *             "inicio": "20:00:00",
+                     *             "fim": "21:00:00",
+                     *             "disponivel": false,
+                     *             "status": "BLOQUEADO",
+                     *             "motivo": "Bloqueado: Torneio Interno da Arena"
+                     *           }
+                     *         ]
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["GradeHorariosResponseDTO"][];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "A quadra informada não foi encontrada.",
+                     *       "instance": "/api/agendamentos/horarios-disponiveis",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3425,6 +5357,10 @@ export interface operations {
     listarHorariosDoDiaParaAdmin: {
         parameters: {
             query: {
+                /**
+                 * @description Data consultada, formato ISO `yyyy-MM-dd`. Obrigatório.
+                 * @example 2026-10-12
+                 */
                 data: string;
             };
             header?: never;
@@ -3433,7 +5369,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Grade consolidada de todas as quadras da arena para o dia indicado */
+            /** @description Grade do dia por quadra do administrador (chave = ID da quadra) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3445,25 +5381,23 @@ export interface operations {
                      *         {
                      *           "inicio": "18:00:00",
                      *           "fim": "19:00:00",
-                     *           "status": "DISPONIVEL",
                      *           "disponivel": true,
-                     *           "motivo": null
+                     *           "status": "DISPONIVEL",
+                     *           "motivo": "Disponível"
                      *         },
                      *         {
                      *           "inicio": "19:00:00",
                      *           "fim": "20:00:00",
-                     *           "status": "AGENDADO",
                      *           "disponivel": false,
-                     *           "motivo": "Agendado"
-                     *         }
-                     *       ],
-                     *       "2": [
+                     *           "status": "AGENDADO",
+                     *           "motivo": "Horário ocupado"
+                     *         },
                      *         {
-                     *           "inicio": "18:00:00",
-                     *           "fim": "19:00:00",
-                     *           "status": "DISPONIVEL",
-                     *           "disponivel": true,
-                     *           "motivo": null
+                     *           "inicio": "20:00:00",
+                     *           "fim": "21:00:00",
+                     *           "disponivel": false,
+                     *           "status": "BLOQUEADO",
+                     *           "motivo": "Bloqueado: Torneio Interno da Arena"
                      *         }
                      *       ]
                      *     }
@@ -3471,6 +5405,42 @@ export interface operations {
                     "application/json": {
                         [key: string]: components["schemas"]["HorarioDisponivelDTO"][];
                     };
+                };
+            };
+            /** @description Parâmetro Ausente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/parametro-ausente",
+                     *       "title": "Parâmetro Ausente",
+                     *       "status": 400,
+                     *       "detail": "O parâmetro obrigatório 'data' não foi informado.",
+                     *       "instance": "/api/agendamentos/dia",
+                     *       "code": "PARAMETRO_AUSENTE",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3484,13 +5454,38 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Métricas do dashboard do administrador */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "totalQuadras": 4,
+                     *       "quadrasAtivas": 3,
+                     *       "totalReservas": 128,
+                     *       "faturamentoTotal": 15420,
+                     *       "reservasHoje": 6
+                     *     }
+                     */
                     "application/json": components["schemas"]["DashboardMetricasDTO"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3504,12 +5499,19 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Total de agendamentos do usuário por aba */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "ATIVOS": 3,
+                     *       "REALIZADOS": 12,
+                     *       "CANCELADOS": 1
+                     *     }
+                     */
                     "application/json": {
                         [key: string]: number;
                     };
@@ -3520,8 +5522,20 @@ export interface operations {
     listarAgendaMensal: {
         parameters: {
             query: {
+                /**
+                 * @description Ano (2000 a 2100). Obrigatório.
+                 * @example 2026
+                 */
                 ano: number;
+                /**
+                 * @description Mês (1 a 12). Obrigatório.
+                 * @example 10
+                 */
                 mes: number;
+                /**
+                 * @description Restringe a uma quadra.
+                 * @example 1
+                 */
                 quadraId?: number;
             };
             header?: never;
@@ -3530,13 +5544,59 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Agendamentos não cancelados do mês */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id_agendamento": 42,
+                     *         "usuarioId": 10,
+                     *         "nomeUsuario": "Arthur Prado",
+                     *         "telefoneUsuario": "(11) 99999-8888",
+                     *         "quadraId": 1,
+                     *         "nomeQuadra": "Arena Gol Society",
+                     *         "dataHoraInicio": "2026-10-12T19:00:00",
+                     *         "dataHoraFim": "2026-10-12T20:00:00",
+                     *         "valorTotal": 120,
+                     *         "status": "CONFIRMADO",
+                     *         "transacaoPagamentoId": "mp-pix-987654321",
+                     *         "pixCopiaECola": null,
+                     *         "qrCodeBase64": null,
+                     *         "criadoEm": "2026-09-29T15:30:00",
+                     *         "canceladoEm": null
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3544,9 +5604,25 @@ export interface operations {
     obterContadoresAgendaDoDia: {
         parameters: {
             query?: {
+                /**
+                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @example 2026-10-12
+                 */
                 data?: string;
+                /**
+                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @example 2026-10-12T00:00:00
+                 */
                 inicio?: string;
+                /**
+                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @example 2026-10-13T00:00:00
+                 */
                 fim?: string;
+                /**
+                 * @description Restringe a uma quadra.
+                 * @example 1
+                 */
                 quadraId?: number;
             };
             header?: never;
@@ -3555,15 +5631,58 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Contadores da agenda por aba */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "ATIVOS": 3,
+                     *       "REALIZADOS": 12,
+                     *       "CANCELADOS": 1
+                     *     }
+                     */
                     "application/json": {
                         [key: string]: number;
                     };
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "Parâmetro 'data' ou intervalo ('inicio' e 'fim') é obrigatório.",
+                     *       "instance": "/api/agendamentos/agenda/contadores",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3571,9 +5690,25 @@ export interface operations {
     listarAgendaCompleta: {
         parameters: {
             query?: {
+                /**
+                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @example 2026-10-12
+                 */
                 data?: string;
+                /**
+                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @example 2026-10-12T00:00:00
+                 */
                 inicio?: string;
+                /**
+                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @example 2026-10-13T00:00:00
+                 */
                 fim?: string;
+                /**
+                 * @description Restringe a uma quadra.
+                 * @example 1
+                 */
                 quadraId?: number;
             };
             header?: never;
@@ -3582,26 +5717,108 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Agendamentos não cancelados do período (até 24 h) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id_agendamento": 42,
+                     *         "usuarioId": 10,
+                     *         "nomeUsuario": "Arthur Prado",
+                     *         "telefoneUsuario": "(11) 99999-8888",
+                     *         "quadraId": 1,
+                     *         "nomeQuadra": "Arena Gol Society",
+                     *         "dataHoraInicio": "2026-10-12T19:00:00",
+                     *         "dataHoraFim": "2026-10-12T20:00:00",
+                     *         "valorTotal": 120,
+                     *         "status": "CONFIRMADO",
+                     *         "transacaoPagamentoId": "mp-pix-987654321",
+                     *         "pixCopiaECola": null,
+                     *         "qrCodeBase64": null,
+                     *         "criadoEm": "2026-09-29T15:30:00",
+                     *         "canceladoEm": null
+                     *       }
+                     *     ]
+                     */
                     "application/json": components["schemas"]["AgendamentoResponseDTO"][];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "O intervalo não pode ser superior a 24 horas.",
+                     *       "instance": "/api/agendamentos/agenda/completa",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
     };
     listarAgendaDoDia: {
         parameters: {
-            query: {
+            query?: {
+                /**
+                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @example 2026-10-12
+                 */
                 data?: string;
+                /**
+                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @example 2026-10-12T00:00:00
+                 */
                 inicio?: string;
+                /**
+                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @example 2026-10-13T00:00:00
+                 */
                 fim?: string;
+                /**
+                 * @description Restringe a uma quadra.
+                 * @example 1
+                 */
                 quadraId?: number;
+                /**
+                 * @description Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.
+                 * @example ATIVOS
+                 */
                 aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                pageable: components["schemas"]["Pageable"];
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
             };
             header?: never;
             path?: never;
@@ -3609,13 +5826,65 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Página da agenda das quadras do administrador */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id_agendamento": 42,
+                     *           "usuarioId": 10,
+                     *           "nomeUsuario": "Arthur Prado",
+                     *           "telefoneUsuario": "(11) 99999-8888",
+                     *           "quadraId": 1,
+                     *           "nomeQuadra": "Arena Gol Society",
+                     *           "dataHoraInicio": "2026-10-12T19:00:00",
+                     *           "dataHoraFim": "2026-10-12T20:00:00",
+                     *           "valorTotal": 120,
+                     *           "status": "CONFIRMADO",
+                     *           "transacaoPagamentoId": "mp-pix-987654321",
+                     *           "pixCopiaECola": null,
+                     *           "qrCodeBase64": null,
+                     *           "criadoEm": "2026-09-29T15:30:00",
+                     *           "canceladoEm": null
+                     *         }
+                     *       ],
+                     *       "page": 0,
+                     *       "size": 10,
+                     *       "totalElements": 1,
+                     *       "totalPages": 1
+                     *     }
+                     */
                     "application/json": components["schemas"]["PageResponseAgendamentoResponseDTO"];
+                };
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3629,13 +5898,41 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Contadores de auditoria de hoje */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "totalLoginsHoje": 42,
+                     *       "totalFalhasLoginHoje": 3,
+                     *       "totalAcoesHoje": 180,
+                     *       "totalCancelamentosHoje": 2
+                     *     }
+                     */
                     "application/json": components["schemas"]["EstatisticasAuditoriaDTO"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/admin/auditoria/estatisticas",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3643,13 +5940,45 @@ export interface operations {
     listarLogs: {
         parameters: {
             query?: {
-                page?: number;
-                size?: number;
+                /**
+                 * @description Índice da página, começando em 0.
+                 * @example 0
+                 */
+                page?: string;
+                /**
+                 * @description Itens por página. Padrão 10; mínimo 1; máximo 100 (fora da faixa é ajustado).
+                 * @example 10
+                 */
+                size?: string;
+                /**
+                 * @description Filtra pelo ID do usuário que executou a ação.
+                 * @example 10
+                 */
                 usuarioId?: number;
+                /**
+                 * @description Filtra pela categoria do evento (enum `CategoriaAuditoria`: AUTENTICACAO, AGENDAMENTO, QUADRA, USUARIO, BLOQUEIO, API_KEY).
+                 * @example AUTENTICACAO
+                 */
                 categoria?: "AUTENTICACAO" | "AGENDAMENTO" | "QUADRA" | "USUARIO" | "BLOQUEIO" | "API_KEY";
+                /**
+                 * @description Filtra pelo código da ação (ex.: LOGOUT).
+                 * @example LOGOUT
+                 */
                 acao?: string;
+                /**
+                 * @description Início do período (ISO 8601 com fuso, ex.: `2026-09-29T00:00:00Z`), inclusivo.
+                 * @example 2026-09-29T00:00:00Z
+                 */
                 dataInicio?: string;
+                /**
+                 * @description Fim do período (ISO 8601 com fuso).
+                 * @example 2026-09-30T00:00:00Z
+                 */
                 dataFim?: string;
+                /**
+                 * @description Busca livre de texto nos logs.
+                 * @example arthur
+                 */
                 busca?: string;
             };
             header?: never;
@@ -3658,13 +5987,99 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Página de logs de auditoria, do mais recente ao mais antigo */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id": 981,
+                     *           "usuarioId": 10,
+                     *           "usuarioEmail": "arthur.prado@email.com",
+                     *           "usuarioNome": "Arthur Prado",
+                     *           "categoria": "AUTENTICACAO",
+                     *           "acao": "LOGOUT",
+                     *           "entidade": "USUARIO",
+                     *           "recursoId": "10",
+                     *           "tipoExecutor": "CLIENTE",
+                     *           "detalhes": "Logout efetuado com sucesso.",
+                     *           "ip": "203.0.113.10",
+                     *           "userAgent": "Mozilla/5.0",
+                     *           "criadoEm": "2026-09-29T15:40:00Z"
+                     *         }
+                     *       ],
+                     *       "pageable": {
+                     *         "pageNumber": 0,
+                     *         "pageSize": 10,
+                     *         "sort": {
+                     *           "empty": false,
+                     *           "sorted": true,
+                     *           "unsorted": false
+                     *         },
+                     *         "offset": 0,
+                     *         "paged": true,
+                     *         "unpaged": false
+                     *       },
+                     *       "last": true,
+                     *       "totalPages": 1,
+                     *       "totalElements": 1,
+                     *       "size": 10,
+                     *       "number": 0,
+                     *       "sort": {
+                     *         "empty": false,
+                     *         "sorted": true,
+                     *         "unsorted": false
+                     *       },
+                     *       "first": true,
+                     *       "numberOfElements": 1,
+                     *       "empty": false
+                     *     }
+                     */
                     "application/json": components["schemas"]["PageLogAuditoriaResponseDTO"];
+                };
+            };
+            /** @description Parâmetro Inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/parametro-invalido",
+                     *       "title": "Parâmetro Inválido",
+                     *       "status": 400,
+                     *       "detail": "O parâmetro 'categoria' possui um valor inválido: 'X'.",
+                     *       "instance": "/api/admin/auditoria",
+                     *       "code": "PARAMETRO_INVALIDO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Acesso restrito ao Administrador Geral do sistema.",
+                     *       "instance": "/api/admin/auditoria",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
                 };
             };
         };
@@ -3674,26 +6089,67 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /**
+                 * @description ID da quadra (`id_quadra`)
+                 * @example 1
+                 */
                 quadraId: number;
+                /**
+                 * @description ID do bloqueio (`id` de `BloqueioHorarioResponseDTO`)
+                 * @example 5
+                 */
                 bloqueioId: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bloqueio removido com sucesso */
+            /** @description Bloqueio removido */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Requisição Inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/bad-request",
+                     *       "title": "Requisição Inválida",
+                     *       "status": 400,
+                     *       "detail": "O bloqueio informado não pertence a esta quadra.",
+                     *       "instance": "/api/quadras/{quadraId}/bloqueios/{bloqueioId}",
+                     *       "code": "REQUISICAO_INVALIDA",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
+            };
+            /** @description Acesso Negado */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "https://api.equadras.com/erros/acesso-negado",
+                     *       "title": "Acesso Negado",
+                     *       "status": 403,
+                     *       "detail": "Apenas o administrador dono da quadra ou o Master Admin pode remover bloqueios.",
+                     *       "instance": "/api/quadras/{quadraId}/bloqueios/{bloqueioId}",
+                     *       "code": "ACESSO_NEGADO",
+                     *       "timestamp": "2026-09-29T14:30:00.123456Z"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
             };
         };
     };
@@ -3706,12 +6162,28 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Notificações do administrador excluídas (exclusão lógica) */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Acesso Proibido */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": 403,
+                     *       "title": "Acesso Proibido",
+                     *       "detail": "Acesso proibido: sua credencial não possui permissão para executar esta operação."
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                };
             };
         };
     };

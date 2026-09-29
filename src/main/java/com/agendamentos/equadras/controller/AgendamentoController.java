@@ -12,8 +12,12 @@ import com.agendamentos.equadras.service.AgendamentoService;
 import com.agendamentos.equadras.service.DashboardService;
 import com.agendamentos.equadras.service.GradeHorariosService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,8 +55,8 @@ public class AgendamentoController {
     }
 
     @Operation(
-            summary = "Criar novo agendamento com Lock e Pix",
-            description = "Bloqueia a quadra sob lock pessimista para evitar conflitos concorrentes e gera a cobrança Pix. Requisitos: horários em horas cheias (minutos zerados) e duração mínima de 1 hora (múltipla de 60 min). Agendamentos pendentes sem pagamento expiram e são cancelados automaticamente após 15 minutos."
+            summary = "Criar novo agendamento com lock e Pix",
+            description = "Papéis: CLIENT ou ADMIN (a reserva pertence ao usuário autenticado; `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista, cria a reserva em estado PENDENTE e gera a cobrança Pix (`pixCopiaECola`, `qrCodeBase64`). Regras: horas cheias (minutos zerados), duração mínima de 1 hora e múltipla de 60 min, início no futuro. Efeito colateral: reserva PENDENTE sem pagamento expira e é cancelada automaticamente após 15 minutos. Conflito de horário devolve 409 `HORARIO_INDISPONIVEL`."
     )
     @PostMapping
     public ResponseEntity<AgendamentoResponseDTO> agendar(@RequestBody @Valid AgendamentoCriacaoDTO dto,
@@ -61,18 +65,23 @@ public class AgendamentoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
-    @Operation(summary = "Listar agendamentos paginados por aba ou status pendente", description = "Retorna agendamentos paginados por aba ou apenas pendentes válidos. CLIENT: próprias reservas; ADMIN: reservas das suas quadras; Master: todas.")
+    @Operation(summary = "Listar agendamentos paginados por aba",
+            description = "Papéis: CLIENT ou ADMIN. Com `page`: `PageResponse<AgendamentoResponseDTO>`; CLIENT vê as próprias reservas, ADMIN as das suas quadras, Master Admin todas. `aba` é obrigatória, exceto com `apenasPendentes=true` (sem nenhuma das duas, 400). `size` padrão 10, máx. 50. `sort` aceita apenas `dataHoraInicio` e `id`; outro campo devolve 400; a ordenação padrão é crescente por `dataHoraInicio` na aba ATIVOS e decrescente nas demais. SEM `page` (variante legada, `deprecated`, não listada à parte no OpenAPI): lista simples `array<AgendamentoResponseDTO>` limitada a 200 itens no SQL, sem aviso, com o parâmetro `historico` (padrão `false`: só reservas ativas; `true`: histórico completo, inclusive realizadas e canceladas).")
     @GetMapping(params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPaginado(
+            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Obrigatória quando `apenasPendentes` é `false`.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
+            @Parameter(description = "Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`.",
+                    schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean apenasPendentes,
-            Pageable pageable,
+            @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.listarPaginado(usuarioLogado.id(), aba, apenasPendentes, pageable));
     }
 
-    @Operation(summary = "Contadores de agendamentos por aba", description = "Retorna o total de agendamentos do atleta por aba (ATIVOS, REALIZADOS, CANCELADOS).")
+    @Operation(summary = "Contadores de agendamentos por aba",
+            description = "Papéis: CLIENT ou ADMIN. Total das reservas do próprio usuário por aba: ATIVOS, REALIZADOS e CANCELADOS.")
     @GetMapping("/contadores")
     public ResponseEntity<Map<AbaAgendamento, Long>> obterContadores(
             @UsuarioLogado UsuarioAutenticado usuarioLogado
@@ -81,54 +90,62 @@ public class AgendamentoController {
     }
 
     @Deprecated
-    @Operation(summary = "Listar agendamentos (legado sem paginação)", description = "Retorna todos os agendamentos em lista única. Use a rota paginada com ?page=0.", deprecated = true)
+    @Operation(summary = "Listar agendamentos (legado sem paginação)",
+            description = "Papéis: CLIENT ou ADMIN. Variante sem `page`: lista única limitada a 200 itens no SQL, sem aviso. Prefira a rota paginada com `?page=0`.", deprecated = true)
     @GetMapping(params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
+            @Parameter(description = "Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas.", schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean historico,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.listarTodos(usuarioLogado.id(), historico));
     }
 
-    @Operation(summary = "Buscar agendamento por ID", description = "Retorna os detalhes completos do agendamento pertencente ao usuário autenticado ou admin da quadra.")
+    @Operation(summary = "Buscar agendamento por ID",
+            description = "Papéis: CLIENT ou ADMIN. Dono da reserva, administrador da quadra ou Master Admin. `pixCopiaECola` e `qrCodeBase64` só vêm preenchidos para o dono e enquanto o status é PENDENTE. ID inexistente OU fora do seu escopo devolve 404 `AGENDAMENTO_NAO_ENCONTRADO` (nunca 403).")
     @GetMapping("/{id}")
-    public ResponseEntity<AgendamentoResponseDTO> buscarPorId(@PathVariable Long id,
+    public ResponseEntity<AgendamentoResponseDTO> buscarPorId(@Parameter(description = "ID do agendamento (`id_agendamento`)", example = "42") @PathVariable Long id,
                                                                @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(agendamentoService.buscarPorId(id, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Cancelar agendamento", description = "Cancela uma reserva ativa pertencente ao usuário autenticado ou ao administrador da quadra.")
+    @Operation(summary = "Cancelar agendamento",
+            description = "Papéis: CLIENT ou ADMIN. Dono da reserva ou administrador da quadra. Só cancela reserva futura ainda não cancelada (400 se já cancelada, em andamento ou retroativa). Libera o horário e grava `canceladoEm`.")
     @PatchMapping("/{id}/cancelar")
-    public ResponseEntity<AgendamentoResponseDTO> cancelar(@PathVariable Long id,
+    public ResponseEntity<AgendamentoResponseDTO> cancelar(@Parameter(description = "ID do agendamento (`id_agendamento`)", example = "42") @PathVariable Long id,
                                                            @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(agendamentoService.cancelar(id, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Listar histórico paginado de agendamentos de uma quadra específica", description = "Retorna reservas paginadas da quadra para o administrador proprietário ou Master Admin.")
+    @Operation(summary = "Listar reservas de uma quadra (paginado, Admin)",
+            description = "Papel: ADMIN dono da quadra ou Master Admin. Com `page`: `PageResponse<AgendamentoResponseDTO>` (size padrão 10, máx. 50; `sort` só `dataHoraInicio` ou `id`). SEM `page`: variante legada, lista simples até 200 itens (rota deprecated).")
     @GetMapping(value = "/quadra/{quadraId}", params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPorQuadraPaginado(
-            @PathVariable Long quadraId,
+            @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
+            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
-            Pageable pageable,
+            @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.listarPorQuadraPaginado(quadraId, aba, pageable, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Contadores de agendamentos por aba de uma quadra", description = "Retorna contadores de agendamentos (TODOS, ATIVOS, REALIZADOS, CANCELADOS) da quadra para o admin proprietário ou Master Admin.")
+    @Operation(summary = "Contadores das reservas de uma quadra (Admin)",
+            description = "Papel: ADMIN dono da quadra ou Master Admin. Devolve TODOS, ATIVOS, REALIZADOS e CANCELADOS.")
     @GetMapping("/quadra/{quadraId}/contadores")
     public ResponseEntity<Map<String, Long>> obterContadoresPorQuadra(
-            @PathVariable Long quadraId,
+            @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.contarPorAbaEQuadra(quadraId, usuarioLogado.id()));
     }
 
     @Deprecated
-    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)", description = "Retorna todas as reservas da quadra para o administrador proprietário ou Master Admin.", deprecated = true)
+    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)",
+            description = "Papel: ADMIN dono da quadra ou Master Admin. Variante sem `page`: lista única (até 200 itens, sem aviso). Prefira a rota paginada com `?page=0`.", deprecated = true)
     @GetMapping(value = "/quadra/{quadraId}", params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadra(
-            @PathVariable Long quadraId,
+            @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(agendamentoService.listarPorQuadra(quadraId, usuarioLogado.id()));
@@ -136,38 +153,46 @@ public class AgendamentoController {
 
 
     @Operation(
-            summary = "Consultar horários dinâmicos e status do dia",
-            description = "Gera a grade completa de horários de 1 hora para a quadra na data informada, retornando o status detalhado de cada horário: DISPONIVEL, BLOQUEADO ou AGENDADO, acompanhado do motivo e do indicador booleano 'disponivel'."
+            summary = "Consultar horários de uma quadra na data",
+            description = "Papéis: CLIENT ou ADMIN. Grade de horários de 1 hora com `status`: DISPONIVEL, BLOQUEADO, AGENDADO ou INDISPONIVEL, o `motivo` e o booleano `disponivel`. `data` é obrigatória (ISO, `yyyy-MM-dd`); quadra inexistente devolve 400."
     )
     @GetMapping("/quadra/{quadraId}/horarios-disponiveis")
     public ResponseEntity<List<HorarioDisponivelDTO>> listarHorariosDisponiveis(
-            @PathVariable Long quadraId,
+            @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
+            @Parameter(description = "Data consultada, formato ISO `yyyy-MM-dd`. Obrigatório.", example = "2026-10-12")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
         return ResponseEntity.ok(gradeHorariosService.listarHorariosDisponiveis(quadraId, data));
     }
 
     @Operation(
-            summary = "Consultar horários consolidados do dia para todas as quadras do Admin (Admin)",
-            description = "Retorna em uma única requisição a grade completa de horários de todas as quadras ativas do administrador autenticado para a data indicada."
+            summary = "Consultar horários do dia de todas as quadras do Admin (Admin)",
+            description = "Papel: ADMIN. Devolve, em um objeto cuja chave é o ID da quadra, a grade da data para todas as quadras ativas do administrador autenticado."
     )
     @GetMapping("/dia")
     public ResponseEntity<java.util.Map<Long, List<HorarioDisponivelDTO>>> listarHorariosDoDiaParaAdmin(
+            @Parameter(description = "Data consultada, formato ISO `yyyy-MM-dd`. Obrigatório.", example = "2026-10-12")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         return ResponseEntity.ok(gradeHorariosService.listarHorariosDoDiaParaAdmin(data, usuarioLogado.id()));
     }
 
-    @Operation(summary = "Listar reservas da agenda do dia ou intervalo paginadas (Admin)", description = "Retorna agendamentos paginados do dia informado ou intervalo [inicio, fim) para as quadras do admin autenticado, com filtro opcional por quadra e aba.")
+    @Operation(summary = "Listar agenda paginada do dia ou intervalo (Admin)",
+            description = "Papel: ADMIN (quadras do administrador autenticado). Informe `data` OU o par `inicio` + `fim`; sem nenhum, 400. Intervalo `[inicio, fim)` de no máximo 24 h. `PageResponse` com size padrão 10, máx. 50; `sort` só `dataHoraInicio` ou `id`. `quadraId` e `aba` refinam o resultado.")
     @GetMapping("/agenda")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarAgendaDoDia(
+            @Parameter(description = "Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.", example = "2026-10-12")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @Parameter(description = "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.", example = "2026-10-12T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @Parameter(description = "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.", example = "2026-10-13T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
+            @Parameter(description = "Restringe a uma quadra.", example = "1")
             @RequestParam(required = false) Long quadraId,
+            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
-            Pageable pageable,
+            @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
         if (data == null && (inicio == null || fim == null)) {
@@ -176,12 +201,17 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendaConsultaService.listarAgendaDoDiaPaginado(usuarioLogado.id(), data, inicio, fim, quadraId, aba, pageable));
     }
 
-    @Operation(summary = "Contadores de reservas da agenda por aba (Admin)", description = "Retorna contadores de agendamentos por aba para a data ou intervalo informado e quadra(s) do admin autenticado.")
+    @Operation(summary = "Contadores da agenda por aba (Admin)",
+            description = "Papel: ADMIN. Contagem por aba (ATIVOS, REALIZADOS, CANCELADOS) para `data` ou `inicio`+`fim` e, opcionalmente, uma `quadraId`.")
     @GetMapping("/agenda/contadores")
     public ResponseEntity<Map<AbaAgendamento, Long>> obterContadoresAgendaDoDia(
+            @Parameter(description = "Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.", example = "2026-10-12")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @Parameter(description = "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.", example = "2026-10-12T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @Parameter(description = "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.", example = "2026-10-13T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
+            @Parameter(description = "Restringe a uma quadra.", example = "1")
             @RequestParam(required = false) Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
@@ -191,12 +221,17 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendaConsultaService.contarAgendaDoDiaPorAba(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
-    @Operation(summary = "Listar agenda completa do dia (Admin)", description = "Retorna todos os agendamentos não cancelados de um único dia (máximo 24h) para visualização na grade operacional da timeline.")
+    @Operation(summary = "Listar agenda completa do dia (Admin)",
+            description = "Papel: ADMIN. Todos os agendamentos não cancelados de um único dia (máximo 24 h), sem paginação, para a grade operacional da timeline. Informe `data` OU `inicio`+`fim`.")
     @GetMapping("/agenda/completa")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarAgendaCompleta(
+            @Parameter(description = "Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.", example = "2026-10-12")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+            @Parameter(description = "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.", example = "2026-10-12T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @Parameter(description = "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.", example = "2026-10-13T00:00:00")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
+            @Parameter(description = "Restringe a uma quadra.", example = "1")
             @RequestParam(required = false) Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
@@ -206,11 +241,15 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendaConsultaService.listarAgendaCompleta(usuarioLogado.id(), data, inicio, fim, quadraId));
     }
 
-    @Operation(summary = "Listar agenda mensal (Admin)", description = "Retorna os agendamentos não cancelados do mês informado para as quadras do admin autenticado, usados no calendário de ocupação.")
+    @Operation(summary = "Listar agenda mensal (Admin)",
+            description = "Papel: ADMIN. Agendamentos não cancelados do mês, para o calendário de ocupação das quadras do administrador. `ano` entre 2000 e 2100; `mes` entre 1 e 12.")
     @GetMapping("/agenda/mensal")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarAgendaMensal(
+            @Parameter(description = "Ano (2000 a 2100). Obrigatório.", example = "2026")
             @RequestParam int ano,
+            @Parameter(description = "Mês (1 a 12). Obrigatório.", example = "10")
             @RequestParam int mes,
+            @Parameter(description = "Restringe a uma quadra.", example = "1")
             @RequestParam(required = false) Long quadraId,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
@@ -218,8 +257,8 @@ public class AgendamentoController {
     }
 
     @Operation(
-            summary = "Obter métricas agregadas do dashboard admin",
-            description = "Retorna métricas consolidadas (totalQuadras, quadrasAtivas, totalReservas, faturamentoTotal, reservasHoje) calculadas diretamente no banco de dados para o administrador autenticado."
+            summary = "Obter métricas do dashboard (Admin)",
+            description = "Papel: ADMIN. Métricas calculadas no banco para o administrador autenticado: `totalQuadras`, `quadrasAtivas`, `totalReservas` (não canceladas), `faturamentoTotal` (reservas confirmadas) e `reservasHoje`."
     )
     @GetMapping("/dashboard/metricas")
     public ResponseEntity<DashboardMetricasDTO> obterMetricasDashboard(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
@@ -231,8 +270,9 @@ public class AgendamentoController {
 
     @Operation(
             summary = "Agendamento simplificado via Bot / WhatsApp",
-            description = "Permite a criação e reserva direta de horário a partir de integrações externas com bots (ex: WhatsApp/IA). Realiza a auto-criação ou vínculo do cliente pelo telefone/nome, busca a quadra por ID, nome ou esporte, resolve datas e horários em linguagem flexível ('hoje', 'amanha', '19h', '15/09') e cria a reserva com lock pessimista gerando os dados de Pix."
+            description = "Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19h`, `19:00`, `19`. Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE com Pix; expira em 15 min se não paga."
     )
+    @SecurityRequirements
     @PostMapping("/bot")
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(
             @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
@@ -241,15 +281,20 @@ public class AgendamentoController {
     }
 
     @Operation(
-            summary = "Consultar grade consolidada de horários (Busca Flexível)",
-            description = "Permite consultar a disponibilidade de slots de horários com suporte a filtros combinados por data flexível ('hoje', 'amanha', '2026-09-05'), quadraId, nome da quadra ou tipo de esporte. Pode filtrar estritamente apenas slots livres com 'apenasDisponiveis=true'."
+            summary = "Consultar grade consolidada de horários (busca flexível)",
+            description = "Papéis: CLIENT ou ADMIN. Grade por quadra com filtros combináveis: `data` (omitida ou não reconhecida: devolve os próximos 14 dias, a partir de hoje, um item por quadra e dia), `quadraId`, `nomeQuadra`, `tipoEsporte`. `apenasDisponiveis=true` mantém só os horários livres."
     )
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO>> consultarGradeHorarios(
+            @Parameter(description = "Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir de hoje.", example = "amanha")
             @RequestParam(required = false) String data,
+            @Parameter(description = "Restringe a uma quadra pelo ID.", example = "1")
             @RequestParam(required = false) Long quadraId,
+            @Parameter(description = "Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).", example = "FUTEBOL")
             @RequestParam(required = false) String tipoEsporte,
+            @Parameter(description = "Filtra por parte do nome da quadra.", example = "Arena")
             @RequestParam(required = false) String nomeQuadra,
+            @Parameter(description = "Se `true`, devolve só horários livres. Padrão `false`.", schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean apenasDisponiveis
     ) {
         return ResponseEntity.ok(gradeHorariosService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));

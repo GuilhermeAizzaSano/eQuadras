@@ -32,17 +32,14 @@ class OpenApiExportTest {
         Path path = Paths.get("openapi.json");
         Files.writeString(path, json, java.nio.charset.StandardCharsets.UTF_8);
 
-        try {
-            String yaml = mockMvc.perform(get("/v3/api-docs.yaml"))
-                    .andExpect(status().isOk())
-                    .andReturn()
-                    .getResponse()
-                    .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-            Path yamlPath = Paths.get("docs", "api", "openapi.yaml");
-            if (Files.exists(yamlPath.getParent())) {
-                Files.writeString(yamlPath, yaml, java.nio.charset.StandardCharsets.UTF_8);
-            }
-        } catch (Exception ignored) {
+        String yaml = mockMvc.perform(get("/v3/api-docs.yaml"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        Path yamlPath = Paths.get("docs", "api", "openapi.yaml");
+        if (Files.exists(yamlPath.getParent())) {
+            Files.writeString(yamlPath, yaml, java.nio.charset.StandardCharsets.UTF_8);
         }
     }
 }

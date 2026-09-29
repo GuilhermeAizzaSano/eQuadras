@@ -6,6 +6,8 @@ import com.agendamentos.equadras.security.UsuarioLogado;
 import com.agendamentos.equadras.service.AgendamentoService;
 import com.agendamentos.equadras.service.PagamentoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,17 +33,19 @@ public class PagamentoController {
         this.pagamentoService = pagamentoService;
     }
 
-    @Operation(summary = "Simular aprovação de pagamento Pix", description = "Transita uma reserva pendente para CONFIRMADO e notifica o administrador via SSE.")
+    @Operation(summary = "Simular aprovação de pagamento Pix",
+            description = "Papéis: CLIENT ou ADMIN. Move uma reserva PENDENTE para CONFIRMADO sem passar pelo gateway e notifica o administrador da quadra por SSE. Reserva cancelada devolve 400 `STATUS_INVALIDO`; confirmação concorrente, 409 `CONFLITO_STATUS`. Devolve o `AgendamentoResponseDTO` atualizado.")
     @PostMapping("/{agendamentoId}/simular-aprovacao")
-    public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@PathVariable Long agendamentoId,
+    public ResponseEntity<AgendamentoResponseDTO> simularAprovacao(@Parameter(description = "ID do agendamento (`id_agendamento`)", example = "42") @PathVariable Long agendamentoId,
                                                                    @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         AgendamentoResponseDTO response = agendamentoService.confirmarPagamento(agendamentoId, usuarioLogado.id());
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Consultar status de pagamento da reserva", description = "Verifica se o agendamento já foi confirmado ou se o pagamento foi aprovado no gateway.")
+    @Operation(summary = "Consultar status de pagamento da reserva",
+            description = "Papéis: CLIENT ou ADMIN. Devolve o `AgendamentoResponseDTO` (o campo `status` é PENDENTE, CONFIRMADO ou CANCELADO). Efeito colateral: se a reserva está PENDENTE e tem `transacaoPagamentoId`, consulta o Mercado Pago e, se o pagamento estiver `approved`, confirma a reserva antes de responder. ID inexistente ou fora do seu escopo devolve 404.")
     @GetMapping("/{agendamentoId}/status")
-    public ResponseEntity<AgendamentoResponseDTO> consultarStatus(@PathVariable Long agendamentoId,
+    public ResponseEntity<AgendamentoResponseDTO> consultarStatus(@Parameter(description = "ID do agendamento (`id_agendamento`)", example = "42") @PathVariable Long agendamentoId,
                                                                   @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         AgendamentoResponseDTO agendamento = agendamentoService.buscarPorId(agendamentoId, usuarioLogado.id());
 
@@ -64,12 +68,18 @@ public class PagamentoController {
         return ResponseEntity.ok(agendamento);
     }
 
-    @Operation(summary = "Webhook do Mercado Pago", description = "Recepção de notificações assíncronas de pagamento instantâneo do gateway.")
+    @Operation(summary = "Webhook do Mercado Pago",
+            description = "Rota PÚBLICA, chamada pelo gateway. Identifica o pagamento por query (`topic=payment` ou `type=payment` com `id` ou `data.id`) ou pelo JSON (`type`/`action` contendo `payment` e `data.id`, ou `id`). Consulta o pagamento no Mercado Pago e, se `approved`, confirma o agendamento (`external_reference`). Respostas: `{status: ignored}` sem ID relevante; `{status: received}` se não aprovado; `{status: processed, payment_status: approved}` se confirmou; 500 `{status: error, message}` para o gateway reenviar.")
+    @SecurityRequirements
     @PostMapping("/webhook")
     public ResponseEntity<Map<String, String>> webhook(@RequestBody(required = false) Map<String, Object> payload,
+                                                        @Parameter(description = "ID do pagamento no formato IPN (usado com `topic=payment` ou `type=payment`).", example = "987654321")
                                                         @RequestParam(value = "id", required = false) String paramId,
+                                                        @Parameter(description = "Tópico IPN. Só `payment` é processado.", example = "payment")
                                                         @RequestParam(value = "topic", required = false) String topic,
+                                                        @Parameter(description = "Tipo do evento. Só valores contendo `payment` são processados.", example = "payment")
                                                         @RequestParam(value = "type", required = false) String type,
+                                                        @Parameter(description = "ID do pagamento no formato Webhooks V2 (`data.id`), usado se `id` não vier.", example = "987654321")
                                                         @RequestParam(value = "data.id", required = false) String dataIdParam) {
         String paymentId = null;
 

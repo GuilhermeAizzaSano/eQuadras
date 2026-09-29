@@ -18,6 +18,8 @@ import com.agendamentos.equadras.service.AuditoriaService;
 import com.agendamentos.equadras.service.UsuarioAuthService;
 import com.agendamentos.equadras.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.agendamentos.equadras.shared.pagination.PageResponse;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
@@ -87,7 +90,9 @@ public class UsuarioController {
                 .build();
     }
 
-    @Operation(summary = "Realizar login", description = "Autentica via e-mail e senha, define o cookie HttpOnly de sessão e retorna o perfil do usuário.")
+    @Operation(summary = "Realizar login",
+            description = "Rota pública. Autentica por e-mail e senha, grava o JWT no cookie HttpOnly `equadras_session` (header `Set-Cookie`) e devolve no corpo apenas o perfil do usuário (`UsuarioResponseDTO`); o token NÃO vem no corpo. Efeito colateral: falhas consecutivas por e-mail (limite de 5) bloqueiam novas tentativas com 429 e `Retry-After`; login bem-sucedido zera o contador.")
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid UsuarioLoginDTO dto) {
         String email = dto.email_usuario();
@@ -114,7 +119,9 @@ public class UsuarioController {
         }
     }
 
-    @Operation(summary = "Realizar logout", description = "Encerra a sessão do usuário limpando o cookie HttpOnly e invalidando tokens ativos.")
+    @Operation(summary = "Realizar logout",
+            description = "Rota pública (funciona sem sessão). Se houver sessão, revoga os tokens do usuário, registra `LOGOUT` na auditoria e expira o cookie `equadras_session`. Responde 204 sem corpo, sempre.")
+    @SecurityRequirements
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
@@ -129,19 +136,22 @@ public class UsuarioController {
                 .build();
     }
 
-    @Operation(summary = "Dados da minha sessão", description = "Retorna os dados do usuário autenticado pela sessão ativa (cookie HttpOnly).")
+    @Operation(summary = "Dados da minha sessão",
+            description = "Papéis: CLIENT ou ADMIN. Devolve o perfil do usuário autenticado (cookie de sessão, Bearer ou X-API-KEY).")
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> me(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(usuarioService.buscarPorId(usuarioLogado.id(), usuarioLogado.id()));
     }
 
-    @Operation(summary = "Consultar metadados da minha API-KEY", description = "Retorna informações sobre a existência, prefixo e datas de criação/último uso da chave de API da conta.")
+    @Operation(summary = "Consultar metadados da minha API-KEY",
+            description = "Papéis: CLIENT ou ADMIN. Informa se a conta possui chave, os 4 últimos caracteres e as datas de criação e último uso. Nunca devolve a chave em texto plano.")
     @GetMapping("/api-key")
     public ResponseEntity<ApiKeyInfoDTO> obterApiKeyInfo(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(apiKeyService.info(usuarioLogado.id()));
     }
 
-    @Operation(summary = "Gerar ou regenerar API-KEY", description = "Emite uma nova chave de API opaca (eq_...) de alta entropia. O token anterior é invalidado de imediato. A chave em texto plano é devolvida exclusivamente nesta resposta.")
+    @Operation(summary = "Gerar ou regenerar API-KEY",
+            description = "Papéis: CLIENT ou ADMIN. Emite uma chave opaca `eq_...`, invalidando a anterior imediatamente. A chave em texto plano só aparece nesta resposta (`Cache-Control: no-store`). Registra IP e User-Agent. Limite: 5 regenerações por minuto por conta (429 com `Retry-After: 60`).")
     @PostMapping("/api-key/regenerar")
     public ResponseEntity<?> regenerarApiKey(
             @UsuarioLogado UsuarioAutenticado usuarioLogado,
@@ -167,7 +177,8 @@ public class UsuarioController {
                 .body(criada);
     }
 
-    @Operation(summary = "Revogar API-KEY", description = "Invalida imediatamente a chave de API da conta sem gerar uma substituta. É uma operação idempotente.")
+    @Operation(summary = "Revogar API-KEY",
+            description = "Papéis: CLIENT ou ADMIN. Invalida a chave da conta sem gerar substituta. Idempotente: sem chave ativa também responde 204. Registra IP e User-Agent.")
     @DeleteMapping("/api-key")
     public ResponseEntity<Void> revogarApiKey(
             @UsuarioLogado UsuarioAutenticado usuarioLogado,
@@ -180,7 +191,8 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Cadastrar novo usuário (Apenas Admin Geral)", description = "Cria uma nova conta de usuário (Role: CLIENT ou ADMIN). Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Cadastrar novo usuário (Master Admin)",
+            description = "Papel: ADMIN, e o service exige que seja o Master Admin (outro ADMIN recebe 403). Cria conta CLIENT ou ADMIN (`role` opcional). E-mail duplicado devolve 400 `EMAIL_DUPLICADO`; telefone repetido devolve 409 `TELEFONE_EM_USO`.")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@RequestBody @Valid UsuarioCriacaoDTO dto,
@@ -190,35 +202,39 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
-    @Operation(summary = "Editar usuário existente (Apenas Admin Geral)", description = "Atualiza os dados de um usuário (nome, e-mail, telefone, perfil e opcionalmente senha). Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Editar usuário existente (Master Admin)",
+            description = "Papel: ADMIN, exigindo Master Admin. Atualiza nome, e-mail, telefone, `role` e, se `nova_senha` vier, a senha. O e-mail do Master Admin não pode ser alterado (400 `OPERACAO_NAO_PERMITIDA`).")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> editar(@PathVariable Long id,
+    public ResponseEntity<UsuarioResponseDTO> editar(@Parameter(description = "ID do usuário (`id_usuario`)", example = "10") @PathVariable Long id,
                                                       @RequestBody @Valid com.agendamentos.equadras.dto.request.UsuarioEdicaoDTO dto,
                                                       @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         var resposta = usuarioService.editarUsuario(id, dto, usuarioLogado.id());
         return ResponseEntity.ok(resposta);
     }
 
-    @Operation(summary = "Excluir usuário (Apenas Admin Geral)", description = "Remove um usuário do sistema. Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Excluir usuário (Master Admin)",
+            description = "Papel: ADMIN, exigindo Master Admin. Remove o usuário. A conta do Master Admin não pode ser excluída (400 `OPERACAO_NAO_PERMITIDA`).")
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id,
+    public ResponseEntity<Void> excluir(@Parameter(description = "ID do usuário (`id_usuario`)", example = "10") @PathVariable Long id,
                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         usuarioService.excluirUsuario(id, usuarioLogado.id());
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Listar usuários paginados (Apenas Admin Geral)", description = "Versão paginada da listagem de usuários. Informe page (e opcionalmente size, máx. 50). Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Listar usuários (Master Admin)",
+            description = "Papel: ADMIN, exigindo Master Admin. Com `page`: `PageResponse<UsuarioResponseDTO>` (size padrão 10, máximo 50; a ordenação é fixa por `id_usuario` decrescente e o `sort` do cliente é ignorado). SEM `page` (variante legada, não listada separadamente pelo OpenAPI): lista simples `array<UsuarioResponseDTO>` limitada a 200 itens no SQL, sem aviso ao cliente.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "page")
-    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarUsuariosPaginado(Pageable pageable,
+    public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarUsuariosPaginado(@ParameterObject Pageable pageable,
                                                                           @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         usuarioService.validarAcessoMasterAdmin(usuarioLogado.id());
         return ResponseEntity.ok(usuarioService.listarPaginado(pageable));
     }
 
-    @Operation(summary = "Listar todos os usuários (Apenas Admin Geral)", description = "Retorna todos os usuários cadastrados no sistema (ADMIN e CLIENT). Apenas o Administrador Geral possui permissão.")
+    @Operation(summary = "Listar todos os usuários (Master Admin)",
+            description = "Variante legada sem `page`: lista até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Ver GET com `page` para a versão paginada. Papel: Master Admin.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "!page")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
@@ -226,7 +242,8 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
-    @Operation(summary = "Alterar minha senha", description = "Permite que o próprio usuário autenticado por sessão altere sua senha informando a atual e a nova.")
+    @Operation(summary = "Alterar minha senha",
+            description = "Papéis: CLIENT ou ADMIN. Exige a senha atual; a nova precisa ter 6+ caracteres com maiúscula, minúscula, número e símbolo e ser diferente da atual. Responde 204 sem corpo.")
     @PatchMapping("/minha-senha")
     public ResponseEntity<Void> alterarMinhaSenha(@RequestBody @Valid com.agendamentos.equadras.dto.request.AlterarSenhaDTO dto,
                                                   @UsuarioLogado UsuarioAutenticado usuarioLogado) {
@@ -234,9 +251,10 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Buscar usuário por ID", description = "Consulta os dados de um usuário pelo seu identificador único. Apenas o próprio usuário ou o Admin Geral tem permissão.")
+    @Operation(summary = "Buscar usuário por ID",
+            description = "Papéis: CLIENT ou ADMIN. O próprio usuário ou o Master Admin. Outro usuário recebe 403; ID inexistente, 404 `USUARIO_NAO_ENCONTRADO`.")
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id,
+    public ResponseEntity<UsuarioResponseDTO> buscarPorId(@Parameter(description = "ID do usuário (`id_usuario`)", example = "10") @PathVariable Long id,
                                                           @UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(usuarioService.buscarPorId(id, usuarioLogado.id()));
     }
