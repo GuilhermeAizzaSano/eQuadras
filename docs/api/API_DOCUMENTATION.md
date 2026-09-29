@@ -246,7 +246,7 @@ Retorna os usuários registrados no sistema. Exige `ROLE_ADMIN` e o service conf
 - **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`, somente Master Admin)
 
 **Variantes (definidas pela presença do parâmetro `page`):**
-- **Com `page`:** resposta paginada `PageResponse<UsuarioResponseDTO>`. `size` padrão 10, máximo 50. A ordenação é fixa por `id_usuario` decrescente: o `sort` enviado pelo cliente é ignorado.
+- **Com `page`:** resposta paginada `PageResponse<UsuarioResponseDTO>`. `size` padrão 10, máximo 50. A ordenação é fixa por `id_usuario` crescente: o `sort` enviado pelo cliente é ignorado.
 - **Sem `page` (variante legada):** lista simples `array<UsuarioResponseDTO>`, limitada a 200 itens no SQL, sem aviso ao cliente.
 
 #### Requisição:

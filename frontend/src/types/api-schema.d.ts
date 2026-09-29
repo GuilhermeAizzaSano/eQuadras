@@ -1864,6 +1864,24 @@ export interface components {
             /** @description URLs das fotos da galeria */
             fotos?: string[];
         };
+        ApiKeyCriadaDTO: {
+            /**
+             * @description Chave em texto plano (eq_...). Só aparece nesta resposta
+             * @example eq_9f8e7d6c5b4a39281706f5e4d3c2b1a0
+             */
+            apiKey?: string;
+            /**
+             * @description Quatro últimos caracteres da chave
+             * @example b1a0
+             */
+            last4?: string;
+            /**
+             * Format: date-time
+             * @description Instante de criação da chave (UTC)
+             * @example 2026-09-29T14:30:00Z
+             */
+            criadaEm?: string;
+        };
         /** @description Corpo de erro (RFC 9457). Os filtros de segurança devolvem só status, title e detail. */
         ProblemaErro: {
             type?: string;
@@ -2654,7 +2672,7 @@ export interface operations {
                      *       "masterAdmin": false
                      *     }
                      */
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["UsuarioResponseDTO"];
                 };
             };
             /** @description Regra de Negócio Violada */
@@ -2748,7 +2766,7 @@ export interface operations {
                      *       "criadaEm": "2026-09-29T14:30:00Z"
                      *     }
                      */
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ApiKeyCriadaDTO"];
                 };
             };
             /** @description Não Autorizado */
@@ -2782,7 +2800,7 @@ export interface operations {
                      *       "detail": "Limite de 5 regenerações por minuto atingido para esta conta. Aguarde antes de tentar novamente."
                      *     }
                      */
-                    "application/problem+json": components["schemas"]["ProblemaErro"];
+                    "application/json": components["schemas"]["ProblemaErro"];
                 };
             };
         };

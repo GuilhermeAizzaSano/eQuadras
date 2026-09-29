@@ -65,7 +65,7 @@ final class ExemplosDaApi {
                            String schema, Map<String, String> cabecalhos) {
     }
 
-    enum Formato { HANDLER, VALIDACAO, FILTRO, SIMPLES }
+    enum Formato { HANDLER, VALIDACAO, FILTRO, SIMPLES, MAPA }
 
     record ErroExemplo(int status, Formato formato, String slug, String titulo, String code, String detalhe,
                        Map<String, String> cabecalhos) {
@@ -90,7 +90,12 @@ final class ExemplosDaApi {
         }
 
         Builder okComCabecalhos(String status, String descricao, String json, Map<String, String> cabecalhos) {
-            respostas.add(new RespostaExemplo(status, null, descricao, json, JSON, null, cabecalhos));
+            return okComCabecalhos(status, descricao, json, null, cabecalhos);
+        }
+
+        /** Para ResponseEntity<?>: {@code schema} fixa o tipo real que o springdoc não consegue inferir. */
+        Builder okComCabecalhos(String status, String descricao, String json, String schema, Map<String, String> cabecalhos) {
+            respostas.add(new RespostaExemplo(status, null, descricao, json, JSON, schema, cabecalhos));
             return this;
         }
 
@@ -212,7 +217,7 @@ final class ExemplosDaApi {
 
         /** UsuarioController.regenerarApiKey: Map {status, title, detail} + Retry-After. */
         static ErroExemplo muitasRegeneracoesApiKey() {
-            return new ErroExemplo(429, Formato.FILTRO, null, "Too Many Requests", null,
+            return new ErroExemplo(429, Formato.MAPA, null, "Too Many Requests", null,
                     "Limite de 5 regenerações por minuto atingido para esta conta. Aguarde antes de tentar novamente.",
                     Map.of("Retry-After", "Sempre 60 (segundos)."));
         }

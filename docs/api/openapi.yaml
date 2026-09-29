@@ -687,7 +687,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/UsuarioResponseDTO"
               example:
                 id_usuario: 10
                 nome_usuario: Arthur Prado
@@ -768,7 +768,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
+                $ref: "#/components/schemas/ApiKeyCriadaDTO"
               example:
                 apiKey: eq_9f8e7d6c5b4a39281706f5e4d3c2b1a0
                 last4: b1a0
@@ -792,7 +792,7 @@ paths:
               schema:
                 type: string
           content:
-            application/problem+json:
+            application/json:
               schema:
                 $ref: "#/components/schemas/ProblemaErro"
               example:
@@ -5406,6 +5406,21 @@ components:
           items:
             type: string
             description: URLs das fotos da galeria
+    ApiKeyCriadaDTO:
+      properties:
+        apiKey:
+          type: string
+          description: Chave em texto plano (eq_...). Só aparece nesta resposta
+          example: eq_9f8e7d6c5b4a39281706f5e4d3c2b1a0
+        last4:
+          type: string
+          description: Quatro últimos caracteres da chave
+          example: b1a0
+        criadaEm:
+          type: string
+          format: date-time
+          description: Instante de criação da chave (UTC)
+          example: 2026-09-29T14:30:00Z
     ProblemaErro:
       type: object
       description: "Corpo de erro (RFC 9457). Os filtros de segurança devolvem só\

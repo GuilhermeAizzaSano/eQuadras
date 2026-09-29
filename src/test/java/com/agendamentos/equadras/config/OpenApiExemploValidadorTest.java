@@ -90,4 +90,42 @@ class OpenApiExemploValidadorTest {
         JsonNode schema = json("{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"}}");
         assertTrue(validador().validar(schema, json("{\"status\":\"ok\",\"qualquer\":\"coisa\"}"), true, "$").isEmpty());
     }
+
+    @Test
+    void rejeitaStringNoLugarDeNumero() throws Exception {
+        List<String> problemas = validador().validar(
+                json("{\"$ref\":\"#/components/schemas/Quadra\"}"), json("{\"id\":\"1\",\"nome\":\"A\"}"), false, "$");
+        assertEquals(1, problemas.size());
+        assertTrue(problemas.get(0).contains("$.id"));
+    }
+
+    @Test
+    void rejeitaNumeroNoLugarDeString() throws Exception {
+        List<String> problemas = validador().validar(
+                json("{\"$ref\":\"#/components/schemas/Quadra\"}"), json("{\"id\":1,\"nome\":7}"), false, "$");
+        assertEquals(1, problemas.size());
+        assertTrue(problemas.get(0).contains("$.nome"));
+    }
+
+    @Test
+    void rejeitaDecimalNoLugarDeInteiro() throws Exception {
+        List<String> problemas = validador().validar(
+                json("{\"$ref\":\"#/components/schemas/Quadra\"}"), json("{\"id\":1.5,\"nome\":\"A\"}"), false, "$");
+        assertEquals(1, problemas.size());
+        assertTrue(problemas.get(0).contains("$.id"));
+    }
+
+    @Test
+    void rejeitaObjetoNoLugarDeLista() throws Exception {
+        List<String> problemas = validador().validar(
+                json("{\"$ref\":\"#/components/schemas/Lista\"}"), json("{\"itens\":{\"id\":1}}"), false, "$");
+        assertEquals(1, problemas.size());
+        assertTrue(problemas.get(0).contains("$.itens"));
+    }
+
+    @Test
+    void aceitaInteiroEmCampoNumber() throws Exception {
+        JsonNode schema = json("{\"type\":\"object\",\"properties\":{\"valor\":{\"type\":\"number\"}}}");
+        assertTrue(validador().validar(schema, json("{\"valor\":120}"), true, "$").isEmpty());
+    }
 }

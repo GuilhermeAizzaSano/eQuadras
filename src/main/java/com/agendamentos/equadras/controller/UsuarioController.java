@@ -224,7 +224,7 @@ public class UsuarioController {
     }
 
     @Operation(summary = "Listar usuários (Master Admin)",
-            description = "Papel: ADMIN, exigindo Master Admin. Com `page`: `PageResponse<UsuarioResponseDTO>` (size padrão 10, máximo 50; a ordenação é fixa por `id_usuario` decrescente e o `sort` do cliente é ignorado). SEM `page` (variante legada, não listada separadamente pelo OpenAPI): lista simples `array<UsuarioResponseDTO>` limitada a 200 itens no SQL, sem aviso ao cliente.")
+            description = "Papel: ADMIN, exigindo Master Admin. Com `page`: `PageResponse<UsuarioResponseDTO>` (size padrão 10, máximo 50; a ordenação é fixa por `id_usuario` crescente e o `sort` do cliente é ignorado). SEM `page` (variante legada, não listada separadamente pelo OpenAPI): lista simples `array<UsuarioResponseDTO>` limitada a 200 itens no SQL, sem aviso ao cliente.")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "page")
     public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarUsuariosPaginado(@ParameterObject Pageable pageable,

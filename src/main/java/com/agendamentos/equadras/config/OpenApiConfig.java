@@ -4,6 +4,7 @@ import com.agendamentos.equadras.config.ExemplosDaApi.ErroExemplo;
 import com.agendamentos.equadras.config.ExemplosDaApi.ExemploOperacao;
 import com.agendamentos.equadras.config.ExemplosDaApi.Formato;
 import com.agendamentos.equadras.config.ExemplosDaApi.RespostaExemplo;
+import com.agendamentos.equadras.dto.response.ApiKeyCriadaDTO;
 import com.agendamentos.equadras.dto.response.QuadraFotosResponseDTO;
 import com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -132,8 +133,8 @@ public class OpenApiConfig {
             ));
 
             if (openApi.getComponents() != null) {
-                // QuadraResumoResponseDTO e QuadraFotosResponseDTO não são retornados por tipo em nenhum método (resposta é ResponseEntity<?>)
-                for (Class<?> tipo : List.of(QuadraResumoResponseDTO.class, QuadraFotosResponseDTO.class)) {
+                // QuadraResumoResponseDTO, QuadraFotosResponseDTO e ApiKeyCriadaDTO não são retornados por tipo em nenhum método (resposta é ResponseEntity<?>)
+                for (Class<?> tipo : List.of(QuadraResumoResponseDTO.class, QuadraFotosResponseDTO.class, ApiKeyCriadaDTO.class)) {
                     Map<String, Schema> schemas = ModelConverters.getInstance().read(tipo);
                     schemas.forEach((name, schema) -> openApi.getComponents().addSchemas(name, schema));
                 }
@@ -366,14 +367,17 @@ public class OpenApiConfig {
             erro.cabecalhos().forEach((cabecalho, descricao) ->
                     response.addHeaderObject(cabecalho, new Header().description(descricao).schema(new StringSchema())));
         }
-        response.setContent(new Content().addMediaType(ExemplosDaApi.PROBLEM_JSON, mediaType));
+        // Map devolvido pelo próprio controller sai como application/json, não problem+json
+        String tipoDeMidia = lista.stream().allMatch(e -> e.formato() == Formato.MAPA)
+                ? ExemplosDaApi.JSON : ExemplosDaApi.PROBLEM_JSON;
+        response.setContent(new Content().addMediaType(tipoDeMidia, mediaType));
         operation.getResponses().addApiResponse(String.valueOf(status), response);
     }
 
     private JsonNode corpoDeErro(ErroExemplo erro, String path) {
         ObjectNode corpo = LEITOR.createObjectNode();
         switch (erro.formato()) {
-            case FILTRO -> {
+            case FILTRO, MAPA -> {
                 corpo.put("status", erro.status());
                 corpo.put("title", erro.titulo());
                 corpo.put("detail", erro.detalhe());

@@ -62,7 +62,15 @@ final class OpenApiExemploValidador {
             }
             return;
         }
+        String tipo = schema.path("type").asText("");
         if (!exemplo.isObject()) {
+            if (!tipo.isEmpty() && !tipoPrimitivoCompativel(tipo, exemplo)) {
+                problemas.add(caminho + ": valor " + exemplo + " incompatível com o tipo '" + tipo + "' do schema");
+            }
+            return;
+        }
+        if ("array".equals(tipo)) {
+            problemas.add(caminho + ": o exemplo é um objeto, mas o schema descreve uma lista");
             return;
         }
         Map<String, JsonNode> propriedades = propriedades(schema);
@@ -85,6 +93,16 @@ final class OpenApiExemploValidador {
                 }
             }
         }
+    }
+
+    private static boolean tipoPrimitivoCompativel(String tipo, JsonNode valor) {
+        return switch (tipo) {
+            case "string" -> valor.isTextual();
+            case "integer" -> valor.isIntegralNumber();
+            case "number" -> valor.isNumber();
+            case "boolean" -> valor.isBoolean();
+            default -> false;
+        };
     }
 
     private Map<String, JsonNode> propriedades(JsonNode schemaResolvido) {

@@ -143,7 +143,8 @@ class OpenApiDocumentacaoTest {
             for (Map.Entry<String, JsonNode> resposta : campos(op.corpo().get("responses"))) {
                 boolean sucesso = resposta.getKey().startsWith("2");
                 for (Map.Entry<String, JsonNode> media : campos(resposta.getValue().path("content"))) {
-                    if (!media.getValue().has("schema")) {
+                    // text/event-stream traz exemplo em texto, não comparável a schema JSON
+                    if (!media.getKey().contains("json") || !media.getValue().has("schema")) {
                         continue;
                     }
                     for (JsonNode exemplo : exemplosDe(media.getValue())) {
@@ -222,6 +223,20 @@ class OpenApiDocumentacaoTest {
             JsonNode seguranca = docs.path("paths").path(rota).path("post").path("security");
             assertTrue(seguranca.isArray() && seguranca.isEmpty(), rota + " deve declarar security: [] (rota pública)");
         }
+    }
+
+    // ResponseEntity<?>: o schema real precisa ser declarado, senão o exemplo não é validado
+    @Test
+    void loginERegeneracaoDeApiKeyReferenciamODtoRealEO429DaChaveEJsonSimples() {
+        JsonNode login = docs.path("paths").path("/api/usuarios/login").path("post").path("responses");
+        JsonNode chave = docs.path("paths").path("/api/usuarios/api-key/regenerar").path("post").path("responses");
+        assertEquals("#/components/schemas/UsuarioResponseDTO",
+                login.path("200").path("content").path("application/json").path("schema").path("$ref").asText());
+        assertEquals("#/components/schemas/ApiKeyCriadaDTO",
+                chave.path("200").path("content").path("application/json").path("schema").path("$ref").asText());
+        // UsuarioController.regenerarApiKey devolve um Map, serializado como application/json
+        assertTrue(chave.path("429").path("content").has("application/json"));
+        assertTrue(!chave.path("429").path("content").has("application/problem+json"));
     }
 
     // Todo item do registro aponta para uma operação real (evita erro de digitação em path/método)

@@ -49,7 +49,7 @@ final class ExemplosUsuarios {
                     }
                     """)
                 .okComCabecalhos("200", "Login realizado. O corpo traz o perfil; o JWT vai apenas no cookie HttpOnly `equadras_session`.",
-                        USUARIO, Map.of("Set-Cookie", "Cookie de sessão `equadras_session` (HttpOnly, SameSite=Lax, Path=/)."))
+                        USUARIO, "UsuarioResponseDTO", Map.of("Set-Cookie", "Cookie de sessão `equadras_session` (HttpOnly, SameSite=Lax, Path=/)."))
                 .erro(Erros.validacao("Dados inválidos: E-mail: Formato de e-mail inválido"))
                 .erro(Erros.regraNegocio("CREDENCIAIS_INVALIDAS", "E-mail ou senha incorretos."))
                 .erro(Erros.muitasTentativasLogin("Muitas tentativas falhas de login para esta conta. Tente novamente em 300 segundos."))
@@ -84,7 +84,7 @@ final class ExemplosUsuarios {
                       "last4": "b1a0",
                       "criadaEm": "2026-09-29T14:30:00Z"
                     }
-                    """, Map.of("Cache-Control", "`no-store, no-cache, must-revalidate, max-age=0`: a resposta não pode ser guardada em cache."))
+                    """, "ApiKeyCriadaDTO", Map.of("Cache-Control", "`no-store, no-cache, must-revalidate, max-age=0`: a resposta não pode ser guardada em cache."))
                 .erro(Erros.naoAutenticado())
                 .erro(Erros.muitasRegeneracoesApiKey())
                 .build());
