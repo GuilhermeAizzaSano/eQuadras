@@ -4,11 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.CannotCreateTransactionException;
 
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -134,5 +139,35 @@ class GlobalExceptionHandlerTest {
         ProblemDetail problem = exceptionHandler.handleRegraNegocio(new RegraNegocioException("CONFLITO_STATUS", "x"), request);
 
         assertEquals(HttpStatus.CONFLICT.value(), problem.getStatus());
+    }
+
+    @Test
+    @DisplayName("Pool esgotado ao abrir transação vira 503 com Retry-After")
+    void deveMapearFalhaAoCriarTransacaoPara503() {
+        CannotCreateTransactionException ex = new CannotCreateTransactionException(
+                "Could not open JPA EntityManager for transaction",
+                new SQLTransientConnectionException("HikariPool-1 - Connection is not available, request timed out after 6000ms."));
+
+        ResponseEntity<ProblemDetail> response = exceptionHandler.handleBancoIndisponivel(ex, request);
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertEquals("5", response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER));
+        ProblemDetail problem = response.getBody();
+        assertNotNull(problem);
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE.value(), problem.getStatus());
+        assertEquals("SERVICO_INDISPONIVEL", problem.getProperties().get("code"));
+    }
+
+    @Test
+    @DisplayName("Falha de conexão fora de transação (DataAccessResourceFailureException) também vira 503")
+    void deveMapearFalhaDeRecursoDeDadosPara503() {
+        DataAccessResourceFailureException ex = new DataAccessResourceFailureException("Unable to acquire JDBC Connection");
+
+        ResponseEntity<ProblemDetail> response = exceptionHandler.handleBancoIndisponivel(ex, request);
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertEquals("5", response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER));
+        assertNotNull(response.getBody());
+        assertEquals("SERVICO_INDISPONIVEL", response.getBody().getProperties().get("code"));
     }
 }

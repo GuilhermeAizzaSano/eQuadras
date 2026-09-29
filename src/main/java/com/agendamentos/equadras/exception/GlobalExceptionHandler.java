@@ -3,11 +3,15 @@ package com.agendamentos.equadras.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -298,6 +302,24 @@ public class GlobalExceptionHandler {
         problemDetail.setProperty("code", "TIPO_MIDIA_NAO_SUPORTADO");
         problemDetail.setProperty("timestamp", Instant.now().toString());
         return problemDetail;
+    }
+
+    // Trata indisponibilidade do banco (pool esgotado ou conexão recusada) como falha transitória (HTTP 503)
+    @ExceptionHandler({CannotCreateTransactionException.class, DataAccessResourceFailureException.class})
+    public ResponseEntity<ProblemDetail> handleBancoIndisponivel(Exception ex, HttpServletRequest request) {
+        log.warn("Banco de dados indisponível na requisição [{}]: {}", request.getRequestURI(), ex.getMessage());
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "O serviço está temporariamente sobrecarregado. Por favor, tente novamente em alguns segundos."
+        );
+        problemDetail.setTitle("Serviço Indisponível");
+        problemDetail.setType(URI.create("https://api.equadras.com/erros/servico-indisponivel"));
+        problemDetail.setInstance(URI.create(request.getRequestURI()));
+        problemDetail.setProperty("code", "SERVICO_INDISPONIVEL");
+        problemDetail.setProperty("timestamp", Instant.now().toString());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header(HttpHeaders.RETRY_AFTER, "5")
+                .body(problemDetail);
     }
 
     // Handler global para exceções inesperadas
