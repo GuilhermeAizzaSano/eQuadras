@@ -12,9 +12,17 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class AgendamentoBotService {
+
+    // 19, 9, 19h, 19 h, 19h30, 9:00, 19:00 e 19:00:00 (os segundos são ignorados)
+    private static final Pattern PADRAO_HORA = Pattern.compile("^(\\d{1,2})(?:\\s*h\\s*(\\d{2})?|:(\\d{2})(?::\\d{2})?)?$");
+    // 1900
+    private static final Pattern PADRAO_HORA_COMPACTA = Pattern.compile("^(\\d{2})(\\d{2})$");
 
     private final QuadraBuscaService quadraBuscaService;
     private final UsuarioService usuarioService;
@@ -75,15 +83,15 @@ public class AgendamentoBotService {
             throw new IllegalArgumentException("Hora não pode ser vazia.");
         }
         try {
-            if (horaStr.length() == 5 && horaStr.contains(":")) {
-                return LocalTime.parse(horaStr);
+            String normalizada = horaStr.trim().toLowerCase(Locale.ROOT);
+            Matcher hora = PADRAO_HORA.matcher(normalizada);
+            if (hora.matches()) {
+                String minutos = hora.group(2) != null ? hora.group(2) : hora.group(3);
+                return LocalTime.of(Integer.parseInt(hora.group(1)), minutos != null ? Integer.parseInt(minutos) : 0);
             }
-            if (horaStr.length() <= 2) {
-                return LocalTime.of(Integer.parseInt(horaStr), 0);
-            }
-            String limpo = horaStr.replaceAll("[^0-9]", "");
-            if (limpo.length() >= 4) {
-                return LocalTime.of(Integer.parseInt(limpo.substring(0, 2)), Integer.parseInt(limpo.substring(2, 4)));
+            Matcher compacta = PADRAO_HORA_COMPACTA.matcher(normalizada);
+            if (compacta.matches()) {
+                return LocalTime.of(Integer.parseInt(compacta.group(1)), Integer.parseInt(compacta.group(2)));
             }
             throw new IllegalArgumentException("Formato de hora inválido: " + horaStr);
         } catch (Exception e) {

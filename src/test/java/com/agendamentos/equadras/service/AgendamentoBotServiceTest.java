@@ -11,6 +11,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -144,5 +148,36 @@ class AgendamentoBotServiceTest {
                 agendamentoBotService.agendarViaBot(dto));
 
         assertEquals("Hora de início deve ser anterior à hora de término.", ex.getMessage());
+    }
+
+    @ParameterizedTest(name = "\"{0}\" vira {1}")
+    @DisplayName("Deve interpretar os formatos de hora aceitos pelo bot")
+    @CsvSource(delimiter = '|', value = {
+            "19:00|19:00", "19|19:00", "7|07:00", "19h|19:00", "9h|09:00", "19 h|19:00", " 19 |19:00",
+            "19H|19:00", "19h00|19:00", "19h30|19:30", "9:00|09:00", "9:30|09:30", "19:00:00|19:00", "1900|19:00"
+    })
+    void deveAceitarFormatosDeHoraDoBot(String horaEntrada, LocalTime horaEsperada) {
+        when(usuarioService.obterOuCriarUsuarioBot("Robson", "11999998888")).thenReturn(usuario);
+
+        agendamentoBotService.agendarViaBot(new AgendamentoBotRequestDTO(
+                10L, null, null, "2026-09-26", horaEntrada, null, "Robson", "11999998888"));
+
+        ArgumentCaptor<AgendamentoCriacaoDTO> captor = ArgumentCaptor.forClass(AgendamentoCriacaoDTO.class);
+        verify(agendamentoService).agendar(captor.capture(), eq(1L));
+        assertEquals(LocalDate.of(2026, 9, 26).atTime(horaEsperada), captor.getValue().dataHoraInicio());
+        assertEquals(LocalDate.of(2026, 9, 26).atTime(horaEsperada.plusHours(1)), captor.getValue().dataHoraFim());
+    }
+
+    @ParameterizedTest(name = "\"{0}\" é rejeitada")
+    @DisplayName("Deve rejeitar horas inválidas com mensagem clara")
+    @ValueSource(strings = {"abc", "25h", "19:60", "24", "9h5", "19h.", "", "19:"})
+    void deveRejeitarHoraInvalida(String horaEntrada) {
+        AgendamentoBotRequestDTO dto = new AgendamentoBotRequestDTO(
+                10L, null, null, "2026-09-26", horaEntrada, null, "Robson", "11999998888");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                agendamentoBotService.agendarViaBot(dto));
+
+        assertTrue(ex.getMessage().contains("hora") || ex.getMessage().contains("Hora"), ex.getMessage());
     }
 }
