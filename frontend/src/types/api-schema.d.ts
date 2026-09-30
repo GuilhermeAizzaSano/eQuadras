@@ -943,7 +943,7 @@ export interface components {
              */
             phone_usuario: string;
             /**
-             * @description Papel da conta: CLIENT ou ADMIN
+             * @description Opcional. Papel da conta: CLIENT ou ADMIN
              * @example CLIENT
              * @enum {string}
              */
@@ -1010,54 +1010,54 @@ export interface components {
         };
         QuadraCriacaoDTO: {
             /**
-             * @description Bairro, até 100 caracteres
+             * @description Opcional. Bairro, até 100 caracteres
              * @example Jardim das Flores
              */
             bairro?: string;
             /**
-             * @description CEP no formato XXXXX-XXX
+             * @description Opcional. CEP no formato XXXXX-XXX
              * @example 15000-000
              */
             cep?: string;
             /**
-             * @description Cidade, até 100 caracteres
+             * @description Opcional. Cidade, até 100 caracteres
              * @example São José do Rio Preto
              */
             cidade?: string;
             /**
              * Format: date
-             * @description Data limite para agendamentos futuros (yyyy-MM-dd). Não pode estar no passado
+             * @description Opcional. Data limite para agendamentos futuros (yyyy-MM-dd). Não pode estar no passado
              * @example 2026-12-31
              */
             dataLimiteAgendamento?: string;
             /**
-             * @description Descrição da infraestrutura, até 2000 caracteres, sem os símbolos < e >
+             * @description Opcional. Descrição da infraestrutura, até 2000 caracteres, sem os símbolos < e >
              * @example Grama sintética padrão FIFA com iluminação em LED e vestiários.
              */
             descricao?: string;
-            /** @description Horários de funcionamento semanais, no máximo 7 regras, um dia da semana por regra */
+            /** @description Opcional. Horários de funcionamento semanais, no máximo 7 regras, um dia da semana por regra */
             disponibilidades?: components["schemas"]["DisponibilidadeDiaDTO"][];
             /**
-             * @description UF com 2 letras maiúsculas
+             * @description Opcional. UF com 2 letras maiúsculas
              * @example SP
              */
             estado?: string;
-            /** @description URLs das fotos da quadra, no máximo 5, cada uma com até 255 caracteres */
+            /** @description Opcional. URLs das fotos da quadra, no máximo 5, cada uma com até 255 caracteres */
             fotos?: string[];
             /**
              * Format: double
-             * @description Latitude em graus, de -90 a 90
+             * @description Opcional. Latitude em graus, de -90 a 90
              * @example -20.8113
              */
             latitude?: number;
             /**
-             * @description Logradouro, até 255 caracteres
+             * @description Opcional. Logradouro, até 255 caracteres
              * @example Av. Brasil, 1500
              */
             logradouro?: string;
             /**
              * Format: double
-             * @description Longitude em graus, de -180 a 180
+             * @description Opcional. Longitude em graus, de -180 a 180
              * @example -49.3758
              */
             longitude?: number;
@@ -1255,12 +1255,12 @@ export interface components {
              */
             horaInicio?: components["schemas"]["LocalTime"];
             /**
-             * @description Motivo do bloqueio, até 255 caracteres, sem os símbolos < e >
+             * @description Opcional. Motivo do bloqueio, até 255 caracteres, sem os símbolos < e >
              * @example Torneio Interno da Arena
              */
             motivo?: string;
             /**
-             * @description true desbloqueia o restante de um dia já bloqueado por inteiro e mantém só este intervalo. Padrão false
+             * @description Opcional. true desbloqueia o restante de um dia já bloqueado por inteiro e mantém só este intervalo. Padrão false
              * @example false
              */
             substituirDiaInteiro?: boolean;
@@ -2808,11 +2808,11 @@ export interface operations {
     listarUsuariosPaginado: {
         parameters: {
             query?: {
-                /** @description Zero-based page index (0..N) */
+                /** @description Opcional. Zero-based page index (0..N) */
                 page?: number;
-                /** @description The size of the page to be returned */
+                /** @description Opcional. The size of the page to be returned */
                 size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                /** @description Opcional. Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
                 sort?: string[];
             };
             header?: never;
@@ -3091,42 +3091,42 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description ID da quadra na query. Usado se não houver ID no path.
+                 * @description Opcional. ID da quadra na query. Usado se não houver ID no path.
                  * @example 1
                  */
                 id?: number;
                 /**
-                 * @description Alias de `id`. Usado se não houver ID no path nem `id` na query.
+                 * @description Opcional. Alias de `id`. Usado se não houver ID no path nem `id` na query.
                  * @example 1
                  */
                 quadraId?: number;
                 /**
-                 * @description Filtra por parte do nome da quadra.
+                 * @description Opcional. Filtra por parte do nome da quadra.
                  * @example Arena
                  */
                 nome?: string;
                 /**
-                 * @description Alias de `nome`. Só vale se `nome` estiver vazio.
+                 * @description Opcional. Alias de `nome`. Só vale se `nome` estiver vazio.
                  * @example Arena
                  */
                 nomeQuadra?: string;
                 /**
-                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @description Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
                  * @example FUTEBOL
                  */
                 tipoEsporte?: string;
                 /**
-                 * @description Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+                 * @description Opcional. Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
                  * @example FUTEBOL
                  */
                 esporte?: string;
                 /**
-                 * @description Filtra pela cidade.
+                 * @description Opcional. Filtra pela cidade.
                  * @example São José do Rio Preto
                  */
                 cidade?: string;
                 /**
-                 * @description Filtra pelo bairro.
+                 * @description Opcional. Filtra pelo bairro.
                  * @example Jardim das Flores
                  */
                 bairro?: string;
@@ -3563,74 +3563,74 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Latitude do ponto de busca por proximidade (graus, -90 a 90). Só filtra se `longitude` também vier.
+                 * @description Opcional. Latitude do ponto de busca por proximidade (graus, -90 a 90). Só filtra se `longitude` também vier.
                  * @example -20.8113
                  */
                 latitude?: number;
                 /**
-                 * @description Longitude do ponto de busca por proximidade (graus, -180 a 180). Só filtra se `latitude` também vier.
+                 * @description Opcional. Longitude do ponto de busca por proximidade (graus, -180 a 180). Só filtra se `latitude` também vier.
                  * @example -49.3758
                  */
                 longitude?: number;
                 /**
-                 * @description Raio da busca por proximidade, em km. Usado apenas com `latitude` e `longitude`.
+                 * @description Opcional. Raio da busca por proximidade, em km. Usado apenas com `latitude` e `longitude`.
                  * @example 2
                  */
                 raioKm?: string;
                 /**
-                 * @description Filtra pelo tipo de esporte. Valores: FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS.
+                 * @description Opcional. Filtra pelo tipo de esporte. Valores: FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS.
                  * @example FUTEBOL
                  */
                 tipoEsporte?: string;
                 /**
-                 * @description Filtra por parte do nome da quadra.
+                 * @description Opcional. Filtra por parte do nome da quadra.
                  * @example Arena
                  */
                 nome?: string;
                 /**
-                 * @description Filtra por parte do endereço (logradouro).
+                 * @description Opcional. Filtra por parte do endereço (logradouro).
                  * @example Av. Brasil
                  */
                 endereco?: string;
                 /**
-                 * @description Filtra pela cidade.
+                 * @description Opcional. Filtra pela cidade.
                  * @example São José do Rio Preto
                  */
                 cidade?: string;
                 /**
-                 * @description Filtra pelo bairro.
+                 * @description Opcional. Filtra pelo bairro.
                  * @example Jardim das Flores
                  */
                 bairro?: string;
                 /**
-                 * @description Filtra pelo CEP.
+                 * @description Opcional. Filtra pelo CEP.
                  * @example 15000-000
                  */
                 cep?: string;
                 /**
-                 * @description Força o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedência sobre os headers `X-Client`/`X-View` e sobre a URL.
+                 * @description Opcional. Força o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedência sobre os headers `X-Client`/`X-View` e sobre a URL.
                  * @example true
                  */
                 resumido?: boolean;
                 /**
-                 * @description Índice da página, começando em 0. Só tem efeito no formato completo e o transforma em resposta paginada (`PageQuadraResponseDTO`). IGNORADO no formato resumido.
+                 * @description Opcional. Índice da página, começando em 0. Só tem efeito no formato completo e o transforma em resposta paginada (`PageQuadraResponseDTO`). IGNORADO no formato resumido.
                  * @example 0
                  */
                 page?: number;
                 /**
-                 * @description Itens por página. Padrão 6; máximo 50 (valores maiores são limitados a 50; zero ou negativo volta para 6). Só tem efeito no formato completo com `page`. IGNORADO no formato resumido.
+                 * @description Opcional. Itens por página. Padrão 6; máximo 50 (valores maiores são limitados a 50; zero ou negativo volta para 6). Só tem efeito no formato completo com `page`. IGNORADO no formato resumido.
                  * @example 6
                  */
                 size?: string;
             };
             header?: {
                 /**
-                 * @description Identifica o cliente. `frontend` força o formato completo; `api` força o resumido (só vale se `resumido` não vier).
+                 * @description Opcional. Identifica o cliente. `frontend` força o formato completo; `api` força o resumido (só vale se `resumido` não vier).
                  * @example api
                  */
                 "X-Client"?: "frontend" | "api";
                 /**
-                 * @description Formato desejado. `full` = completo; `resumo` ou `summary` = resumido (só vale se `resumido` não vier). Se `X-Client` também vier, `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View: resumo|summary` e `X-Client: api`.
+                 * @description Opcional. Formato desejado. `full` = completo; `resumo` ou `summary` = resumido (só vale se `resumido` não vier). Se `X-Client` também vier, `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View: resumo|summary` e `X-Client: api`.
                  * @example resumo
                  */
                 "X-View"?: "full" | "resumo" | "summary";
@@ -3946,22 +3946,22 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description ID do pagamento no formato IPN (usado com `topic=payment` ou `type=payment`).
+                 * @description Opcional. ID do pagamento no formato IPN (usado com `topic=payment` ou `type=payment`).
                  * @example 987654321
                  */
                 id?: string;
                 /**
-                 * @description Tópico IPN. Só `payment` é processado.
+                 * @description Opcional. Tópico IPN. Só `payment` é processado.
                  * @example payment
                  */
                 topic?: string;
                 /**
-                 * @description Tipo do evento. Só valores contendo `payment` são processados.
+                 * @description Opcional. Tipo do evento. Só valores contendo `payment` são processados.
                  * @example payment
                  */
                 type?: string;
                 /**
-                 * @description ID do pagamento no formato Webhooks V2 (`data.id`), usado se `id` não vier.
+                 * @description Opcional. ID do pagamento no formato Webhooks V2 (`data.id`), usado se `id` não vier.
                  * @example 987654321
                  */
                 "data.id"?: string;
@@ -4118,15 +4118,15 @@ export interface operations {
                  * @example ATIVOS
                  */
                 aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                /** @description Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`. */
+                /** @description Opcional. Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`. */
                 apenasPendentes?: string;
-                /** @description Zero-based page index (0..N) */
+                /** @description Opcional. Zero-based page index (0..N) */
                 page?: number;
-                /** @description The size of the page to be returned */
+                /** @description Opcional. The size of the page to be returned */
                 size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                /** @description Opcional. Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
                 sort?: string[];
-                /** @description Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas. */
+                /** @description Opcional. Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas. */
                 historico?: string;
             };
             header?: never;
@@ -4663,42 +4663,42 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description ID da quadra na query. Usado se não houver ID no path.
+                 * @description Opcional. ID da quadra na query. Usado se não houver ID no path.
                  * @example 1
                  */
                 id?: number;
                 /**
-                 * @description Alias de `id`. Usado se não houver ID no path nem `id` na query.
+                 * @description Opcional. Alias de `id`. Usado se não houver ID no path nem `id` na query.
                  * @example 1
                  */
                 quadraId?: number;
                 /**
-                 * @description Filtra por parte do nome da quadra.
+                 * @description Opcional. Filtra por parte do nome da quadra.
                  * @example Arena
                  */
                 nome?: string;
                 /**
-                 * @description Alias de `nome`. Só vale se `nome` estiver vazio.
+                 * @description Opcional. Alias de `nome`. Só vale se `nome` estiver vazio.
                  * @example Arena
                  */
                 nomeQuadra?: string;
                 /**
-                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @description Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
                  * @example FUTEBOL
                  */
                 tipoEsporte?: string;
                 /**
-                 * @description Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+                 * @description Opcional. Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
                  * @example FUTEBOL
                  */
                 esporte?: string;
                 /**
-                 * @description Filtra pela cidade.
+                 * @description Opcional. Filtra pela cidade.
                  * @example São José do Rio Preto
                  */
                 cidade?: string;
                 /**
-                 * @description Filtra pelo bairro.
+                 * @description Opcional. Filtra pelo bairro.
                  * @example Jardim das Flores
                  */
                 bairro?: string;
@@ -4882,12 +4882,12 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Índice da página, começando em 0.
+                 * @description Opcional. Índice da página, começando em 0.
                  * @example 0
                  */
                 page?: string;
                 /**
-                 * @description Itens por página. Padrão 5; máximo 50 (valores maiores são limitados a 50).
+                 * @description Opcional. Itens por página. Padrão 5; máximo 50 (valores maiores são limitados a 50).
                  * @example 5
                  */
                 size?: string;
@@ -5174,15 +5174,15 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.
+                 * @description Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS.
                  * @example ATIVOS
                  */
                 aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                /** @description Zero-based page index (0..N) */
+                /** @description Opcional. Zero-based page index (0..N) */
                 page?: number;
-                /** @description The size of the page to be returned */
+                /** @description Opcional. The size of the page to be returned */
                 size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                /** @description Opcional. Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
                 sort?: string[];
             };
             header?: never;
@@ -5279,26 +5279,26 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir de hoje.
+                 * @description Opcional. Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir de hoje.
                  * @example amanha
                  */
                 data?: string;
                 /**
-                 * @description Restringe a uma quadra pelo ID.
+                 * @description Opcional. Restringe a uma quadra pelo ID.
                  * @example 1
                  */
                 quadraId?: number;
                 /**
-                 * @description Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
+                 * @description Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS, BASQUETE, TENIS).
                  * @example FUTEBOL
                  */
                 tipoEsporte?: string;
                 /**
-                 * @description Filtra por parte do nome da quadra.
+                 * @description Opcional. Filtra por parte do nome da quadra.
                  * @example Arena
                  */
                 nomeQuadra?: string;
-                /** @description Se `true`, devolve só horários livres. Padrão `false`. */
+                /** @description Opcional. Se `true`, devolve só horários livres. Padrão `false`. */
                 apenasDisponiveis?: string;
             };
             header?: never;
@@ -5551,7 +5551,7 @@ export interface operations {
                  */
                 mes: number;
                 /**
-                 * @description Restringe a uma quadra.
+                 * @description Opcional. Restringe a uma quadra.
                  * @example 1
                  */
                 quadraId?: number;
@@ -5623,22 +5623,22 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @description Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
                  * @example 2026-10-12
                  */
                 data?: string;
                 /**
-                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @description Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
                  * @example 2026-10-12T00:00:00
                  */
                 inicio?: string;
                 /**
-                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @description Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
                  * @example 2026-10-13T00:00:00
                  */
                 fim?: string;
                 /**
-                 * @description Restringe a uma quadra.
+                 * @description Opcional. Restringe a uma quadra.
                  * @example 1
                  */
                 quadraId?: number;
@@ -5709,22 +5709,22 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @description Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
                  * @example 2026-10-12
                  */
                 data?: string;
                 /**
-                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @description Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
                  * @example 2026-10-12T00:00:00
                  */
                 inicio?: string;
                 /**
-                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @description Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
                  * @example 2026-10-13T00:00:00
                  */
                 fim?: string;
                 /**
-                 * @description Restringe a uma quadra.
+                 * @description Opcional. Restringe a uma quadra.
                  * @example 1
                  */
                 quadraId?: number;
@@ -5807,35 +5807,35 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+                 * @description Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
                  * @example 2026-10-12
                  */
                 data?: string;
                 /**
-                 * @description Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
+                 * @description Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo). Exige `fim`.
                  * @example 2026-10-12T00:00:00
                  */
                 inicio?: string;
                 /**
-                 * @description Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
+                 * @description Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige `inicio`. Máximo de 24 h após `inicio`.
                  * @example 2026-10-13T00:00:00
                  */
                 fim?: string;
                 /**
-                 * @description Restringe a uma quadra.
+                 * @description Opcional. Restringe a uma quadra.
                  * @example 1
                  */
                 quadraId?: number;
                 /**
-                 * @description Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.
+                 * @description Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS.
                  * @example ATIVOS
                  */
                 aba?: "ATIVOS" | "REALIZADOS" | "CANCELADOS";
-                /** @description Zero-based page index (0..N) */
+                /** @description Opcional. Zero-based page index (0..N) */
                 page?: number;
-                /** @description The size of the page to be returned */
+                /** @description Opcional. The size of the page to be returned */
                 size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                /** @description Opcional. Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
                 sort?: string[];
             };
             header?: never;
@@ -5959,42 +5959,42 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Índice da página, começando em 0.
+                 * @description Opcional. Índice da página, começando em 0.
                  * @example 0
                  */
                 page?: string;
                 /**
-                 * @description Itens por página. Padrão 10; mínimo 1; máximo 100 (fora da faixa é ajustado).
+                 * @description Opcional. Itens por página. Padrão 10; mínimo 1; máximo 100 (fora da faixa é ajustado).
                  * @example 10
                  */
                 size?: string;
                 /**
-                 * @description Filtra pelo ID do usuário que executou a ação.
+                 * @description Opcional. Filtra pelo ID do usuário que executou a ação.
                  * @example 10
                  */
                 usuarioId?: number;
                 /**
-                 * @description Filtra pela categoria do evento (enum `CategoriaAuditoria`: AUTENTICACAO, AGENDAMENTO, QUADRA, USUARIO, BLOQUEIO, API_KEY).
+                 * @description Opcional. Filtra pela categoria do evento (enum `CategoriaAuditoria`: AUTENTICACAO, AGENDAMENTO, QUADRA, USUARIO, BLOQUEIO, API_KEY).
                  * @example AUTENTICACAO
                  */
                 categoria?: "AUTENTICACAO" | "AGENDAMENTO" | "QUADRA" | "USUARIO" | "BLOQUEIO" | "API_KEY";
                 /**
-                 * @description Filtra pelo código da ação (ex.: LOGOUT).
+                 * @description Opcional. Filtra pelo código da ação (ex.: LOGOUT).
                  * @example LOGOUT
                  */
                 acao?: string;
                 /**
-                 * @description Início do período (ISO 8601 com fuso, ex.: `2026-09-29T00:00:00Z`), inclusivo.
+                 * @description Opcional. Início do período (ISO 8601 com fuso, ex.: `2026-09-29T00:00:00Z`), inclusivo.
                  * @example 2026-09-29T00:00:00Z
                  */
                 dataInicio?: string;
                 /**
-                 * @description Fim do período (ISO 8601 com fuso).
+                 * @description Opcional. Fim do período (ISO 8601 com fuso).
                  * @example 2026-09-30T00:00:00Z
                  */
                 dataFim?: string;
                 /**
-                 * @description Busca livre de texto nos logs.
+                 * @description Opcional. Busca livre de texto nos logs.
                  * @example arthur
                  */
                 busca?: string;

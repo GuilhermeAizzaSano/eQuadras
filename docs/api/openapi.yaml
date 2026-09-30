@@ -811,7 +811,7 @@ paths:
       parameters:
       - name: page
         in: query
-        description: Zero-based page index (0..N)
+        description: Opcional. Zero-based page index (0..N)
         required: false
         schema:
           type: integer
@@ -819,7 +819,7 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: The size of the page to be returned
+        description: Opcional. The size of the page to be returned
         required: false
         schema:
           type: integer
@@ -827,8 +827,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Sorting criteria in the format: property,(asc|desc). Default\
-          \ sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
+          \ Default sort order is ascending. Multiple sort criteria are supported."
         required: false
         schema:
           type: array
@@ -1062,7 +1062,7 @@ paths:
         example: 1
       - name: id
         in: query
-        description: ID da quadra na query. Usado se não houver ID no path.
+        description: Opcional. ID da quadra na query. Usado se não houver ID no path.
         required: false
         schema:
           type: integer
@@ -1070,7 +1070,8 @@ paths:
         example: 1
       - name: quadraId
         in: query
-        description: Alias de `id`. Usado se não houver ID no path nem `id` na query.
+        description: Opcional. Alias de `id`. Usado se não houver ID no path nem `id`
+          na query.
         required: false
         schema:
           type: integer
@@ -1078,43 +1079,44 @@ paths:
         example: 1
       - name: nome
         in: query
-        description: Filtra por parte do nome da quadra.
+        description: Opcional. Filtra por parte do nome da quadra.
         required: false
         schema:
           type: string
         example: Arena
       - name: nomeQuadra
         in: query
-        description: Alias de `nome`. Só vale se `nome` estiver vazio.
+        description: Opcional. Alias de `nome`. Só vale se `nome` estiver vazio.
         required: false
         schema:
           type: string
         example: Arena
       - name: tipoEsporte
         in: query
-        description: "Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS,\
-          \ BASQUETE, TENIS)."
+        description: "Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI,\
+          \ BEACH_TENNIS, BASQUETE, TENIS)."
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: esporte
         in: query
-        description: Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+        description: Opcional. Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver
+          vazio.
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: cidade
         in: query
-        description: Filtra pela cidade.
+        description: Opcional. Filtra pela cidade.
         required: false
         schema:
           type: string
         example: São José do Rio Preto
       - name: bairro
         in: query
-        description: Filtra pelo bairro.
+        description: Opcional. Filtra pelo bairro.
         required: false
         schema:
           type: string
@@ -1538,8 +1540,8 @@ paths:
       parameters:
       - name: latitude
         in: query
-        description: "Latitude do ponto de busca por proximidade (graus, -90 a 90).\
-          \ Só filtra se `longitude` também vier."
+        description: "Opcional. Latitude do ponto de busca por proximidade (graus,\
+          \ -90 a 90). Só filtra se `longitude` também vier."
         required: false
         schema:
           type: number
@@ -1547,8 +1549,8 @@ paths:
         example: -20.8113
       - name: longitude
         in: query
-        description: "Longitude do ponto de busca por proximidade (graus, -180 a 180).\
-          \ Só filtra se `latitude` também vier."
+        description: "Opcional. Longitude do ponto de busca por proximidade (graus,\
+          \ -180 a 180). Só filtra se `latitude` também vier."
         required: false
         schema:
           type: number
@@ -1556,58 +1558,58 @@ paths:
         example: -49.3758
       - name: raioKm
         in: query
-        description: "Raio da busca por proximidade, em km. Usado apenas com `latitude`\
-          \ e `longitude`."
+        description: "Opcional. Raio da busca por proximidade, em km. Usado apenas\
+          \ com `latitude` e `longitude`."
         required: false
         schema:
           type: string
         example: 2.0
       - name: tipoEsporte
         in: query
-        description: "Filtra pelo tipo de esporte. Valores: FUTEBOL, FUTSAL, VOLEI,\
-          \ BEACH_TENNIS, BASQUETE, TENIS."
+        description: "Opcional. Filtra pelo tipo de esporte. Valores: FUTEBOL, FUTSAL,\
+          \ VOLEI, BEACH_TENNIS, BASQUETE, TENIS."
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: nome
         in: query
-        description: Filtra por parte do nome da quadra.
+        description: Opcional. Filtra por parte do nome da quadra.
         required: false
         schema:
           type: string
         example: Arena
       - name: endereco
         in: query
-        description: Filtra por parte do endereço (logradouro).
+        description: Opcional. Filtra por parte do endereço (logradouro).
         required: false
         schema:
           type: string
         example: Av. Brasil
       - name: cidade
         in: query
-        description: Filtra pela cidade.
+        description: Opcional. Filtra pela cidade.
         required: false
         schema:
           type: string
         example: São José do Rio Preto
       - name: bairro
         in: query
-        description: Filtra pelo bairro.
+        description: Opcional. Filtra pelo bairro.
         required: false
         schema:
           type: string
         example: Jardim das Flores
       - name: cep
         in: query
-        description: Filtra pelo CEP.
+        description: Opcional. Filtra pelo CEP.
         required: false
         schema:
           type: string
         example: 15000-000
       - name: resumido
         in: query
-        description: "Força o formato: `true` = resumido (`QuadraResumoResponseDTO`),\
+        description: "Opcional. Força o formato: `true` = resumido (`QuadraResumoResponseDTO`),\
           \ `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedê\
           ncia sobre os headers `X-Client`/`X-View` e sobre a URL."
         required: false
@@ -1616,9 +1618,9 @@ paths:
         example: true
       - name: page
         in: query
-        description: "Índice da página, começando em 0. Só tem efeito no formato completo\
-          \ e o transforma em resposta paginada (`PageQuadraResponseDTO`). IGNORADO\
-          \ no formato resumido."
+        description: "Opcional. Índice da página, começando em 0. Só tem efeito no\
+          \ formato completo e o transforma em resposta paginada (`PageQuadraResponseDTO`).\
+          \ IGNORADO no formato resumido."
         required: false
         schema:
           type: integer
@@ -1626,9 +1628,9 @@ paths:
         example: 0
       - name: size
         in: query
-        description: Itens por página. Padrão 6; máximo 50 (valores maiores são limitados
-          a 50; zero ou negativo volta para 6). Só tem efeito no formato completo
-          com `page`. IGNORADO no formato resumido.
+        description: Opcional. Itens por página. Padrão 6; máximo 50 (valores maiores
+          são limitados a 50; zero ou negativo volta para 6). Só tem efeito no formato
+          completo com `page`. IGNORADO no formato resumido.
         required: false
         schema:
           type: string
@@ -1636,8 +1638,8 @@ paths:
         example: 6
       - name: X-Client
         in: header
-        description: Identifica o cliente. `frontend` força o formato completo; `api`
-          força o resumido (só vale se `resumido` não vier).
+        description: Opcional. Identifica o cliente. `frontend` força o formato completo;
+          `api` força o resumido (só vale se `resumido` não vier).
         required: false
         schema:
           type: string
@@ -1647,8 +1649,8 @@ paths:
         example: api
       - name: X-View
         in: header
-        description: "Formato desejado. `full` = completo; `resumo` ou `summary` =\
-          \ resumido (só vale se `resumido` não vier). Se `X-Client` também vier,\
+        description: "Opcional. Formato desejado. `full` = completo; `resumo` ou `summary`\
+          \ = resumido (só vale se `resumido` não vier). Se `X-Client` também vier,\
           \ `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View:\
           \ resumo|summary` e `X-Client: api`."
         required: false
@@ -2030,30 +2032,30 @@ paths:
       parameters:
       - name: id
         in: query
-        description: ID do pagamento no formato IPN (usado com `topic=payment` ou
-          `type=payment`).
+        description: Opcional. ID do pagamento no formato IPN (usado com `topic=payment`
+          ou `type=payment`).
         required: false
         schema:
           type: string
         example: 987654321
       - name: topic
         in: query
-        description: Tópico IPN. Só `payment` é processado.
+        description: Opcional. Tópico IPN. Só `payment` é processado.
         required: false
         schema:
           type: string
         example: payment
       - name: type
         in: query
-        description: Tipo do evento. Só valores contendo `payment` são processados.
+        description: Opcional. Tipo do evento. Só valores contendo `payment` são processados.
         required: false
         schema:
           type: string
         example: payment
       - name: data.id
         in: query
-        description: "ID do pagamento no formato Webhooks V2 (`data.id`), usado se\
-          \ `id` não vier."
+        description: "Opcional. ID do pagamento no formato Webhooks V2 (`data.id`),\
+          \ usado se `id` não vier."
         required: false
         schema:
           type: string
@@ -2235,14 +2237,14 @@ paths:
         example: ATIVOS
       - name: apenasPendentes
         in: query
-        description: "Se `true`, devolve apenas reservas PENDENTES ainda dentro do\
-          \ prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`."
+        description: "Opcional. Se `true`, devolve apenas reservas PENDENTES ainda\
+          \ dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`."
         required: false
         schema:
           type: string
       - name: page
         in: query
-        description: Zero-based page index (0..N)
+        description: Opcional. Zero-based page index (0..N)
         required: false
         schema:
           type: integer
@@ -2250,7 +2252,7 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: The size of the page to be returned
+        description: Opcional. The size of the page to be returned
         required: false
         schema:
           type: integer
@@ -2258,8 +2260,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Sorting criteria in the format: property,(asc|desc). Default\
-          \ sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
+          \ Default sort order is ascending. Multiple sort criteria are supported."
         required: false
         schema:
           type: array
@@ -2267,8 +2269,8 @@ paths:
             type: string
       - name: historico
         in: query
-        description: "Se `true`, devolve o histórico completo (inclusive realizadas\
-          \ e canceladas). Padrão `false`: só reservas ativas."
+        description: "Opcional. Se `true`, devolve o histórico completo (inclusive\
+          \ realizadas e canceladas). Padrão `false`: só reservas ativas."
         required: false
         schema:
           type: string
@@ -2816,7 +2818,7 @@ paths:
       parameters:
       - name: id
         in: query
-        description: ID da quadra na query. Usado se não houver ID no path.
+        description: Opcional. ID da quadra na query. Usado se não houver ID no path.
         required: false
         schema:
           type: integer
@@ -2824,7 +2826,8 @@ paths:
         example: 1
       - name: quadraId
         in: query
-        description: Alias de `id`. Usado se não houver ID no path nem `id` na query.
+        description: Opcional. Alias de `id`. Usado se não houver ID no path nem `id`
+          na query.
         required: false
         schema:
           type: integer
@@ -2832,43 +2835,44 @@ paths:
         example: 1
       - name: nome
         in: query
-        description: Filtra por parte do nome da quadra.
+        description: Opcional. Filtra por parte do nome da quadra.
         required: false
         schema:
           type: string
         example: Arena
       - name: nomeQuadra
         in: query
-        description: Alias de `nome`. Só vale se `nome` estiver vazio.
+        description: Opcional. Alias de `nome`. Só vale se `nome` estiver vazio.
         required: false
         schema:
           type: string
         example: Arena
       - name: tipoEsporte
         in: query
-        description: "Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS,\
-          \ BASQUETE, TENIS)."
+        description: "Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI,\
+          \ BEACH_TENNIS, BASQUETE, TENIS)."
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: esporte
         in: query
-        description: Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver vazio.
+        description: Opcional. Alias de `tipoEsporte`. Só vale se `tipoEsporte` estiver
+          vazio.
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: cidade
         in: query
-        description: Filtra pela cidade.
+        description: Opcional. Filtra pela cidade.
         required: false
         schema:
           type: string
         example: São José do Rio Preto
       - name: bairro
         in: query
-        description: Filtra pelo bairro.
+        description: Opcional. Filtra pelo bairro.
         required: false
         schema:
           type: string
@@ -3055,15 +3059,15 @@ paths:
       parameters:
       - name: page
         in: query
-        description: "Índice da página, começando em 0."
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: string
         example: 0
       - name: size
         in: query
-        description: Itens por página. Padrão 5; máximo 50 (valores maiores são limitados
-          a 50).
+        description: Opcional. Itens por página. Padrão 5; máximo 50 (valores maiores
+          são limitados a 50).
         required: false
         schema:
           type: string
@@ -3342,7 +3346,7 @@ paths:
         example: 1
       - name: aba
         in: query
-        description: "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional."
+        description: "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS."
         required: false
         schema:
           type: string
@@ -3353,7 +3357,7 @@ paths:
         example: ATIVOS
       - name: page
         in: query
-        description: Zero-based page index (0..N)
+        description: Opcional. Zero-based page index (0..N)
         required: false
         schema:
           type: integer
@@ -3361,7 +3365,7 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: The size of the page to be returned
+        description: Opcional. The size of the page to be returned
         required: false
         schema:
           type: integer
@@ -3369,8 +3373,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Sorting criteria in the format: property,(asc|desc). Default\
-          \ sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
+          \ Default sort order is ascending. Multiple sort criteria are supported."
         required: false
         schema:
           type: array
@@ -3451,16 +3455,16 @@ paths:
       parameters:
       - name: data
         in: query
-        description: "Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`.\
-          \ Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir\
-          \ de hoje."
+        description: "Opcional. Data flexível: `hoje`, `amanha`, dia da semana ou\
+          \ ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os pró\
+          ximos 14 dias a partir de hoje."
         required: false
         schema:
           type: string
         example: amanha
       - name: quadraId
         in: query
-        description: Restringe a uma quadra pelo ID.
+        description: Opcional. Restringe a uma quadra pelo ID.
         required: false
         schema:
           type: integer
@@ -3468,22 +3472,22 @@ paths:
         example: 1
       - name: tipoEsporte
         in: query
-        description: "Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI, BEACH_TENNIS,\
-          \ BASQUETE, TENIS)."
+        description: "Opcional. Filtra pelo tipo de esporte (FUTEBOL, FUTSAL, VOLEI,\
+          \ BEACH_TENNIS, BASQUETE, TENIS)."
         required: false
         schema:
           type: string
         example: FUTEBOL
       - name: nomeQuadra
         in: query
-        description: Filtra por parte do nome da quadra.
+        description: Opcional. Filtra por parte do nome da quadra.
         required: false
         schema:
           type: string
         example: Arena
       - name: apenasDisponiveis
         in: query
-        description: "Se `true`, devolve só horários livres. Padrão `false`."
+        description: "Opcional. Se `true`, devolve só horários livres. Padrão `false`."
         required: false
         schema:
           type: string
@@ -3685,7 +3689,7 @@ paths:
         example: 10
       - name: quadraId
         in: query
-        description: Restringe a uma quadra.
+        description: Opcional. Restringe a uma quadra.
         required: false
         schema:
           type: integer
@@ -3765,7 +3769,7 @@ paths:
       parameters:
       - name: data
         in: query
-        description: Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+        description: Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
         required: false
         schema:
           type: string
@@ -3773,7 +3777,7 @@ paths:
         example: 2026-10-12
       - name: inicio
         in: query
-        description: "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
+        description: "Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
           \ Exige `fim`."
         required: false
         schema:
@@ -3782,8 +3786,8 @@ paths:
         example: 2026-10-12T00:00:00
       - name: fim
         in: query
-        description: "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige\
-          \ `inicio`. Máximo de 24 h após `inicio`."
+        description: "Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo).\
+          \ Exige `inicio`. Máximo de 24 h após `inicio`."
         required: false
         schema:
           type: string
@@ -3791,7 +3795,7 @@ paths:
         example: 2026-10-13T00:00:00
       - name: quadraId
         in: query
-        description: Restringe a uma quadra.
+        description: Opcional. Restringe a uma quadra.
         required: false
         schema:
           type: integer
@@ -3848,7 +3852,7 @@ paths:
       parameters:
       - name: data
         in: query
-        description: Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+        description: Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
         required: false
         schema:
           type: string
@@ -3856,7 +3860,7 @@ paths:
         example: 2026-10-12
       - name: inicio
         in: query
-        description: "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
+        description: "Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
           \ Exige `fim`."
         required: false
         schema:
@@ -3865,8 +3869,8 @@ paths:
         example: 2026-10-12T00:00:00
       - name: fim
         in: query
-        description: "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige\
-          \ `inicio`. Máximo de 24 h após `inicio`."
+        description: "Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo).\
+          \ Exige `inicio`. Máximo de 24 h após `inicio`."
         required: false
         schema:
           type: string
@@ -3874,7 +3878,7 @@ paths:
         example: 2026-10-13T00:00:00
       - name: quadraId
         in: query
-        description: Restringe a uma quadra.
+        description: Opcional. Restringe a uma quadra.
         required: false
         schema:
           type: integer
@@ -3943,7 +3947,7 @@ paths:
       parameters:
       - name: data
         in: query
-        description: Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
+        description: Opcional. Dia consultado (ISO `yyyy-MM-dd`). Alternativa a `inicio`+`fim`.
         required: false
         schema:
           type: string
@@ -3951,7 +3955,7 @@ paths:
         example: 2026-10-12
       - name: inicio
         in: query
-        description: "Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
+        description: "Opcional. Início do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, inclusivo).\
           \ Exige `fim`."
         required: false
         schema:
@@ -3960,8 +3964,8 @@ paths:
         example: 2026-10-12T00:00:00
       - name: fim
         in: query
-        description: "Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo). Exige\
-          \ `inicio`. Máximo de 24 h após `inicio`."
+        description: "Opcional. Fim do intervalo (ISO `yyyy-MM-ddTHH:mm:ss`, exclusivo).\
+          \ Exige `inicio`. Máximo de 24 h após `inicio`."
         required: false
         schema:
           type: string
@@ -3969,7 +3973,7 @@ paths:
         example: 2026-10-13T00:00:00
       - name: quadraId
         in: query
-        description: Restringe a uma quadra.
+        description: Opcional. Restringe a uma quadra.
         required: false
         schema:
           type: integer
@@ -3977,7 +3981,7 @@ paths:
         example: 1
       - name: aba
         in: query
-        description: "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional."
+        description: "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS."
         required: false
         schema:
           type: string
@@ -3988,7 +3992,7 @@ paths:
         example: ATIVOS
       - name: page
         in: query
-        description: Zero-based page index (0..N)
+        description: Opcional. Zero-based page index (0..N)
         required: false
         schema:
           type: integer
@@ -3996,7 +4000,7 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: The size of the page to be returned
+        description: Opcional. The size of the page to be returned
         required: false
         schema:
           type: integer
@@ -4004,8 +4008,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Sorting criteria in the format: property,(asc|desc). Default\
-          \ sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
+          \ Default sort order is ascending. Multiple sort criteria are supported."
         required: false
         schema:
           type: array
@@ -4123,15 +4127,15 @@ paths:
       parameters:
       - name: page
         in: query
-        description: "Índice da página, começando em 0."
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: string
         example: 0
       - name: size
         in: query
-        description: Itens por página. Padrão 10; mínimo 1; máximo 100 (fora da faixa
-          é ajustado).
+        description: Opcional. Itens por página. Padrão 10; mínimo 1; máximo 100 (fora
+          da faixa é ajustado).
         required: false
         schema:
           type: string
@@ -4140,7 +4144,7 @@ paths:
         example: 10
       - name: usuarioId
         in: query
-        description: Filtra pelo ID do usuário que executou a ação.
+        description: Opcional. Filtra pelo ID do usuário que executou a ação.
         required: false
         schema:
           type: integer
@@ -4148,7 +4152,7 @@ paths:
         example: 10
       - name: categoria
         in: query
-        description: "Filtra pela categoria do evento (enum `CategoriaAuditoria`:\
+        description: "Opcional. Filtra pela categoria do evento (enum `CategoriaAuditoria`:\
           \ AUTENTICACAO, AGENDAMENTO, QUADRA, USUARIO, BLOQUEIO, API_KEY)."
         required: false
         schema:
@@ -4163,14 +4167,14 @@ paths:
         example: AUTENTICACAO
       - name: acao
         in: query
-        description: "Filtra pelo código da ação (ex.: LOGOUT)."
+        description: "Opcional. Filtra pelo código da ação (ex.: LOGOUT)."
         required: false
         schema:
           type: string
         example: LOGOUT
       - name: dataInicio
         in: query
-        description: "Início do período (ISO 8601 com fuso, ex.: `2026-09-29T00:00:00Z`),\
+        description: "Opcional. Início do período (ISO 8601 com fuso, ex.: `2026-09-29T00:00:00Z`),\
           \ inclusivo."
         required: false
         schema:
@@ -4179,7 +4183,7 @@ paths:
         example: 2026-09-29T00:00:00Z
       - name: dataFim
         in: query
-        description: Fim do período (ISO 8601 com fuso).
+        description: Opcional. Fim do período (ISO 8601 com fuso).
         required: false
         schema:
           type: string
@@ -4187,7 +4191,7 @@ paths:
         example: 2026-09-30T00:00:00Z
       - name: busca
         in: query
-        description: Busca livre de texto nos logs.
+        description: Opcional. Busca livre de texto nos logs.
         required: false
         schema:
           type: string
@@ -4380,7 +4384,7 @@ components:
           example: (11) 99999-9999
         role:
           type: string
-          description: "Papel da conta: CLIENT ou ADMIN"
+          description: "Opcional. Papel da conta: CLIENT ou ADMIN"
           enum:
           - CLIENT
           - ADMIN
@@ -4455,54 +4459,54 @@ components:
       properties:
         bairro:
           type: string
-          description: "Bairro, até 100 caracteres"
+          description: "Opcional. Bairro, até 100 caracteres"
           example: Jardim das Flores
           maxLength: 100
           minLength: 0
         cep:
           type: string
-          description: CEP no formato XXXXX-XXX
+          description: Opcional. CEP no formato XXXXX-XXX
           example: 15000-000
           pattern: "^\\d{5}-\\d{3}$"
         cidade:
           type: string
-          description: "Cidade, até 100 caracteres"
+          description: "Opcional. Cidade, até 100 caracteres"
           example: São José do Rio Preto
           maxLength: 100
           minLength: 0
         dataLimiteAgendamento:
           type: string
           format: date
-          description: Data limite para agendamentos futuros (yyyy-MM-dd). Não pode
-            estar no passado
+          description: Opcional. Data limite para agendamentos futuros (yyyy-MM-dd).
+            Não pode estar no passado
           example: 2026-12-31
         descricao:
           type: string
-          description: "Descrição da infraestrutura, até 2000 caracteres, sem os sí\
-            mbolos < e >"
+          description: "Opcional. Descrição da infraestrutura, até 2000 caracteres,\
+            \ sem os símbolos < e >"
           example: Grama sintética padrão FIFA com iluminação em LED e vestiários.
           maxLength: 2000
           minLength: 0
           pattern: "^[^<>]*$"
         disponibilidades:
           type: array
-          description: "Horários de funcionamento semanais, no máximo 7 regras, um\
-            \ dia da semana por regra"
+          description: "Opcional. Horários de funcionamento semanais, no máximo 7\
+            \ regras, um dia da semana por regra"
           items:
             $ref: "#/components/schemas/DisponibilidadeDiaDTO"
           maxItems: 7
           minItems: 0
         estado:
           type: string
-          description: UF com 2 letras maiúsculas
+          description: Opcional. UF com 2 letras maiúsculas
           example: SP
           maxLength: 2
           minLength: 0
           pattern: "^[A-Z]{2}$"
         fotos:
           type: array
-          description: "URLs das fotos da quadra, no máximo 5, cada uma com até 255\
-            \ caracteres"
+          description: "Opcional. URLs das fotos da quadra, no máximo 5, cada uma\
+            \ com até 255 caracteres"
           items:
             type: string
             maxLength: 255
@@ -4512,20 +4516,20 @@ components:
         latitude:
           type: number
           format: double
-          description: "Latitude em graus, de -90 a 90"
+          description: "Opcional. Latitude em graus, de -90 a 90"
           example: -20.8113
           maximum: 90.0
           minimum: -90.0
         logradouro:
           type: string
-          description: "Logradouro, até 255 caracteres"
+          description: "Opcional. Logradouro, até 255 caracteres"
           example: "Av. Brasil, 1500"
           maxLength: 255
           minLength: 0
         longitude:
           type: number
           format: double
-          description: "Longitude em graus, de -180 a 180"
+          description: "Opcional. Longitude em graus, de -180 a 180"
           example: -49.3758
           maximum: 180.0
           minimum: -180.0
@@ -4753,16 +4757,16 @@ components:
           example: 14:00:00
         motivo:
           type: string
-          description: "Motivo do bloqueio, até 255 caracteres, sem os símbolos <\
-            \ e >"
+          description: "Opcional. Motivo do bloqueio, até 255 caracteres, sem os sí\
+            mbolos < e >"
           example: Torneio Interno da Arena
           maxLength: 255
           minLength: 0
           pattern: "^[^<>]*$"
         substituirDiaInteiro:
           type: boolean
-          description: true desbloqueia o restante de um dia já bloqueado por inteiro
-            e mantém só este intervalo. Padrão false
+          description: Opcional. true desbloqueia o restante de um dia já bloqueado
+            por inteiro e mantém só este intervalo. Padrão false
           example: false
       required:
       - data

@@ -263,6 +263,51 @@ class OpenApiDocumentacaoTest {
                 "number", "sort", "first", "numberOfElements", "empty")), chaves);
     }
 
+    // Todo parâmetro não obrigatório diz na descrição que é opcional (ou explica a obrigatoriedade condicional)
+    @Test
+    void parametrosNaoObrigatoriosDeclaramQueSaoOpcionais() {
+        List<String> problemas = new ArrayList<>();
+        for (Operacao op : operacoesDaApi()) {
+            for (JsonNode parametro : op.corpo().path("parameters")) {
+                if (parametro.path("required").asBoolean(false)) {
+                    continue;
+                }
+                String descricao = parametro.path("description").asText("").toLowerCase();
+                if (!descricao.contains("opciona") && !descricao.contains("obrigat")) {
+                    problemas.add(op.nome() + ": parâmetro " + parametro.path("name").asText());
+                }
+            }
+        }
+        assertTrue(problemas.isEmpty(), "Parâmetros opcionais sem marcação: " + problemas);
+
+        JsonNode latitude = null;
+        for (JsonNode parametro : docs.path("paths").path("/api/quadras").path("get").path("parameters")) {
+            if ("latitude".equals(parametro.path("name").asText())) {
+                latitude = parametro;
+            }
+        }
+        assertTrue(latitude != null && latitude.path("description").asText().startsWith("Opcional. "),
+                "latitude de GET /api/quadras deve começar com 'Opcional. '");
+    }
+
+    // Campos de corpo fora da lista `required` do schema começam com "Opcional."; os obrigatórios não
+    @Test
+    void camposNaoObrigatoriosDoCorpoDeclaramQueSaoOpcionais() {
+        JsonNode propriedades = docs.path("components").path("schemas").path("QuadraCriacaoDTO").path("properties");
+        for (String campo : List.of("cep", "logradouro", "bairro", "cidade", "estado", "latitude", "longitude", "descricao")) {
+            assertTrue(propriedades.path(campo).path("description").asText().startsWith("Opcional. "),
+                    "QuadraCriacaoDTO." + campo + " deve começar com 'Opcional. '");
+        }
+        for (String campo : List.of("nome", "tipoEsporte", "valorHora")) {
+            assertTrue(!propriedades.path(campo).path("description").asText().toLowerCase().contains("opciona"),
+                    "QuadraCriacaoDTO." + campo + " é obrigatório e não deve ser marcado como opcional");
+        }
+        // Resposta não é marcada: a obrigatoriedade só faz sentido no corpo enviado
+        JsonNode resposta = docs.path("components").path("schemas").path("QuadraResponseDTO").path("properties");
+        assertTrue(!resposta.path("cep").path("description").asText().startsWith("Opcional. "),
+                "QuadraResponseDTO.cep não deve ser marcado como opcional");
+    }
+
     // Fim do "some em silêncio": JSON de exemplo inválido derruba a geração do documento
     @Test
     void jsonDeExemploInvalidoFalhaExplicitamente() {

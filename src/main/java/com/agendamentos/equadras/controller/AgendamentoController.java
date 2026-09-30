@@ -122,7 +122,7 @@ public class AgendamentoController {
     @GetMapping(value = "/quadra/{quadraId}", params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPorQuadraPaginado(
             @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
-            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.", example = "ATIVOS")
+            @Parameter(description = "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
             @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
@@ -190,7 +190,7 @@ public class AgendamentoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @Parameter(description = "Restringe a uma quadra.", example = "1")
             @RequestParam(required = false) Long quadraId,
-            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Opcional.", example = "ATIVOS")
+            @Parameter(description = "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
             @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado

@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -144,6 +145,8 @@ public class OpenApiConfig {
                                 operation.setTags(newTags);
                             }
                             descreverParametrosDePaginacao(operation);
+                            marcarParametrosOpcionais(operation);
+                            marcarCamposOpcionaisDoCorpo(openApi, operation);
                             aplicarExemplos(path, httpMethod.name(), operation);
                         }));
             }
@@ -209,6 +212,54 @@ public class OpenApiConfig {
                 case "sort" -> parametro.setDescription("Ordenação `campo,asc|desc`. Campos aceitos: veja a descrição da operação. Campo fora da lista devolve 400 (`Ordenação Inválida`).");
                 default -> { }
             }
+        });
+    }
+
+    // Descrições que já tratam da obrigatoriedade (inclusive a condicional) ficam como estão
+    private static String descricaoOpcional(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            return "Opcional.";
+        }
+        String minuscula = descricao.toLowerCase(Locale.ROOT);
+        if (minuscula.contains("opciona") || minuscula.contains("obrigat")) {
+            return descricao;
+        }
+        return "Opcional. " + descricao;
+    }
+
+    private void marcarParametrosOpcionais(Operation operation) {
+        if (operation.getParameters() == null) {
+            return;
+        }
+        operation.getParameters().forEach(parametro -> {
+            if (!Boolean.TRUE.equals(parametro.getRequired())) {
+                parametro.setDescription(descricaoOpcional(parametro.getDescription()));
+            }
+        });
+    }
+
+    // Só os schemas usados como corpo de requisição: em resposta, "opcional" não se aplica
+    private void marcarCamposOpcionaisDoCorpo(OpenAPI openApi, Operation operation) {
+        if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null
+                || openApi.getComponents() == null || openApi.getComponents().getSchemas() == null) {
+            return;
+        }
+        operation.getRequestBody().getContent().values().forEach(media -> {
+            if (media.getSchema() == null || media.getSchema().get$ref() == null) {
+                return;
+            }
+            String ref = media.getSchema().get$ref();
+            Schema<?> schema = openApi.getComponents().getSchemas().get(ref.substring(ref.lastIndexOf('/') + 1));
+            if (schema == null || schema.getProperties() == null) {
+                return;
+            }
+            List<String> obrigatorios = schema.getRequired() == null ? List.of() : schema.getRequired();
+            schema.getProperties().forEach((nome, propriedade) -> {
+                // Descrição ao lado de $ref é ignorada no OpenAPI 3.0
+                if (!obrigatorios.contains(nome) && propriedade.get$ref() == null) {
+                    propriedade.setDescription(descricaoOpcional(propriedade.getDescription()));
+                }
+            });
         });
     }
 
