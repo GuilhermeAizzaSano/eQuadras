@@ -1502,7 +1502,7 @@ X-API-KEY: eq_SUA_CHAVE_AQUI
 ---
 
 ### 6.7 Agendamento Flexível via Bot / WhatsApp
-Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19h"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
+Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19"`, `"19h"`, `"19h30"`, `"9:00"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
 
 > **Integração WhatsApp:** Este endpoint é 100% público e isento de tokens ou cabeçalhos de autenticação (`X-Bot-Secret` não é exigido), facilitando integrações diretas com fluxos de WhatsApp (Twilio, Baileys, Evolution API, Typebot, Z-API, webhooks de IA).
 
@@ -1528,7 +1528,7 @@ Content-Type: application/json
 
 **Campos do corpo:**
 - `data` *(obrigatório)*: ex.: `2026-09-05`, `15/09`, `amanha`, `sexta`.
-- `horaInicio` *(obrigatório)*: ex.: `19:00`, `19h`, `19`.
+- `horaInicio` *(obrigatório)*: ex.: `19`, `19h`, `19h30`, `9:00`, `19:00`. Hora não reconhecida devolve 400 (`Não foi possível entender a hora: ...`).
 - `nomeCliente` *(obrigatório)*: nome completo do cliente.
 - `telefoneCliente` *(obrigatório)*: telefone ou WhatsApp com DDD.
 - `horaFim` *(opcional, padrão: início + 1 hora)*.
@@ -1569,7 +1569,7 @@ Permite buscar a grade de horários de quadras com suporte a linguagem flexível
 - **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 **Parâmetros de query (todos opcionais):**
-- `data` *(opcional)*: `hoje`, `amanha` ou data ISO; sem ela, a resposta cobre os próximos 14 dias.
+- `data` *(opcional)*: `hoje`, `amanha`, dia da semana, `15/09` ou data ISO; sem ela, vale o primeiro dia com horário livre nos próximos 14 dias (com `apenasDisponiveis=true`) ou hoje (com `false`).
 - `quadraId` *(opcional)*: restringe a uma quadra.
 - `tipoEsporte` *(opcional)*: filtra por modalidade.
 - `nomeQuadra` *(opcional)*: filtra pelo nome da quadra.
@@ -1604,7 +1604,7 @@ Permite buscar a grade de horários de quadras com suporte a linguagem flexível
 ]
 ```
 
-> Sem `data` (ou com um valor não reconhecido), a resposta cobre os próximos 14 dias a partir de hoje, com um item por quadra e por dia.
+> A resposta traz um item por quadra para UM dia. Sem `data` (ou com um valor não reconhecido): com `apenasDisponiveis=true`, é o primeiro dia, a partir de hoje e nos próximos 14, que tenha horário livre (nenhum: lista vazia); com `false`, é hoje. `quadraId` de quadra inexistente ou inativa e filtros sem correspondência devolvem lista vazia, não erro.
 
 ---
 

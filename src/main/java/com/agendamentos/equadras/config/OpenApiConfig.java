@@ -203,13 +203,15 @@ public class OpenApiConfig {
             return;
         }
         operation.getParameters().forEach(parametro -> {
-            if (parametro.getDescription() != null) {
+            // O springdoc preenche page/size/sort com textos padrão em inglês; só os textos escritos à mão são preservados
+            String atual = parametro.getDescription();
+            if (atual != null && !atual.startsWith("Zero-based") && !atual.startsWith("The size of the page") && !atual.startsWith("Sorting criteria")) {
                 return;
             }
             switch (parametro.getName()) {
-                case "page" -> parametro.setDescription("Índice da página, começando em 0 (`spring.data.web.pageable.one-indexed-parameters=false`).");
+                case "page" -> parametro.setDescription("Índice da página, começando em 0.");
                 case "size" -> parametro.setDescription("Itens por página. Padrão 10; máximo 50 (valores maiores são limitados a 50).");
-                case "sort" -> parametro.setDescription("Ordenação `campo,asc|desc`. Campos aceitos: veja a descrição da operação. Campo fora da lista devolve 400 (`Ordenação Inválida`).");
+                case "sort" -> parametro.setDescription("Ordenação `campo,asc|desc`. Os campos aceitos, e o que acontece com os demais, estão na descrição da operação.");
                 default -> { }
             }
         });

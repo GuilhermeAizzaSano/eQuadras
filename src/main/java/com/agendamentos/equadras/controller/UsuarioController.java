@@ -137,7 +137,7 @@ public class UsuarioController {
     }
 
     @Operation(summary = "Dados da minha sessão",
-            description = "Papéis: CLIENT ou ADMIN. Devolve o perfil do usuário autenticado (cookie de sessão, Bearer ou X-API-KEY).")
+            description = "Papéis: CLIENT ou ADMIN. Devolve o perfil do usuário autenticado (cookie de sessão ou API-Key `eq_...`, enviada em `X-API-KEY` ou em `Authorization: Bearer eq_...`).")
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> me(@UsuarioLogado UsuarioAutenticado usuarioLogado) {
         return ResponseEntity.ok(usuarioService.buscarPorId(usuarioLogado.id(), usuarioLogado.id()));
@@ -224,7 +224,12 @@ public class UsuarioController {
     }
 
     @Operation(summary = "Listar usuários (Master Admin)",
-            description = "Papel: ADMIN, exigindo Master Admin. Com `page`: `PageResponse<UsuarioResponseDTO>` (size padrão 10, máximo 50; a ordenação é fixa por `id_usuario` crescente e o `sort` do cliente é ignorado). SEM `page` (variante legada, não listada separadamente pelo OpenAPI): lista simples `array<UsuarioResponseDTO>` limitada a 200 itens no SQL, sem aviso ao cliente.")
+            description = """
+                Papel: ADMIN, exigindo Master Admin. Duas variantes, escolhidas pela presença de `page`.
+
+                **Com `page` (recomendada):** `PageResponse<UsuarioResponseDTO>`, com `size` padrão 10 e máximo 50. A ordenação é fixa por `id_usuario` crescente e o `sort` enviado é ignorado.
+
+                **Sem `page` (legada, prefira sempre `page`):** lista simples `array<UsuarioResponseDTO>` de até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Nesta variante `size` e `sort` são ignorados.""")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "page")
     public ResponseEntity<PageResponse<UsuarioResponseDTO>> listarUsuariosPaginado(@ParameterObject Pageable pageable,
@@ -233,8 +238,13 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarPaginado(pageable));
     }
 
-    @Operation(summary = "Listar todos os usuários (Master Admin)",
-            description = "Variante legada sem `page`: lista até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Ver GET com `page` para a versão paginada. Papel: Master Admin.")
+    @Operation(summary = "Listar usuários (Master Admin)",
+            description = """
+                Papel: ADMIN, exigindo Master Admin. Duas variantes, escolhidas pela presença de `page`.
+
+                **Com `page` (recomendada):** `PageResponse<UsuarioResponseDTO>`, com `size` padrão 10 e máximo 50. A ordenação é fixa por `id_usuario` crescente e o `sort` enviado é ignorado.
+
+                **Sem `page` (legada, prefira sempre `page`):** lista simples `array<UsuarioResponseDTO>` de até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Nesta variante `size` e `sort` são ignorados.""")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping(params = "!page")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(@UsuarioLogado UsuarioAutenticado usuarioLogado) {

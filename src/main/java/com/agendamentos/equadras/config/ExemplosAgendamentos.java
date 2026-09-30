@@ -219,13 +219,13 @@ final class ExemplosAgendamentos {
                 .ok("201", "Reserva criada em PENDENTE com Pix; cliente criado ou vinculado pelo telefone", PENDENTE_COM_PIX)
                 .erro(Erros.validacao("Dados inválidos: data: A data da reserva é obrigatória"))
                 .erro(Erros.requisicaoInvalida("Nenhuma quadra encontrada para o esporte ou nome informado."))
-                .erro(Erros.requisicaoInvalida("Formato de hora inválido: 25h"))
+                .erro(Erros.requisicaoInvalida("Não foi possível entender a hora: 25h"))
                 .erro(Erros.horarioIndisponivel())
                 .build());
 
         m.put(chave("GET", "/api/agendamentos/horarios-disponiveis"), operacao()
-                .ok("200", "Grade consolidada por quadra", GRADE.formatted(HORARIOS))
-                .erro(Erros.requisicaoInvalida("A quadra informada não foi encontrada."))
+                .ok("200", "Grade consolidada por quadra (lista vazia se nenhuma quadra corresponder aos filtros)", GRADE.formatted(HORARIOS))
+                .erro(Erros.parametroInvalido("O parâmetro 'quadraId' possui um valor inválido: 'abc'."))
                 .build());
 
         return m;

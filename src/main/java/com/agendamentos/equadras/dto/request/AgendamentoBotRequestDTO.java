@@ -19,7 +19,7 @@ public record AgendamentoBotRequestDTO(
         String data,
 
         @NotBlank(message = "O horário de início é obrigatório")
-        @Schema(description = "Horário de início (ex: '19:00', '19h', '19')", example = "19:00")
+        @Schema(description = "Horário de início (ex: '19', '19h', '19h30', '9:00', '19:00')", example = "19:00")
         String horaInicio,
 
         @Schema(description = "Horário de término (opcional, padrão: início + 1h)", example = "20:00")

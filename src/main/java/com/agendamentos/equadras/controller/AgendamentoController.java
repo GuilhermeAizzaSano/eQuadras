@@ -69,9 +69,9 @@ public class AgendamentoController {
             description = "Papéis: CLIENT ou ADMIN. Com `page`: `PageResponse<AgendamentoResponseDTO>`; CLIENT vê as próprias reservas, ADMIN as das suas quadras, Master Admin todas. `aba` é obrigatória, exceto com `apenasPendentes=true` (sem nenhuma das duas, 400). `size` padrão 10, máx. 50. `sort` aceita apenas `dataHoraInicio` e `id`; outro campo devolve 400; a ordenação padrão é crescente por `dataHoraInicio` na aba ATIVOS e decrescente nas demais. SEM `page` (variante legada, `deprecated`, não listada à parte no OpenAPI): lista simples `array<AgendamentoResponseDTO>` limitada a 200 itens no SQL, sem aviso, com o parâmetro `historico` (padrão `false`: só reservas ativas; `true`: histórico completo, inclusive realizadas e canceladas).")
     @GetMapping(params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPaginado(
-            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Obrigatória quando `apenasPendentes` é `false`.", example = "ATIVOS")
+            @Parameter(description = "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Só vale com `page`; obrigatória quando `apenasPendentes` é `false`.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
-            @Parameter(description = "Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`.",
+            @Parameter(description = "Só vale com `page`. Se `true`, devolve apenas reservas PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`.",
                     schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean apenasPendentes,
             @ParameterObject Pageable pageable,
@@ -89,12 +89,16 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.contarPorAba(usuarioLogado.id()));
     }
 
-    @Deprecated
-    @Operation(summary = "Listar agendamentos (legado sem paginação)",
-            description = "Papéis: CLIENT ou ADMIN. Variante sem `page`: lista única limitada a 200 itens no SQL, sem aviso. Prefira a rota paginada com `?page=0`.", deprecated = true)
+    @Operation(summary = "Listar agendamentos do usuário (por aba)",
+            description = """
+                Papéis: CLIENT ou ADMIN. Duas variantes, escolhidas pela presença de `page`.
+
+                **Com `page` (recomendada):** `PageResponse<AgendamentoResponseDTO>`; CLIENT vê as próprias reservas, ADMIN as das suas quadras, Master Admin todas. `aba` é obrigatória, exceto com `apenasPendentes=true` (sem nenhuma das duas, 400). `size` padrão 10, máx. 50. `sort` aceita apenas `dataHoraInicio` e `id`; outro campo devolve 400. A ordenação padrão é crescente por `dataHoraInicio` na aba ATIVOS e decrescente nas demais.
+
+                **Sem `page` (legada, prefira sempre `page`):** lista simples `array<AgendamentoResponseDTO>` de até 200 itens, limite aplicado no SQL e sem aviso ao cliente. `historico` define o conteúdo (padrão `false`: só reservas ativas; `true`: histórico completo, inclusive realizadas e canceladas). Nesta variante `aba`, `apenasPendentes`, `size` e `sort` são ignorados.""")
     @GetMapping(params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarTodos(
-            @Parameter(description = "Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas.", schema = @Schema(defaultValue = "false"))
+            @Parameter(description = "Só vale SEM `page`. Se `true`, devolve o histórico completo (inclusive realizadas e canceladas). Padrão `false`: só reservas ativas.", schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean historico,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
     ) {
@@ -122,7 +126,7 @@ public class AgendamentoController {
     @GetMapping(value = "/quadra/{quadraId}", params = "page")
     public ResponseEntity<PageResponse<AgendamentoResponseDTO>> listarPorQuadraPaginado(
             @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
-            @Parameter(description = "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS.", example = "ATIVOS")
+            @Parameter(description = "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS. Só vale com `page`.", example = "ATIVOS")
             @RequestParam(required = false) AbaAgendamento aba,
             @ParameterObject Pageable pageable,
             @UsuarioLogado UsuarioAutenticado usuarioLogado
@@ -140,9 +144,13 @@ public class AgendamentoController {
         return ResponseEntity.ok(agendamentoService.contarPorAbaEQuadra(quadraId, usuarioLogado.id()));
     }
 
-    @Deprecated
-    @Operation(summary = "Listar histórico de agendamentos de uma quadra específica (legado sem paginação)",
-            description = "Papel: ADMIN dono da quadra ou Master Admin. Variante sem `page`: lista única (até 200 itens, sem aviso). Prefira a rota paginada com `?page=0`.", deprecated = true)
+    @Operation(summary = "Listar reservas de uma quadra (Admin)",
+            description = """
+                Papel: ADMIN dono da quadra ou Master Admin. Duas variantes, escolhidas pela presença de `page`.
+
+                **Com `page` (recomendada):** `PageResponse<AgendamentoResponseDTO>`, com `aba` opcional. `size` padrão 10, máx. 50; `sort` aceita apenas `dataHoraInicio` ou `id`.
+
+                **Sem `page` (legada, prefira sempre `page`):** lista simples de até 200 itens, limite aplicado no SQL e sem aviso ao cliente. Nesta variante `aba`, `size` e `sort` são ignorados.""")
     @GetMapping(value = "/quadra/{quadraId}", params = "!page")
     public ResponseEntity<List<AgendamentoResponseDTO>> listarPorQuadra(
             @Parameter(description = "ID da quadra (`id_quadra`)", example = "1") @PathVariable Long quadraId,
@@ -270,7 +278,7 @@ public class AgendamentoController {
 
     @Operation(
             summary = "Agendamento simplificado via Bot / WhatsApp",
-            description = "Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19h`, `19:00`, `19`. Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE com Pix; expira em 15 min se não paga."
+            description = "Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19`, `19h`, `19h30`, `9:00` ou `19:00` (hora inválida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE com Pix; expira em 15 min se não paga."
     )
     @SecurityRequirements
     @PostMapping("/bot")
@@ -282,11 +290,11 @@ public class AgendamentoController {
 
     @Operation(
             summary = "Consultar grade consolidada de horários (busca flexível)",
-            description = "Papéis: CLIENT ou ADMIN. Grade por quadra com filtros combináveis: `data` (omitida ou não reconhecida: devolve os próximos 14 dias, a partir de hoje, um item por quadra e dia), `quadraId`, `nomeQuadra`, `tipoEsporte`. `apenasDisponiveis=true` mantém só os horários livres."
+            description = "Papéis: CLIENT ou ADMIN. Grade de horários por quadra ativa, com filtros combináveis: `data`, `quadraId`, `nomeQuadra`, `tipoEsporte`. Devolve um item por quadra para UM dia. Com `data` reconhecida, é esse dia. Sem `data` (ou não reconhecida), com `apenasDisponiveis=true` devolve o primeiro dia, a partir de hoje e nos próximos 14, que tenha horário livre (nenhum: lista vazia); com `apenasDisponiveis=false` devolve o dia de hoje. `quadraId` de quadra inexistente ou inativa e filtros sem correspondência devolvem lista vazia, não erro. `apenasDisponiveis=true` mantém só os horários livres e omite as quadras sem nenhum."
     )
     @GetMapping("/horarios-disponiveis")
     public ResponseEntity<List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO>> consultarGradeHorarios(
-            @Parameter(description = "Data flexível: `hoje`, `amanha`, dia da semana ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os próximos 14 dias a partir de hoje.", example = "amanha")
+            @Parameter(description = "Data flexível: `hoje`, `amanha`, dia da semana, `15/09` ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: com `apenasDisponiveis=true` vale o primeiro dia com horário livre nos próximos 14 dias; com `false`, vale hoje.", example = "amanha")
             @RequestParam(required = false) String data,
             @Parameter(description = "Restringe a uma quadra pelo ID.", example = "1")
             @RequestParam(required = false) Long quadraId,

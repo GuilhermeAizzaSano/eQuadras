@@ -803,15 +803,18 @@ paths:
     get:
       tags:
       - Usuários - API
-      summary: Listar todos os usuários (Master Admin)
-      description: "Variante legada sem `page`: lista até 200 usuários, limite aplicado\
-        \ no SQL e sem aviso ao cliente. Ver GET com `page` para a versão paginada.\
-        \ Papel: Master Admin."
+      summary: Listar usuários (Master Admin)
+      description: |-
+        Papel: ADMIN, exigindo Master Admin. Duas variantes, escolhidas pela presença de `page`.
+
+        **Com `page` (recomendada):** `PageResponse<UsuarioResponseDTO>`, com `size` padrão 10 e máximo 50. A ordenação é fixa por `id_usuario` crescente e o `sort` enviado é ignorado.
+
+        **Sem `page` (legada, prefira sempre `page`):** lista simples `array<UsuarioResponseDTO>` de até 200 usuários, limite aplicado no SQL e sem aviso ao cliente. Nesta variante `size` e `sort` são ignorados.
       operationId: listarUsuariosPaginado
       parameters:
       - name: page
         in: query
-        description: Opcional. Zero-based page index (0..N)
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: integer
@@ -819,7 +822,8 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: Opcional. The size of the page to be returned
+        description: Opcional. Itens por página. Padrão 10; máximo 50 (valores maiores
+          são limitados a 50).
         required: false
         schema:
           type: integer
@@ -827,8 +831,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
-          \ Default sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Ordenação `campo,asc|desc`. Os campos aceitos, e o\
+          \ que acontece com os demais, estão na descrição da operação."
         required: false
         schema:
           type: array
@@ -2084,8 +2088,9 @@ paths:
         \ flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`,\
         \ DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra`\
         \ ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09`\
-        \ ou ISO, e horas como `19h`, `19:00`, `19`. Sem `horaFim`, dura 1 hora. Devolve\
-        \ a reserva PENDENTE com Pix; expira em 15 min se não paga."
+        \ ou ISO, e horas como `19`, `19h`, `19h30`, `9:00` ou `19:00` (hora invá\
+        lida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE\
+        \ com Pix; expira em 15 min se não paga."
       operationId: agendarViaBot
       requestBody:
         content:
@@ -2159,12 +2164,12 @@ paths:
                     code: REQUISICAO_INVALIDA
                     timestamp: 2026-09-29T14:30:00.123456Z
                 REQUISICAO_INVALIDA_2:
-                  summary: "Formato de hora inválido: 25h"
+                  summary: "Não foi possível entender a hora: 25h"
                   value:
                     type: https://api.equadras.com/erros/bad-request
                     title: Requisição Inválida
                     status: 400
-                    detail: "Formato de hora inválido: 25h"
+                    detail: "Não foi possível entender a hora: 25h"
                     instance: /api/agendamentos/bot
                     code: REQUISICAO_INVALIDA
                     timestamp: 2026-09-29T14:30:00.123456Z
@@ -2188,15 +2193,19 @@ paths:
     get:
       tags:
       - Agendamentos - API
-      summary: Listar agendamentos (legado sem paginação)
-      description: "Papéis: CLIENT ou ADMIN. Variante sem `page`: lista única limitada\
-        \ a 200 itens no SQL, sem aviso. Prefira a rota paginada com `?page=0`."
+      summary: Listar agendamentos do usuário (por aba)
+      description: |-
+        Papéis: CLIENT ou ADMIN. Duas variantes, escolhidas pela presença de `page`.
+
+        **Com `page` (recomendada):** `PageResponse<AgendamentoResponseDTO>`; CLIENT vê as próprias reservas, ADMIN as das suas quadras, Master Admin todas. `aba` é obrigatória, exceto com `apenasPendentes=true` (sem nenhuma das duas, 400). `size` padrão 10, máx. 50. `sort` aceita apenas `dataHoraInicio` e `id`; outro campo devolve 400. A ordenação padrão é crescente por `dataHoraInicio` na aba ATIVOS e decrescente nas demais.
+
+        **Sem `page` (legada, prefira sempre `page`):** lista simples `array<AgendamentoResponseDTO>` de até 200 itens, limite aplicado no SQL e sem aviso ao cliente. `historico` define o conteúdo (padrão `false`: só reservas ativas; `true`: histórico completo, inclusive realizadas e canceladas). Nesta variante `aba`, `apenasPendentes`, `size` e `sort` são ignorados.
       operationId: listarPaginado
       parameters:
       - name: aba
         in: query
-        description: "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Obrigatória quando `apenasPendentes`\
-          \ é `false`."
+        description: "Aba: ATIVOS, REALIZADOS ou CANCELADOS. Só vale com `page`; obrigató\
+          ria quando `apenasPendentes` é `false`."
         required: false
         schema:
           type: string
@@ -2207,14 +2216,15 @@ paths:
         example: ATIVOS
       - name: apenasPendentes
         in: query
-        description: "Opcional. Se `true`, devolve apenas reservas PENDENTES ainda\
-          \ dentro do prazo de pagamento (15 min) e dispensa `aba`. Padrão `false`."
+        description: "Opcional. Só vale com `page`. Se `true`, devolve apenas reservas\
+          \ PENDENTES ainda dentro do prazo de pagamento (15 min) e dispensa `aba`.\
+          \ Padrão `false`."
         required: false
         schema:
           type: string
       - name: page
         in: query
-        description: Opcional. Zero-based page index (0..N)
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: integer
@@ -2222,7 +2232,8 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: Opcional. The size of the page to be returned
+        description: Opcional. Itens por página. Padrão 10; máximo 50 (valores maiores
+          são limitados a 50).
         required: false
         schema:
           type: integer
@@ -2230,8 +2241,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
-          \ Default sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Ordenação `campo,asc|desc`. Os campos aceitos, e o\
+          \ que acontece com os demais, estão na descrição da operação."
         required: false
         schema:
           type: array
@@ -2239,8 +2250,9 @@ paths:
             type: string
       - name: historico
         in: query
-        description: "Opcional. Se `true`, devolve o histórico completo (inclusive\
-          \ realizadas e canceladas). Padrão `false`: só reservas ativas."
+        description: "Opcional. Só vale SEM `page`. Se `true`, devolve o histórico\
+          \ completo (inclusive realizadas e canceladas). Padrão `false`: só reservas\
+          \ ativas."
         required: false
         schema:
           type: string
@@ -2304,7 +2316,6 @@ paths:
                     instance: /api/agendamentos
                     code: PARAMETRO_INVALIDO
                     timestamp: 2026-09-29T14:30:00.123456Z
-      deprecated: true
     post:
       tags:
       - Agendamentos - API
@@ -2689,7 +2700,8 @@ paths:
       - Usuários - API
       summary: Dados da minha sessão
       description: "Papéis: CLIENT ou ADMIN. Devolve o perfil do usuário autenticado\
-        \ (cookie de sessão, Bearer ou X-API-KEY)."
+        \ (cookie de sessão ou API-Key `eq_...`, enviada em `X-API-KEY` ou em `Authorization:\
+        \ Bearer eq_...`)."
       operationId: me
       responses:
         "200":
@@ -3300,10 +3312,13 @@ paths:
     get:
       tags:
       - Agendamentos - API
-      summary: Listar histórico de agendamentos de uma quadra específica (legado sem
-        paginação)
-      description: "Papel: ADMIN dono da quadra ou Master Admin. Variante sem `page`:\
-        \ lista única (até 200 itens, sem aviso). Prefira a rota paginada com `?page=0`."
+      summary: Listar reservas de uma quadra (Admin)
+      description: |-
+        Papel: ADMIN dono da quadra ou Master Admin. Duas variantes, escolhidas pela presença de `page`.
+
+        **Com `page` (recomendada):** `PageResponse<AgendamentoResponseDTO>`, com `aba` opcional. `size` padrão 10, máx. 50; `sort` aceita apenas `dataHoraInicio` ou `id`.
+
+        **Sem `page` (legada, prefira sempre `page`):** lista simples de até 200 itens, limite aplicado no SQL e sem aviso ao cliente. Nesta variante `aba`, `size` e `sort` são ignorados.
       operationId: listarPorQuadraPaginado
       parameters:
       - name: quadraId
@@ -3316,7 +3331,8 @@ paths:
         example: 1
       - name: aba
         in: query
-        description: "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS."
+        description: "Opcional. Aba: ATIVOS, REALIZADOS ou CANCELADOS. Só vale com\
+          \ `page`."
         required: false
         schema:
           type: string
@@ -3327,7 +3343,7 @@ paths:
         example: ATIVOS
       - name: page
         in: query
-        description: Opcional. Zero-based page index (0..N)
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: integer
@@ -3335,7 +3351,8 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: Opcional. The size of the page to be returned
+        description: Opcional. Itens por página. Padrão 10; máximo 50 (valores maiores
+          são limitados a 50).
         required: false
         schema:
           type: integer
@@ -3343,8 +3360,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
-          \ Default sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Ordenação `campo,asc|desc`. Os campos aceitos, e o\
+          \ que acontece com os demais, estão na descrição da operação."
         required: false
         schema:
           type: array
@@ -3411,23 +3428,28 @@ paths:
                 instance: "/api/agendamentos/quadra/{quadraId}"
                 code: ACESSO_NEGADO
                 timestamp: 2026-09-29T14:30:00.123456Z
-      deprecated: true
   /api/agendamentos/horarios-disponiveis:
     get:
       tags:
       - Agendamentos - API
       summary: Consultar grade consolidada de horários (busca flexível)
-      description: "Papéis: CLIENT ou ADMIN. Grade por quadra com filtros combiná\
-        veis: `data` (omitida ou não reconhecida: devolve os próximos 14 dias, a partir\
-        \ de hoje, um item por quadra e dia), `quadraId`, `nomeQuadra`, `tipoEsporte`.\
-        \ `apenasDisponiveis=true` mantém só os horários livres."
+      description: "Papéis: CLIENT ou ADMIN. Grade de horários por quadra ativa, com\
+        \ filtros combináveis: `data`, `quadraId`, `nomeQuadra`, `tipoEsporte`. Devolve\
+        \ um item por quadra para UM dia. Com `data` reconhecida, é esse dia. Sem\
+        \ `data` (ou não reconhecida), com `apenasDisponiveis=true` devolve o primeiro\
+        \ dia, a partir de hoje e nos próximos 14, que tenha horário livre (nenhum:\
+        \ lista vazia); com `apenasDisponiveis=false` devolve o dia de hoje. `quadraId`\
+        \ de quadra inexistente ou inativa e filtros sem correspondência devolvem\
+        \ lista vazia, não erro. `apenasDisponiveis=true` mantém só os horários livres\
+        \ e omite as quadras sem nenhum."
       operationId: consultarGradeHorarios
       parameters:
       - name: data
         in: query
-        description: "Opcional. Data flexível: `hoje`, `amanha`, dia da semana ou\
-          \ ISO `yyyy-MM-dd`. Omitida ou não reconhecida: a resposta cobre os pró\
-          ximos 14 dias a partir de hoje."
+        description: "Opcional. Data flexível: `hoje`, `amanha`, dia da semana, `15/09`\
+          \ ou ISO `yyyy-MM-dd`. Omitida ou não reconhecida: com `apenasDisponiveis=true`\
+          \ vale o primeiro dia com horário livre nos próximos 14 dias; com `false`,\
+          \ vale hoje."
         required: false
         schema:
           type: string
@@ -3463,7 +3485,8 @@ paths:
           type: string
       responses:
         "200":
-          description: Grade consolidada por quadra
+          description: Grade consolidada por quadra (lista vazia se nenhuma quadra
+            corresponder aos filtros)
           content:
             application/json:
               schema:
@@ -3493,18 +3516,18 @@ paths:
                   status: BLOQUEADO
                   motivo: "Bloqueado: Torneio Interno da Arena"
         "400":
-          description: Requisição Inválida
+          description: Parâmetro Inválido
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemaErro"
               example:
-                type: https://api.equadras.com/erros/bad-request
-                title: Requisição Inválida
+                type: https://api.equadras.com/erros/parametro-invalido
+                title: Parâmetro Inválido
                 status: 400
-                detail: A quadra informada não foi encontrada.
+                detail: "O parâmetro 'quadraId' possui um valor inválido: 'abc'."
                 instance: /api/agendamentos/horarios-disponiveis
-                code: REQUISICAO_INVALIDA
+                code: PARAMETRO_INVALIDO
                 timestamp: 2026-09-29T14:30:00.123456Z
   /api/agendamentos/dia:
     get:
@@ -3962,7 +3985,7 @@ paths:
         example: ATIVOS
       - name: page
         in: query
-        description: Opcional. Zero-based page index (0..N)
+        description: "Opcional. Índice da página, começando em 0."
         required: false
         schema:
           type: integer
@@ -3970,7 +3993,8 @@ paths:
           minimum: 0
       - name: size
         in: query
-        description: Opcional. The size of the page to be returned
+        description: Opcional. Itens por página. Padrão 10; máximo 50 (valores maiores
+          são limitados a 50).
         required: false
         schema:
           type: integer
@@ -3978,8 +4002,8 @@ paths:
           minimum: 1
       - name: sort
         in: query
-        description: "Opcional. Sorting criteria in the format: property,(asc|desc).\
-          \ Default sort order is ascending. Multiple sort criteria are supported."
+        description: "Opcional. Ordenação `campo,asc|desc`. Os campos aceitos, e o\
+          \ que acontece com os demais, estão na descrição da operação."
         required: false
         schema:
           type: array
@@ -4864,7 +4888,7 @@ components:
           example: 20:00
         horaInicio:
           type: string
-          description: "Horário de início (ex: '19:00', '19h', '19')"
+          description: "Horário de início (ex: '19', '19h', '19h30', '9:00', '19:00')"
           example: 19:00
         nomeCliente:
           type: string
