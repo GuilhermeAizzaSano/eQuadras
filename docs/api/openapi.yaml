@@ -20,7 +20,6 @@ servers:
 - url: http://localhost:8080
   description: Ambiente Local (Desenvolvimento)
 security:
-- BearerAuth: []
 - ApiKeyAuth: []
 tags:
 - name: Usuários - API
@@ -5494,12 +5493,6 @@ components:
           items:
             type: string
   securitySchemes:
-    BearerAuth:
-      type: http
-      description: "Informe o token JWT ou API-Key no formato: `Bearer eq_...` gerado\
-        \ no painel da conta."
-      scheme: bearer
-      bearerFormat: JWT
     ApiKeyAuth:
       type: apiKey
       description: Chave de API pessoal gerada no painel do usuário (formato `eq_...`).

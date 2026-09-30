@@ -50,7 +50,6 @@ import java.util.Set;
 @Configuration
 public class OpenApiConfig {
 
-    private static final String SECURITY_SCHEME_NAME = "BearerAuth";
     private static final String API_KEY_SCHEME_NAME = "ApiKeyAuth";
     private static final ObjectMapper LEITOR = new ObjectMapper();
 
@@ -83,16 +82,9 @@ public class OpenApiConfig {
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
-                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .addSecurityItem(new SecurityRequirement().addList(API_KEY_SCHEME_NAME))
                 .components(new Components()
                         .addSchemas("LocalTime", timeSchema)
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
-                                new SecurityScheme()
-                                         .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("API-Key")
-                                        .description("Informe apenas a API-Key gerada no painel da conta (formato `eq_...`), sem o prefixo `Bearer` — ele é adicionado automaticamente, resultando em `Authorization: Bearer eq_...`. Alternativa equivalente ao `X-API-KEY`: use apenas um dos dois. Tokens JWT não são aceitos neste cabeçalho (a sessão web usa cookie)."))
                         .addSecuritySchemes(API_KEY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.APIKEY)
