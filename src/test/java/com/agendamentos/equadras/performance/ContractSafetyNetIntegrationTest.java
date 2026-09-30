@@ -116,6 +116,41 @@ public class ContractSafetyNetIntegrationTest {
     }
 
     @Test
+    @DisplayName("GET /api/quadras devolve o formato resumido e ignora os headers X-Client e X-View")
+    void apiQuadrasDevolveResumidoIgnorandoHeadersDeFormato() throws Exception {
+        mockMvc.perform(get("/api/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
+                        .header("X-Client", "frontend")
+                        .header("X-View", "full"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].endereco").exists())
+                .andExpect(jsonPath("$[0].logradouro").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("GET /api/quadras?resumido=false devolve o formato completo")
+    void apiQuadrasComResumidoFalseDevolveCompleto() throws Exception {
+        mockMvc.perform(get("/api/quadras")
+                        .param("resumido", "false")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].logradouro").exists())
+                .andExpect(jsonPath("$[0].fotos").isArray());
+    }
+
+    @Test
+    @DisplayName("GET /quadras devolve o formato completo e ignora os headers X-Client e X-View")
+    void quadrasDevolveCompletoIgnorandoHeadersDeFormato() throws Exception {
+        mockMvc.perform(get("/quadras")
+                        .cookie(new jakarta.servlet.http.Cookie("equadras_session", adminToken))
+                        .header("X-Client", "api")
+                        .header("X-View", "resumo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].logradouro").exists())
+                .andExpect(jsonPath("$[0].fotos").isArray());
+    }
+
+    @Test
     @DisplayName("Garante contrato JSON de GET /agendamentos")
     void devePreservarContratoGetAgendamentos() throws Exception {
         mockMvc.perform(get("/agendamentos")

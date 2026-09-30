@@ -58,11 +58,7 @@ public class QuadraController {
             description = """
                 Papéis: CLIENT ou ADMIN. Lista quadras ativas com filtros opcionais (texto parcial, sem diferenciar maiúsculas) e busca por proximidade (`latitude` + `longitude` + `raioKm`).
 
-                **Formato da resposta** (decidido nesta ordem, a primeira regra que se aplica vence):
-                1. `resumido=true|false` explícito;
-                2. header `X-Client: frontend` ou `X-View: full` → completo;
-                3. header `X-View: resumo|summary` ou `X-Client: api` → resumido;
-                4. sem nada disso: URL com `/api/` → resumido (padrão de bots e integrações).
+                **Formato da resposta:** o padrão em `/api/quadras` é o resumido (bots e integrações); `resumido=false` pede o completo.
 
                 **Variantes:** (a) resumido → `array<QuadraResumoResponseDTO>`; `page` e `size` são ignorados; (b) completo com `page` → `PageQuadraResponseDTO` (size padrão 6, máximo 50); (c) completo sem `page` → `array<QuadraResponseDTO>`.
 
@@ -90,37 +86,22 @@ public class QuadraController {
             @RequestParam(required = false) String bairro,
             @Parameter(description = "Filtra pelo CEP.", example = "15000-000")
             @RequestParam(required = false) String cep,
-            @Parameter(description = "Força o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedência sobre os headers `X-Client`/`X-View` e sobre a URL.", example = "true")
+            @Parameter(description = "Define o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Omitido, vale o resumido.", example = "true")
             @RequestParam(required = false) Boolean resumido,
             @Parameter(description = "Índice da página, começando em 0. Só tem efeito no formato completo e o transforma em resposta paginada (`PageQuadraResponseDTO`). IGNORADO no formato resumido.", example = "0")
             @RequestParam(required = false) Integer page,
             @Parameter(description = "Itens por página. Padrão 6; máximo 50 (valores maiores são limitados a 50; zero ou negativo volta para 6). Só tem efeito no formato completo com `page`. IGNORADO no formato resumido.",
                     example = "6", schema = @Schema(defaultValue = "6", maximum = "50"))
-            @RequestParam(required = false, defaultValue = "6") Integer size,
-            @Parameter(description = "Identifica o cliente. `frontend` força o formato completo; `api` força o resumido (só vale se `resumido` não vier).", example = "api",
-                    schema = @Schema(allowableValues = {"frontend", "api"}))
-            @RequestHeader(value = "X-Client", required = false) String client,
-            @Parameter(description = "Formato desejado. `full` = completo; `resumo` ou `summary` = resumido (só vale se `resumido` não vier). Se `X-Client` também vier, `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View: resumo|summary` e `X-Client: api`.", example = "resumo",
-                    schema = @Schema(allowableValues = {"full", "resumo", "summary"}))
-            @RequestHeader(value = "X-View", required = false) String view) {
+            @RequestParam(required = false, defaultValue = "6") Integer size) {
         UsuarioAutenticado usuarioLogado = UsuarioLogadoArgumentResolver.usuarioAtualOuNulo();
         Long usuarioId = usuarioLogado != null ? usuarioLogado.id() : null;
 
         String uri = request != null ? request.getRequestURI() : "";
         boolean isApiRoute = uri != null && uri.contains("/api/");
 
-        boolean querResumido;
-        if (resumido != null) {
-            querResumido = resumido;
-        } else if ("frontend".equalsIgnoreCase(client) || "full".equalsIgnoreCase(view)) {
-            querResumido = false;
-        } else if ("resumo".equalsIgnoreCase(view) || "summary".equalsIgnoreCase(view) || "api".equalsIgnoreCase(client)) {
-            querResumido = true;
-        } else {
-            // Se chamado via /api/quadras -> padrão resumido (para bots e terceiros)
-            // Se chamado via /quadras -> padrão completo (para frontend)
-            querResumido = isApiRoute;
-        }
+        // Se chamado via /api/quadras -> padrão resumido (para bots e terceiros)
+        // Se chamado via /quadras -> padrão completo (para frontend)
+        boolean querResumido = resumido != null ? resumido : isApiRoute;
 
         if (querResumido) {
             return ResponseEntity.ok(quadraBuscaService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));

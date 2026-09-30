@@ -273,11 +273,7 @@ export interface paths {
          * Listar quadras ativas, por proximidade e filtros
          * @description Papéis: CLIENT ou ADMIN. Lista quadras ativas com filtros opcionais (texto parcial, sem diferenciar maiúsculas) e busca por proximidade (`latitude` + `longitude` + `raioKm`).
          *
-         *     **Formato da resposta** (decidido nesta ordem, a primeira regra que se aplica vence):
-         *     1. `resumido=true|false` explícito;
-         *     2. header `X-Client: frontend` ou `X-View: full` → completo;
-         *     3. header `X-View: resumo|summary` ou `X-Client: api` → resumido;
-         *     4. sem nada disso: URL com `/api/` → resumido (padrão de bots e integrações).
+         *     **Formato da resposta:** o padrão em `/api/quadras` é o resumido (bots e integrações); `resumido=false` pede o completo.
          *
          *     **Variantes:** (a) resumido → `array<QuadraResumoResponseDTO>`; `page` e `size` são ignorados; (b) completo com `page` → `PageQuadraResponseDTO` (size padrão 6, máximo 50); (c) completo sem `page` → `array<QuadraResponseDTO>`.
          *
@@ -3608,7 +3604,7 @@ export interface operations {
                  */
                 cep?: string;
                 /**
-                 * @description Opcional. Força o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Quando informado, tem precedência sobre os headers `X-Client`/`X-View` e sobre a URL.
+                 * @description Opcional. Define o formato: `true` = resumido (`QuadraResumoResponseDTO`), `false` = completo (`QuadraResponseDTO`). Omitido, vale o resumido.
                  * @example true
                  */
                 resumido?: boolean;
@@ -3623,18 +3619,7 @@ export interface operations {
                  */
                 size?: string;
             };
-            header?: {
-                /**
-                 * @description Opcional. Identifica o cliente. `frontend` força o formato completo; `api` força o resumido (só vale se `resumido` não vier).
-                 * @example api
-                 */
-                "X-Client"?: "frontend" | "api";
-                /**
-                 * @description Opcional. Formato desejado. `full` = completo; `resumo` ou `summary` = resumido (só vale se `resumido` não vier). Se `X-Client` também vier, `X-Client: frontend` e `X-View: full` são avaliados antes de `X-View: resumo|summary` e `X-Client: api`.
-                 * @example resumo
-                 */
-                "X-View"?: "full" | "resumo" | "summary";
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };

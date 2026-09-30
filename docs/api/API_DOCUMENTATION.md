@@ -598,11 +598,7 @@ Retorna as quadras ativas, com filtros opcionais e busca por proximidade (`latit
 - `tipoEsporte`, `nome`, `endereco`, `cidade`, `bairro`, `cep` *(opcionais)*: filtros por texto parcial.
 - `resumido`, `page` e `size` *(opcionais)*: definem o formato da resposta, descrito abaixo.
 
-**Formato da resposta.** Em `/api/quadras` o padrão é o formato **resumido**. A primeira regra que se aplica, nesta ordem, define o formato:
-1. `resumido=true|false`, quando informado;
-2. header `X-Client: frontend` ou `X-View: full` → completo;
-3. header `X-View: resumo` ou `summary`, ou `X-Client: api` → resumido;
-4. nenhuma das anteriores: URL com `/api/` → resumido.
+**Formato da resposta.** Em `/api/quadras` o padrão é o formato **resumido**; envie `resumido=false` para receber o completo.
 
 **Variantes da resposta:**
 

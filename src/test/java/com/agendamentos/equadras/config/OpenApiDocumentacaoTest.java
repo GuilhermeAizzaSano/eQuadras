@@ -166,9 +166,12 @@ class OpenApiDocumentacaoTest {
         for (JsonNode p : op.get("parameters")) {
             descricoes.put(p.get("name").asText(), p.path("description").asText(""));
         }
-        for (String nome : List.of("resumido", "page", "size", "X-Client", "X-View")) {
+        for (String nome : List.of("resumido", "page", "size")) {
             assertTrue(descricoes.containsKey(nome), "parâmetro ausente: " + nome);
             assertTrue(!descricoes.get(nome).isBlank(), "parâmetro sem descrição: " + nome);
+        }
+        for (String nome : List.of("X-Client", "X-View")) {
+            assertTrue(!descricoes.containsKey(nome), nome + " não define mais o formato e deve sair do contrato");
         }
         assertTrue(!descricoes.containsKey("Origin"), "Origin não é usado e deve sair do contrato");
 
