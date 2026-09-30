@@ -89,13 +89,15 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
    - Sessão Web por cookie seguro com atributos `HttpOnly`, `SameSite=Lax` e `Secure=true` (`equadras_session`).
    - Módulo desacoplado `UsuarioAuthService` dedicado à autenticação, sessões e rate limiting contra força bruta.
    - Suporte padronizado a chaves de integração externas (API Key no cabeçalho `X-API-KEY` ou `Authorization: Bearer eq_...`) com hash SHA-256 no banco e suporte a todas as rotas da API respeitando os papéis (`ROLE_CLIENT` e `ROLE_ADMIN`).
+   - **API externa (`/api/**`) sem etapa de pagamento:** `POST /api/agendamentos` e `POST /api/agendamentos/bot` criam a reserva já `CONFIRMADO`, sem cobrança Pix, e não há rotas `/api/pagamentos`. O fluxo com Pix do Mercado Pago é exclusivo da aplicação web.
+   - **Fotos das quadras na API:** `GET /api/quadras/{id}/fotos` (ou `/api/quadras/fotos` com filtros) devolve as URLs da galeria; cada imagem é servida publicamente em `/uploads/quadras/...`.
 
 5. **Trilha de Auditoria com Eventos de Domínio:**
    - Registro automático e imutável de ações sensíveis (logins, alterações cadastrais, bloqueios, agendamentos e cancelamentos) desacoplado via eventos Spring (`Domain Events`).
    - Painel exclusivo para consulta e métricas no Master Admin.
 
 6. **Central de Notificações em Tempo Real:**
-   - Conexão persistente Server-Sent Events (SSE) notificando o administrador instantaneamente após confirmação de pagamentos.
+   - Conexão persistente Server-Sent Events (SSE) notificando o administrador instantaneamente após confirmação de pagamentos e de reservas criadas pela API externa.
    - Ações de leitura individual, em lote e exclusão rápida.
 
 ---
@@ -319,7 +321,7 @@ erDiagram
    - O método `buscarComLockParaAgendamento` no repositório executa `SELECT ... FOR UPDATE` na linha da quadra durante a validação da janela de agendamento, garantindo atomicidade e evitando conflitos de concorrência.
 2. **Segregação Estrita de Sessão Web vs API Key:**
    - Requisições autenticadas pelo navegador utilizam cookie seguro assinado `equadras_session` contendo autoridade `SCOPE_SESSION`.
-   - Rotas administrativas de usuários (`/usuarios/**`) exigem estritamente `SCOPE_SESSION`. API Keys externas só conseguem interagir com rotas de negócio permitidas (`/quadras/**`, `/agendamentos/**`, `/pagamentos/**`).
+   - Rotas administrativas de usuários (`/usuarios/**`) exigem estritamente `SCOPE_SESSION`. API Keys externas só conseguem interagir com rotas de negócio permitidas (`/quadras/**`, `/agendamentos/**`, `/pagamentos/**`); na API externa (`/api/**`) não há rotas de pagamento.
 3. **Resiliência do Gateway de Pagamento:**
    - A chamada de criação de Pix no Mercado Pago é realizada com `HttpClient` gerenciado, timeouts explícitos e fora da transação de banco de dados, liberando a conexão de pool enquanto aguarda a resposta do gateway.
    - Suporte a chave de idempotência para evitar cobranças duplicadas.
