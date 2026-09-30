@@ -23,6 +23,14 @@ ou
 Authorization: Bearer eq_a1b2c3d4...
 ```
 
+**Regras dos cabeçalhos de credencial:**
+- Envie **apenas um** dos dois. Se ambos vierem, os valores precisam ser idênticos; valores diferentes devolvem 401 (`Conflito de credenciais`) e contam como tentativa inválida para o IP.
+- O cabeçalho `Authorization` só é aceito no formato `Bearer eq_...`. Qualquer outro valor (`Basic ...`, `Bearer <JWT>` etc.) devolve 401, **mesmo que o `X-API-KEY` enviado junto seja válido**. As únicas exceções são as rotas públicas de bot e webhook. O JWT da sessão web nunca trafega em cabeçalho (ver 1.2).
+- Chave inexistente, revogada ou de usuário inativo devolve 401. Após 20 tentativas inválidas em 1 minuto, o IP passa a receber 429 com `Retry-After`.
+- Requisições com API-KEY dispensam o cabeçalho `X-Client` (ver 1.2).
+
+Os exemplos deste documento usam `X-API-KEY`; `eq_SUA_CHAVE_AQUI` representa a chave de qualquer usuário e `eq_SUA_API_KEY_ADMIN`, a de um administrador.
+
 **Como obter sua API-Key:**
 1. Acesse o portal web e efetue login na sua conta.
 2. No menu de perfil ou via `POST /api/usuarios/api-key/regenerar`, emita sua chave pessoal de integração.
@@ -41,6 +49,8 @@ curl -X GET "https://equadras.app/api/quadras" \
 
 ### 1.2 Sessão Web (Frontend)
 Na aplicação web oficial, a autenticação ocorre via cookie seguro `HttpOnly` (`equadras_session`), dispensando armazenamento de credenciais no `localStorage`.
+
+**Cabeçalho `X-Client` (proteção CSRF):** toda requisição `POST`, `PUT`, `PATCH` ou `DELETE` enviada **sem API-KEY** precisa do cabeçalho `X-Client: frontend`, inclusive login e logout. Sem ele, a API devolve 403 (`Cabeçalho X-Client obrigatório ausente ou inválido...`). Ficam isentas as requisições com API-KEY e as rotas públicas `POST /api/agendamentos/bot` e `POST /api/pagamentos/webhook`.
 
 ---
 
@@ -116,7 +126,7 @@ Cria uma nova conta de usuário (Role: `CLIENT` ou `ADMIN`) no sistema. Exige `R
 ```http
 POST /api/usuarios HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN_ADMIN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -127,6 +137,13 @@ Content-Type: application/json
   "role": "CLIENT"
 }
 ```
+
+**Campos do corpo:**
+- `nome_usuario` *(obrigatório)*: de 3 a 80 caracteres, sem `<` e `>`.
+- `email_usuario` *(obrigatório)*: e-mail válido, até 100 caracteres.
+- `senha_usuario` *(obrigatório)*: mínimo de 6 caracteres.
+- `phone_usuario` *(obrigatório)*: telefone com DDD, de 8 a 20 caracteres.
+- `role` *(opcional, padrão `CLIENT`)*: `CLIENT` ou `ADMIN`.
 
 #### Resposta de Sucesso (201 Created):
 ```json
@@ -176,12 +193,13 @@ Autentica o usuário por e-mail e senha. O JWT é gravado no cookie `HttpOnly` `
 
 - **Método:** `POST`
 - **URL:** `/api/usuarios/login`
-- **Autenticação:** Pública
+- **Autenticação:** Pública (exige o cabeçalho `X-Client: frontend`; sem ele, 403 — ver 1.2)
 
 #### Requisição:
 ```http
 POST /api/usuarios/login HTTP/1.1
 Host: localhost:8080
+X-Client: frontend
 Content-Type: application/json
 
 {
@@ -189,6 +207,10 @@ Content-Type: application/json
   "senha_usuario": "senha123"
 }
 ```
+
+**Campos do corpo:** `email_usuario` e `senha_usuario`, ambos *(obrigatórios)*.
+
+Além do bloqueio por e-mail, o login tem limite de 10 requisições por minuto por IP (429 com `Retry-After`).
 
 #### Resposta de Sucesso (200 OK):
 ```http
@@ -243,7 +265,7 @@ Retorna os usuários registrados no sistema. Exige `ROLE_ADMIN` e o service conf
 
 - **Método:** `GET`
 - **URL:** `/api/usuarios?page=0&size=10`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`, somente Master Admin)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`, somente Master Admin)
 
 **Variantes (definidas pela presença do parâmetro `page`):**
 - **Com `page`:** resposta paginada `PageResponse<UsuarioResponseDTO>`. `size` padrão 10, máximo 50. A ordenação é fixa por `id_usuario` crescente: o `sort` enviado pelo cliente é ignorado.
@@ -253,7 +275,7 @@ Retorna os usuários registrados no sistema. Exige `ROLE_ADMIN` e o service conf
 ```http
 GET /api/usuarios?page=0&size=10 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN_ADMIN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK - com `page`):
@@ -306,13 +328,13 @@ Authorization: Bearer <TOKEN_ADMIN>
 ### 3.4 Buscar Usuário por ID
 - **Método:** `GET`
 - **URL:** `/api/usuarios/{id}`
-- **Autenticação:** `Bearer <TOKEN>`
+- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 GET /api/usuarios/14 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -336,13 +358,13 @@ Apenas o próprio usuário ou o Master Admin podem consultar. Outro usuário rec
 - **Métodos/URLs:** `PUT /api/usuarios/{id}` e `DELETE /api/usuarios/{id}`
 - **Autenticação:** `ROLE_ADMIN`, somente Master Admin (outro administrador recebe 403)
 
-O `PUT` recebe `nome_usuario`, `email_usuario`, `phone_usuario`, `role` e, opcionalmente, `nova_senha` (mínimo de 6 caracteres; omitida, a senha atual é mantida). O e-mail do Master Admin não pode ser alterado e a conta dele não pode ser excluída (400 `OPERACAO_NAO_PERMITIDA`). ID inexistente devolve 404.
+O `PUT` recebe `nome_usuario`, `email_usuario` e `phone_usuario` *(obrigatórios)*, além de `role` *(opcional; omitido, o papel atual é mantido)* e `nova_senha` *(opcional; mínimo de 6 caracteres; omitida, a senha atual é mantida)*. O e-mail do Master Admin não pode ser alterado e a conta dele não pode ser excluída (400 `OPERACAO_NAO_PERMITIDA`). ID inexistente devolve 404.
 
 #### Requisição (PUT):
 ```http
 PUT /api/usuarios/14 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN_ADMIN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -374,9 +396,17 @@ O `DELETE` responde `204 No Content`.
 ### 3.6 Encerrar Sessão (Logout)
 - **Método:** `POST`
 - **URL:** `/api/usuarios/logout`
-- **Autenticação:** Pública (funciona com ou sem sessão)
+- **Autenticação:** Pública (funciona com ou sem sessão; exige o cabeçalho `X-Client: frontend` — ver 1.2)
 
 Se houver sessão, revoga os tokens do usuário e registra o logout na auditoria. Sempre expira o cookie de sessão.
+
+#### Requisição:
+```http
+POST /api/usuarios/logout HTTP/1.1
+Host: localhost:8080
+X-Client: frontend
+Cookie: equadras_session=<JWT>
+```
 
 #### Resposta de Sucesso:
 ```http
@@ -404,7 +434,7 @@ Devolve o `UsuarioResponseDTO` do usuário autenticado, no mesmo formato da seç
 ```http
 PATCH /api/usuarios/minha-senha HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 Content-Type: application/json
 
 {
@@ -413,7 +443,7 @@ Content-Type: application/json
 }
 ```
 
-A nova senha precisa ter no mínimo 6 caracteres, com 1 letra maiúscula, 1 minúscula, 1 número e 1 símbolo (senão 422), e ser diferente da atual (400 `SENHA_REPETIDA`). Senha atual incorreta devolve 400 `SENHA_INCORRETA`.
+`senhaAtual` e `novaSenha` são *(obrigatórios)*. A nova senha precisa ter no mínimo 6 caracteres, com 1 letra maiúscula, 1 minúscula, 1 número e 1 símbolo (senão 422), e ser diferente da atual (400 `SENHA_REPETIDA`). Senha atual incorreta devolve 400 `SENHA_INCORRETA`.
 
 #### Resposta de Sucesso:
 ```http
@@ -461,13 +491,13 @@ Cria uma nova quadra esportiva definindo nome, modalidade, valor/hora, endereço
 
 - **Método:** `POST`
 - **URL:** `/api/quadras`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 POST /api/quadras HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN_ADMIN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -497,6 +527,25 @@ Content-Type: application/json
   ]
 }
 ```
+
+**Cabeçalho opcional:** `Idempotency-Key` *(opcional, até 100 caracteres)*: reenviar a mesma chave em até 10 minutos devolve a quadra já criada, em vez de criar outra.
+
+**Campos do corpo:**
+- `nome` *(obrigatório)*: de 3 a 100 caracteres, sem `<` e `>`.
+- `tipoEsporte` *(obrigatório)*: `FUTEBOL`, `FUTSAL`, `VOLEI`, `BEACH_TENNIS`, `BASQUETE` ou `TENIS`.
+- `valorHora` *(obrigatório)*: maior que zero, até 8 dígitos inteiros e 2 decimais.
+- `cep` *(opcional)*: formato `XXXXX-XXX`.
+- `logradouro` *(opcional)*: até 255 caracteres.
+- `bairro` *(opcional)*: até 100 caracteres.
+- `cidade` *(opcional)*: até 100 caracteres.
+- `estado` *(opcional)*: UF com 2 letras maiúsculas.
+- `latitude` *(opcional)*: de -90 a 90.
+- `longitude` *(opcional)*: de -180 a 180.
+- `descricao` *(opcional)*: até 2000 caracteres, sem `<` e `>`.
+- `dataLimiteAgendamento` *(opcional)*: `yyyy-MM-dd`, não pode estar no passado.
+- `fotos` *(opcional)*: até 5 URLs, cada uma com até 255 caracteres.
+- `disponibilidades` *(opcional)*: até 7 regras, um dia da semana por regra.
+- `versao` *(opcional no cadastro, onde é ignorada; obrigatória na edição — ver 4.4)*.
 
 > **Nota sobre `dataLimiteAgendamento`:** Se preenchida (ex: `2026-12-31`), a API impede qualquer agendamento em datas posteriores, marcando os slots como `BLOQUEADO`.
 > **Nota sobre `disponibilidades`:** No cadastro, se omitida ou vazia, o sistema aplica o padrão comercial: Segunda a Domingo, das 06:00:00 às 23:00:00. Dias não incluídos na lista são considerados como **FECHADOS**. O campo `versao` é ignorado no cadastro.
@@ -543,7 +592,11 @@ Retorna as quadras ativas, com filtros opcionais e busca por proximidade (`latit
 - **URL:** `/api/quadras` ou `/api/quadras?latitude=-20.2730&longitude=-50.5398&raioKm=5.0`
 - **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
-**Filtros opcionais (texto parcial):** `tipoEsporte`, `nome`, `endereco`, `cidade`, `bairro`, `cep`.
+**Parâmetros de query (todos opcionais):**
+- `latitude` e `longitude` *(opcionais)*: ativam a busca por proximidade.
+- `raioKm` *(opcional, padrão `2.0`)*: raio da busca por proximidade.
+- `tipoEsporte`, `nome`, `endereco`, `cidade`, `bairro`, `cep` *(opcionais)*: filtros por texto parcial.
+- `resumido`, `page` e `size` *(opcionais)*: definem o formato da resposta, descrito abaixo.
 
 **Formato da resposta.** Em `/api/quadras` o padrão é o formato **resumido**. A primeira regra que se aplica, nesta ordem, define o formato:
 1. `resumido=true|false`, quando informado;
@@ -704,13 +757,13 @@ Permite atualizar todas as informações cadastrais, horários semanais e a data
 
 - **Método:** `PUT`
 - **URL:** `/api/quadras/{id}`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
 PUT /api/quadras/11 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -733,6 +786,8 @@ Content-Type: application/json
   "versao": 0
 }
 ```
+
+**Campos do corpo:** os mesmos da seção 4.1, com a mesma obrigatoriedade (`nome`, `tipoEsporte` e `valorHora` *(obrigatórios)*; os demais *(opcionais)*), exceto `versao`, que aqui é *(obrigatória)*.
 
 > **Controle de concorrência (`versao`):** envie no corpo a `versao` lida na última consulta da quadra (`GET /api/quadras/{id}`). Sem `versao`, a API responde 400 `VERSAO_OBRIGATORIA`; com uma versão diferente da atual (outra pessoa editou antes), responde 409 `CONFLITO_VERSAO`. A cada edição salva, a `versao` é incrementada.
 >
@@ -767,14 +822,14 @@ Content-Type: application/json
 
 ### 4.5 Alternar Status da Quadra (Ativar/Inativar)
 - **Método:** `PATCH`
-- **URL:** `/api/quadras/{id}/status?ativa=false`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **URL:** `/api/quadras/{id}/status?ativa=false` (`ativa` *(obrigatório)*: `true` ou `false`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
 PATCH /api/quadras/11/status?ativa=false HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -807,14 +862,14 @@ Envia arquivos de imagem (JPEG, PNG, WebP) de até 5MB para a galeria da quadra 
 
 - **Método:** `POST`
 - **URL:** `/api/quadras/{id}/fotos`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
-- **Content-Type:** `multipart/form-data`
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
+- **Content-Type:** `multipart/form-data` (parte `fotos` *(obrigatória)*: um ou mais arquivos)
 
 #### Requisição:
 ```http
 POST /api/quadras/11/fotos HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
@@ -854,14 +909,14 @@ Content-Type: image/jpeg
 
 ### 4.7 Remover Foto da Quadra
 - **Método:** `DELETE`
-- **URL:** `/api/quadras/{id}/fotos?fotoUrl=/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **URL:** `/api/quadras/{id}/fotos?fotoUrl=/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg` (`fotoUrl` *(obrigatório)*)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
 DELETE /api/quadras/11/fotos?fotoUrl=/uploads/quadras/3f2a9c1e-7b4d-4e8a-9c21-5d6f7e8a9b0c.jpg HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -894,13 +949,13 @@ Exclui a quadra definitivamente, desde que ela não possua histórico de agendam
 
 - **Método:** `DELETE`
 - **URL:** `/api/quadras/{id}`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 #### Requisição:
 ```http
 DELETE /api/quadras/11 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso:
@@ -925,7 +980,7 @@ HTTP/1.1 204 No Content
 
 ### 4.9 Consultar Fotos das Quadras
 - **Método:** `GET`
-- **URLs:** `/api/quadras/{id}/fotos` ou `/api/quadras/fotos?id=11` (também aceita `quadraId`, `nome`, `nomeQuadra`, `tipoEsporte`, `esporte`, `cidade`, `bairro`)
+- **URLs:** `/api/quadras/{id}/fotos` ou `/api/quadras/fotos?id=11` (também aceita `quadraId`, `nome`, `nomeQuadra`, `tipoEsporte`, `esporte`, `cidade`, `bairro`; todos os parâmetros de query são *(opcionais)*)
 - **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 O formato da resposta depende dos parâmetros:
@@ -961,13 +1016,20 @@ Permite criar suspensões pontuais de funcionamento (manutenções, feriados, re
 ### 5.1 Criar Bloqueio
 - **Método:** `POST`
 - **URL:** `/api/quadras/{id}/bloqueios`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
+
+**Campos do corpo:**
+- `data` *(obrigatório)*: `yyyy-MM-dd`, não pode estar no passado.
+- `horaInicio` *(opcional)*: `HH:mm:ss`. Omitido junto com `horaFim`, bloqueia o dia inteiro.
+- `horaFim` *(opcional)*: `HH:mm:ss`, posterior a `horaInicio`; obrigatório quando `horaInicio` for enviado.
+- `motivo` *(opcional)*: até 255 caracteres, sem `<` e `>`.
+- `substituirDiaInteiro` *(opcional, padrão `false`)*: `true` desbloqueia o restante de um dia já bloqueado por inteiro e mantém só este intervalo.
 
 #### Requisição (Cenário 1: Intervalo de Horários Pontual):
 ```http
 POST /api/quadras/11/bloqueios HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -996,7 +1058,7 @@ Content-Type: application/json
 ```http
 POST /api/quadras/11/bloqueios HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -1026,13 +1088,13 @@ Retorna em uma única chamada HTTP todos os bloqueios ativos e futuros de todas 
 
 - **Método:** `GET`
 - **URL:** `/api/quadras/bloqueios`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 GET /api/quadras/bloqueios HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1095,12 +1157,12 @@ X-API-KEY: eq_SUA_CHAVE_AQUI
 #### Opção A: Remover por ID do Bloqueio
 - **Método:** `DELETE`
 - **URL:** `/api/quadras/{quadraId}/bloqueios/{bloqueioId}`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 ```http
 DELETE /api/quadras/11/bloqueios/4 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 **Resposta:**
@@ -1111,12 +1173,12 @@ HTTP/1.1 204 No Content
 #### Opção B: Desbloquear via Requisição com Dados do Horário/Data
 - **Método:** `POST`
 - **URL:** `/api/quadras/{quadraId}/desbloquear`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN` - dono da quadra)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN` - dono da quadra)
 
 ```http
 POST /api/quadras/11/desbloquear HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Content-Type: application/json
 
 {
@@ -1125,6 +1187,11 @@ Content-Type: application/json
   "horaFim": "17:00:00"
 }
 ```
+
+**Campos do corpo:**
+- `bloqueioId` *(opcional)*: ID do bloqueio a remover; dispensa `data`.
+- `data` *(opcional se `bloqueioId` for enviado; caso contrário, obrigatório)*: `yyyy-MM-dd`.
+- `horaInicio` e `horaFim` *(opcionais)*: `HH:mm:ss`. Sem os dois, o desbloqueio vale para o bloqueio indicado por `bloqueioId` ou para o dia inteiro de `data`.
 
 **Resposta de Sucesso (200 OK):**
 ```json
@@ -1146,7 +1213,7 @@ Gera a relação completa de horários de 1 em 1 hora para a data indicada, info
 - `INDISPONIVEL`: Horário já transcorrido no dia (passado) ou quadra inativa.
 
 - **Método:** `GET`
-- **URL:** `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis?data=2026-09-10`
+- **URL:** `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis?data=2026-09-10` (`data` *(obrigatório)*: `yyyy-MM-dd`)
 - **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 #### Requisição:
@@ -1203,14 +1270,14 @@ X-API-KEY: eq_SUA_CHAVE_AQUI
 Retorna em uma única requisição a grade completa com o status de cada horário de todas as quadras ativas pertencentes ao administrador autenticado para a data indicada.
 
 - **Método:** `GET`
-- **URL:** `/api/agendamentos/dia?data=2026-09-10`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **URL:** `/api/agendamentos/dia?data=2026-09-10` (`data` *(obrigatório)*: `yyyy-MM-dd`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 GET /api/agendamentos/dia?data=2026-09-10 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1242,13 +1309,13 @@ Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE`
 
 - **Método:** `POST`
 - **URL:** `/api/agendamentos`
-- **Autenticação:** `Bearer <TOKEN>`
+- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 POST /api/agendamentos HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 Content-Type: application/json
 
 {
@@ -1257,6 +1324,12 @@ Content-Type: application/json
   "dataHoraFim": "2026-09-10T19:00:00"
 }
 ```
+
+**Campos do corpo:**
+- `quadraId` *(obrigatório)*: ID da quadra.
+- `dataHoraInicio` *(obrigatório)*: no futuro, em hora cheia (`HH:00:00`).
+- `dataHoraFim` *(obrigatório)*: em hora cheia; duração mínima de 1 hora e múltipla de 60 minutos.
+- `usuarioId` *(opcional)*: ignorado; a reserva sempre pertence ao usuário autenticado.
 
 #### Resposta de Sucesso (201 Created):
 ```json
@@ -1299,7 +1372,7 @@ Retorna as reservas realizadas pelo atleta autenticado. Para `ROLE_ADMIN`, retor
 
 - **Método:** `GET`
 - **URL:** `/api/agendamentos?page=0&size=10&aba=ATIVOS`
-- **Autenticação:** `Bearer <TOKEN>`
+- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 **Parâmetros de query:**
 - `page` *(define a variante paginada)*: índice da página, começando em 0.
@@ -1314,7 +1387,7 @@ Retorna as reservas realizadas pelo atleta autenticado. Para `ROLE_ADMIN`, retor
 ```http
 GET /api/agendamentos?page=0&size=10&aba=ATIVOS HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1400,13 +1473,13 @@ X-API-KEY: eq_SUA_API_KEY_ADMIN
 ### 6.6 Cancelar Agendamento
 - **Método:** `PATCH`
 - **URL:** `/api/agendamentos/{id}/cancelar`
-- **Autenticação:** `Bearer <TOKEN>` (Atleta dono da reserva ou Administrador da quadra)
+- **Autenticação:** Obrigatória (Atleta dono da reserva ou Administrador da quadra)
 
 #### Requisição:
 ```http
 PATCH /api/agendamentos/25/cancelar HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1457,6 +1530,18 @@ Content-Type: application/json
 }
 ```
 
+**Campos do corpo:**
+- `data` *(obrigatório)*: ex.: `2026-09-05`, `15/09`, `amanha`, `sexta`.
+- `horaInicio` *(obrigatório)*: ex.: `19:00`, `19h`, `19`.
+- `nomeCliente` *(obrigatório)*: nome completo do cliente.
+- `telefoneCliente` *(obrigatório)*: telefone ou WhatsApp com DDD.
+- `horaFim` *(opcional, padrão: início + 1 hora)*.
+- `quadraId` *(opcional)*: ID da quadra; dispensável se `nomeQuadra` ou `tipoEsporte` for enviado.
+- `nomeQuadra` *(opcional)*: nome ou parte do nome da quadra.
+- `tipoEsporte` *(opcional)*: modalidade da quadra.
+
+Este endpoint tem limite de 20 requisições por minuto por IP (429 com `Retry-After`).
+
 #### Resposta de Sucesso (201 Created):
 ```json
 {
@@ -1486,6 +1571,13 @@ Permite buscar a grade de horários de quadras com suporte a linguagem flexível
 - **Método:** `GET`
 - **URL:** `/api/agendamentos/horarios-disponiveis?data=amanha&tipoEsporte=FUTEBOL&apenasDisponiveis=true`
 - **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
+
+**Parâmetros de query (todos opcionais):**
+- `data` *(opcional)*: `hoje`, `amanha` ou data ISO; sem ela, a resposta cobre os próximos 14 dias.
+- `quadraId` *(opcional)*: restringe a uma quadra.
+- `tipoEsporte` *(opcional)*: filtra por modalidade.
+- `nomeQuadra` *(opcional)*: filtra pelo nome da quadra.
+- `apenasDisponiveis` *(opcional, padrão `false`)*: `true` devolve só os horários livres.
 
 #### Resposta de Sucesso (200 OK):
 ```json
@@ -1555,7 +1647,7 @@ Regras:
 ```http
 GET /api/agendamentos/agenda?data=2026-09-10&page=0&size=10 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN_ADMIN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 ---
@@ -1587,13 +1679,13 @@ Transita uma reserva pendente para `CONFIRMADO` e notifica o administrador via S
 
 - **Método:** `POST`
 - **URL:** `/api/pagamentos/{agendamentoId}/simular-aprovacao`
-- **Autenticação:** `Bearer <TOKEN>`
+- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 POST /api/pagamentos/25/simular-aprovacao HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_CHAVE_AQUI
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1696,7 +1788,7 @@ Estabelece conexão persistente unidirecional para recebimento de alertas de res
 - **Método:** `GET`
 - **URL:** `/api/notificacoes/stream`
 - **Headers:** `Accept: text/event-stream`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 A conexão dura até 1 hora e cada administrador mantém uma só conexão: abrir uma nova substitui a anterior.
 
@@ -1704,7 +1796,7 @@ A conexão dura até 1 hora e cada administrador mantém uma só conexão: abrir
 ```http
 GET /api/notificacoes/stream HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 Accept: text/event-stream
 ```
 
@@ -1726,13 +1818,13 @@ data: {"id":1,"mensagem":"Novo pagamento aprovado para a quadra Arena Central Pr
 - **Parâmetros de Query:**
   - `page` *(opcional, padrão `0`)*: Índice da página (base 0).
   - `size` *(opcional, padrão `5`)*: Quantidade de notificações por página.
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 GET /api/notificacoes/admin?page=0&size=5 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso (200 OK):
@@ -1772,13 +1864,13 @@ Authorization: Bearer <TOKEN>
 ### 8.3 Marcar Notificação como Lida
 - **Método:** `PUT`
 - **URL:** `/api/notificacoes/{id}/ler`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 PUT /api/notificacoes/1/ler HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer <TOKEN>
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso:
@@ -1793,13 +1885,13 @@ Marca todas as notificações recebidas pelo administrador autenticado como lida
 
 - **Método:** `PUT`
 - **URL:** `/api/notificacoes/ler-todas`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 PUT /api/notificacoes/ler-todas HTTP/1.1
-Host: equadras.app
-Authorization: Bearer <TOKEN>
+Host: localhost:8080
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso:
@@ -1814,13 +1906,13 @@ Realiza a remoção lógica (*soft delete*) de todo o histórico de notificaçõ
 
 - **Método:** `DELETE`
 - **URL:** `/api/notificacoes/todas`
-- **Autenticação:** `Bearer <TOKEN>` (`ROLE_ADMIN`)
+- **Autenticação:** Obrigatória (`ROLE_ADMIN`)
 
 #### Requisição:
 ```http
 DELETE /api/notificacoes/todas HTTP/1.1
-Host: equadras.app
-Authorization: Bearer <TOKEN>
+Host: localhost:8080
+X-API-KEY: eq_SUA_API_KEY_ADMIN
 ```
 
 #### Resposta de Sucesso:
@@ -1962,6 +2054,62 @@ Ocorre em conflitos de horário (`HORARIO_INDISPONIVEL`), telefone já em uso (`
 
 > A exclusão de uma quadra com histórico de reservas **não** devolve 409: responde 400 `OPERACAO_NAO_PERMITIDA` (ver seção 4.8).
 
+### 10.4 Erros dos Filtros de Segurança (401, 403 e 429)
+Erros barrados antes de chegar aos controllers **não** passam pelo `GlobalExceptionHandler` e têm corpo reduzido, sem `instance`, `code` e `timestamp`.
+
+**401 Unauthorized** (credencial ausente, inválida, em formato não aceito ou em conflito — ver 1.1):
+```json
+{
+  "status": 401,
+  "title": "Não Autorizado",
+  "detail": "Chave de API inválida, revogada ou usuário inativo."
+}
+```
+
+**403 Forbidden** (papel insuficiente, ou `X-Client: frontend` ausente em requisição mutante sem API-KEY — ver 1.2):
+```json
+{
+  "status": 403,
+  "title": "Acesso Proibido",
+  "detail": "Cabeçalho X-Client obrigatório ausente ou inválido para requisições com mutação de estado."
+}
+```
+
+**429 Too Many Requests** (sempre com o header `Retry-After`, em segundos):
+
+| Limite | Regra |
+|---|---|
+| Geral | 120 requisições por minuto por IP |
+| Login (`/usuarios/login`) | 10 requisições por minuto por IP, além do bloqueio após 5 falhas consecutivas por e-mail |
+| Bot (`/agendamentos/bot`) | 20 requisições por minuto por IP |
+| API-KEY inválida | 20 tentativas inválidas por minuto por IP |
+| Regeneração de API-KEY | 5 por minuto por conta |
+
+Swagger (`/swagger-ui`, `/v3/api-docs`), `/uploads/` e requisições `OPTIONS` não consomem o limite geral.
+
+```json
+{
+  "type": "https://api.equadras.com/erros/too-many-requests",
+  "title": "Limite de Requisições Excedido",
+  "status": 429,
+  "detail": "Você enviou muitas requisições em um curto período de tempo. Por favor, aguarde alguns segundos antes de tentar novamente."
+}
+```
+
+### 10.5 Serviço Indisponível (503 Service Unavailable)
+Quando o banco de dados está indisponível (pool esgotado ou conexão recusada), a API responde 503 com o header `Retry-After: 5`. É uma falha transitória: aguarde e repita a requisição.
+```json
+{
+  "type": "https://api.equadras.com/erros/servico-indisponivel",
+  "title": "Serviço Indisponível",
+  "status": 503,
+  "detail": "O serviço está temporariamente sobrecarregado. Por favor, tente novamente em alguns segundos.",
+  "instance": "/api/quadras",
+  "code": "SERVICO_INDISPONIVEL",
+  "timestamp": "2026-09-29T14:30:00.123456Z"
+}
+```
+
 ---
 
 ## 11. Códigos de Status HTTP
@@ -1972,10 +2120,11 @@ Ocorre em conflitos de horário (`HORARIO_INDISPONIVEL`), telefone já em uso (`
 | `201 Created` | Criado com Sucesso | Recurso criado com êxito (cadastro de usuário, quadra, agendamento, bloqueio). |
 | `204 No Content` | Sem Conteúdo | Operação bem-sucedida sem corpo de resposta (ex.: exclusões, `logout`, `minha-senha`, marcar notificações como lidas). |
 | `400 Bad Request` | Requisição Inválida | Violação de regra de negócio, dados inválidos ou horários conflitantes. |
-| `401 Unauthorized` | Não Autorizado | Token de autenticação ausente, expirado ou inválido. |
-| `403 Forbidden` | Proibido | O usuário logado não possui a role necessária para a ação. |
+| `401 Unauthorized` | Não Autorizado | Credencial ausente, expirada ou inválida; `Authorization` fora do formato `Bearer eq_...`; ou `X-API-KEY` e `Authorization` divergentes (ver 1.1 e 10.4). |
+| `403 Forbidden` | Proibido | O usuário não possui a role necessária para a ação, ou falta o cabeçalho `X-Client: frontend` em requisição mutante sem API-KEY (ver 1.2 e 10.4). |
 | `404 Not Found` | Não Encontrado | Recurso com o ID fornecido não foi localizado. |
 | `409 Conflict` | Conflito | Horário já ocupado, telefone em uso, versão desatualizada da quadra, confirmação concorrente ou violação de integridade do banco (ver seção 10.3). |
 | `422 Unprocessable Entity` | Erro de Validação | Falha nas anotações de validação de campo do corpo da requisição. |
-| `429 Too Many Requests` | Muitas Requisições | Limite de tentativas excedido: login (5 falhas consecutivas por e-mail, com `Retry-After`) e regeneração de API-Key (5 por minuto, `Retry-After: 60`). |
+| `429 Too Many Requests` | Muitas Requisições | Limite excedido, sempre com `Retry-After`: geral (120/min por IP), login (10/min por IP e 5 falhas consecutivas por e-mail), bot (20/min por IP), API-KEY inválida (20/min por IP) e regeneração de API-Key (5 por minuto, `Retry-After: 60`). Ver 10.4. |
+| `503 Service Unavailable` | Serviço Indisponível | Banco de dados temporariamente indisponível; responde com `Retry-After: 5` (ver 10.5). |
 
