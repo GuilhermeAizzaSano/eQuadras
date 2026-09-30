@@ -88,7 +88,7 @@ class AgendamentoBotServiceTest {
                 10L, null, null, "2026-09-26", "19:00", "20:00", "Robson", "11999998888"
         );
 
-        AgendamentoResponseDTO resultado = agendamentoBotService.agendarViaBot(dto);
+        AgendamentoResponseDTO resultado = agendamentoBotService.agendarViaBot(dto, false);
 
         assertNotNull(resultado);
         assertEquals(100L, resultado.id_agendamento());
@@ -115,7 +115,7 @@ class AgendamentoBotServiceTest {
                 null, "Society", "Futebol", "2026-09-26", "19:00", null, "Robson", "11999998888"
         );
 
-        AgendamentoResponseDTO resultado = agendamentoBotService.agendarViaBot(dto);
+        AgendamentoResponseDTO resultado = agendamentoBotService.agendarViaBot(dto, false);
 
         assertNotNull(resultado);
         assertEquals(101L, resultado.id_agendamento());
@@ -132,7 +132,7 @@ class AgendamentoBotServiceTest {
         );
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                agendamentoBotService.agendarViaBot(dto));
+                agendamentoBotService.agendarViaBot(dto, false));
 
         assertEquals("Nenhuma quadra encontrada para o esporte ou nome informado.", ex.getMessage());
     }
@@ -145,7 +145,7 @@ class AgendamentoBotServiceTest {
         );
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                agendamentoBotService.agendarViaBot(dto));
+                agendamentoBotService.agendarViaBot(dto, false));
 
         assertEquals("Hora de início deve ser anterior à hora de término.", ex.getMessage());
     }
@@ -160,12 +160,24 @@ class AgendamentoBotServiceTest {
         when(usuarioService.obterOuCriarUsuarioBot("Robson", "11999998888")).thenReturn(usuario);
 
         agendamentoBotService.agendarViaBot(new AgendamentoBotRequestDTO(
-                10L, null, null, "2026-09-26", horaEntrada, null, "Robson", "11999998888"));
+                10L, null, null, "2026-09-26", horaEntrada, null, "Robson", "11999998888"), false);
 
         ArgumentCaptor<AgendamentoCriacaoDTO> captor = ArgumentCaptor.forClass(AgendamentoCriacaoDTO.class);
         verify(agendamentoService).agendar(captor.capture(), eq(1L));
         assertEquals(LocalDate.of(2026, 9, 26).atTime(horaEsperada), captor.getValue().dataHoraInicio());
         assertEquals(LocalDate.of(2026, 9, 26).atTime(horaEsperada.plusHours(1)), captor.getValue().dataHoraFim());
+    }
+
+    @Test
+    @DisplayName("Com confirmarDireto, cria a reserva confirmada sem passar pelo fluxo Pix")
+    void deveAgendarConfirmadoQuandoConfirmarDireto() {
+        when(usuarioService.obterOuCriarUsuarioBot("Robson", "11999998888")).thenReturn(usuario);
+
+        agendamentoBotService.agendarViaBot(new AgendamentoBotRequestDTO(
+                10L, null, null, "2026-09-26", "19h", null, "Robson", "11999998888"), true);
+
+        verify(agendamentoService).agendarConfirmado(any(AgendamentoCriacaoDTO.class), eq(1L));
+        verify(agendamentoService, never()).agendar(any(), any());
     }
 
     @ParameterizedTest(name = "\"{0}\" é rejeitada")
@@ -176,7 +188,7 @@ class AgendamentoBotServiceTest {
                 10L, null, null, "2026-09-26", horaEntrada, null, "Robson", "11999998888");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                agendamentoBotService.agendarViaBot(dto));
+                agendamentoBotService.agendarViaBot(dto, false));
 
         assertTrue(ex.getMessage().contains("hora") || ex.getMessage().contains("Hora"), ex.getMessage());
     }

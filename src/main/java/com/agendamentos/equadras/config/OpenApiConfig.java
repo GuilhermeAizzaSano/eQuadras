@@ -155,9 +155,8 @@ public class OpenApiConfig {
             List<Tag> organizedTags = new ArrayList<>();
             organizedTags.add(new Tag().name("Usuários - API").description("Autenticação por cookie de sessão, perfil, chave de API pessoal e administração cadastral (Master Admin)."));
             organizedTags.add(new Tag().name("Quadras - API").description("Consulta de quadras (resumida ou completa), fotos, status operacional e gestão pelo administrador dono."));
-            organizedTags.add(new Tag().name("Agendamentos - API").description("Criação de reservas com lock pessimista, agenda, contadores, horários disponíveis e integração com Bot."));
+            organizedTags.add(new Tag().name("Agendamentos - API").description("Criação de reservas confirmadas com lock pessimista, agenda, contadores, horários disponíveis e integração com Bot."));
             organizedTags.add(new Tag().name("Bloqueios - API").description("Bloqueios administrativos de horários para torneios e manutenção."));
-            organizedTags.add(new Tag().name("Pagamentos - API").description("Status de pagamento Pix, simulação de aprovação e webhook do Mercado Pago."));
             organizedTags.add(new Tag().name("Notificações - API").description("Histórico de notificações do administrador e stream SSE em tempo real."));
             organizedTags.add(new Tag().name("Auditoria & Logs - API").description("Trilha de auditoria do sistema (exclusivo do Master Admin)."));
 
@@ -456,7 +455,6 @@ public class OpenApiConfig {
         if (tag.contains("Bloqueio")) return "Bloqueios - API";
         if (tag.contains("Agendamento") || tag.contains("Reserva")) return "Agendamentos - API";
         if (tag.contains("Usuário") || tag.contains("Autenticação")) return "Usuários - API";
-        if (tag.contains("Pagamento")) return "Pagamentos - API";
         if (tag.contains("Notificação")) return "Notificações - API";
         return tag.endsWith("- API") ? tag : tag + " - API";
     }

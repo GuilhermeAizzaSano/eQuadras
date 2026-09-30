@@ -1,6 +1,7 @@
 package com.agendamentos.equadras.listener;
 
 import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
+import com.agendamentos.equadras.event.AgendamentoConfirmadoSemPagamentoEvent;
 import com.agendamentos.equadras.event.AgendamentoNotificacaoPayload;
 import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
 import com.agendamentos.equadras.model.entity.Usuario;
@@ -37,15 +38,24 @@ public class AgendamentoNotificacaoListener {
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
     public void onAgendamentoPagamentoConfirmado(AgendamentoPagamentoConfirmadoEvent event) {
         if (event == null || event.payload() == null) return;
-        AgendamentoNotificacaoPayload payload = event.payload();
+        notificarReservaConfirmada("Pagamento Pix confirmado!", event.payload());
+    }
 
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
+    public void onAgendamentoConfirmadoSemPagamento(AgendamentoConfirmadoSemPagamentoEvent event) {
+        if (event == null || event.payload() == null) return;
+        notificarReservaConfirmada("Nova reserva confirmada!", event.payload());
+    }
+
+    private void notificarReservaConfirmada(String titulo, AgendamentoNotificacaoPayload payload) {
         try {
             String dataFormatada = payload.dataHoraInicio().format(FORMATADOR_DATA);
             String horaInicio = payload.dataHoraInicio().format(FORMATADOR_HORA);
             String horaFim = payload.dataHoraFim().format(FORMATADOR_HORA);
 
             String msg = String.format(
-                    "Pagamento Pix confirmado!\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s",
+                    "%s\n\nCliente: %s\nTelefone: %s\nQuadra: %s\nHorário: %s das %s às %s",
+                    titulo,
                     payload.nomeCliente(),
                     payload.telefoneCliente(),
                     payload.nomeQuadra(),
@@ -56,7 +66,7 @@ public class AgendamentoNotificacaoListener {
 
             notificacaoService.notificarAdmins(obterDestinatariosNotificacao(payload.idDonoQuadra()), msg);
         } catch (Exception e) {
-            log.error("Falha ao enviar notificação de pagamento do agendamento {}: {}",
+            log.error("Falha ao enviar notificação de reserva confirmada do agendamento {}: {}",
                     payload.idAgendamento(), e.getMessage(), e);
         }
     }

@@ -82,7 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/usuarios/login", "/api/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/logout", "/api/usuarios/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/agendamentos/bot", "/api/agendamentos/bot").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/pagamentos/webhook", "/api/pagamentos/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/pagamentos/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-resources/**", "/webjars/**").permitAll()
 
@@ -108,10 +108,10 @@ public class SecurityConfig {
                         .requestMatchers("/usuarios/api-key", "/usuarios/api-key/**", "/api/usuarios/api-key", "/api/usuarios/api-key/**").hasAnyRole("ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.PATCH, "/usuarios/minha-senha", "/api/usuarios/minha-senha").hasAnyRole("ADMIN", "CLIENT")
                         .requestMatchers(HttpMethod.GET, "/usuarios/*", "/api/usuarios/*").hasAnyRole("ADMIN", "CLIENT")
-                        .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao", "/api/pagamentos/*/simular-aprovacao").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers(HttpMethod.POST, "/pagamentos/*/simular-aprovacao").hasAnyRole("ADMIN", "CLIENT")
                         .requestMatchers("/quadras", "/quadras/**", "/api/quadras", "/api/quadras/**").hasAnyRole("ADMIN", "CLIENT")
                         .requestMatchers("/agendamentos", "/agendamentos/**", "/api/agendamentos", "/api/agendamentos/**").hasAnyRole("ADMIN", "CLIENT")
-                        .requestMatchers("/pagamentos", "/pagamentos/**", "/api/pagamentos", "/api/pagamentos/**").hasAnyRole("ADMIN", "CLIENT")
+                        .requestMatchers("/pagamentos", "/pagamentos/**").hasAnyRole("ADMIN", "CLIENT")
 
                         // 4. Qualquer outra rota exige autenticação válida (Sessão Web ou API-KEY)
                         .anyRequest().authenticated()

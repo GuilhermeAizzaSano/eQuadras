@@ -29,13 +29,10 @@ tags:
   description: "Consulta de quadras (resumida ou completa), fotos, status operacional\
     \ e gestão pelo administrador dono."
 - name: Agendamentos - API
-  description: "Criação de reservas com lock pessimista, agenda, contadores, horá\
-    rios disponíveis e integração com Bot."
+  description: "Criação de reservas confirmadas com lock pessimista, agenda, contadores,\
+    \ horários disponíveis e integração com Bot."
 - name: Bloqueios - API
   description: Bloqueios administrativos de horários para torneios e manutenção.
-- name: Pagamentos - API
-  description: "Status de pagamento Pix, simulação de aprovação e webhook do Mercado\
-    \ Pago."
 - name: Notificações - API
   description: Histórico de notificações do administrador e stream SSE em tempo real.
 - name: Auditoria & Logs - API
@@ -1890,195 +1887,6 @@ paths:
                 title: Não Autorizado
                 detail: "Acesso não autorizado: credencial ausente, expirada ou invá\
                   lida."
-  /api/pagamentos/{agendamentoId}/simular-aprovacao:
-    post:
-      tags:
-      - Pagamentos - API
-      summary: Simular aprovação de pagamento Pix
-      description: "Papéis: CLIENT ou ADMIN. Move uma reserva PENDENTE para CONFIRMADO\
-        \ sem passar pelo gateway e notifica o administrador da quadra por SSE. Reserva\
-        \ cancelada devolve 400 `STATUS_INVALIDO`; confirmação concorrente, 409 `CONFLITO_STATUS`.\
-        \ Devolve o `AgendamentoResponseDTO` atualizado."
-      operationId: simularAprovacao
-      parameters:
-      - name: agendamentoId
-        in: path
-        description: ID do agendamento (`id_agendamento`)
-        required: true
-        schema:
-          type: integer
-          format: int64
-        example: 42
-      responses:
-        "200":
-          description: Agendamento confirmado
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
-              example:
-                id_agendamento: 42
-                usuarioId: 10
-                nomeUsuario: Arthur Prado
-                telefoneUsuario: (11) 99999-8888
-                quadraId: 1
-                nomeQuadra: Arena Gol Society
-                dataHoraInicio: 2026-10-12T19:00:00
-                dataHoraFim: 2026-10-12T20:00:00
-                valorTotal: 120.0
-                status: CONFIRMADO
-                transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
-                criadoEm: 2026-09-29T15:30:00
-                canceladoEm: null
-        "404":
-          description: Recurso Não Encontrado
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemaErro"
-              example:
-                type: https://api.equadras.com/erros/recurso-nao-encontrado
-                title: Recurso Não Encontrado
-                status: 404
-                detail: "Agendamento não encontrado. ID: 999"
-                instance: "/api/pagamentos/{agendamentoId}/simular-aprovacao"
-                code: AGENDAMENTO_NAO_ENCONTRADO
-                timestamp: 2026-09-29T14:30:00.123456Z
-        "400":
-          description: Regra de Negócio Violada
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemaErro"
-              examples:
-                STATUS_INVALIDO:
-                  summary: Não é possível confirmar pagamento de um agendamento cancelado.
-                  value:
-                    type: https://api.equadras.com/erros/regra-negocio-violada
-                    title: Regra de Negócio Violada
-                    status: 400
-                    detail: Não é possível confirmar pagamento de um agendamento cancelado.
-                    instance: "/api/pagamentos/{agendamentoId}/simular-aprovacao"
-                    code: STATUS_INVALIDO
-                    timestamp: 2026-09-29T14:30:00.123456Z
-                ACESSO_NEGADO:
-                  summary: Você não tem permissão para confirmar o pagamento deste
-                    agendamento.
-                  value:
-                    type: https://api.equadras.com/erros/regra-negocio-violada
-                    title: Regra de Negócio Violada
-                    status: 400
-                    detail: Você não tem permissão para confirmar o pagamento deste
-                      agendamento.
-                    instance: "/api/pagamentos/{agendamentoId}/simular-aprovacao"
-                    code: ACESSO_NEGADO
-                    timestamp: 2026-09-29T14:30:00.123456Z
-        "409":
-          description: Regra de Negócio Violada
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemaErro"
-              example:
-                type: https://api.equadras.com/erros/regra-negocio-violada
-                title: Regra de Negócio Violada
-                status: 409
-                detail: Não foi possível confirmar o agendamento pois ele foi expirado
-                  ou cancelado concorrentemente.
-                instance: "/api/pagamentos/{agendamentoId}/simular-aprovacao"
-                code: CONFLITO_STATUS
-                timestamp: 2026-09-29T14:30:00.123456Z
-  /api/pagamentos/webhook:
-    post:
-      tags:
-      - Pagamentos - API
-      summary: Webhook do Mercado Pago
-      description: "Rota PÚBLICA, chamada pelo gateway. Identifica o pagamento por\
-        \ query (`topic=payment` ou `type=payment` com `id` ou `data.id`) ou pelo\
-        \ JSON (`type`/`action` contendo `payment` e `data.id`, ou `id`). Consulta\
-        \ o pagamento no Mercado Pago e, se `approved`, confirma o agendamento (`external_reference`).\
-        \ Respostas: `{status: ignored}` sem ID relevante; `{status: received}` se\
-        \ não aprovado; `{status: processed, payment_status: approved}` se confirmou;\
-        \ 500 `{status: error, message}` para o gateway reenviar."
-      operationId: webhook
-      parameters:
-      - name: id
-        in: query
-        description: Opcional. ID do pagamento no formato IPN (usado com `topic=payment`
-          ou `type=payment`).
-        required: false
-        schema:
-          type: string
-        example: 987654321
-      - name: topic
-        in: query
-        description: Opcional. Tópico IPN. Só `payment` é processado.
-        required: false
-        schema:
-          type: string
-        example: payment
-      - name: type
-        in: query
-        description: Opcional. Tipo do evento. Só valores contendo `payment` são processados.
-        required: false
-        schema:
-          type: string
-        example: payment
-      - name: data.id
-        in: query
-        description: "Opcional. ID do pagamento no formato Webhooks V2 (`data.id`),\
-          \ usado se `id` não vier."
-        required: false
-        schema:
-          type: string
-        example: 987654321
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                type: object
-      responses:
-        "200":
-          description: "Notificação sem ID de pagamento relevante: ignorada."
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
-              examples:
-                ignored:
-                  summary: "Notificação sem ID de pagamento relevante: ignorada."
-                  value:
-                    status: ignored
-                received:
-                  summary: "Pagamento consultado, mas ainda não aprovado (ou não encontrado\
-                    \ no gateway)."
-                  value:
-                    status: received
-                processed:
-                  summary: Pagamento aprovado e agendamento confirmado.
-                  value:
-                    status: processed
-                    payment_status: approved
-        "500":
-          description: "Falha ao confirmar ou consultar o pagamento: o gateway deve\
-            \ reenviar."
-          content:
-            application/json:
-              examples:
-                error:
-                  summary: "Falha ao confirmar ou consultar o pagamento: o gateway\
-                    \ deve reenviar."
-                  value:
-                    status: error
-                    message: Falha ao processar confirmação de pagamento. Solicitando
-                      retentativa.
-      security: []
   /api/agendamentos/bot:
     post:
       tags:
@@ -2089,8 +1897,8 @@ paths:
         \ DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra`\
         \ ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09`\
         \ ou ISO, e horas como `19`, `19h`, `19h30`, `9:00` ou `19:00` (hora invá\
-        lida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE\
-        \ com Pix; expira em 15 min se não paga."
+        lida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva já CONFIRMADA,\
+        \ sem cobrança Pix, e notifica o administrador da quadra por SSE."
       operationId: agendarViaBot
       requestBody:
         content:
@@ -2109,8 +1917,8 @@ paths:
         required: true
       responses:
         "201":
-          description: Reserva criada em PENDENTE com Pix; cliente criado ou vinculado
-            pelo telefone
+          description: "Reserva criada já CONFIRMADA, sem cobrança Pix; cliente criado\
+            \ ou vinculado pelo telefone"
           content:
             application/json:
               example:
@@ -2123,10 +1931,10 @@ paths:
                 dataHoraInicio: 2026-10-12T19:00:00
                 dataHoraFim: 2026-10-12T20:00:00
                 valorTotal: 120.0
-                status: PENDENTE
-                transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: 00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890
-                qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAAAMgAAADI
+                status: CONFIRMADO
+                transacaoPagamentoId: null
+                pixCopiaECola: null
+                qrCodeBase64: null
                 criadoEm: 2026-09-29T15:30:00
                 canceladoEm: null
         "422":
@@ -2319,14 +2127,14 @@ paths:
     post:
       tags:
       - Agendamentos - API
-      summary: Criar novo agendamento com lock e Pix
+      summary: Criar reserva confirmada
       description: "Papéis: CLIENT ou ADMIN (a reserva pertence ao usuário autenticado;\
-        \ `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista,\
-        \ cria a reserva em estado PENDENTE e gera a cobrança Pix (`pixCopiaECola`,\
-        \ `qrCodeBase64`). Regras: horas cheias (minutos zerados), duração mínima\
-        \ de 1 hora e múltipla de 60 min, início no futuro. Efeito colateral: reserva\
-        \ PENDENTE sem pagamento expira e é cancelada automaticamente após 15 minutos.\
-        \ Conflito de horário devolve 409 `HORARIO_INDISPONIVEL`."
+        \ `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista\
+        \ e cria a reserva já em estado CONFIRMADO, sem cobrança Pix (`transacaoPagamentoId`,\
+        \ `pixCopiaECola` e `qrCodeBase64` vêm nulos). Notifica o administrador da\
+        \ quadra por SSE. Regras: horas cheias (minutos zerados), duração mínima de\
+        \ 1 hora e múltipla de 60 min, início no futuro. Conflito de horário devolve\
+        \ 409 `HORARIO_INDISPONIVEL`."
       operationId: agendar
       requestBody:
         content:
@@ -2340,7 +2148,7 @@ paths:
         required: true
       responses:
         "201":
-          description: "Reserva criada em estado PENDENTE, com os dados do Pix"
+          description: "Reserva criada já CONFIRMADA, sem cobrança Pix"
           content:
             application/json:
               example:
@@ -2353,10 +2161,10 @@ paths:
                 dataHoraInicio: 2026-10-12T19:00:00
                 dataHoraFim: 2026-10-12T20:00:00
                 valorTotal: 120.0
-                status: PENDENTE
-                transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: 00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890
-                qrCodeBase64: iVBORw0KGgoAAAANSUhEUgAAAMgAAADI
+                status: CONFIRMADO
+                transacaoPagamentoId: null
+                pixCopiaECola: null
+                qrCodeBase64: null
                 criadoEm: 2026-09-29T15:30:00
                 canceladoEm: null
         "422":
@@ -2405,18 +2213,6 @@ paths:
                     detail: Não é possível realizar agendamentos em horários passados.
                     instance: /api/agendamentos
                     code: HORARIO_PASSADO
-                    timestamp: 2026-09-29T14:30:00.123456Z
-                FALHA_GATEWAY_PAGAMENTO:
-                  summary: Não foi possível gerar a cobrança Pix no gateway de pagamento.
-                    O slot foi liberado.
-                  value:
-                    type: https://api.equadras.com/erros/regra-negocio-violada
-                    title: Regra de Negócio Violada
-                    status: 400
-                    detail: Não foi possível gerar a cobrança Pix no gateway de pagamento.
-                      O slot foi liberado.
-                    instance: /api/agendamentos
-                    code: FALHA_GATEWAY_PAGAMENTO
                     timestamp: 2026-09-29T14:30:00.123456Z
         "409":
           description: Conflito de Horário
@@ -2938,64 +2734,6 @@ paths:
                 horaFim: 18:00:00
                 motivo: Torneio Interno da Arena
                 criadoEm: 2026-09-29T09:30:00
-  /api/pagamentos/{agendamentoId}/status:
-    get:
-      tags:
-      - Pagamentos - API
-      summary: Consultar status de pagamento da reserva
-      description: "Papéis: CLIENT ou ADMIN. Devolve o `AgendamentoResponseDTO` (o\
-        \ campo `status` é PENDENTE, CONFIRMADO ou CANCELADO). Efeito colateral: se\
-        \ a reserva está PENDENTE e tem `transacaoPagamentoId`, consulta o Mercado\
-        \ Pago e, se o pagamento estiver `approved`, confirma a reserva antes de responder.\
-        \ ID inexistente ou fora do seu escopo devolve 404."
-      operationId: consultarStatus
-      parameters:
-      - name: agendamentoId
-        in: path
-        description: ID do agendamento (`id_agendamento`)
-        required: true
-        schema:
-          type: integer
-          format: int64
-        example: 42
-      responses:
-        "200":
-          description: "Agendamento com o status atual (`PENDENTE`, `CONFIRMADO` ou\
-            \ `CANCELADO`)"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AgendamentoResponseDTO"
-              example:
-                id_agendamento: 42
-                usuarioId: 10
-                nomeUsuario: Arthur Prado
-                telefoneUsuario: (11) 99999-8888
-                quadraId: 1
-                nomeQuadra: Arena Gol Society
-                dataHoraInicio: 2026-10-12T19:00:00
-                dataHoraFim: 2026-10-12T20:00:00
-                valorTotal: 120.0
-                status: CONFIRMADO
-                transacaoPagamentoId: mp-pix-987654321
-                pixCopiaECola: null
-                qrCodeBase64: null
-                criadoEm: 2026-09-29T15:30:00
-                canceladoEm: null
-        "404":
-          description: Recurso Não Encontrado
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemaErro"
-              example:
-                type: https://api.equadras.com/erros/recurso-nao-encontrado
-                title: Recurso Não Encontrado
-                status: 404
-                detail: "Agendamento não encontrado. ID: 999"
-                instance: "/api/pagamentos/{agendamentoId}/status"
-                code: AGENDAMENTO_NAO_ENCONTRADO
-                timestamp: 2026-09-29T14:30:00.123456Z
   /api/notificacoes/stream:
     get:
       tags:
@@ -4651,6 +4389,81 @@ components:
           description: Versão atual da quadra; enviar no PUT para detectar edições
             concorrentes
           example: 3
+    AgendamentoResponseDTO:
+      type: object
+      description: Dados completos de retorno de um agendamento esportivo
+      properties:
+        canceladoEm:
+          type: string
+          format: date-time
+          description: "Data e hora de cancelamento do agendamento, se cancelado"
+          example: 2026-09-04T16:00:00
+        criadoEm:
+          type: string
+          format: date-time
+          description: Data e hora de criação do agendamento
+          example: 2026-09-04T15:30:00
+        dataHoraFim:
+          type: string
+          format: date-time
+          description: Data e horário de término da partida
+          example: 2026-09-05T20:00:00
+        dataHoraInicio:
+          type: string
+          format: date-time
+          description: Data e horário de início da partida
+          example: 2026-09-05T19:00:00
+        id_agendamento:
+          type: integer
+          format: int64
+          description: Identificador único do agendamento
+          example: 42
+        nomeQuadra:
+          type: string
+          description: Nome da quadra esportiva
+          example: Arena Gol Society
+        nomeUsuario:
+          type: string
+          description: Nome do atleta que reservou
+          example: Arthur Prado
+        pixCopiaECola:
+          type: string
+          description: Chave Pix Copia e Cola emitida pelo gateway
+          example: 00020126580014br.gov.bcb.pix...
+        qrCodeBase64:
+          type: string
+          description: Imagem do QR Code Pix codificada em Base64
+          example: iVBORw0KGgoAAAANSUhEUgAAA...
+        quadraId:
+          type: integer
+          format: int64
+          description: ID da quadra reservada
+          example: 1
+        status:
+          type: string
+          description: "Status do agendamento (PENDENTE, CONFIRMADO, CANCELADO)"
+          enum:
+          - PENDENTE
+          - CONFIRMADO
+          - CANCELADO
+          example: CONFIRMADO
+        telefoneUsuario:
+          type: string
+          description: Telefone de contato do atleta
+          example: (11) 99999-8888
+        transacaoPagamentoId:
+          type: string
+          description: Identificador da transação no gateway de pagamento
+          example: mp-pix-987654321
+        usuarioId:
+          type: integer
+          format: int64
+          description: ID do usuário que realizou a reserva
+          example: 10
+        valorTotal:
+          type: number
+          description: Valor total da reserva em reais
+          example: 120.0
     UsuarioLoginDTO:
       type: object
       properties:
@@ -4799,81 +4612,6 @@ components:
           format: int64
           description: ID da quadra bloqueada
           example: 1
-    AgendamentoResponseDTO:
-      type: object
-      description: Dados completos de retorno de um agendamento esportivo
-      properties:
-        canceladoEm:
-          type: string
-          format: date-time
-          description: "Data e hora de cancelamento do agendamento, se cancelado"
-          example: 2026-09-04T16:00:00
-        criadoEm:
-          type: string
-          format: date-time
-          description: Data e hora de criação do agendamento
-          example: 2026-09-04T15:30:00
-        dataHoraFim:
-          type: string
-          format: date-time
-          description: Data e horário de término da partida
-          example: 2026-09-05T20:00:00
-        dataHoraInicio:
-          type: string
-          format: date-time
-          description: Data e horário de início da partida
-          example: 2026-09-05T19:00:00
-        id_agendamento:
-          type: integer
-          format: int64
-          description: Identificador único do agendamento
-          example: 42
-        nomeQuadra:
-          type: string
-          description: Nome da quadra esportiva
-          example: Arena Gol Society
-        nomeUsuario:
-          type: string
-          description: Nome do atleta que reservou
-          example: Arthur Prado
-        pixCopiaECola:
-          type: string
-          description: Chave Pix Copia e Cola emitida pelo gateway
-          example: 00020126580014br.gov.bcb.pix...
-        qrCodeBase64:
-          type: string
-          description: Imagem do QR Code Pix codificada em Base64
-          example: iVBORw0KGgoAAAANSUhEUgAAA...
-        quadraId:
-          type: integer
-          format: int64
-          description: ID da quadra reservada
-          example: 1
-        status:
-          type: string
-          description: "Status do agendamento (PENDENTE, CONFIRMADO, CANCELADO)"
-          enum:
-          - PENDENTE
-          - CONFIRMADO
-          - CANCELADO
-          example: CONFIRMADO
-        telefoneUsuario:
-          type: string
-          description: Telefone de contato do atleta
-          example: (11) 99999-8888
-        transacaoPagamentoId:
-          type: string
-          description: Identificador da transação no gateway de pagamento
-          example: mp-pix-987654321
-        usuarioId:
-          type: integer
-          format: int64
-          description: ID do usuário que realizou a reserva
-          example: 10
-        valorTotal:
-          type: number
-          description: Valor total da reserva em reais
-          example: 120.0
     AgendamentoBotRequestDTO:
       type: object
       description: Dados para criação simplificada de reserva via Bot / WhatsApp

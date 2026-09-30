@@ -11,26 +11,6 @@ import static com.agendamentos.equadras.config.ExemplosDaApi.operacao;
 
 final class ExemplosAgendamentos {
 
-    private static final String PENDENTE_COM_PIX = """
-        {
-          "id_agendamento": 42,
-          "usuarioId": 10,
-          "nomeUsuario": "Arthur Prado",
-          "telefoneUsuario": "(11) 99999-8888",
-          "quadraId": 1,
-          "nomeQuadra": "Arena Gol Society",
-          "dataHoraInicio": "2026-10-12T19:00:00",
-          "dataHoraFim": "2026-10-12T20:00:00",
-          "valorTotal": 120.00,
-          "status": "PENDENTE",
-          "transacaoPagamentoId": "mp-pix-987654321",
-          "pixCopiaECola": "00020126580014br.gov.bcb.pix0136a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADI",
-          "criadoEm": "2026-09-29T15:30:00",
-          "canceladoEm": null
-        }
-        """;
-
     private static final String CONFIRMADO = """
         {
           "id_agendamento": 42,
@@ -50,6 +30,9 @@ final class ExemplosAgendamentos {
           "canceladoEm": null
         }
         """;
+
+    private static final String CONFIRMADO_SEM_PAGAMENTO = CONFIRMADO
+            .replace("\"transacaoPagamentoId\": \"mp-pix-987654321\"", "\"transacaoPagamentoId\": null");
 
     private static final String CANCELADO = CONFIRMADO
             .replace("\"status\": \"CONFIRMADO\"", "\"status\": \"CANCELADO\"")
@@ -100,11 +83,10 @@ final class ExemplosAgendamentos {
                       "dataHoraFim": "2026-10-12T20:00:00"
                     }
                     """)
-                .ok("201", "Reserva criada em estado PENDENTE, com os dados do Pix", PENDENTE_COM_PIX)
+                .ok("201", "Reserva criada já CONFIRMADA, sem cobrança Pix", CONFIRMADO_SEM_PAGAMENTO)
                 .erro(Erros.validacao("Dados inválidos: Horário de início: A data de início deve estar no futuro"))
                 .erro(Erros.regraNegocio("INTERVALO_INVALIDO", "A data/hora de término deve ser posterior à data/hora de início."))
                 .erro(Erros.regraNegocio("HORARIO_PASSADO", "Não é possível realizar agendamentos em horários passados."))
-                .erro(Erros.regraNegocio("FALHA_GATEWAY_PAGAMENTO", "Não foi possível gerar a cobrança Pix no gateway de pagamento. O slot foi liberado."))
                 .erro(Erros.horarioIndisponivel())
                 .build());
 
@@ -216,7 +198,7 @@ final class ExemplosAgendamentos {
                       "telefoneCliente": "11999998888"
                     }
                     """)
-                .ok("201", "Reserva criada em PENDENTE com Pix; cliente criado ou vinculado pelo telefone", PENDENTE_COM_PIX)
+                .ok("201", "Reserva criada já CONFIRMADA, sem cobrança Pix; cliente criado ou vinculado pelo telefone", CONFIRMADO_SEM_PAGAMENTO)
                 .erro(Erros.validacao("Dados inválidos: data: A data da reserva é obrigatória"))
                 .erro(Erros.requisicaoInvalida("Nenhuma quadra encontrada para o esporte ou nome informado."))
                 .erro(Erros.requisicaoInvalida("Não foi possível entender a hora: 25h"))

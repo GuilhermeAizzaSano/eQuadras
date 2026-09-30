@@ -222,7 +222,7 @@ class OpenApiDocumentacaoTest {
     void loginELogoutDocumentamCookieERotasPublicasNaoExigemCredencial() {
         assertTrue(docs.path("paths").path("/api/usuarios/login").path("post").path("responses").path("200").path("headers").has("Set-Cookie"));
         assertTrue(docs.path("paths").path("/api/usuarios/logout").path("post").path("responses").path("204").path("headers").has("Set-Cookie"));
-        for (String rota : List.of("/api/usuarios/login", "/api/usuarios/logout", "/api/agendamentos/bot", "/api/pagamentos/webhook")) {
+        for (String rota : List.of("/api/usuarios/login", "/api/usuarios/logout", "/api/agendamentos/bot")) {
             JsonNode seguranca = docs.path("paths").path(rota).path("post").path("security");
             assertTrue(seguranca.isArray() && seguranca.isEmpty(), rota + " deve declarar security: [] (rota pública)");
         }
@@ -240,6 +240,22 @@ class OpenApiDocumentacaoTest {
         // UsuarioController.regenerarApiKey devolve um Map, serializado como application/json
         assertTrue(chave.path("429").path("content").has("application/json"));
         assertTrue(!chave.path("429").path("content").has("application/problem+json"));
+    }
+
+    // A API externa não expõe pagamento: reservas nascem confirmadas e não há rotas /api/pagamentos
+    @Test
+    void apiExternaNaoExpoePagamentoECriaReservaConfirmada() {
+        docs.path("paths").fieldNames().forEachRemaining(path ->
+                assertTrue(!path.startsWith("/api/pagamentos"), "rota de pagamento exposta na API: " + path));
+        assertTrue(docs.path("tags").findValuesAsText("name").stream().noneMatch(n -> n.startsWith("Pagamentos")),
+                "tag de pagamentos ainda listada");
+
+        for (String rota : List.of("/api/agendamentos", "/api/agendamentos/bot")) {
+            JsonNode exemplo = docs.path("paths").path(rota).path("post").path("responses").path("201")
+                    .path("content").path("application/json").path("example");
+            assertEquals("CONFIRMADO", exemplo.path("status").asText(), rota + ": exemplo 201 deve estar CONFIRMADO");
+            assertTrue(exemplo.path("pixCopiaECola").isNull(), rota + ": exemplo 201 não deve trazer Pix");
+        }
     }
 
     // Todo item do registro aponta para uma operação real (evita erro de digitação em path/método)

@@ -35,6 +35,15 @@ public class AgendamentoLockService {
 
     @Transactional
     public Agendamento criarAgendamentoPendenteComLock(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
+        return criarAgendamentoComLock(dto, usuarioIdAutenticado, StatusAgendamento.PENDENTE);
+    }
+
+    @Transactional
+    public Agendamento criarAgendamentoConfirmadoComLock(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
+        return criarAgendamentoComLock(dto, usuarioIdAutenticado, StatusAgendamento.CONFIRMADO);
+    }
+
+    private Agendamento criarAgendamentoComLock(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado, StatusAgendamento status) {
         Usuario usuario = usuarioRepository.findById(usuarioIdAutenticado)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado. ID: " + usuarioIdAutenticado));
 
@@ -116,7 +125,7 @@ public class AgendamentoLockService {
                 .dataHoraInicio(dto.dataHoraInicio())
                 .dataHoraFim(dto.dataHoraFim())
                 .valorTotal(valorTotal)
-                .status(StatusAgendamento.PENDENTE)
+                .status(status)
                 .build();
 
         return agendamentoRepository.save(agendamento);

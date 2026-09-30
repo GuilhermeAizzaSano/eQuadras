@@ -11,7 +11,6 @@ public final class SecurityRoutes {
 
     public static final Set<String> ROTAS_ISENTAS = Set.of(
             "/pagamentos/webhook",
-            "/api/pagamentos/webhook",
             "/agendamentos/bot",
             "/api/agendamentos/bot"
     );

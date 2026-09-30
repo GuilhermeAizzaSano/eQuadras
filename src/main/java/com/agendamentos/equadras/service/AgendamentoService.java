@@ -8,6 +8,7 @@ import com.agendamentos.equadras.model.entity.Usuario;
 import com.agendamentos.equadras.model.enums.Role;
 import com.agendamentos.equadras.model.enums.TipoExecutor;
 import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
+import com.agendamentos.equadras.event.AgendamentoConfirmadoSemPagamentoEvent;
 import com.agendamentos.equadras.event.AgendamentoNotificacaoPayload;
 import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
 import com.agendamentos.equadras.model.enums.StatusAgendamento;
@@ -88,13 +89,7 @@ public class AgendamentoService {
     }
 
     public AgendamentoResponseDTO agendar(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
-        if (!dto.dataHoraFim().isAfter(dto.dataHoraInicio())) {
-            throw new RegraNegocioException("INTERVALO_INVALIDO", "A data/hora de término deve ser posterior à data/hora de início.");
-        }
-
-        if (dto.dataHoraInicio().isBefore(LocalDateTime.now(clock))) {
-            throw new RegraNegocioException("HORARIO_PASSADO", "Não é possível realizar agendamentos em horários passados.");
-        }
+        validarIntervalo(dto);
 
         // 1. Cria o agendamento em transação com lock pessimista na quadra e commita imediatamente
         Agendamento agendamentoSalvo = agendamentoLockService.criarAgendamentoPendenteComLock(dto, usuarioIdAutenticado);
@@ -121,6 +116,30 @@ public class AgendamentoService {
         Agendamento agendamentoAtualizado = agendamentoLockService.atualizarDadosPix(agendamentoSalvo.getId_agendamento(), pixDados);
 
         return AgendamentoResponseDTO.fromEntity(agendamentoAtualizado);
+    }
+
+    // Sem cobrança: a reserva nasce CONFIRMADA na mesma transação do lock e o evento notifica os admins antes do commit
+    @Transactional
+    public AgendamentoResponseDTO agendarConfirmado(AgendamentoCriacaoDTO dto, Long usuarioIdAutenticado) {
+        validarIntervalo(dto);
+
+        Agendamento salvo = agendamentoLockService.criarAgendamentoConfirmadoComLock(dto, usuarioIdAutenticado);
+
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new AgendamentoConfirmadoSemPagamentoEvent(AgendamentoNotificacaoPayload.fromEntity(salvo)));
+        }
+
+        return AgendamentoResponseDTO.fromEntitySemPix(salvo);
+    }
+
+    private void validarIntervalo(AgendamentoCriacaoDTO dto) {
+        if (!dto.dataHoraFim().isAfter(dto.dataHoraInicio())) {
+            throw new RegraNegocioException("INTERVALO_INVALIDO", "A data/hora de término deve ser posterior à data/hora de início.");
+        }
+
+        if (dto.dataHoraInicio().isBefore(LocalDateTime.now(clock))) {
+            throw new RegraNegocioException("HORARIO_PASSADO", "Não é possível realizar agendamentos em horários passados.");
+        }
     }
 
     @Transactional

@@ -1,6 +1,7 @@
 package com.agendamentos.equadras.listener;
 
 import com.agendamentos.equadras.event.AgendamentoCanceladoEvent;
+import com.agendamentos.equadras.event.AgendamentoConfirmadoSemPagamentoEvent;
 import com.agendamentos.equadras.event.AgendamentoPagamentoConfirmadoEvent;
 import com.agendamentos.equadras.model.entity.Agendamento;
 import com.agendamentos.equadras.model.entity.Quadra;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -90,6 +92,18 @@ class AgendamentoNotificacaoListenerTest {
         listener.onAgendamentoPagamentoConfirmado(new AgendamentoPagamentoConfirmadoEvent(payload));
 
         verify(notificacaoService, times(1)).notificarAdmins(eq(java.util.Set.of(2L, 3L)), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve notificar os administradores de reserva confirmada sem etapa de pagamento")
+    void deveNotificarReservaConfirmadaSemPagamento() {
+        when(usuarioRepository.findByRole(Role.ADMIN)).thenReturn(List.of(adminQuadra));
+
+        var payload = com.agendamentos.equadras.event.AgendamentoNotificacaoPayload.fromEntity(agendamento);
+        listener.onAgendamentoConfirmadoSemPagamento(new AgendamentoConfirmadoSemPagamentoEvent(payload));
+
+        verify(notificacaoService, times(1)).notificarAdmins(eq(java.util.Set.of(2L)),
+                argThat(msg -> msg.startsWith("Nova reserva confirmada!") && msg.contains("Quadra Central")));
     }
 
     @Test

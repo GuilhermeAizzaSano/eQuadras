@@ -106,6 +106,27 @@ class AgendamentoLockServiceTest {
     }
 
     @Test
+    @DisplayName("Deve criar agendamento já confirmado com lock, sem dados de Pix")
+    void deveCriarAgendamentoConfirmadoComLock() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime fim = inicio.plusHours(1);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, fim);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(quadraRepository.buscarComLockParaAgendamento(1L)).thenReturn(Optional.of(quadra));
+        when(agendamentoRepository.existeConflitoHorario(eq(1L), eq(inicio), eq(fim), eq(StatusAgendamento.CANCELADO)))
+                .thenReturn(false);
+        when(agendamentoRepository.save(any(Agendamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Agendamento resultado = agendamentoLockService.criarAgendamentoConfirmadoComLock(dto, 1L);
+
+        assertEquals(StatusAgendamento.CONFIRMADO, resultado.getStatus());
+        assertNull(resultado.getPixCopiaECola());
+        assertNull(resultado.getTransacaoPagamentoId());
+        verify(quadraRepository, times(1)).buscarComLockParaAgendamento(1L);
+    }
+
+    @Test
     @DisplayName("Deve falhar ao criar agendamento se usuário não for encontrado")
     void deveFalharSeUsuarioNaoEncontrado() {
         LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0);

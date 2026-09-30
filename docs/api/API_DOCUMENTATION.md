@@ -50,7 +50,7 @@ curl -X GET "https://equadras.app/api/quadras" \
 ### 1.2 Sessão Web (Frontend)
 Na aplicação web oficial, a autenticação ocorre via cookie seguro `HttpOnly` (`equadras_session`), dispensando armazenamento de credenciais no `localStorage`.
 
-**Cabeçalho `X-Client` (proteção CSRF):** toda requisição `POST`, `PUT`, `PATCH` ou `DELETE` enviada **sem API-KEY** precisa do cabeçalho `X-Client: frontend`, inclusive login e logout. Sem ele, a API devolve 403 (`Cabeçalho X-Client obrigatório ausente ou inválido...`). Ficam isentas as requisições com API-KEY e as rotas públicas `POST /api/agendamentos/bot` e `POST /api/pagamentos/webhook`.
+**Cabeçalho `X-Client` (proteção CSRF):** toda requisição `POST`, `PUT`, `PATCH` ou `DELETE` enviada **sem API-KEY** precisa do cabeçalho `X-Client: frontend`, inclusive login e logout. Sem ele, a API devolve 403 (`Cabeçalho X-Client obrigatório ausente ou inválido...`). Ficam isentas as requisições com API-KEY e a rota pública `POST /api/agendamentos/bot`.
 
 ---
 
@@ -86,8 +86,8 @@ Na aplicação web oficial, a autenticação ocorre via cookie seguro `HttpOnly`
 | **Bloqueios** | `POST` | `/api/quadras/{quadraId}/desbloquear` | `ROLE_ADMIN` | Desbloquear horários/dias via corpo da requisição |
 | **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}/horarios-disponiveis` | Autenticado (`CLIENT` ou `ADMIN`) | Listar grade com status detalhado dos slots da quadra |
 | **Agendamentos** | `GET` | `/api/agendamentos/dia` | `ROLE_ADMIN` | Listar horários consolidados de todas as quadras do admin para a data em lote |
-| **Agendamentos** | `POST` | `/api/agendamentos` | Autenticado | Criar agendamento sob Lock Pessimista e gerar Pix |
-| **Agendamentos** | `POST` | `/api/agendamentos/bot` | Público / Bot | Criar agendamento via WhatsApp/Bot (100% público, sem token/secret) |
+| **Agendamentos** | `POST` | `/api/agendamentos` | Autenticado | Criar agendamento confirmado sob Lock Pessimista (sem Pix) |
+| **Agendamentos** | `POST` | `/api/agendamentos/bot` | Público / Bot | Criar agendamento confirmado via WhatsApp/Bot (100% público, sem token/secret) |
 | **Agendamentos** | `GET` | `/api/agendamentos/horarios-disponiveis` | Autenticado (`CLIENT` ou `ADMIN`) | Consulta consolidada e flexível de grade de horários por data/esporte/quadra |
 | **Agendamentos** | `GET` | `/api/agendamentos/quadra/{quadraId}` | `ROLE_ADMIN` | Listar histórico de reservas de uma quadra específica do admin |
 | **Agendamentos** | `GET` | `/api/agendamentos` | Autenticado | Listar reservas do atleta/admin, paginado (`?page=0&aba=ATIVOS`); a variante legada sem `page` aceita `?historico=true` |
@@ -100,9 +100,6 @@ Na aplicação web oficial, a autenticação ocorre via cookie seguro `HttpOnly`
 | **Agendamentos** | `GET` | `/api/agendamentos/agenda/completa` | `ROLE_ADMIN` | Agenda completa de um dia (sem paginação) |
 | **Agendamentos** | `GET` | `/api/agendamentos/agenda/mensal` | `ROLE_ADMIN` | Agenda do mês |
 | **Agendamentos** | `GET` | `/api/agendamentos/dashboard/metricas` | `ROLE_ADMIN` | Métricas do dashboard |
-| **Pagamentos** | `POST` | `/api/pagamentos/{id}/simular-aprovacao` | Autenticado | Simular aprovação Pix (Ambiente Dev) |
-| **Pagamentos** | `GET` | `/api/pagamentos/{id}/status` | Autenticado | Consultar status de pagamento da reserva |
-| **Pagamentos** | `POST` | `/api/pagamentos/webhook` | Público | Webhook de notificações de pagamento |
 | **Notificações** | `GET` | `/api/notificacoes/stream` | `ROLE_ADMIN` | Iniciar stream SSE em tempo real de novos pagamentos |
 | **Notificações** | `GET` | `/api/notificacoes/admin` | `ROLE_ADMIN` | Histórico paginado de notificações (`?page=0&size=5`) |
 | **Notificações** | `PUT` | `/api/notificacoes/{id}/ler` | `ROLE_ADMIN` | Marcar notificação individual como lida |
@@ -1300,8 +1297,8 @@ X-API-KEY: eq_SUA_API_KEY_ADMIN
 
 ---
 
-### 6.3 Criar Agendamento (Com Lock Pessimista e Pix)
-Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra, registra o agendamento `PENDENTE` e gera o payload Pix para pagamento.
+### 6.3 Criar Agendamento (Com Lock Pessimista, Já Confirmado)
+Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra e registra o agendamento já `CONFIRMADO`, sem cobrança Pix (`transacaoPagamentoId`, `pixCopiaECola` e `qrCodeBase64` vêm `null`). O administrador da quadra é notificado por SSE.
 
 - **Método:** `POST`
 - **URL:** `/api/agendamentos`
@@ -1339,10 +1336,10 @@ Content-Type: application/json
   "dataHoraInicio": "2026-09-10T17:00:00",
   "dataHoraFim": "2026-09-10T19:00:00",
   "valorTotal": 240.00,
-  "status": "PENDENTE",
-  "transacaoPagamentoId": "mock-pix-1725299000",
-  "pixCopiaECola": "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-4266141740005204000053039865406240.005802BR5913eQuadras6009SAO PAULO62070503***6304ABCD",
-  "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAAMgAAADIAQAAAACFIImAAAAAkUlEQVR42u3YMRKDMAxFQc9l7H...",
+  "status": "CONFIRMADO",
+  "transacaoPagamentoId": null,
+  "pixCopiaECola": null,
+  "qrCodeBase64": null,
   "criadoEm": "2026-09-02T16:50:00",
   "canceladoEm": null
 }
@@ -1550,10 +1547,10 @@ Este endpoint tem limite de 20 requisições por minuto por IP (429 com `Retry-A
   "dataHoraInicio": "2026-09-05T19:00:00",
   "dataHoraFim": "2026-09-05T20:00:00",
   "valorTotal": 120.00,
-  "status": "PENDENTE",
-  "transacaoPagamentoId": "mp-pix-987654321",
-  "pixCopiaECola": "00020126580014br.gov.bcb.pix...",
-  "qrCodeBase64": "iVBORw0KGgoAAAANSUhEUgAAA...",
+  "status": "CONFIRMADO",
+  "transacaoPagamentoId": null,
+  "pixCopiaECola": null,
+  "qrCodeBase64": null,
   "criadoEm": "2026-09-04T15:45:00",
   "canceladoEm": null
 }
@@ -1670,109 +1667,7 @@ X-API-KEY: eq_SUA_API_KEY_ADMIN
 
 ## 7. Módulo de Pagamentos e Webhooks
 
-### 7.1 Simular Aprovação de Pagamento Pix (Dev)
-Transita uma reserva pendente para `CONFIRMADO` e notifica o administrador via SSE em tempo real.
-
-- **Método:** `POST`
-- **URL:** `/api/pagamentos/{agendamentoId}/simular-aprovacao`
-- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
-
-#### Requisição:
-```http
-POST /api/pagamentos/25/simular-aprovacao HTTP/1.1
-Host: localhost:8080
-X-API-KEY: eq_SUA_CHAVE_AQUI
-```
-
-#### Resposta de Sucesso (200 OK):
-```json
-{
-  "id_agendamento": 25,
-  "usuarioId": 14,
-  "nomeUsuario": "Carlos Silva",
-  "telefoneUsuario": "(17) 99876-5432",
-  "quadraId": 11,
-  "nomeQuadra": "Arena Central Premium",
-  "dataHoraInicio": "2026-09-10T17:00:00",
-  "dataHoraFim": "2026-09-10T19:00:00",
-  "valorTotal": 240.00,
-  "status": "CONFIRMADO",
-  "transacaoPagamentoId": "mock-pix-1725299000",
-  "pixCopiaECola": null,
-  "qrCodeBase64": null,
-  "criadoEm": "2026-09-02T16:50:00",
-  "canceladoEm": null
-}
-```
-
----
-
-### 7.2 Webhook do Gateway de Pagamento
-Endpoint para notificações assíncronas do gateway de pagamentos.
-
-- **Método:** `POST`
-- **URL:** `/api/pagamentos/webhook?id=12345678&topic=payment`
-- **Autenticação:** Pública
-
-#### Requisição:
-```http
-POST /api/pagamentos/webhook?id=12345678&topic=payment HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{
-  "action": "payment.created",
-  "api_version": "v1",
-  "data": {
-    "id": "12345678"
-  },
-  "date_created": "2026-09-02T16:52:00Z",
-  "type": "payment"
-}
-```
-
-O pagamento é identificado por query (`topic=payment` ou `type=payment`, com `id` ou `data.id`) ou pelo JSON (`type`/`action` contendo `payment` e `data.id`, ou o campo `id`). A API consulta o pagamento no Mercado Pago e, se estiver `approved`, confirma o agendamento indicado em `external_reference`.
-
-#### Respostas possíveis:
-
-**200 OK - notificação sem ID de pagamento relevante (ignorada):**
-```json
-{
-  "status": "ignored"
-}
-```
-
-**200 OK - pagamento consultado, ainda não aprovado (ou não encontrado no gateway):**
-```json
-{
-  "status": "received"
-}
-```
-
-**200 OK - pagamento aprovado e agendamento confirmado:**
-```json
-{
-  "status": "processed",
-  "payment_status": "approved"
-}
-```
-
-**500 Internal Server Error - falha ao confirmar ou consultar o pagamento (o gateway deve reenviar a notificação):**
-```json
-{
-  "status": "error",
-  "message": "Falha ao processar confirmação de pagamento. Solicitando retentativa."
-}
-```
-
----
-
-### 7.3 Consultar Status de Pagamento da Reserva
-- **Método:** `GET`
-- **URL:** `/api/pagamentos/{agendamentoId}/status`
-- **Autenticação:** Obrigatória (`ROLE_CLIENT` ou `ROLE_ADMIN`)
-
-Devolve o `AgendamentoResponseDTO` da reserva (mesmo formato da seção 6.3); o campo `status` indica `PENDENTE`, `CONFIRMADO` ou `CANCELADO`. Se a reserva ainda está `PENDENTE` e tem `transacaoPagamentoId`, a API consulta o Mercado Pago antes de responder e, se o pagamento já estiver aprovado, confirma a reserva na hora. ID inexistente ou fora do seu escopo devolve 404.
+A API externa não expõe endpoints de pagamento: reservas criadas por `POST /api/agendamentos` e `POST /api/agendamentos/bot` já nascem `CONFIRMADO`, sem cobrança Pix, e o administrador da quadra é notificado por SSE.
 
 ---
 

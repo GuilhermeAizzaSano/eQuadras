@@ -136,6 +136,46 @@ class AgendamentoServiceTest {
     }
 
     @Test
+    @DisplayName("Deve agendar já confirmado, sem gerar Pix, e publicar evento de reserva confirmada")
+    void deveAgendarConfirmadoSemPix() {
+        LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, inicio.plusHours(1));
+
+        Agendamento confirmado = Agendamento.builder()
+                .id_agendamento(11L)
+                .usuario(usuario)
+                .quadra(quadra)
+                .dataHoraInicio(inicio)
+                .dataHoraFim(inicio.plusHours(1))
+                .valorTotal(BigDecimal.valueOf(100.00))
+                .status(StatusAgendamento.CONFIRMADO)
+                .build();
+        when(agendamentoLockService.criarAgendamentoConfirmadoComLock(dto, 1L)).thenReturn(confirmado);
+
+        AgendamentoResponseDTO resposta = agendamentoService.agendarConfirmado(dto, 1L);
+
+        assertEquals(StatusAgendamento.CONFIRMADO, resposta.status());
+        assertNull(resposta.pixCopiaECola());
+        assertNull(resposta.qrCodeBase64());
+        verifyNoInteractions(pagamentoService);
+        verify(eventPublisher).publishEvent(any(com.agendamentos.equadras.event.AgendamentoConfirmadoSemPagamentoEvent.class));
+    }
+
+    @Test
+    @DisplayName("agendarConfirmado rejeita horário no passado antes de travar a quadra")
+    void agendarConfirmadoRejeitaHorarioPassado() {
+        LocalDateTime inicio = LocalDateTime.now().minusDays(1).withMinute(0).withSecond(0).withNano(0);
+        AgendamentoCriacaoDTO dto = new AgendamentoCriacaoDTO(1L, 1L, inicio, inicio.plusHours(1));
+
+        com.agendamentos.equadras.exception.RegraNegocioException ex = assertThrows(
+                com.agendamentos.equadras.exception.RegraNegocioException.class,
+                () -> agendamentoService.agendarConfirmado(dto, 1L));
+
+        assertEquals("HORARIO_PASSADO", ex.getCode());
+        verifyNoInteractions(agendamentoLockService);
+    }
+
+    @Test
     @DisplayName("Deve lançar exceção e bloquear agendamento quando houver conflito de horário")
     void deveBloquearQuandoConflitoDeHorario() {
         LocalDateTime inicio = LocalDateTime.now().plusDays(1).withHour(10).withMinute(0).withSecond(0).withNano(0);

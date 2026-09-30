@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @Tag(name = "Pagamentos (Integração e Webhook)", description = "Endpoints para lidar com simulações, webhook oficial e consultas de status via Mercado Pago.")
 @RestController
-@RequestMapping({"/pagamentos", "/api/pagamentos"})
+@RequestMapping("/pagamentos")
 public class PagamentoController {
 
     private static final Logger log = LoggerFactory.getLogger(PagamentoController.class);

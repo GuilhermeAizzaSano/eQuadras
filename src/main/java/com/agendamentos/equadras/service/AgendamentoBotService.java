@@ -39,7 +39,7 @@ public class AgendamentoBotService {
         this.clock = clock;
     }
 
-    public AgendamentoResponseDTO agendarViaBot(AgendamentoBotRequestDTO dto) {
+    public AgendamentoResponseDTO agendarViaBot(AgendamentoBotRequestDTO dto, boolean confirmarDireto) {
         Long quadraId = dto.quadraId();
         if (quadraId == null) {
             List<Quadra> quadras = quadraBuscaService.buscarQuadrasAtivas(null, dto.tipoEsporte(), dto.nomeQuadra());
@@ -75,7 +75,9 @@ public class AgendamentoBotService {
                 data.atTime(horaFim)
         );
 
-        return agendamentoService.agendar(criacaoDTO, usuario.getId_usuario());
+        return confirmarDireto
+                ? agendamentoService.agendarConfirmado(criacaoDTO, usuario.getId_usuario())
+                : agendamentoService.agendar(criacaoDTO, usuario.getId_usuario());
     }
 
     private LocalTime parseHora(String horaStr) {

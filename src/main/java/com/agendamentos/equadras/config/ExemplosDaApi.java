@@ -44,7 +44,6 @@ final class ExemplosDaApi {
                 ExemplosQuadras.exemplos(),
                 ExemplosBloqueios.exemplos(),
                 ExemplosAgendamentos.exemplos(),
-                ExemplosPagamentos.exemplos(),
                 ExemplosNotificacoes.exemplos(),
                 ExemplosAuditoria.exemplos());
         for (Map<String, ExemploOperacao> parte : partes) {

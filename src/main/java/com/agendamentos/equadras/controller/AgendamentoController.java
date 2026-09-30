@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -55,13 +56,16 @@ public class AgendamentoController {
     }
 
     @Operation(
-            summary = "Criar novo agendamento com lock e Pix",
-            description = "Papéis: CLIENT ou ADMIN (a reserva pertence ao usuário autenticado; `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista, cria a reserva em estado PENDENTE e gera a cobrança Pix (`pixCopiaECola`, `qrCodeBase64`). Regras: horas cheias (minutos zerados), duração mínima de 1 hora e múltipla de 60 min, início no futuro. Efeito colateral: reserva PENDENTE sem pagamento expira e é cancelada automaticamente após 15 minutos. Conflito de horário devolve 409 `HORARIO_INDISPONIVEL`."
+            summary = "Criar reserva confirmada",
+            description = "Papéis: CLIENT ou ADMIN (a reserva pertence ao usuário autenticado; `usuarioId` do corpo é opcional). Bloqueia o horário com lock pessimista e cria a reserva já em estado CONFIRMADO, sem cobrança Pix (`transacaoPagamentoId`, `pixCopiaECola` e `qrCodeBase64` vêm nulos). Notifica o administrador da quadra por SSE. Regras: horas cheias (minutos zerados), duração mínima de 1 hora e múltipla de 60 min, início no futuro. Conflito de horário devolve 409 `HORARIO_INDISPONIVEL`."
     )
     @PostMapping
     public ResponseEntity<AgendamentoResponseDTO> agendar(@RequestBody @Valid AgendamentoCriacaoDTO dto,
-                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado) {
-        AgendamentoResponseDTO resposta = agendamentoService.agendar(dto, usuarioLogado.id());
+                                                          @UsuarioLogado UsuarioAutenticado usuarioLogado,
+                                                          HttpServletRequest request) {
+        AgendamentoResponseDTO resposta = isRotaApi(request)
+                ? agendamentoService.agendarConfirmado(dto, usuarioLogado.id())
+                : agendamentoService.agendar(dto, usuarioLogado.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
@@ -278,13 +282,14 @@ public class AgendamentoController {
 
     @Operation(
             summary = "Agendamento simplificado via Bot / WhatsApp",
-            description = "Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19`, `19h`, `19h30`, `9:00` ou `19:00` (hora inválida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva PENDENTE com Pix; expira em 15 min se não paga."
+            description = "Rota PÚBLICA (sem autenticação). Cria a reserva a partir de linguagem flexível. Efeito colateral: cria ou vincula o cliente pelo telefone (`telefoneCliente`, DDD + 8 ou 9 dígitos) e nome. Localiza a quadra por `quadraId`, `nomeQuadra` ou `tipoEsporte`. Aceita `data` como `hoje`, `amanha`, dia da semana, `15/09` ou ISO, e horas como `19`, `19h`, `19h30`, `9:00` ou `19:00` (hora inválida devolve 400). Sem `horaFim`, dura 1 hora. Devolve a reserva já CONFIRMADA, sem cobrança Pix, e notifica o administrador da quadra por SSE."
     )
     @SecurityRequirements
     @PostMapping("/bot")
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(
-            @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto) {
-        AgendamentoResponseDTO resposta = agendamentoBotService.agendarViaBot(dto);
+            @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto,
+            HttpServletRequest request) {
+        AgendamentoResponseDTO resposta = agendamentoBotService.agendarViaBot(dto, isRotaApi(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
@@ -306,5 +311,10 @@ public class AgendamentoController {
             @RequestParam(required = false, defaultValue = "false") boolean apenasDisponiveis
     ) {
         return ResponseEntity.ok(gradeHorariosService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));
+    }
+
+    // /api/** é a API externa (integrações e bots): reserva confirmada sem Pix. As rotas sem prefixo, do frontend, mantêm o fluxo de pagamento
+    private static boolean isRotaApi(HttpServletRequest request) {
+        return request.getRequestURI().startsWith(request.getContextPath() + "/api/");
     }
 }
