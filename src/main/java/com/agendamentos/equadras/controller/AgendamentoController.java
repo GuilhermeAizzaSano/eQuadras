@@ -30,12 +30,16 @@ import java.util.List;
 import java.util.Map;
 import com.agendamentos.equadras.model.enums.AbaAgendamento;
 import com.agendamentos.equadras.shared.pagination.PageResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 
 @Tag(name = "Agendamentos e Reservas", description = "Endpoints para agendamento concorrente com lock pessimista, verificação de slots e cancelamento de reservas.")
 @RestController
 @RequestMapping({"/agendamentos", "/api/agendamentos"})
 public class AgendamentoController {
+
+    private static final Logger log = LoggerFactory.getLogger(AgendamentoController.class);
 
     private final AgendamentoService agendamentoService;
     private final DashboardService dashboardService;
@@ -289,7 +293,13 @@ public class AgendamentoController {
     public ResponseEntity<AgendamentoResponseDTO> agendarViaBot(
             @RequestBody @Valid com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO dto,
             HttpServletRequest request) {
+        log.info("[AGENDAMENTO_BOT] Recebido agendamento via Bot: cliente='{}', telefone='{}', quadraId={}, nomeQuadra='{}', tipoEsporte='{}', data='{}', inicio='{}', fim='{}'",
+                dto.nomeCliente(), dto.telefoneCliente(), dto.quadraId(), dto.nomeQuadra(), dto.tipoEsporte(), dto.data(), dto.horaInicio(), dto.horaFim());
         AgendamentoResponseDTO resposta = agendamentoBotService.agendarViaBot(dto, isRotaApi(request));
+        if (resposta != null) {
+            log.info("[AGENDAMENTO_BOT] Reserva #{} gerada com sucesso via Bot (status={}) para cliente '{}'",
+                    resposta.id_agendamento(), resposta.status(), dto.nomeCliente());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(resposta);
     }
 
@@ -310,7 +320,13 @@ public class AgendamentoController {
             @Parameter(description = "Se `true`, devolve só horários livres. Padrão `false`.", schema = @Schema(defaultValue = "false"))
             @RequestParam(required = false, defaultValue = "false") boolean apenasDisponiveis
     ) {
-        return ResponseEntity.ok(gradeHorariosService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis));
+        log.info("[CONSULTA_GRADE_HORARIOS] Parâmetros de busca recebidos: data='{}', quadraId={}, tipoEsporte='{}', nomeQuadra='{}', apenasDisponiveis={}",
+                data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
+        List<com.agendamentos.equadras.dto.response.GradeHorariosResponseDTO> resultado =
+                gradeHorariosService.consultarGradeHorariosFlexivel(data, quadraId, tipoEsporte, nomeQuadra, apenasDisponiveis);
+        log.info("[CONSULTA_GRADE_HORARIOS] Retornadas {} quadra(s) com grade consolidada para a busca.",
+                resultado != null ? resultado.size() : 0);
+        return ResponseEntity.ok(resultado);
     }
 
     // /api/** é a API externa (integrações e bots): reserva confirmada sem Pix. As rotas sem prefixo, do frontend, mantêm o fluxo de pagamento

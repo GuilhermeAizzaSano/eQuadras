@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.PageRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -25,6 +27,8 @@ import java.util.List;
 @RestController
 @RequestMapping({"/quadras", "/api/quadras"})
 public class QuadraController {
+
+    private static final Logger log = LoggerFactory.getLogger(QuadraController.class);
 
     private final QuadraService quadraService;
     private final QuadraFotoService quadraFotoService;
@@ -102,6 +106,9 @@ public class QuadraController {
         // Se chamado via /api/quadras -> padrão resumido (para bots e terceiros)
         // Se chamado via /quadras -> padrão completo (para frontend)
         boolean querResumido = resumido != null ? resumido : isApiRoute;
+
+        log.info("[LISTAR_QUADRAS] Consulta recebida: uri='{}', esporte='{}', nome='{}', cidade='{}', bairro='{}', cep='{}', resumido={}, page={}",
+                uri, tipoEsporte, nome, cidade, bairro, cep, querResumido, page);
 
         if (querResumido) {
             return ResponseEntity.ok(quadraBuscaService.listarResumido(usuarioId, latitude, longitude, raioKm, tipoEsporte, nome, endereco, cidade, bairro, cep));
@@ -204,6 +211,10 @@ public class QuadraController {
         Long idBuscado = idPath != null ? idPath : (idParam != null ? idParam : quadraId);
         String nomeBuscado = (nome != null && !nome.isBlank()) ? nome : nomeQuadra;
         String esporteBuscado = (tipoEsporte != null && !tipoEsporte.isBlank()) ? tipoEsporte : esporte;
+
+        log.info("[CONSULTA_FOTOS] Consulta de fotos recebida: idBuscado={}, nome='{}', esporte='{}', cidade='{}', bairro='{}'",
+                idBuscado, nomeBuscado, esporteBuscado, cidade, bairro);
+
         return ResponseEntity.ok(quadraFotoService.consultarFotos(idBuscado, nomeBuscado, esporteBuscado, cidade, bairro));
     }
 }
