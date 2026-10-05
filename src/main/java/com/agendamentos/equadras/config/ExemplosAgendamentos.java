@@ -31,8 +31,22 @@ final class ExemplosAgendamentos {
         }
         """;
 
-    private static final String CONFIRMADO_SEM_PAGAMENTO = CONFIRMADO
-            .replace("\"transacaoPagamentoId\": \"mp-pix-987654321\"", "\"transacaoPagamentoId\": null");
+    private static final String RESERVA_CONFIRMADA = """
+        {
+          "id_agendamento": 42,
+          "usuarioId": 10,
+          "nomeUsuario": "Arthur Prado",
+          "telefoneUsuario": "(11) 99999-8888",
+          "quadraId": 1,
+          "nomeQuadra": "Arena Gol Society",
+          "dataHoraInicio": "2026-10-12T19:00:00",
+          "dataHoraFim": "2026-10-12T20:00:00",
+          "valorTotal": 120.00,
+          "status": "CONFIRMADO",
+          "criadoEm": "2026-09-29T15:30:00",
+          "canceladoEm": null
+        }
+        """;
 
     private static final String CANCELADO = CONFIRMADO
             .replace("\"status\": \"CONFIRMADO\"", "\"status\": \"CANCELADO\"")
@@ -83,7 +97,8 @@ final class ExemplosAgendamentos {
                       "dataHoraFim": "2026-10-12T20:00:00"
                     }
                     """)
-                .ok("201", "Reserva criada já CONFIRMADA, sem cobrança Pix", CONFIRMADO_SEM_PAGAMENTO)
+                .okComCabecalhos("201", "Reserva criada já CONFIRMADA, sem cobrança Pix nem campos de pagamento", RESERVA_CONFIRMADA,
+                        "ReservaConfirmadaResponseDTO", Map.of())
                 .erro(Erros.validacao("Dados inválidos: Horário de início: A data de início deve estar no futuro"))
                 .erro(Erros.regraNegocio("INTERVALO_INVALIDO", "A data/hora de término deve ser posterior à data/hora de início."))
                 .erro(Erros.regraNegocio("HORARIO_PASSADO", "Não é possível realizar agendamentos em horários passados."))
@@ -198,7 +213,8 @@ final class ExemplosAgendamentos {
                       "telefoneCliente": "11999998888"
                     }
                     """)
-                .ok("201", "Reserva criada já CONFIRMADA, sem cobrança Pix; cliente criado ou vinculado pelo telefone", CONFIRMADO_SEM_PAGAMENTO)
+                .okComCabecalhos("201", "Reserva criada já CONFIRMADA, sem cobrança Pix nem campos de pagamento; cliente criado ou vinculado pelo telefone",
+                        RESERVA_CONFIRMADA, "ReservaConfirmadaResponseDTO", Map.of())
                 .erro(Erros.validacao("Dados inválidos: data: A data da reserva é obrigatória"))
                 .erro(Erros.requisicaoInvalida("Nenhuma quadra encontrada para o esporte ou nome informado."))
                 .erro(Erros.requisicaoInvalida("Não foi possível entender a hora: 25h"))

@@ -2,7 +2,10 @@ package com.agendamentos.equadras.controller;
 
 import com.agendamentos.equadras.dto.request.AgendamentoBotRequestDTO;
 import com.agendamentos.equadras.dto.request.AgendamentoCriacaoDTO;
+import com.agendamentos.equadras.dto.response.AgendamentoResponseDTO;
+import com.agendamentos.equadras.dto.response.ReservaConfirmadaResponseDTO;
 import com.agendamentos.equadras.model.enums.Role;
+import com.agendamentos.equadras.model.enums.StatusAgendamento;
 import com.agendamentos.equadras.security.UsuarioAutenticado;
 import com.agendamentos.equadras.service.AgendaConsultaService;
 import com.agendamentos.equadras.service.AgendamentoBotService;
@@ -15,13 +18,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AgendamentoControllerRotaApiTest {
@@ -46,31 +55,44 @@ class AgendamentoControllerRotaApiTest {
                 gradeHorariosService, agendaConsultaService);
     }
 
-    @Test
-    @DisplayName("POST /api/agendamentos cria a reserva confirmada, sem Pix")
-    void rotaApiConfirmaDireto() {
-        controller.agendar(dto, cliente, new MockHttpServletRequest("POST", "/api/agendamentos"));
+    private final AgendamentoResponseDTO confirmada = new AgendamentoResponseDTO(42L, 1L, "Robson", "11999998888",
+            1L, "Arena", LocalDateTime.of(2026, 10, 12, 19, 0), LocalDateTime.of(2026, 10, 12, 20, 0),
+            new BigDecimal("120.00"), StatusAgendamento.CONFIRMADO, null, null, null,
+            LocalDateTime.of(2026, 10, 5, 10, 0), null);
 
-        verify(agendamentoService).agendarConfirmado(dto, 1L);
+    @Test
+    @DisplayName("POST /api/agendamentos cria a reserva confirmada e devolve o DTO sem campos de pagamento")
+    void rotaApiConfirmaDireto() {
+        when(agendamentoService.agendarConfirmado(dto, 1L)).thenReturn(confirmada);
+
+        ResponseEntity<?> resposta = controller.agendar(dto, cliente, new MockHttpServletRequest("POST", "/api/agendamentos"));
+
         verify(agendamentoService, never()).agendar(any(), any());
+        assertEquals(HttpStatus.CREATED, resposta.getStatusCode());
+        assertEquals(ReservaConfirmadaResponseDTO.de(confirmada), resposta.getBody());
     }
 
     @Test
     @DisplayName("POST /agendamentos (frontend) mantém o fluxo com Pix")
     void rotaFrontendMantemPix() {
-        controller.agendar(dto, cliente, new MockHttpServletRequest("POST", "/agendamentos"));
+        when(agendamentoService.agendar(dto, 1L)).thenReturn(confirmada);
 
-        verify(agendamentoService).agendar(dto, 1L);
+        ResponseEntity<?> resposta = controller.agendar(dto, cliente, new MockHttpServletRequest("POST", "/agendamentos"));
+
         verify(agendamentoService, never()).agendarConfirmado(any(), any());
+        assertInstanceOf(AgendamentoResponseDTO.class, resposta.getBody());
     }
 
     @Test
-    @DisplayName("POST /api/agendamentos/bot confirma direto; /agendamentos/bot mantém o Pix")
+    @DisplayName("POST /api/agendamentos/bot confirma direto sem campos de pagamento; /agendamentos/bot mantém o Pix")
     void botSegueOPrefixo() {
-        controller.agendarViaBot(botDto, new MockHttpServletRequest("POST", "/api/agendamentos/bot"));
-        verify(agendamentoBotService).agendarViaBot(botDto, true);
+        when(agendamentoBotService.agendarViaBot(botDto, true)).thenReturn(confirmada);
+        when(agendamentoBotService.agendarViaBot(botDto, false)).thenReturn(confirmada);
 
-        controller.agendarViaBot(botDto, new MockHttpServletRequest("POST", "/agendamentos/bot"));
-        verify(agendamentoBotService).agendarViaBot(botDto, false);
+        ResponseEntity<?> api = controller.agendarViaBot(botDto, new MockHttpServletRequest("POST", "/api/agendamentos/bot"));
+        assertEquals(ReservaConfirmadaResponseDTO.de(confirmada), api.getBody());
+
+        ResponseEntity<?> frontend = controller.agendarViaBot(botDto, new MockHttpServletRequest("POST", "/agendamentos/bot"));
+        assertInstanceOf(AgendamentoResponseDTO.class, frontend.getBody());
     }
 }

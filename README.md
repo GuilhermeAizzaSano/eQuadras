@@ -89,7 +89,7 @@ O sistema está implantado e disponível publicamente sob o domínio oficial com
    - Sessão Web por cookie seguro com atributos `HttpOnly`, `SameSite=Lax` e `Secure=true` (`equadras_session`).
    - Módulo desacoplado `UsuarioAuthService` dedicado à autenticação, sessões e rate limiting contra força bruta.
    - Suporte padronizado a chaves de integração externas (API Key no cabeçalho `X-API-KEY` ou `Authorization: Bearer eq_...`) com hash SHA-256 no banco e suporte a todas as rotas da API respeitando os papéis (`ROLE_CLIENT` e `ROLE_ADMIN`).
-   - **API externa (`/api/**`) sem etapa de pagamento:** `POST /api/agendamentos` e `POST /api/agendamentos/bot` criam a reserva já `CONFIRMADO`, sem cobrança Pix, e não há rotas `/api/pagamentos`. O fluxo com Pix do Mercado Pago é exclusivo da aplicação web.
+   - **API externa (`/api/**`) sem etapa de pagamento:** `POST /api/agendamentos` e `POST /api/agendamentos/bot` criam a reserva já `CONFIRMADO`, sem cobrança Pix, e respondem `ReservaConfirmadaResponseDTO`, sem campos de pagamento. Não há rotas `/api/pagamentos`. O fluxo com Pix do Mercado Pago é exclusivo da aplicação web.
    - **Fotos das quadras na API:** `GET /api/quadras/{id}/fotos` (ou `/api/quadras/fotos` com filtros) devolve as URLs da galeria; cada imagem é servida publicamente em `/uploads/quadras/...`.
 
 5. **Trilha de Auditoria com Eventos de Domínio:**

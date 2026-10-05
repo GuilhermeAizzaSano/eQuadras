@@ -7,6 +7,7 @@ import com.agendamentos.equadras.config.ExemplosDaApi.RespostaExemplo;
 import com.agendamentos.equadras.dto.response.ApiKeyCriadaDTO;
 import com.agendamentos.equadras.dto.response.QuadraFotosResponseDTO;
 import com.agendamentos.equadras.dto.response.QuadraResumoResponseDTO;
+import com.agendamentos.equadras.dto.response.ReservaConfirmadaResponseDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -126,8 +127,9 @@ public class OpenApiConfig {
             ));
 
             if (openApi.getComponents() != null) {
-                // QuadraResumoResponseDTO, QuadraFotosResponseDTO e ApiKeyCriadaDTO não são retornados por tipo em nenhum método (resposta é ResponseEntity<?>)
-                for (Class<?> tipo : List.of(QuadraResumoResponseDTO.class, QuadraFotosResponseDTO.class, ApiKeyCriadaDTO.class)) {
+                // QuadraResumoResponseDTO, QuadraFotosResponseDTO, ApiKeyCriadaDTO e ReservaConfirmadaResponseDTO não são retornados por tipo em nenhum método (resposta é ResponseEntity<?>)
+                for (Class<?> tipo : List.of(QuadraResumoResponseDTO.class, QuadraFotosResponseDTO.class, ApiKeyCriadaDTO.class,
+                        ReservaConfirmadaResponseDTO.class)) {
                     Map<String, Schema> schemas = ModelConverters.getInstance().read(tipo);
                     schemas.forEach((name, schema) -> openApi.getComponents().addSchemas(name, schema));
                 }

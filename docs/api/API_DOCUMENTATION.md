@@ -1298,7 +1298,7 @@ X-API-KEY: eq_SUA_API_KEY_ADMIN
 ---
 
 ### 6.3 Criar Agendamento (Com Lock Pessimista, Já Confirmado)
-Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra e registra o agendamento já `CONFIRMADO`, sem cobrança Pix (`transacaoPagamentoId`, `pixCopiaECola` e `qrCodeBase64` vêm `null`). O administrador da quadra é notificado por SSE.
+Executa a validação de concorrência com bloqueio atômico `PESSIMISTIC_WRITE` na quadra e registra o agendamento já `CONFIRMADO`, sem cobrança Pix. A resposta (`ReservaConfirmadaResponseDTO`) não traz campos de pagamento (`transacaoPagamentoId`, `pixCopiaECola`, `qrCodeBase64`). O administrador da quadra é notificado por SSE.
 
 - **Método:** `POST`
 - **URL:** `/api/agendamentos`
@@ -1337,9 +1337,6 @@ Content-Type: application/json
   "dataHoraFim": "2026-09-10T19:00:00",
   "valorTotal": 240.00,
   "status": "CONFIRMADO",
-  "transacaoPagamentoId": null,
-  "pixCopiaECola": null,
-  "qrCodeBase64": null,
   "criadoEm": "2026-09-02T16:50:00",
   "canceladoEm": null
 }
@@ -1499,7 +1496,7 @@ X-API-KEY: eq_SUA_CHAVE_AQUI
 ---
 
 ### 6.7 Agendamento Flexível via Bot / WhatsApp
-Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19"`, `"19h"`, `"19h30"`, `"9:00"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado.
+Permite que bots de atendimento inteligente (WhatsApp/Telegram/IA) reservem quadras passando informações em linguagem flexível (datas como `"amanha"`, `"hoje"`, `"sexta"`, `"15/09"` e horários como `"19"`, `"19h"`, `"19h30"`, `"9:00"`, `"19:00"`). Se o cliente não existir, ele é auto-cadastrado no sistema a partir do telefone informado. A reserva nasce `CONFIRMADO` e a resposta (`ReservaConfirmadaResponseDTO`) não traz campos de pagamento.
 
 > **Integração WhatsApp:** Este endpoint é 100% público e isento de tokens ou cabeçalhos de autenticação (`X-Bot-Secret` não é exigido), facilitando integrações diretas com fluxos de WhatsApp (Twilio, Baileys, Evolution API, Typebot, Z-API, webhooks de IA).
 
@@ -1548,9 +1545,6 @@ Este endpoint tem limite de 20 requisições por minuto por IP (429 com `Retry-A
   "dataHoraFim": "2026-09-05T20:00:00",
   "valorTotal": 120.00,
   "status": "CONFIRMADO",
-  "transacaoPagamentoId": null,
-  "pixCopiaECola": null,
-  "qrCodeBase64": null,
   "criadoEm": "2026-09-04T15:45:00",
   "canceladoEm": null
 }

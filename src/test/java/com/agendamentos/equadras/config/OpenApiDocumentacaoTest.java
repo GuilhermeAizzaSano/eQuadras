@@ -250,11 +250,21 @@ class OpenApiDocumentacaoTest {
         assertTrue(docs.path("tags").findValuesAsText("name").stream().noneMatch(n -> n.startsWith("Pagamentos")),
                 "tag de pagamentos ainda listada");
 
+        JsonNode reservaConfirmada = docs.path("components").path("schemas").path("ReservaConfirmadaResponseDTO").path("properties");
+        for (String campo : List.of("transacaoPagamentoId", "pixCopiaECola", "qrCodeBase64")) {
+            assertTrue(!reservaConfirmada.has(campo), "ReservaConfirmadaResponseDTO não deve declarar " + campo);
+        }
+
         for (String rota : List.of("/api/agendamentos", "/api/agendamentos/bot")) {
-            JsonNode exemplo = docs.path("paths").path(rota).path("post").path("responses").path("201")
-                    .path("content").path("application/json").path("example");
+            JsonNode conteudo = docs.path("paths").path(rota).path("post").path("responses").path("201")
+                    .path("content").path("application/json");
+            assertEquals("#/components/schemas/ReservaConfirmadaResponseDTO", conteudo.path("schema").path("$ref").asText(),
+                    rota + ": 201 deve referenciar ReservaConfirmadaResponseDTO");
+            JsonNode exemplo = conteudo.path("example");
             assertEquals("CONFIRMADO", exemplo.path("status").asText(), rota + ": exemplo 201 deve estar CONFIRMADO");
-            assertTrue(exemplo.path("pixCopiaECola").isNull(), rota + ": exemplo 201 não deve trazer Pix");
+            for (String campo : List.of("transacaoPagamentoId", "pixCopiaECola", "qrCodeBase64")) {
+                assertTrue(!exemplo.has(campo), rota + ": exemplo 201 não deve trazer " + campo);
+            }
         }
     }
 
