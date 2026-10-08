@@ -1,0 +1,6 @@
+# Instalado em /etc/default/zramswap (pacote zram-tools)
+# Swap comprimido em RAM com prioridade acima do /swapfile (prioridade -2),
+# que permanece como transbordo.
+ALGO=zstd
+PERCENT=50
+PRIORITY=100
