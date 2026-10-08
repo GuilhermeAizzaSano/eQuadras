@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /swagger-ui/
+Disallow: /v3/api-docs
+
+Sitemap: https://equadras.app/sitemap.xml
